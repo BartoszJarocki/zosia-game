@@ -1,0 +1,400 @@
+import * as THREE from 'three';
+import { Stage, animate, ease, addSkyAndLights, hop, wait } from '../engine.js';
+import { makeTruck, seatRiders, makeKitten, makeBone, makeCone, makeBalloon, makeStone, makeTrain, star, mat, mesh, rbox } from '../models.js';
+import { makePup, makeGirl } from '../characters.js';
+import { makeTree, makeBush, makeRock, makeCloud, makeHills, makeMeadowDetail, makeButterfly, makeBird, contactShadow } from '../world/nature.js';
+import { makeLookout, makeHouse, makePupHouse, makeLighthouse, makeBoat, makeWindmill, makeFence } from '../world/props.js';
+import { makeWater, makeShoreFoam } from '../world/water.js';
+import { dust } from '../fx/particles.js';
+import { glyphTexture, labelTexture, discTexture } from '../textures.js';
+import { groundMat } from '../scenery.js';
+import { CONFIG } from '../config.js';
+import { levelFor } from '../progress.js';
+import { detail } from './mission.js';
+import { say, sfx, hush } from '../audio.js';
+import { pick } from '../util.js';
+import { T } from '../lang/pl.js';
+
+const START = new THREE.Vector3(0, 0, 0);
+const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
+
+// Letter games on the left, number games on the right.
+const PLACES = {
+  letters: { at: [-15, -3] },
+  balloons: { at: [-13.5, 8] },
+  name: { at: [-5.5, 14.5] },
+  cones: { at: [5.5, 14.5] },
+  stones: { at: [13.5, 8] },
+  counting: { at: [15, -3] },
+};
+
+export class Hub extends Stage {
+  constructor(game, { greet = false, silent = false } = {}) {
+    super();
+    this.game = game;
+    this.greet = greet;
+    this.silent = silent; // behind the start screen: slow orbit, no talking
+    this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), minWidth: 40 };
+    this.post = { tilt: 0.75, focus: 0.4, band: 0.34 }; // sharp where the places are, dreamy sea on top
+    this.drift = 0.25;
+  }
+
+  enter() {
+    const s = this.scene;
+    addSkyAndLights(s, { shadowSize: 27, sunPos: [16, 28, 18], fogNear: 90, fogFar: 260 });
+
+    // sea: turquoise shallows fading to deep blue, sun glints, shore foam
+    const water = makeWater({ repeat: 46, radial: true, flow: [0.006, 0.004], scale: 0.5,
+      stops: [[0, '#7ff0e6'], [0.12, '#62e2e4'], [0.17, '#33c1ec'], [0.35, '#1f8fdf'], [1, '#1a5fbf']] });
+    const sea = mesh(new THREE.CircleGeometry(230, 96), water.material, { y: -0.3, rx: -Math.PI / 2, shadow: false });
+    sea.receiveShadow = true;
+    sea.userData.tick = water.update;
+    s.add(sea);
+    const foam = makeShoreFoam(27.1, 1.6);
+    foam.mesh.position.y = -0.25;
+    foam.mesh.userData.tick = foam.update;
+    s.add(foam.mesh);
+    s.add(mesh(new THREE.CylinderGeometry(26.4, 27.4, 1, 128), mat('#f4d88f', { roughness: 1 }), { y: -0.55 }));
+    s.add(mesh(new THREE.CylinderGeometry(24, 24.8, 1, 128), groundMat('#5dbb4f', 34), { y: -0.44 }));
+
+    // the mainland across the bay + lighthouse + boats
+    s.add(makeHills({ radius: 105, count: 16, height: [9, 22], color: '#58b957', seed: 7, trees: detail() > 0.5 }));
+    const rock = makeRock({ scale: 4, seed: 3 });
+    rock.position.set(-40, -1, -24);
+    s.add(rock);
+    const lh = makeLighthouse();
+    lh.position.set(-40, 1.2, -24);
+    lh.scale.setScalar(1.3);
+    s.add(lh);
+    [['#ef4444', 44, 0.03], ['#f59e0b', 52, -0.022], ['#8b5cf6', 60, 0.017]].forEach(([c, r, sp], i) => {
+      const b = makeBoat(c);
+      b.scale.setScalar(1.4);
+      const a0 = i * 2.1;
+      b.userData.mergeOK = true;
+      b.userData.tick = (dt, t) => {
+        const a = a0 + t * sp;
+        b.position.set(Math.cos(a) * r, -0.35 + Math.sin(t * 1.4 + i) * 0.12, Math.sin(a) * r);
+        b.rotation.y = -a + (sp > 0 ? 0 : Math.PI);
+        b.rotation.z = Math.sin(t * 1.1 + i) * 0.05;
+      };
+      s.add(b);
+    });
+
+    // Lookout
+    const lookout = makeLookout();
+    lookout.position.set(0, 0, -10.5);
+    lookout.scale.setScalar(0.95);
+    s.add(lookout);
+
+    // roads to every place
+    s.add(mesh(new THREE.CircleGeometry(3.4, 48), mat('#e8d5a3', { roughness: 1 }), { y: 0.09, rx: -Math.PI / 2 }));
+    s.add(mesh(new THREE.RingGeometry(3.4, 3.75, 48), mat('#c9b27a', { roughness: 1 }), { y: 0.085, rx: -Math.PI / 2, shadow: false }));
+    for (const kind of Object.keys(PLACES)) {
+      const p = PLACES[kind];
+      p.pos = new THREE.Vector3(p.at[0], 0, p.at[1]);
+      const park = p.pos.clone().add(START.clone().sub(p.pos).setLength(4.2));
+      const p1 = new THREE.Vector3(0, 0, 2.8);
+      const mid = p1.clone().lerp(park, 0.5).add(new THREE.Vector3(0, 0, 1.5));
+      p.curve = new THREE.CatmullRomCurve3([START.clone(), p1, mid, park]);
+      s.add(makeRoad(p.curve));
+    }
+    const roadPts = Object.values(PLACES).flatMap((p) => p.curve.getSpacedPoints(24));
+    const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+
+    // places
+    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse };
+    for (const kind of Object.keys(PLACES)) this.addPlace(kind, builders[kind]());
+
+    // trees, bushes, houses, grass — kept off the roads and places
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
+    const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
+    let seed = 1;
+    for (let i = 0; i < 140; i++) {
+      const a = Math.random() * Math.PI * 2, r = 5 + Math.sqrt(Math.random()) * 18;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!clear(x, z, 1.2) || (z > 9 && Math.abs(x) < 17) || (z > 4 && Math.abs(x) > 17)) continue;
+      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + Math.random() * 0.4 }); b.position.set(x, 0, z); s.add(b); continue; }
+      const t = makeTree({ scale: 0.95 + Math.random() * 0.6, seed: seed++ });
+      t.position.set(x, 0, z);
+      s.add(t);
+    }
+    const houses = [[-8.5, -8, '#fde68a', '#ef4444'], [8.5, -8, '#bfdbfe', '#8b5cf6'], [-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
+    for (const [x, z, w, r] of houses) {
+      const h = makeHouse(w, r);
+      h.position.set(x, 0, z);
+      h.scale.setScalar(1.15);
+      h.lookAt(new THREE.Vector3(x * 0.4, 0, 40));
+      s.add(h);
+    }
+    const k = detail();
+    s.add(makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 }));
+    for (let i = 0; i < 4; i++) s.add(makeButterfly({ center: [(i - 1.5) * 8, 4 + (i % 2) * 6], radius: 4, height: 1.4, color: ['#f472b6', '#fbbf24', '#60a5fa', '#a78bfa'][i] }));
+    for (let i = 0; i < 4; i++) s.add(makeBird({ radius: 34 + i * 5, height: 20 + i * 2, speed: 0.08 + i * 0.01, seed: i * 1.7 }));
+    for (let i = 0; i < 8; i++) {
+      const c = makeCloud({ scale: 2.4 + Math.random() * 1.8, seed: i * 13 });
+      c.position.set(-90 + i * 26, 26 + Math.random() * 10, -70 - Math.random() * 30);
+      c.userData.tick = (dt) => { c.position.x += dt * 0.6; if (c.position.x > 110) c.position.x = -110; };
+      c.userData.mergeOK = true;
+      s.add(c);
+    }
+
+    // the cruiser with our heroes inside
+    const truck = (this.truck = makeTruck());
+    truck.position.copy(START);
+    truck.scale.setScalar(1.9);
+    s.add(truck);
+    const sh = contactShadow(2.6, 0.4);
+    s.add(sh);
+    this.onUpdate(() => sh.position.set(truck.position.x, 0.12, truck.position.z));
+    const girl = (this.girl = makeGirl());
+    const pup = (this.pup = makePup());
+    seatRiders(truck, girl, pup);
+    this.cheerUntil = 0;
+    this.speed = 0;
+    this.onUpdate((dt, t) => {
+      truck.userData.update(t, this.speed);
+      pup.userData.idle(t);
+      t < this.cheerUntil ? girl.userData.cheer(t) : girl.userData.idle(t);
+    });
+    this.tappable(girl, () => this.tapGirl());
+    this.tappable(pup, () => this.tapPup());
+    girl.userData.tapHeight = 1.7;
+    pup.userData.tapHeight = 1.6;
+
+    if (this.silent) {
+      // attract mode behind the start button: slow orbit
+      this.busy = true;
+      this.onUpdate((dt, t) => {
+        const a = t * 0.05;
+        this.view.pos.set(Math.sin(a) * 36, 22, Math.cos(a) * 36 + 3.5);
+      });
+      return;
+    }
+    if (this.greet) {
+      // swoop in from high above the bay
+      const from = new THREE.Vector3(-30, 48, 60), to = HOME_VIEW.pos.clone();
+      this.view.pos.copy(from);
+      this.busy = true;
+      animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; });
+    }
+    say(this.greet ? T.greet() : pick(T.hubAgain()));
+    this.idleTimer = setInterval(() => {
+      if (this.alive && !this.busy) say(T.hubIdle());
+    }, 25000);
+  }
+
+  exit() { clearInterval(this.idleTimer); }
+
+  addPlace(kind, group) {
+    const p = PLACES[kind];
+    group.position.copy(p.pos);
+    group.lookAt(new THREE.Vector3(p.pos.x * 0.4, 0, 40)); // face the camera
+    this.scene.add(group);
+    // bouncing glowing star says "tap me!", with this mission's level stars under it
+    const marker = new THREE.Group();
+    marker.position.set(p.pos.x, 5.4, p.pos.z);
+    const big = star('#fde047', 0.95, 0.28);
+    big.material = mat('#ffe066', { emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 });
+    marker.add(big);
+    const level = levelFor(kind);
+    for (let i = 0; i < 3; i++) {
+      const lit = i < level;
+      const st = star(lit ? '#fde047' : '#cbd5e1', 0.32, 0.1);
+      if (lit) st.material = mat('#ffe066', { emissive: '#ffb800', emissiveIntensity: 2.2, roughness: 0.3 });
+      st.position.set((i - 1) * 0.8, -1.35, 0);
+      marker.add(st);
+    }
+    this.scene.add(marker);
+    this.onUpdate((dt, t) => {
+      big.rotation.y = Math.sin(t * 2 + p.pos.x) * 0.6;
+      marker.position.y = 5.4 + Math.sin(t * 3 + p.pos.x) * 0.3;
+      marker.lookAt(this.cameraPosition.x, marker.position.y, this.cameraPosition.z);
+    });
+    // invisible tap zone, so the landmark itself stays plain scenery (and can be merged into a few meshes)
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 3.3, 4.5, 16), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.set(p.pos.x, 2.2, p.pos.z);
+    hit.userData.tapHeight = 0;
+    this.scene.add(hit);
+    marker.userData.tapHeight = 0;
+    this.tappable(hit, () => this.go(kind));
+    this.tappable(marker, () => this.go(kind));
+  }
+
+  tapGirl() {
+    sfx.pop();
+    this.cheerUntil = performance.now() / 1000 + 1.5;
+    this.girl.userData.setHappy(1.5);
+    hop(this.girl, 0.4);
+    say(pick(T.tapGirl()));
+  }
+
+  tapPup() {
+    sfx.bark();
+    this.pup.userData.setHappy(1.5);
+    hop(this.pup, 0.5);
+    say(pick(T.tapPup()));
+  }
+
+  async go(kind) {
+    if (this.busy) return;
+    this.busy = true;
+    const p = PLACES[kind];
+    hush();
+    sfx.siren(3);
+    this.truck.userData.setFlashing(true);
+    this.cheerUntil = performance.now() / 1000 + 3;
+    this.pup.userData.setHappy(3);
+    this.girl.userData.lookAt(p.pos.clone().add(new THREE.Vector3(0, 1, 0)), 3);
+    this.pup.userData.lookAt(p.pos.clone().add(new THREE.Vector3(0, 1, 0)), 3);
+    say(T.go(kind));
+    const tan = new THREE.Vector3();
+    const look0 = this.view.look.clone(), pos0 = this.view.pos.clone();
+    this.speed = 0.35;
+    let puff = 0;
+    await animate(2600, (t) => {
+      p.curve.getPointAt(t, this.truck.position);
+      p.curve.getTangentAt(Math.min(t, 0.999), tan);
+      this.truck.rotation.y = Math.atan2(tan.x, tan.z);
+      // camera follows the cruiser and leans in
+      this.view.look.lerpVectors(look0, this.truck.position, Math.min(1, t * 1.4));
+      this.view.pos.copy(this.view.look).add(pos0.clone().sub(look0).multiplyScalar(1 - 0.45 * t));
+      if (++puff % 7 === 0 && t < 0.9) dust(this, this.truck.position.clone().sub(tan.clone().multiplyScalar(2)), { count: 2, size: 0.45 });
+    }, ease.inOut);
+    this.speed = 0;
+    await wait(200);
+    if (this.alive) this.game.startMission(kind);
+  }
+}
+
+// ---------- road ribbon ----------
+function makeRoad(curve, width = 2.2) {
+  const pts = curve.getSpacedPoints(60);
+  const pos = [], idx = [];
+  const tan = new THREE.Vector3();
+  pts.forEach((p, i) => {
+    curve.getTangentAt(i / (pts.length - 1), tan);
+    const nx = tan.z, nz = -tan.x;
+    pos.push(p.x + nx * width / 2, 0.08, p.z + nz * width / 2, p.x - nx * width / 2, 0.08, p.z - nz * width / 2);
+    if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat('#e8d5a3', { side: THREE.DoubleSide, roughness: 1 }));
+  m.receiveShadow = true;
+  return m;
+}
+
+// ---------- place landmarks ----------
+/** Strip animation data so a decorative model can be merged into the static scenery. */
+function plain(root) { root.traverse((o) => { o.userData = {}; }); }
+function glyphBlock(text, bg, size = 1.3) {
+  const m = new THREE.MeshStandardMaterial({ map: glyphTexture(text, { bg }), roughness: 0.45 });
+  const b = new THREE.Mesh(rbox(size, size, size, 0.12), m);
+  b.castShadow = b.receiveShadow = true;
+  return b;
+}
+const pad = (r = 3, color = '#86efac') => mesh(new THREE.CylinderGeometry(r, r, 0.12, 48), mat(color, { roughness: 0.9 }), { y: 0.06 });
+
+function makeLetterPark() {
+  const g = new THREE.Group();
+  g.add(pad(3.2, '#9be7a8'));
+  const a = glyphBlock('A', '#ef4444'); a.position.set(-0.75, 0.65, 0);
+  const b = glyphBlock('B', '#2563eb'); b.position.set(0.75, 0.65, 0);
+  const c = glyphBlock('C', '#16a34a'); c.position.set(0, 1.95, 0); c.rotation.y = 0.2;
+  g.add(a, b, c);
+  const k = makeKitten();
+  k.position.set(0, 2.6, 0);
+  k.scale.setScalar(0.9);
+  k.userData.tick = (dt, t) => k.userData.idle(t);
+  g.add(k);
+  const f = makeFence(5.5);
+  f.position.set(0, 0, -2.4);
+  f.scale.setScalar(0.7);
+  g.add(f);
+  return g;
+}
+
+function makeBalloonHill() {
+  const g = new THREE.Group();
+  g.add(pad(3.2, '#a7f3d0'));
+  g.add(mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.2, 10), mat('#92400e'), { y: 0.6 }));
+  const cols = ['#ef4444', '#f59e0b', '#3b82f6', '#a855f7', '#ec4899'];
+  ['A', 'B', 'C', 'D', 'E'].forEach((l, i) => {
+    const bl = makeBalloon(cols[i], labelTexture(l));
+    const a = (i - 2) * 0.45;
+    bl.position.set(Math.sin(a) * 1.3, 3.2 + Math.cos(a) * 0.6 - Math.abs(i - 2) * 0.2, (i % 2) * 0.3);
+    bl.rotation.z = -a * 0.5;
+    bl.scale.setScalar(0.75);
+    plain(bl);
+    g.add(bl);
+  });
+  const w = makeWindmill();
+  w.position.set(-2.4, 0, -1.8);
+  w.scale.setScalar(0.55);
+  g.add(w);
+  return g;
+}
+
+function makeNameTrain() {
+  const g = new THREE.Group();
+  const letters = (CONFIG.childName || 'ABC').toUpperCase().slice(0, 3);
+  const t = makeTrain(letters.length);
+  t.scale.setScalar(0.8);
+  t.rotation.y = Math.PI; // engine on the left so the name reads left-to-right
+  t.position.x = -1.8;
+  g.add(t);
+  [...letters].forEach((l, i) => {
+    const b = glyphBlock(l, ['#9333ea', '#db2777', '#0891b2'][i], 0.95);
+    const slot = t.userData.slots[i];
+    b.position.set(-1.8 - slot.x * 0.8, slot.y * 0.8 + 0.05, 0);
+    g.add(b);
+  });
+  plain(t); // a parked train is just scenery here
+  return g;
+}
+
+function makeTreatHouse() {
+  const g = new THREE.Group();
+  const h = makePupHouse();
+  h.scale.setScalar(0.85);
+  g.add(h);
+  const bone = makeBone(2.6);
+  bone.position.set(0, 3.9, 0.3);
+  bone.userData.tick = (dt, t) => { bone.rotation.z = Math.sin(t * 1.5) * 0.15; bone.position.y = 3.9 + Math.sin(t * 2) * 0.12; };
+  g.add(bone);
+  g.add(mesh(new THREE.CylinderGeometry(0.6, 0.45, 0.35, 24), mat('#ef4444'), { x: 1.9, y: 0.18, z: 1.6 }));
+  for (let i = 0; i < 3; i++) { const b = makeBone(0.8); b.position.set(1.7 + i * 0.2, 0.42, 1.6); b.rotation.y = i; g.add(b); }
+  return g;
+}
+
+function makeConeRoad() {
+  const g = new THREE.Group();
+  ['1', '2', '3'].forEach((n, i) => {
+    const c = makeCone();
+    c.position.set((i - 1) * 1.6, 0, 0);
+    g.add(c);
+    const sign = glyphBlock(n, ['#ef4444', '#16a34a', '#9333ea'][i], 0.9);
+    sign.scale.z = 0.15;
+    sign.position.set((i - 1) * 1.6, 2.0, 0);
+    g.add(sign);
+  });
+  return g;
+}
+
+function makeRiver() {
+  const g = new THREE.Group();
+  const water = makeWater({ repeat: 2, flow: [0.05, 0.01], scale: 0.6, stops: [[0, '#4cc9ef'], [1, '#1d8fd6']] });
+  const pond = mesh(new THREE.CylinderGeometry(3.1, 3.1, 0.12, 48), water.material, { y: 0.07 });
+  pond.userData.tick = water.update;
+  g.add(pond);
+  [[-1.4, 0.6], [0, -0.3], [1.4, 0.5]].forEach(([x, z], i) => {
+    const s = makeStone(discTexture(String(i + 1), ['#ef4444', '#16a34a', '#2563eb'][i]));
+    s.position.set(x, 0.22, z);
+    s.rotation.y = Math.PI / 2;
+    s.scale.setScalar(0.8);
+    g.add(s);
+  });
+  return g;
+}

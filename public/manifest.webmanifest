@@ -1,0 +1,10 @@
+{
+  "name": "Pup Patrol",
+  "short_name": "Pup Patrol",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#8fd3ff",
+  "theme_color": "#1e4fbf",
+  "start_url": "/",
+  "icons": [{ "src": "/icon.png", "sizes": "512x512", "type": "image/png" }]
+}
