@@ -1,5 +1,6 @@
 import { sfx } from './audio.js';
 import { CONFIG } from './config.js';
+import { DICE } from './textures.js';
 
 const ui = document.getElementById('ui');
 
@@ -124,10 +125,13 @@ export function setProgress(done) {
  *  big: glyph, dots: number of dots (under the glyph, or alone if big is empty)
  *  pic: emoji picture clue, word + at: a whole word with one letter lit, seq: "3 → ?"
  */
-export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, done = at, seq = null, onTap, passthrough = false }) {
+export function bubble({ big = '', pic = '', dots = 0, dice = false, word = '', at = -1, done = at, seq = null, onTap, passthrough = false }) {
   const b = ui.querySelector('.bubble');
   if (!b) return;
-  const dotRow = dots ? `<span class="dots ${big ? '' : 'solo'}">${'<i></i>'.repeat(dots)}</span>` : '';
+  const pips = dice && DICE[dots];
+  const dotRow = !dots ? '' : pips
+    ? `<span class="dots dice ${big ? '' : 'solo'}">${Array.from({ length: 9 }, (_, k) => (pips.includes(k) ? '<i></i>' : '<b></b>')).join('')}</span>`
+    : `<span class="dots ${big ? '' : 'solo'}">${'<i></i>'.repeat(dots)}</span>`;
   let main = '';
   if (word) main = `<span class="word">${[...word].map((c, i) => `<b class="${i === at ? 'lit' : (Array.isArray(done) ? done.includes(i) : i < done) ? 'done' : ''}">${c}</b>`).join('')}</span>`;
   else if (seq) main = `<span class="big seq">${seq[0]}<em>${seq[1] || '➜'}</em><span class="q">?</span></span>`;

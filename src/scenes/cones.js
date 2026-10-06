@@ -80,7 +80,10 @@ export class ConesMission extends Mission {
   round(r) {
     return new Promise((resolve) => {
       const pool = Array.from({ length: this.L.max }, (_, i) => i + 1);
-      const skill = this.L.bubble === 'dots' ? 'quantity' : 'numeral'; // dots-only = count, then find the numeral
+      // dots in the bubble (find the numeral) or "which cone has N dots?" = quantity; otherwise the numeral
+      const ask = this.L.bubble;
+      const skill = ask === 'dots' || ask === 'name' ? 'quantity' : 'numeral';
+      const layout = this.L.dots || 'line';
       const target = this.pick(skill, pool);
       this.last = target;
       this.item('N:' + target);
@@ -90,13 +93,13 @@ export class ConesMission extends Mission {
       const cones = [];
       let solved = false, lastWrong = null;
       const zLocal = -this.world.position.z; // cones appear at world z = 0
-      const dotsOnSign = this.L.sign === 'both';
+      const dotsOnSign = this.L.sign !== 'numeral', numOnSign = this.L.sign !== 'dots';
 
       opts.forEach((num, i) => {
         const c = new THREE.Group();
         c.add(makeCone());
         c.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8), mat('#94a3b8', { metalness: 0.5, roughness: 0.3 }), { y: 1.7 }));
-        const face = new THREE.MeshStandardMaterial({ map: glyphTexture(String(num), { bg: colors[i], dots: dotsOnSign ? num : 0 }), roughness: 0.45 });
+        const face = new THREE.MeshStandardMaterial({ map: glyphTexture(numOnSign ? String(num) : '', { bg: colors[i], dots: dotsOnSign ? num : 0, layout }), roughness: 0.45 });
         const white = mat('#ffffff');
         const sign = new THREE.Mesh(rbox(1.5, 1.5, 0.14, 0.06), [white, white, white, white, face, white]);
         sign.position.y = 2.7;
@@ -122,9 +125,9 @@ export class ConesMission extends Mission {
             cones.forEach((x) => this.untap(x));
             sfx.good();
             this.success(sign.getWorldPosition(new THREE.Vector3()));
-            await say([this.praise(), ...(this.L.bubble === 'dots' ? T.dots(num) : T.number(num))]);
-            // count the dots together
-            for (let k = 1; k <= num; k++) {
+            await say([this.praise(), ...(ask === 'dots' ? T.dots(num) : T.number(num))]); // ("Cztery!")
+            // count the dots together (early levels; later she just knows: no counting aloud every time)
+            for (let k = 1; this.L.count !== false && k <= num; k++) {
               if (!this.alive) return;
               animate(300, (t) => sign.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.18), ease.linear);
               sfx.pop();
@@ -153,19 +156,21 @@ export class ConesMission extends Mission {
         });
       });
 
-      const b = this.L.bubble;
-      const bubble = (big, dots) => ui.bubble({ big, dots, pic: '🚧', onTap: () => this.replay() });
-      bubble(b === 'dots' ? '' : String(target), b === 'numeral' ? 0 : target);
+      // the bubble: numeral and/or dots (dice at higher levels), or nothing but the question ("name")
+      const bubble = (big, dots) => ui.bubble({ big, dots, dice: layout === 'dice', pic: '🚧', onTap: () => this.replay() });
+      const shown = { both: [String(target), target], numeral: [String(target), 0], dots: ['', target], name: ['', 0] }[ask];
+      bubble(...shown);
       const rc = cones.find((x) => x.userData.num === target);
       this.question(skill, target, {
-        short: T.whereNumber(target),
-        hint: () => { bubble(String(target), target); return T.dots(target); }, // numeral and dots together
+        short: ask === 'name' ? T.conesWhich(target, false) : T.whereNumber(target),
+        hint: () => { bubble(ask === 'name' ? '' : String(target), target); return T.dots(target); }, // the dots (and numeral) appear
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : cones.find((x) => x !== rc && x.parent)),
         reveal: () => this.hint(rc, () => solved, rc.userData.sign),
       });
       wait(600).then(() => {
         if (!this.alive) return;
-        if (b === 'dots') this.ask(T.conesDots(r === 0));
+        if (ask === 'dots') this.ask(T.conesDots(r === 0));
+        else if (ask === 'name') this.ask(T.conesWhich(target, r === 0));
         else this.ask(r === 0 ? T.conesFirst(target) : T.conesMore(target));
       });
     });

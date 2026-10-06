@@ -127,18 +127,22 @@ and the train drives off. Nothing is spelled from memory: the word is always the
 
 ### 🚧 Cone Road · `cones`
 
-Numbered cones block the road. Tap the right one; the dots are counted together and the cruiser drives on.
+Numbered cones block the road. Tap the right one and the cruiser drives on (early on, the dots are counted together).
 
-| Level | max | choices | bubble | sign | rounds |
-|---|---|---|---|---|---|
-| 1 | 3 | 3 | both | both | 3 |
-| 2 | 5 | 3 | numeral | both | 3 |
-| 3 | 6 | 4 | dots | numeral | 3 |
+| Level | max | choices | bubble | sign | dots | count | rounds |
+|---|---|---|---|---|---|---|---|
+| 1 | 3 | 3 | both | both | dice | yes | 3 |
+| 2 | 5 | 3 | numeral | both | dice | yes | 3 |
+| 3 | 5 | 3 | name | dots | dice | no | 3 |
+| 4 | 6 | 4 | dots | numeral | dice | no | 3 |
 
 - **max** — numbers go from 1 to max (2–10)
 - **choices** — how many cones (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
-- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral
-- **sign** — what the cone signs show: `both` (numeral + dots) or `numeral`
+- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral ·
+  `name`: nothing shown, "Który pachołek ma cztery kropki?" (the signs show dots: she recognises the amount)
+- **sign** — what the cone signs show: `both` (numeral + dots), `numeral`, or `dots`
+- **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting)
+- **count** — `yes`: after a right answer the dots are counted aloud together · `no`: just the number ("Cztery!")
 - **rounds** — how many cones block the road (1–8)
 
 ### 🪨 The River · `stones`
@@ -149,11 +153,13 @@ Tap the stepping stones 1, 2, 3… so Zosia hops across the river to Chase.
 |---|---|---|---|
 | 1 | 3 | 2 | numeral |
 | 2 | 5 | 2 | numeral |
-| 3 | 7 | 1 | next |
+| 3 | 4 | 2 | missing |
+| 4 | 7 | 1 | next |
 
 - **n** — how many stones (2–12) · **rounds** — how many rivers to cross (1–6)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
-  (help shows the number)
+  (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
+  stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)
 
 ### 🦴 Treat House · `counting`
 

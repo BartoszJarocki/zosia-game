@@ -13,9 +13,15 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
-/** Big glyph on a colored rounded square. Optional dots row underneath (for numbers). */
-export function glyphTexture(text, { bg = '#2563eb', fg = '#ffffff', dots = 0, border = '#ffffff' } = {}) {
-  const key = [text, bg, fg, dots, border].join('|');
+/** Dice pips for 1–6 as cells of a 3×3 grid (0 = top left … 8 = bottom right). Bigger numbers: rows of 5. */
+export const DICE = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+
+/**
+ * Big glyph on a colored rounded square. Optional dots underneath (for numbers): in rows of five, or as dice
+ * pips (layout 'dice', 1–6: recognisable at a glance without counting). No text: the dots fill the square.
+ */
+export function glyphTexture(text, { bg = '#2563eb', fg = '#ffffff', dots = 0, border = '#ffffff', layout = 'line' } = {}) {
+  const key = [text, bg, fg, dots, border, layout].join('|');
   if (cache.has(key)) return cache.get(key);
   const S = 512;
   const cv = document.createElement('canvas');
@@ -38,7 +44,24 @@ export function glyphTexture(text, { bg = '#2563eb', fg = '#ffffff', dots = 0, b
   const ty = dots ? S * 0.42 : S * 0.54;
   c.strokeText(text, S / 2, ty);
   c.fillText(text, S / 2, ty);
-  if (dots) {
+  if (dots && layout === 'dice' && DICE[dots]) {
+    const big = !text; // dots only: use the whole square
+    const cell = big ? 120 : 62, r = big ? 44 : 24;
+    const cx = S / 2, cy = big ? S / 2 : S * 0.8 - 4;
+    for (const k of DICE[dots]) {
+      c.beginPath();
+      c.arc(cx + ((k % 3) - 1) * cell * (big ? 1 : 1.25), cy + (Math.floor(k / 3) - 1) * cell * (big ? 1 : 0.55), r, 0, Math.PI * 2);
+      c.fill();
+    }
+  } else if (dots && !text) {
+    const perRow = Math.min(dots, 5), rows = Math.ceil(dots / 5);
+    for (let i = 0; i < dots; i++) {
+      const row = Math.floor(i / 5), col = i % 5, inRow = row === rows - 1 ? dots - row * 5 : perRow;
+      c.beginPath();
+      c.arc(S / 2 + (col - (inRow - 1) / 2) * 86, S / 2 + (row - (rows - 1) / 2) * 96, 34, 0, Math.PI * 2);
+      c.fill();
+    }
+  } else if (dots) {
     const perRow = Math.min(dots, 5);
     const rows = Math.ceil(dots / 5);
     const r = 26, gap = 70;

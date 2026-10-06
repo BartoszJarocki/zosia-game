@@ -76,3 +76,21 @@ test('Name Train: four modes; older ghost/bubble tables still work; gaps checked
   assert.equal(errors.length, 1);
   assert.match(errors[0], /more letters/);
 });
+
+test('Cone Road: dice, counting aloud only early, "which cone has N dots?" needs dots on the signs', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  assert.ok(levels.cones.every((l) => l.dots === 'dice'));
+  assert.deepEqual(levels.cones.map((l) => l.count), [true, true, false, false]);
+  assert.equal(levels.cones[2].bubble, 'name');
+  const cones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`cones\`\n\n| Level | max | choices | bubble | sign |\n|---|---|---|---|---|\n| 1 | ${row} |\n`;
+  assert.match(only(parseGame(cones('5 | 3 | name | numeral'), {})).errors[0], /signs need dots/);
+  assert.match(only(parseGame(cones('5 | 3 | dots | dots'), {})).errors[0], /signs need numerals/);
+  assert.equal(only(parseGame(cones('5 | 3 | both | both'), {})).levels.cones[0].count, true, 'defaults: count aloud, line dots');
+});
+
+test('River: the missing stone needs 3–9 stones', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  assert.ok(levels.stones.some((l) => l.bubble === 'missing'));
+  const stones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`stones\`\n\n| Level | n | bubble |\n|---|---|---|\n| 1 | ${row} |\n`;
+  assert.match(only(parseGame(stones('12 | missing'), {})).errors[0], /3–9 stones/);
+});

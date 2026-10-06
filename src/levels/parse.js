@@ -41,14 +41,16 @@ export const SCHEMA = {
   cones: {
     max: { type: 'int', min: 2, max: 10 },
     choices: { type: 'int', min: 2, max: 4 },
-    bubble: { type: 'enum', values: ['both', 'numeral', 'dots'] },
-    sign: { type: 'enum', values: ['both', 'numeral'] },
+    bubble: { type: 'enum', values: ['both', 'numeral', 'dots', 'name'] },
+    sign: { type: 'enum', values: ['both', 'numeral', 'dots'] },
+    dots: { type: 'enum', values: ['line', 'dice'], optional: true, default: 'line' },
+    count: { type: 'bool', optional: true, default: true }, // count the dots aloud after a right answer
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // cones on the road
   },
   stones: {
     n: { type: 'int', min: 2, max: 12 },
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 2 }, // rivers to cross
-    bubble: { type: 'enum', values: ['numeral', 'next'] },
+    bubble: { type: 'enum', values: ['numeral', 'next', 'missing'] },
   },
   counting: {
     types: { type: 'list', values: ['give', 'howMany'] },
@@ -215,6 +217,8 @@ export function resolveLetters(expr, sets, name) {
 function crossCheck(kind, s, where, errors) {
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
+  if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
+  if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
   if (kind === 'name') {
     s.mode ||= s.ghost ? 'ghost' : s.bubble === 'word' ? 'highlight' : 'ghost'; // (older tables used ghost + bubble)
@@ -228,5 +232,6 @@ function crossCheck(kind, s, where, errors) {
   }
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
+  if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
 }

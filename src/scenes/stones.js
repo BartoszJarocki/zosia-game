@@ -16,7 +16,9 @@ const START = new THREE.Vector3(0, 0, 5.6);
 const FAR = new THREE.Vector3(4.5, 0, -5.9);
 
 // "River": tap the stones 1, 2, 3... so Zosia can hop across to Chase.
-//  L1 1–3 · L2 1–5 · L3 1–7 and the bubble only says "3 → ?": she has to know what comes next.
+//  numeral: the bubble shows the next number · next: only "3 → ?" (she has to know what comes next)
+//  missing: the stones lie in order with one gap (1 → 2 → ? → 4); she puts the right stone in (drag it, or tap
+//           it), then Zosia hops across by herself, counting — the crossing is the reward.
 export class StonesMission extends Mission {
   constructor(game) {
     super(game, 'stones');
@@ -81,6 +83,7 @@ export class StonesMission extends Mission {
   }
 
   round(r) {
+    if (this.L.bubble === 'missing') return this.missingRound(r);
     return new Promise((resolve) => {
       const n = this.L.n;
       // random spots on a grid over the river so the order isn't obvious
@@ -195,6 +198,131 @@ export class StonesMission extends Mission {
       }));
 
       wait(900).then(() => { if (this.alive) askNext(); });
+    });
+  }
+
+  // ---------- the missing stone ----------
+  missingRound(r) {
+    return new Promise((resolve) => {
+      const n = this.L.n;
+      const missing = this.pick('sequence', Array.from({ length: n - 1 }, (_, i) => i + 2)); // any but the first
+      this.last = missing;
+      this.item('N:' + missing);
+      const colors = shuffle(TILE_COLORS);
+      // the path: in order from this bank to the far one, gently zigzagging
+      const at = (i) => START.clone().lerp(FAR, (i + 1) / (n + 1)).add(new THREE.Vector3(i % 2 ? 0.7 : -0.7, 0.18, 0));
+      const stones = [];
+      for (let num = 1; num <= n; num++) {
+        if (num === missing) continue;
+        const s = makeStone(discTexture(String(num), colors[(num - 1) % colors.length]));
+        s.position.copy(at(num - 1));
+        s.rotation.y = Math.PI / 2;
+        s.userData.num = num;
+        this.scene.add(s);
+        this.dropIn(s, 0.18, 150 + num * 110, 650).then(() => sfx.splash());
+        stones[num - 1] = s;
+      }
+      // where it goes: a soft ring on the water
+      const gapAt = at(missing - 1);
+      const ring = mesh(new THREE.RingGeometry(0.7, 0.95, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.6, depthWrite: false }), { rx: -Math.PI / 2, shadow: false });
+      ring.position.set(gapAt.x, 0.12, gapAt.z);
+      this.scene.add(ring);
+      const offRing = this.onUpdate((dt, t) => { ring.material.opacity = 0.35 + Math.sin(t * 4) * 0.25; ring.scale.setScalar(1 + Math.sin(t * 4) * 0.05); });
+      // two stones to choose from on this bank: the missing number and one that isn't on the path
+      const other = n + 1 + Math.floor(Math.random() * 2);
+      let solved = false, lastWrong = null;
+      const choices = shuffle([missing, other]).map((num, i) => {
+        const s = makeStone(discTexture(String(num), colors[(num + 3) % colors.length]));
+        const home = new THREE.Vector3(i ? 2.6 : -2.6, 0.18, START.z - 0.2);
+        s.position.copy(home);
+        s.rotation.y = Math.PI / 2;
+        s.userData.num = num;
+        s.userData.tapHeight = 0;
+        s.userData.home = home;
+        this.scene.add(s);
+        this.dropIn(s, 0.18, 300 + n * 110 + i * 150, 650).then(() => sfx.splash());
+        const tryIt = (st) => {
+          if (solved) return;
+          this.poke();
+          this.lookAt(st);
+          if (st.userData.num === missing) place(st);
+          else {
+            lastWrong = st;
+            this.wrong(st.userData.num, T.thatsNumber(st.userData.num));
+            sfx.oops();
+            this.jumpTo(st, st.userData.home, { height: 0.6, ms: 350 }).then(() => wiggle(st));
+          }
+        };
+        this.draggable(s, {
+          height: 0.18,
+          onPick: () => { this.poke(); sfx.pop(); },
+          onDrop: (st, p) => { if (p.distanceTo(gapAt.clone().setY(0.18)) > 1.8) return false; tryIt(st); return true; },
+          onTap: tryIt, // (tap = try this one)
+        });
+        return s;
+      });
+
+      const place = async (st) => {
+        solved = true;
+        this.correct(missing);
+        this.stopIdle();
+        choices.forEach((c) => this.untap(c));
+        sfx.good();
+        await this.jumpTo(st, gapAt, { height: 1.2, ms: 450 });
+        sfx.splash();
+        offRing();
+        ring.removeFromParent();
+        stones[missing - 1] = st;
+        this.success(gapAt.clone().add(new THREE.Vector3(0, 1, 0)));
+        ui.bubble({ word: Array.from({ length: n }, (_, i) => String(i + 1)).join(''), at: missing - 1, done: n, onTap: () => {} });
+        await say(T.number(missing));
+        const rest = choices.filter((c) => c !== st);
+        rest.forEach((c) => this.shrinkAway(c, 300));
+        if (!this.alive) return;
+        // and across she goes, counting
+        for (let i = 0; i < n; i++) {
+          const to = stones[i].position.clone(); to.y = 0.4;
+          this.face(to);
+          this.walking = true;
+          sfx.boing();
+          await this.jumpTo(this.girl, to, { height: 1.2, ms: 420 });
+          this.walking = false;
+          sfx.splash();
+          say(T.number(i + 1));
+          if (!this.alive) return;
+          await wait(260);
+        }
+        const land = FAR.clone().add(new THREE.Vector3(-1.2, 0, 0.6));
+        this.face(land);
+        this.walking = true;
+        await this.jumpTo(this.girl, land, { height: 1.6, ms: 560 });
+        this.walking = false;
+        dust(this, land, { count: 5 });
+        this.girl.rotation.y = 0.4;
+        this.success(land.clone().add(new THREE.Vector3(0, 1.5, 0)), { big: true });
+        ui.hideBubble();
+        await say([...T.riverDone(n), this.praise()]);
+        if (!this.alive) return;
+        await Promise.all(stones.map((x) => this.shrinkAway(x, 300)));
+        this.face(START);
+        this.walking = true;
+        await this.jumpTo(this.girl, START.clone(), { height: 4, ms: 900 });
+        this.walking = false;
+        dust(this, START, { count: 5 });
+        this.girl.rotation.y = Math.PI;
+        resolve();
+      };
+
+      const seq = (lit) => Array.from({ length: n }, (_, i) => (i + 1 === missing && !lit ? '?' : String(i + 1))).join('');
+      ui.bubble({ word: seq(false), at: missing - 1, onTap: () => this.replay() });
+      const right = () => choices.find((c) => c.userData.num === missing);
+      this.question('sequence', missing, {
+        short: T.whichFits(),
+        hint: () => { ui.bubble({ word: seq(true), at: missing - 1, onTap: () => this.replay() }); return T.whereNumber(missing); }, // the number shows in the gap
+        simplify: () => { const w = lastWrong || choices.find((c) => c.userData.num !== missing); if (w) this.removeOption(w); },
+        reveal: () => this.hint(right(), () => solved),
+      });
+      wait(900 + n * 110).then(() => { if (this.alive) this.ask(r === 0 ? T.riverMissing() : T.whichFits()); });
     });
   }
 

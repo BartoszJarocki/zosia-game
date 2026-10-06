@@ -320,6 +320,15 @@ without lighting the next one.
   ghost spots ○○○ early, none later (the clue shows them); `auto no`: she decides when to stop and taps Chase
   (too many → the extras go back to the pile, one by one).
 
+## Number play V2 (Phase 14)
+
+- **Cone Road**: dot patterns `line` (rows of five) or `dice` (1–6, recognised at a glance: `DICE` in textures.js, also
+  in the bubble). New question `bubble: name`: "Który pachołek ma cztery kropki?" with dots-only signs (`sign: dots`),
+  skill quantity. `count: no`: on success just "Cztery!" — the dots are counted aloud only at the early levels.
+- **River** `bubble: missing`: the stones lie in order with one gap ("1 ? 3 4"); two stones wait on the bank (the
+  missing number and one that isn't on the path). She drags the right one in (or taps it), then Zosia hops across by
+  herself, counting — the crossing is the reward. Skill sequence.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

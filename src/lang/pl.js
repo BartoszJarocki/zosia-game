@@ -10,6 +10,8 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 /** A letter's sound, held: "mmmm", "ssss" (only letters you can hold, see levels/parse.js SOUNDABLE). */
 const PHON = { A: 'aaaa', E: 'eeee', F: 'ffff', H: 'hhhh', I: 'iiii', L: 'llll', M: 'mmmm', N: 'nnnn', O: 'oooo', R: 'rrrr', S: 'ssss', U: 'uuuu', W: 'wwww', Z: 'zzzz' };
 const ph = (l) => PHON[l.toUpperCase()] || l;
+/** "jedną kropkę", "dwie kropki", "pięć kropek" (accusative: "ma … ") */
+const dotsAcc = (n) => (n === 1 ? 'jedną kropkę' : n <= 4 ? `${NUM_F[n]} kropki` : `${NUM[n]} kropek`);
 const L = (l) => cap(letterName(l));
 const word = (l) => (WORDS[l] || [''])[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
@@ -110,6 +112,7 @@ export const T = {
   // Cone Road
   conesFirst: (n) => [`Ojej! Pachołki na drodze! Dotknij pachołka z numerem ${NUM[n]}!`],
   conesMore: (n) => [`Więcej pachołków! Dotknij numeru ${NUM[n]}!`],
+  conesWhich: (n, first) => [...(first ? ['Ojej! Pachołki na drodze!'] : []), `Który pachołek ma ${dotsAcc(n)}?`],
   conesDots: (first) => [first ? 'Ojej! Pachołki na drodze! Policz kropki i znajdź ten numer!' : 'Policz kropki! Który to numer?'],
   dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
 
@@ -119,6 +122,8 @@ export const T = {
   riverNext: (n) => [`Teraz numer ${NUM[n]}!`],
   riverDone: (n) => [`Udało się! Policzyłaś do ${NUM_GEN[n]}!`],
   riverWhatNext: () => ['A teraz? Co jest dalej?'],
+  riverMissing: () => ['Ojej! Brakuje jednego kamienia! Który numer pasuje?'],
+  whichFits: () => ['Który numer pasuje?'],
   riverFirstNext: () => [`Pomóż ${dat} przejść przez rzekę! Zacznij od jedynki, a potem po kolei!`],
 
   // Treat House
@@ -157,7 +162,7 @@ export function allSegments(levels, allLetters) {
   const out = [];
   const add = (segs) => out.push(...segs);
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
-  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
+  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.conesWhich(n, true)); add(T.conesWhich(n, false)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -170,7 +175,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }
