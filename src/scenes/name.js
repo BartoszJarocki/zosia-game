@@ -13,14 +13,23 @@ import { distractors } from '../levels.js';
 import { ALL_LETTERS } from '../levels/data.js';
 import { Mission } from './mission.js';
 
-// "Name Train": load the letters of a word onto the train, in order.
-//  L1 her name, ghost letters on the wagons · L2 whole word in the bubble, next letter lit, +1 extra block
-//  L3 more words, +2 extras (lookalikes).
+// "Name Train": load the letters of a word onto the train, in order. No spelling from memory: the word is
+// always there to look at; the skills are recognising, matching, ordering and noticing what's missing.
+// GAME.md "mode":
+//   ghost      faint letters on the wagons: match each block to its wagon
+//   word       the whole word in the bubble, wagons empty: which letter comes next?
+//   missing    the train arrives loaded, one letter missing (Z O _ I A): which one?
+//   highlight  the whole word in the bubble with the next letter lit (for new words)
+// At the end the letters are said one by one, then the word, and the train drives off (that's the reward).
 export class NameMission extends Mission {
   constructor(game) {
     super(game, 'name');
     this.word = pick(this.L.words).toUpperCase();
-    this.rounds = this.word.length;
+    this.mode = this.L.mode || 'ghost';
+    // which wagons she fills, in order (missing: just the gaps; the rest arrives loaded)
+    const all = [...this.word].map((_, i) => i);
+    this.fill = this.mode === 'missing' ? shuffle(all).slice(0, Math.min(this.L.gaps || 1, this.word.length - 1)).sort((a, b) => a - b) : all;
+    this.rounds = this.fill.length;
     const width = 2 + this.word.length * 1.65 + 2;
     this.view = { pos: new THREE.Vector3(0, 6.2, 11.5), look: new THREE.Vector3(0, 1.4, 0.3), minWidth: Math.max(14, width + 3) };
     this.post = { tilt: 0.35, focus: 0.42, band: 0.3 };
@@ -52,19 +61,36 @@ export class NameMission extends Mission {
 
     // ghost letters show where each one goes (level 1)
     this.ghosts = [];
-    if (this.L.ghost) this.word.split('').forEach((_, i) => { this.ghosts[i] = this.makeGhost(i); });
+    if (this.mode === 'ghost') this.word.split('').forEach((_, i) => { this.ghosts[i] = this.makeGhost(i); });
 
     const edge = this.view.minWidth / 2;
     this.addHeroes(new THREE.Vector3(-edge + 1.2, 0, 2.6), 0.5, new THREE.Vector3(edge - 1.2, 0, 2.4), -0.5);
 
-    // letter blocks on the grass, shuffled, plus extras at higher levels
+    // missing mode: the train arrives loaded, except the gaps
+    this.placed = [];
+    const colors0 = shuffle(TILE_COLORS);
+    if (this.mode === 'missing') {
+      this.train.updateMatrixWorld(true);
+      [...this.word].forEach((letter, i) => {
+        if (this.fill.includes(i)) return;
+        const b = new THREE.Mesh(rbox(1.25, 1.25, 1.25, 0.14), new THREE.MeshStandardMaterial({ map: glyphTexture(showLetter(letter), { bg: colors0[i % colors0.length] }), roughness: 0.45 }));
+        b.castShadow = true;
+        b.position.copy(this.train.localToWorld(this.train.userData.slots[i].clone()));
+        this.scene.add(b);
+        this.train.attach(b);
+        this.placed.push({ block: b, letter, idx: i });
+      });
+    }
+
+    // letter blocks on the grass, shuffled, plus extras at higher levels (missing: only the gap letters + extras)
+    const needed = this.fill.map((i) => this.word[i]);
     const extras = [];
     for (let i = 0; i < this.L.extras; i++) {
-      const base = this.word[i % this.word.length];
+      const base = needed[i % needed.length];
       const d = distractors(base, ALL_LETTERS, 3, this.L.similar).find((l) => !this.word.includes(l) && !extras.includes(l));
       if (d) extras.push(d);
     }
-    const letters = shuffle([...this.word, ...extras]);
+    const letters = shuffle([...needed, ...extras]);
     const colors = shuffle(TILE_COLORS);
     const gap = Math.min(1.75, (this.view.minWidth - 5) / letters.length);
     this.blocks = letters.map((letter, i) => {
@@ -95,32 +121,38 @@ export class NameMission extends Mission {
 
   get canWindDown() { return false; } // a word is finished, not cut short
 
-  bubbleFor(r) {
-    const target = this.word[r];
-    if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r, onTap: () => this.replay() });
-    else ui.bubble({ big: showLetter(target), pic: r === 0 ? '🚂' : '', onTap: () => this.replay() });
+  /** The speech bubble for the wagon being filled (idx), or the finished word (idx = -1). lit: light idx. */
+  bubbleFor(idx, { lit = this.mode !== 'word' } = {}) {
+    const onTap = () => this.replay();
+    const filled = this.placed.map((p) => p.idx);
+    if (this.mode === 'ghost' && idx >= 0) return ui.bubble({ big: showLetter(this.word[idx]), pic: idx === 0 ? '🚂' : '', onTap });
+    const word = [...this.word].map((c, i) => (this.mode === 'missing' && !filled.includes(i) ? '_' : showLetter(c))).join('');
+    ui.bubble({ word, at: lit ? idx : -1, done: filled, onTap });
   }
 
   round(r) {
-    if (r === 0) this.placed = [];
     return new Promise((resolve) => {
-      const target = this.word[r];
+      const idx = this.fill[r];
+      const target = this.word[idx];
       this.item('L:' + target);
       let solved = false;
       this.last = target;
       const right = () => this.blocks.find((x) => x.userData.letter === target);
+      const ghostOn = () => { // its letter appears on the wagon
+        if (this.ghosts[idx]) return;
+        const g = (this.ghosts[idx] = this.makeGhost(idx));
+        const off = this.onUpdate((dt, t) => { if (!g.parent) off(); else g.userData.tick(dt, t); }); // made after the scene was collected
+        sfx.pop();
+      };
       this.question('letterVisual', target, {
-        short: T.findLetter(target),
-        hint: () => { // its letter appears on the wagon
-          if (!this.ghosts[r]) {
-            const g = (this.ghosts[r] = this.makeGhost(r));
-            const off = this.onUpdate((dt, t) => { if (!g.parent) off(); else g.userData.tick(dt, t); }); // made after the scene was collected
-            sfx.pop();
-          }
-          return T.letterLike(target);
+        short: { word: T.nextLetter(), missing: T.whichMissing() }[this.mode] || T.findLetter(target),
+        hint: () => {
+          if (this.mode === 'word') { this.bubbleFor(idx, { lit: true }); return T.spellNext(target); } // the next letter lights up
+          ghostOn();
+          return this.mode === 'missing' ? T.findLetter(target) : T.letterLike(target);
         },
         simplify: () => { // an extra letter (not in the word) leaves; otherwise the right block steps forward
-          const later = this.word.slice(r + 1);
+          const later = this.fill.slice(r + 1).map((i) => this.word[i]);
           const extra = this.blocks.find((x) => x.userData.letter && x.userData.letter !== target && !later.includes(x.userData.letter) && x.parent);
           if (extra) { this.removeOption(extra); extra.userData.letter = null; return; }
           const b = right();
@@ -140,17 +172,17 @@ export class NameMission extends Mission {
           this.untap(b);
           b.userData.letter = null;
           sfx.good();
-          const slot = this.train.localToWorld(this.train.userData.slots[r].clone());
+          const slot = this.train.localToWorld(this.train.userData.slots[idx].clone());
           b.rotation.set(0, 0, 0);
           this.lookAt(slot);
           await this.jumpTo(b, slot, { height: 2, ms: 650 });
           // ride with the train from now on
           this.train.attach(b);
-          this.placed.push({ block: b, letter: target });
+          this.placed.push({ block: b, letter: target, idx });
           sfx.boing();
           this.success(slot.clone().add(new THREE.Vector3(0, 0.8, 0)));
-          if (this.ghosts[r]) this.ghosts[r].visible = false;
-          if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r + 1, onTap: () => this.replay() });
+          if (this.ghosts[idx]) this.ghosts[idx].visible = false;
+          if (this.mode !== 'ghost') this.bubbleFor(this.fill[r + 1] ?? -1);
           await say(T.letter(target));
           resolve();
         } else {
@@ -161,11 +193,12 @@ export class NameMission extends Mission {
       };
       this.blocks.forEach((b) => { if (b.userData.letter) this.tappable(b, onTap); });
 
-      this.bubbleFor(r);
+      this.bubbleFor(idx);
       wait(r === 0 ? 1200 : 200).then(() => {
         if (!this.alive) return;
-        if (r === 0) this.ask(T.spellStart(this.word));
-        else this.ask(T.spellNext(target));
+        const first = { word: T.wordStart(this.word), missing: T.missingAsk(this.word) }[this.mode] || T.spellStart(this.word);
+        const next = { word: T.nextLetter(), missing: T.whichMissing() }[this.mode] || T.spellNext(target);
+        this.ask(r === 0 ? first : next);
       });
     });
   }
@@ -173,9 +206,10 @@ export class NameMission extends Mission {
   async outro() {
     await wait(300);
     // spell it together, letter by letter
+    this.placed.sort((a, b) => a.idx - b.idx);
     for (const [i, { block, letter }] of this.placed.entries()) {
       if (!this.alive) return;
-      if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: i, onTap: () => {} });
+      if (this.mode !== 'ghost') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: i, onTap: () => {} });
       hop(block, 0.6, 380);
       sfx.pop();
       await say(T.letter(letter));

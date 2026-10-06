@@ -300,6 +300,15 @@ Six levels, each meeting a letter a different way (GAME.md `ask`), not just more
 - Older tables with `show` still parse (`letter` → name, `picture` → word). A gentler run after a rough one asks
   an easier way (audio/word → name, sound → word).
 
+## Name Train V2 (Phase 12)
+
+Nothing is spelled from memory: the word is always there to look at. GAME.md `mode`:
+`ghost` (faint letters on the wagons: match) → `word` (the word in the bubble, wagons empty: which comes next?) →
+`missing` (the train arrives loaded with a gap, "Z _ S I A": which one? `gaps` 1–3) → `highlight` (the word with the
+next letter lit, for new words). `NameMission.fill` lists the wagons she fills; at the end the letters are said
+in word order, then the word, and the train drives off. `ui.bubble({ word, at, done })` can now mark letters done
+without lighting the next one.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

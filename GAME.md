@@ -106,18 +106,23 @@ Balloons with letters float up. Pop every balloon with the asked letter, countin
 
 ### 🚂 Name Train · `name`
 
-Load the letters of a word onto the train in order, then spell it together and the train drives off.
+Load the letters of a word onto the train in order, then say them together ("Zet! O! Es! I! A! Zosia!")
+and the train drives off. Nothing is spelled from memory: the word is always there to look at.
 
-| Level | words | ghost | bubble | extras | similar |
-|---|---|---|---|---|---|
-| 1 | {name} | yes | letter | 0 | no |
-| 2 | {name}, MAMA, TATA | no | word | 1 | no |
-| 3 | {name}, MAMA, TATA, KOT, DOM | no | word | 2 | yes |
+| Level | words | mode | extras | similar |
+|---|---|---|---|---|
+| 1 | {name} | ghost | 0 | no |
+| 2 | {name} | word | 1 | no |
+| 3 | {name}, MAMA, TATA | missing | 2 | no |
+| 4 | {name}, MAMA, TATA, KOT, DOM | highlight | 2 | yes |
 
-- **words** — the words to spell (one is picked each time; 2–7 letters, only letters from `ALL`)
-- **ghost** — `yes` shows faint letters on the wagons so she can match them
-- **bubble** — `letter`: shows the next letter · `word`: shows the whole word with the next letter lit
-- **extras** — extra blocks that are not in the word (0–3)
+- **words** — the words (one is picked each time; 2–7 letters, only letters from `ALL`)
+- **mode** — `ghost`: faint letters on the wagons, match each block to its wagon ·
+  `word`: the whole word in the bubble, wagons empty — which letter comes next? ·
+  `missing`: the train arrives loaded with one letter missing (Z O _ I A) — which one? ·
+  `highlight`: the whole word in the bubble with the next letter lit (good for new words)
+- **gaps** — optional, for `missing`: how many letters are missing (1–3, default 1)
+- **extras** — extra blocks that are not in the word (0–3); with `missing` they are the other choices
 - **similar** — extras are lookalikes of the word's letters
 
 ### 🚧 Cone Road · `cones`

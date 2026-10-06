@@ -65,3 +65,14 @@ test('needs: a broken gate is explained', () => {
   assert.equal(errors.length, 1);
   assert.match(errors[0], /needs/);
 });
+
+test('Name Train: four modes; older ghost/bubble tables still work; gaps checked', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  assert.deepEqual(levels.name.map((l) => l.mode), ['ghost', 'word', 'missing', 'highlight']);
+  assert.equal(levels.name[2].gaps, 1);
+  const name = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`name\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
+  assert.equal(only(parseGame(name('words | ghost | bubble | extras', 'MAMA | no | word | 1'), {})).levels.name[0].mode, 'highlight');
+  const { errors } = only(parseGame(name('words | mode | gaps | extras', 'KOT, DOM | missing | 3 | 1'), {}));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /more letters/);
+});

@@ -94,6 +94,11 @@ export const T = {
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! ${sayWord(w)} zaczyna się na ${L(w[0])}. Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
   spellWord: (w) => [`${sayWord(w)}!`],
+  // Name Train V2
+  wordStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Pierwsza literka!`],
+  nextLetter: () => ['Następna literka!'],
+  missingAsk: (w) => [`Pociąg wiezie słowo ${sayWord(w)}. Której literki brakuje?`],
+  whichMissing: () => ['Której literki brakuje?'],
 
   yes: () => ['Tak!'],
   tryAgain: () => ['Spróbuj jeszcze raz!'],
@@ -157,14 +162,14 @@ export function allSegments(levels, allLetters) {
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
-  words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); });
+  words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

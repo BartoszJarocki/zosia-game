@@ -31,8 +31,10 @@ export const SCHEMA = {
   },
   name: {
     words: { type: 'words', minLen: 2, maxLen: 7 },
-    ghost: { type: 'bool' },
-    bubble: { type: 'enum', values: ['letter', 'word'] },
+    mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight'], optional: true },
+    gaps: { type: 'int', min: 1, max: 3, optional: true, default: 1 }, // (missing: how many letters are missing)
+    ghost: { type: 'bool', optional: true },                      // (older tables: ghost yes = mode ghost)
+    bubble: { type: 'enum', values: ['letter', 'word'], optional: true }, // (older tables: word = mode highlight)
     extras: { type: 'int', min: 0, max: 3 },
     similar: { type: 'bool', optional: true, default: false },
   },
@@ -213,6 +215,11 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
+  if (kind === 'name') {
+    s.mode ||= s.ghost ? 'ghost' : s.bubble === 'word' ? 'highlight' : 'ghost'; // (older tables used ghost + bubble)
+    const short = s.mode === 'missing' ? (s.words || []).filter((w) => w.length <= s.gaps) : [];
+    if (short.length) errors.push(`${where}: with ${s.gaps} missing letter(s), every word needs more letters than that (${short.join(', ')})`);
+  }
   if (kind === 'letters') {
     s.ask ||= s.show === 'picture' ? 'word' : 'name'; // (older tables used "show")
     const odd = s.ask === 'sound' ? [...(s.pool || '')].filter((c) => !SOUNDABLE.includes(c)) : [];
