@@ -69,6 +69,12 @@ export const LEVELS = {
     { n: 5, rounds: 3, bubble: 'numeral' },
     { n: 7, rounds: 3, bubble: 'next' },                        // "what comes after 3?"
   ],
+  // The Lookout: elevator floors.
+  lookout: [
+    { max: 3, bubble: 'both', mode: 'go' },        // ride to floor N (numeral + dots), floors counted aloud
+    { max: 5, bubble: 'numeral', mode: 'go' },
+    { max: 7, bubble: 'numeral', mode: 'relative' }, // "we're on 3 — one floor up!": one more / one less
+  ],
   // Treat House: counting.
   counting: [
     { types: ['give'], give: [1, 3], auto: true },                                  // box stops at N
@@ -85,6 +91,7 @@ const ASSIST = {
   cones: (s) => ({ ...s, choices: 3, bubble: 'both', sign: 'both' }),
   stones: (s) => ({ ...s, bubble: 'numeral' }),
   counting: (s) => ({ ...s, auto: true }),
+  lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
 };
 
 export function settingsFor(kind) {

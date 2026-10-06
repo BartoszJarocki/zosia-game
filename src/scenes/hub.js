@@ -26,6 +26,9 @@ const PLACES = {
   cones: { at: [5.5, 14.5] },
   stones: { at: [13.5, 8] },
   counting: { at: [15, -3] },
+  // the Lookout itself: drive round the sandy circle and up to its door
+  lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
+    drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
 
 export class Hub extends Stage {
@@ -92,6 +95,11 @@ export class Hub extends Stage {
     for (const kind of Object.keys(PLACES)) {
       const p = PLACES[kind];
       p.pos = new THREE.Vector3(p.at[0], 0, p.at[1]);
+      if (p.drive) {
+        p.curve = new THREE.CatmullRomCurve3(p.drive.map(([x, z]) => new THREE.Vector3(x, 0, z)));
+        s.add(makeRoad(new THREE.CatmullRomCurve3(p.road.map(([x, z]) => new THREE.Vector3(x, 0, z)))));
+        continue;
+      }
       const park = p.pos.clone().add(START.clone().sub(p.pos).setLength(4.2));
       const p1 = new THREE.Vector3(0, 0, 2.8);
       const mid = p1.clone().lerp(park, 0.5).add(new THREE.Vector3(0, 0, 1.5));
@@ -103,7 +111,7 @@ export class Hub extends Stage {
 
     // places
     const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse };
-    for (const kind of Object.keys(PLACES)) this.addPlace(kind, builders[kind]());
+    for (const kind of Object.keys(PLACES)) this.addPlace(kind, builders[kind]?.()); // (the Lookout is already standing)
 
     // trees, bushes, houses, grass — kept off the roads and places
     const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
@@ -187,12 +195,15 @@ export class Hub extends Stage {
 
   addPlace(kind, group) {
     const p = PLACES[kind];
-    group.position.copy(p.pos);
-    group.lookAt(new THREE.Vector3(p.pos.x * 0.4, 0, 40)); // face the camera
-    this.scene.add(group);
+    if (group) {
+      group.position.copy(p.pos);
+      group.lookAt(new THREE.Vector3(p.pos.x * 0.4, 0, 40)); // face the camera
+      this.scene.add(group);
+    }
+    const [mx, my, mz] = p.marker || [p.pos.x, 5.4, p.pos.z];
     // bouncing glowing star says "tap me!", with this mission's level stars under it
     const marker = new THREE.Group();
-    marker.position.set(p.pos.x, 5.4, p.pos.z);
+    marker.position.set(mx, my, mz);
     const big = star('#fde047', 0.95, 0.28);
     big.material = mat('#ffe066', { emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 });
     marker.add(big);
@@ -207,12 +218,13 @@ export class Hub extends Stage {
     this.scene.add(marker);
     this.onUpdate((dt, t) => {
       big.rotation.y = Math.sin(t * 2 + p.pos.x) * 0.6;
-      marker.position.y = 5.4 + Math.sin(t * 3 + p.pos.x) * 0.3;
+      marker.position.y = my + Math.sin(t * 3 + p.pos.x) * 0.3;
       marker.lookAt(this.cameraPosition.x, marker.position.y, this.cameraPosition.z);
     });
     // invisible tap zone, so the landmark itself stays plain scenery (and can be merged into a few meshes)
-    const hit = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 3.3, 4.5, 16), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.position.set(p.pos.x, 2.2, p.pos.z);
+    const [hr, hh] = p.hit || [3.3, 4.5];
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(hr, hr, hh, 16), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.set(p.pos.x, hh / 2, p.pos.z);
     hit.userData.tapHeight = 0;
     this.scene.add(hit);
     marker.userData.tapHeight = 0;

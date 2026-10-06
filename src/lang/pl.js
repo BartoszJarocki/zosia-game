@@ -26,6 +26,7 @@ export const PLACE_LINES = {
   name: 'Jedziemy do Literkowego Pociągu!',
   cones: 'Jedziemy na Pachołkową Drogę!',
   stones: 'Jedziemy nad rzekę!',
+  lookout: 'Jedziemy do Bazy!',
   counting: 'Jedziemy do Domku ze Smakołykami!',
 };
 
@@ -87,6 +88,15 @@ export const T = {
   treatsAsk: (n) => [`${pup} jest głodny! Daj mu ${NUM[n]} ${treats(n)}. Dotknij pudełka ze smakołykami!`],
   treatsDone: (n) => [`${cap(NUM[n])} ${treats(n)}!`],
   yum: () => ['Mniam, mniam! Dziękuję!'],
+
+  // The Lookout (Baza): elevator + slide
+  liftStart: () => ['Do Bazy! Wsiadamy do windy!'],
+  liftGo: (n) => [`Jedziemy na piętro numer ${NUM[n]}! Wciśnij guzik z numerem ${NUM[n]}!`],
+  liftPress: (n) => [`Wciśnij guzik z numerem ${NUM[n]}!`],
+  liftRel: (cur, up) => [`Jesteśmy na piętrze numer ${NUM[cur]}. Jedź jedno piętro ${up ? 'wyżej' : 'niżej'}!`],
+  liftArrived: (n) => [`Piętro numer ${NUM[n]}!`],
+  liftTop: () => ['Jedziemy na samą górę! Psi Patrol, gotowi do akcji!'],
+  slide: () => ['A teraz zjeżdżalnia! Juhuuu!'],
   howMany: () => [`Ile smakołyków ma ${pup}? Policz i dotknij numeru!`],
   giveThenTap: (n) => [`Daj ${pupDat} ${NUM[n]} ${treats(n)}, a potem dotknij ${pupGen}!`],
   tapPupWhenDone: () => [`Gotowe? Dotknij ${pupGen}!`],
@@ -102,6 +112,7 @@ export function allSegments() {
   const nums = Array.from({ length: 10 }, (_, i) => i + 1);
   const out = [];
   const add = (segs) => out.push(...segs);
+  nums.slice(0, 7).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < 7) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsAsk(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
@@ -109,7 +120,7 @@ export function allSegments() {
   Object.keys(PLACE_LINES).forEach((k) => add(T.go(k)));
   [2, 3].forEach((l) => add(T.levelUp(l)));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
-    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew].forEach((f) => add(f()));
+    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

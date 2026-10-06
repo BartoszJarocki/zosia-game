@@ -80,6 +80,9 @@ export const sfx = {
   balloonPop: () => { noise(0.12, { vol: 0.6, freq: 3200 }); tone(900, 0.08, { vol: 0.15, to: 300 }); },
   boing: () => tone(260, 0.25, { type: 'triangle', vol: 0.2, to: 720 }),
   splash: () => { noise(0.4, { vol: 0.25, freq: 900 }); noise(0.25, { vol: 0.15, freq: 2400, when: 0.05 }); },
+  ding: () => { tone(1318, 0.5, { type: 'sine', vol: 0.18 }); tone(1046, 0.7, { type: 'sine', vol: 0.15, when: 0.18 }); },
+  doors: () => noise(0.3, { vol: 0.12, freq: 600 }),
+  hum: () => tone(110, 0.5, { type: 'triangle', vol: 0.05, to: 150 }),
   fanfare: () => [523, 659, 784, 1046, 784, 1046].forEach((f, i) =>
     tone(f, i === 5 ? 0.6 : 0.16, { type: 'square', vol: 0.07, when: i * 0.14 })),
 };

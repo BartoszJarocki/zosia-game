@@ -184,3 +184,37 @@ svg { display: block; }
 }
 .iris.on { display: block; pointer-events: auto; }
 .iris.full { -webkit-mask: none; mask: none; }
+
+/* ---------- elevator panel ---------- */
+.lift {
+  position: absolute; right: max(16px, env(safe-area-inset-right)); top: 50%; transform: translateY(-44%);
+  padding: 14px; border-radius: 28px;
+  background: linear-gradient(145deg, #e7ecf5, #b9c3d6);
+  border: 4px solid #fff;
+  box-shadow: 0 10px 0 #8d99b3, 0 18px 30px rgba(20,40,90,.3), inset 0 2px 0 #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.lift-display {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #0f172a; border-radius: 14px; padding: 6px 12px;
+  color: #fbbf24; font-weight: 700; font-size: min(7vw, 6vh, 54px); line-height: 1;
+  text-shadow: 0 0 10px rgba(251,191,36,.8); box-shadow: inset 0 3px 8px rgba(0,0,0,.6);
+}
+.lift-display .arrow { font-size: .55em; min-width: .8em; }
+.lift-buttons { display: grid; grid-template-columns: repeat(1, auto); gap: 12px; }
+.lift.cols-2 .lift-buttons { grid-template-columns: repeat(2, auto); }
+.lift-btn {
+  --s: min(11vw, 10.5vh, 92px);
+  width: var(--s); height: var(--s); border-radius: 50%;
+  font-weight: 700; font-size: calc(var(--s) * .52); color: #1e3a8a;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #dfe6f3 60%, #aeb9cf);
+  border: 5px solid #94a3b8;
+  box-shadow: 0 6px 0 #64748b, inset 0 -4px 6px rgba(0,0,0,.12);
+  transition: transform .08s;
+}
+.lift-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #64748b; }
+.lift-btn.lit { color: #fff; background: radial-gradient(circle at 35% 30%, #fff6c2, #fbbf24 55%, #d97706); border-color: #fde68a; box-shadow: 0 6px 0 #b45309, 0 0 22px rgba(251,191,36,.9); }
+.lift-btn.hint { animation: breathe 1s ease-in-out infinite; border-color: #fbbf24; }
+.lift-btn.nope { animation: nope .45s; }
+.lift.locked .lift-btn { pointer-events: none; }
+@keyframes nope { 20%, 60% { transform: translateX(-7px); background: #fecaca; } 40%, 80% { transform: translateX(7px); } }

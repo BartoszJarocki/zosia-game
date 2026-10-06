@@ -10,6 +10,7 @@ export const MISSIONS = {
   cones: { label: '123', color: '#2563eb' },
   stones: { label: '1·2·3', color: '#0891b2' },
   counting: { label: '🦴', color: '#f59e0b' },
+  lookout: { label: '🐾', color: '#e23b3b' },
 };
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 
@@ -121,7 +122,7 @@ export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, seq =
   const dotRow = dots ? `<span class="dots ${big ? '' : 'solo'}">${'<i></i>'.repeat(dots)}</span>` : '';
   let main = '';
   if (word) main = `<span class="word">${[...word].map((c, i) => `<b class="${i === at ? 'lit' : i < at ? 'done' : ''}">${c}</b>`).join('')}</span>`;
-  else if (seq) main = `<span class="big seq">${seq[0]}<em>➜</em><span class="q">?</span></span>`;
+  else if (seq) main = `<span class="big seq">${seq[0]}<em>${seq[1] || '➜'}</em><span class="q">?</span></span>`;
   else if (big || dots) main = `<span class="big">${big}${dotRow}</span>`;
   b.innerHTML = `${main}${pic ? `<span class="pic">${pic}</span>` : ''}<span class="spk">${ICON.speaker}</span>`;
   b.classList.remove('hidden', 'pop');
@@ -161,4 +162,29 @@ export function confetti(n = 110) {
   }
   document.body.append(layer);
   setTimeout(() => layer.remove(), 5200);
+}
+
+// ---------- elevator panel (The Lookout) ----------
+/** Real-elevator style panel: floor display + a button per floor (1 at the bottom). */
+export function liftPanel({ floors, onPress }) {
+  ui.querySelector('.lift')?.remove();
+  const cols = floors > 4 ? 2 : 1;
+  const order = [];
+  for (let f = floors; f >= 1; f -= cols) for (let c = cols - 1; c >= 0; c--) if (f - c >= 1) order.push(f - c);
+  const p = el(`<div class="lift cols-${cols}">
+      <div class="lift-display"><span class="arrow"></span><b>0</b></div>
+      <div class="lift-buttons">${order.map((f) => `<button class="lift-btn" data-floor="${f}" aria-label="${f}">${f}</button>`).join('')}</div>
+    </div>`);
+  p.querySelectorAll('.lift-btn').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); onPress(Number(b.dataset.floor), b); }));
+  ui.append(p);
+  const btn = (f) => p.querySelector(`.lift-btn[data-floor="${f}"]`);
+  return {
+    light(f) { btn(f)?.classList.add('lit'); },
+    clear() { p.querySelectorAll('.lift-btn').forEach((b) => b.classList.remove('lit', 'hint')); },
+    show(f, dir = 0) { p.querySelector('.lift-display b').textContent = f; p.querySelector('.arrow').textContent = dir > 0 ? '▲' : dir < 0 ? '▼' : ''; },
+    nope(f) { const b = btn(f); if (!b) return; b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); },
+    hint(f) { btn(f)?.classList.add('hint'); },
+    lock(on) { p.classList.toggle('locked', on); },
+    remove() { p.remove(); },
+  };
 }

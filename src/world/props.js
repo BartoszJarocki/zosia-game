@@ -29,7 +29,12 @@ function gable(width, y0, height, depth, material) {
 }
 
 // ---------- The Lookout ----------
-export function makeLookout() {
+/**
+ * The Lookout. slide: 'spiral' (classic, ends on the base roof) or 'mission' (winds round the back,
+ * keeps the front free for the glass elevator, and ends on the grass). The slide path is exposed
+ * as g.slideCurve (local coordinates) so characters can ride it.
+ */
+export function makeLookout({ slide = 'spiral' } = {}) {
   const g = new THREE.Group();
   const white = std('#f3f6fb', { roughness: 0.45 });
   const grey = std('#cfd8e6', { roughness: 0.5 });
@@ -76,16 +81,27 @@ export function makeLookout() {
   scope.add(m(cyl(0.22, 0.22, 0.05, 12), glass(), { y: 1.2, z: 0.66, rx: Math.PI / 2 }));
   scope.position.set(1.4, 12.2, 0.9);
   g.add(scope);
-  // spiral slide
+  // slide
   const pts = [];
-  for (let i = 0; i <= 80; i++) {
-    const t = i / 80, a = t * Math.PI * 3.2 + 0.6;
-    pts.push(new THREE.Vector3(Math.sin(a) * 2.0, 9.2 - t * 6.6, Math.cos(a) * 2.0));
+  if (slide === 'mission') {
+    // from the pod's right side, round the back, out over the left of the base and down to the grass
+    const a0 = Math.PI / 2, a1 = Math.PI * 1.5 + 0.6;
+    for (let i = 0; i <= 60; i++) {
+      const t = i / 60, a = a0 + (a1 - a0) * t;
+      pts.push(new THREE.Vector3(Math.sin(a) * 2.05, 9.2 - t * 5.7, Math.cos(a) * 2.05));
+    }
+    pts.push(new THREE.Vector3(-2.95, 3.15, 1.75), new THREE.Vector3(-3.8, 1.5, 2.25), new THREE.Vector3(-4.35, 0.5, 2.55), new THREE.Vector3(-4.9, 0.38, 2.75));
+  } else {
+    for (let i = 0; i <= 80; i++) {
+      const t = i / 80, a = t * Math.PI * 3.2 + 0.6;
+      pts.push(new THREE.Vector3(Math.sin(a) * 2.0, 9.2 - t * 6.6, Math.cos(a) * 2.0));
+    }
+    pts.push(new THREE.Vector3(Math.sin(Math.PI * 3.2 + 0.6) * 3.2, 2.4, Math.cos(Math.PI * 3.2 + 0.6) * 3.2));
   }
-  pts.push(new THREE.Vector3(Math.sin(Math.PI * 3.2 + 0.6) * 3.2, 2.4, Math.cos(Math.PI * 3.2 + 0.6) * 3.2));
-  const slide = new THREE.CatmullRomCurve3(pts);
-  g.add(m(new THREE.TubeGeometry(slide, 160, 0.28, 12, false), yellow));
-  g.add(m(new THREE.TubeGeometry(slide, 160, 0.05, 6, false), std('#e8a70c'), { y: 0.25, shadow: false }));
+  const curve = new THREE.CatmullRomCurve3(pts);
+  g.add(m(new THREE.TubeGeometry(curve, 160, 0.28, 12, false), yellow));
+  g.add(m(new THREE.TubeGeometry(curve, 160, 0.05, 6, false), std('#e8a70c'), { y: 0.25, shadow: false }));
+  g.slideCurve = curve; // (not userData: the Lookout itself stays static scenery)
   return g;
 }
 

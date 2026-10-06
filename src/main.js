@@ -10,12 +10,22 @@ import { ConesMission } from './scenes/cones.js';
 import { NameMission } from './scenes/name.js';
 import { BalloonsMission } from './scenes/balloons.js';
 import { StonesMission } from './scenes/stones.js';
+import { LookoutMission } from './scenes/lookout.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
+import { registerSW } from 'virtual:pwa-register';
+
+// Offline + installable. A new version is switched in only while the start screen is showing,
+// never in the middle of a mission; otherwise it waits for the next launch.
+let started = false;
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() { if (!started) updateSW(true); },
+});
 
 const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
-  cones: ConesMission, stones: StonesMission, counting: CountingMission,
+  cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
 };
 
 const game = {
@@ -43,12 +53,13 @@ async function boot() {
   // The hub slowly orbits behind the start button; a tap unlocks sound + speech.
   setStage(new Hub(game, { silent: true }));
   ui.showStart(() => {
+    started = true;
     unlockAudio();
     sfx.bark();
     game.hub({ greet: true });
   });
 
-  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #avatar
+  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #avatar
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }

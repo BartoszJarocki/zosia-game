@@ -14,6 +14,8 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "vite-plugin-pwa": "^2.0.0",
+    "workbox-window": "^7.4.1"
   }
 }
