@@ -85,6 +85,7 @@ export class ConesMission extends Mission {
       const target = pickTarget(pool, 'N:', this.last);
       this.last = target;
       this.item('N:' + target);
+      this.question(this.L.bubble === 'dots' ? 'quantity' : 'numeral', target); // dots-only = count, then find the numeral
       const n = Math.min(this.L.choices, pool.length);
       const opts = numberChoices(target, this.L.max, n, this.level >= 2);
       const colors = shuffle(TILE_COLORS);
@@ -118,6 +119,7 @@ export class ConesMission extends Mission {
           this.lookAt(c);
           if (num === target) {
             solved = true;
+            this.correct(num);
             this.stopIdle();
             cones.forEach((x) => this.untap(x));
             sfx.good();
@@ -146,7 +148,7 @@ export class ConesMission extends Mission {
             resolve();
           } else {
             wrong++;
-            this.miss();
+            this.wrong(num);
             sfx.oops();
             wiggle(c);
             say([...T.thatsNumber(num), ...T.whereNumber(target)]);
@@ -160,7 +162,7 @@ export class ConesMission extends Mission {
         big: b === 'dots' ? '' : String(target),
         dots: b === 'numeral' ? 0 : target,
         pic: '🚧',
-        onTap: () => this.ask(this.prompt),
+        onTap: () => this.replay(),
       });
       wait(600).then(() => {
         if (!this.alive) return;

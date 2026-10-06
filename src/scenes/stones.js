@@ -105,15 +105,18 @@ export class StonesMission extends Mission {
       });
       let next = 1, wrong = 0, busy = false, revealed = false;
       this.last = next;
+      this.question('numeral', 1); // open now: stones can be tapped before the question is spoken
       const nextMode = this.L.bubble === 'next';
 
       const askNext = () => {
+        // "what comes next?" (after the first stone, until a slip reveals it) tests order; otherwise the numeral
+        this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next);
         if (next === 1 || !nextMode || revealed) {
-          ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.ask(this.prompt) });
+          ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
           if (next === 1) this.ask(r === 0 ? (nextMode ? T.riverFirstNext() : T.riverFirst()) : T.riverAgain());
           else this.ask(T.riverNext(next));
         } else {
-          ui.bubble({ seq: [next - 1], onTap: () => this.ask(this.prompt) });
+          ui.bubble({ seq: [next - 1], onTap: () => this.replay() });
           this.ask(T.riverWhatNext());
         }
       };
@@ -124,6 +127,7 @@ export class StonesMission extends Mission {
         this.lookAt(s);
         if (s.userData.num === next) {
           busy = true;
+          this.correct(s.userData.num);
           wrong = 0;
           revealed = false;
           this.untap(s);
@@ -173,14 +177,15 @@ export class StonesMission extends Mission {
           }
         } else {
           wrong++;
-          this.miss();
+          this.wrong(s.userData.num);
           sfx.oops();
           wiggle(s);
           if (nextMode && !revealed) {
             // first slip in "what's next?" mode: tell her the number
             revealed = true;
+            this.helped(2); // the number is now shown
             say([...T.thatsNumber(s.userData.num), ...T.riverNext(next)]);
-            ui.bubble({ big: String(next), dots: next, onTap: () => this.ask(this.prompt) });
+            ui.bubble({ big: String(next), dots: next, onTap: () => this.replay() });
             this.prompt = T.riverNext(next);
           } else say([...T.thatsNumber(s.userData.num), ...T.whereNumber(next)]);
           if (wrong >= 2) {

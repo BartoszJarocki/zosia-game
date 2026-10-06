@@ -49,6 +49,7 @@ export class LettersMission extends Mission {
       const target = pickTarget(pool, 'L:', this.last);
       this.last = target;
       this.item('L:' + target);
+      this.question(this.L.show === 'picture' ? 'letterAudio' : 'letterVisual', target); // picture-only = she has to listen
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...distractors(target, pool, n - 1, this.L.similar)]);
       const colors = shuffle(TILE_COLORS);
@@ -83,6 +84,7 @@ export class LettersMission extends Mission {
           this.lookAt(b);
           if (letter === target) {
             solved = true;
+            this.correct(letter);
             this.stopIdle();
             blocks.forEach((x) => this.untap(x));
             sfx.good();
@@ -114,7 +116,7 @@ export class LettersMission extends Mission {
             resolve();
           } else {
             wrong++;
-            this.miss();
+            this.wrong(letter);
             sfx.oops();
             wiggle(b);
             say([...T.thatsLetter(letter), ...T.whereLetter(target)]);
@@ -126,7 +128,7 @@ export class LettersMission extends Mission {
       ui.bubble({
         big: this.L.show === 'letter' ? showLetter(target) : '',
         pic: emoji,
-        onTap: () => this.ask(this.prompt),
+        onTap: () => this.replay(),
       });
       wait(500).then(() => {
         if (this.alive) this.ask(T.kittyAsk(target));

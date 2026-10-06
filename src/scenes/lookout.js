@@ -154,10 +154,11 @@ export class LookoutMission extends Mission {
       }
       this.last = target;
       this.item('N:' + target);
+      this.question(relative ? 'sequence' : 'numeral', target); // "one floor up/down" = one more / one less
       let wrong = 0, busy = false, revealed = false;
 
-      const showTarget = () => ui.bubble({ big: String(target), dots: this.L.bubble === 'both' ? target : 0, pic: '🛗', onTap: () => this.ask(this.prompt) });
-      if (relative) ui.bubble({ seq: [this.floor, up ? '⬆' : '⬇'], onTap: () => this.ask(this.prompt) });
+      const showTarget = () => ui.bubble({ big: String(target), dots: this.L.bubble === 'both' ? target : 0, pic: '🛗', onTap: () => this.replay() });
+      if (relative) ui.bubble({ seq: [this.floor, up ? '⬆' : '⬇'], onTap: () => this.replay() });
       else showTarget();
 
       this.onPress = async (f) => {
@@ -166,6 +167,7 @@ export class LookoutMission extends Mission {
         this.lookAt(this.signs[f - 1] || this.car);
         if (f === target) {
           busy = true;
+          this.correct(f);
           this.stopIdle();
           this.panel.light(f);
           this.panel.lock(true);
@@ -190,16 +192,17 @@ export class LookoutMission extends Mission {
           resolve();
         } else {
           wrong++;
-          this.miss();
+          this.wrong(f);
           sfx.oops();
           this.panel.nope(f);
           if (relative && !revealed) {
             revealed = true; // first slip: tell her the number
+            this.helped(2);
             showTarget();
             this.prompt = T.liftPress(target);
           }
           say([...T.thatsNumber(f), ...T.liftPress(target)]);
-          if (wrong >= 2) this.panel.hint(target);
+          if (wrong >= 2) { this.panel.hint(target); this.helped(3); }
         }
       };
 

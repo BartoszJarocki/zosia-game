@@ -14,6 +14,7 @@ import { LookoutMission } from './scenes/lookout.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
+import { learning } from './learning/events.js';
 import { registerSW } from 'virtual:pwa-register';
 
 // Offline + installable. A new version is switched in only while the start screen is showing,
@@ -67,4 +68,6 @@ async function boot() {
 boot();
 
 // Handy for poking at the game from the browser console.
-window.__pup = { game, getStage, camera, allSegments: () => allSegments(LEVELS, ALL_LETTERS) };
+window.__pup = { game, getStage, camera, learning, allSegments: () => allSegments(LEVELS, ALL_LETTERS) };
+// ?learnlog: print every learning event to the console (for checking what the game records)
+if (/[?&]learnlog/.test(location.search)) learning.subscribe((e) => console.info('[learn]', e.mission, e.skill, e.item, e.correct ? (e.firstTry ? 'right first try' : 'right') : e.errorType, `${e.latencyMs}ms`, `help ${e.assistLevel}`, e));

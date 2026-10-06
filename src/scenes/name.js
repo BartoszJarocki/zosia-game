@@ -94,8 +94,8 @@ export class NameMission extends Mission {
 
   bubbleFor(r) {
     const target = this.word[r];
-    if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r, onTap: () => this.ask(this.prompt) });
-    else ui.bubble({ big: showLetter(target), pic: r === 0 ? '🚂' : '', onTap: () => this.ask(this.prompt) });
+    if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r, onTap: () => this.replay() });
+    else ui.bubble({ big: showLetter(target), pic: r === 0 ? '🚂' : '', onTap: () => this.replay() });
   }
 
   round(r) {
@@ -103,6 +103,7 @@ export class NameMission extends Mission {
     return new Promise((resolve) => {
       const target = this.word[r];
       this.item('L:' + target);
+      this.question('letterVisual', target);
       let wrong = 0, solved = false;
       this.last = target;
 
@@ -112,6 +113,7 @@ export class NameMission extends Mission {
         this.lookAt(b);
         if (b.userData.letter === target) {
           solved = true;
+          this.correct(target);
           this.stopIdle();
           this.untap(b);
           b.userData.letter = null;
@@ -126,12 +128,12 @@ export class NameMission extends Mission {
           sfx.boing();
           this.success(slot.clone().add(new THREE.Vector3(0, 0.8, 0)));
           if (this.ghosts[r]) this.ghosts[r].visible = false;
-          if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r + 1, onTap: () => this.ask(this.prompt) });
+          if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r + 1, onTap: () => this.replay() });
           await say(T.letter(target));
           resolve();
         } else {
           wrong++;
-          this.miss();
+          this.wrong(b.userData.letter);
           sfx.oops();
           wiggle(b);
           say([...T.thatsLetter(b.userData.letter), ...T.findLetter(target)]);

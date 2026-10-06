@@ -160,6 +160,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     }
   }
   if (target) target.userData.onTap(target);
+  else current.onMissTap?.(); // a tap that hit nothing: missions log it as a motor slip
 });
 
 // ---------- loop ----------

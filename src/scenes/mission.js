@@ -9,6 +9,8 @@ import { CONFIG } from '../config.js';
 import { T, PRAISE } from '../lang/pl.js';
 import { say, sfx, hush } from '../audio.js';
 import { settingsFor } from '../levels.js';
+import { learning } from '../learning/events.js';
+import { QuestionTracker } from '../learning/question.js';
 import { levelFor, recordMission, recordItem } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
@@ -35,6 +37,8 @@ export class Mission extends Stage {
     this.walking = false;
     this.prompt = '';
     this.firstTry = 0;
+    this.learn = new QuestionTracker(learning); // turns this mission's taps into learning events
+    this.roundIndex = 0;
   }
 
   enter() {
@@ -51,7 +55,7 @@ export class Mission extends Stage {
     this.run();
   }
 
-  exit() { clearTimeout(this.idleTimer); }
+  exit() { clearTimeout(this.idleTimer); this.learn.cancel(); }
 
   async run() {
     await wait(500);
@@ -59,7 +63,9 @@ export class Mission extends Stage {
       if (!this.alive) return;
       this.missed = false;
       this.roundItem = null;
+      this.roundIndex = r;
       await this.round(r);
+      this.learn.cancel(); // anything left open in this round is dropped
       if (!this.alive) return;
       if (!this.missed) this.firstTry++;
       if (this.roundItem) recordItem(this.roundItem, !this.missed);
@@ -103,6 +109,24 @@ export class Mission extends Stage {
   // ----- helpers for subclasses -----
   miss() { this.missed = true; }
   item(id) { this.roundItem = id; }
+
+  // ----- learning events (see src/learning/) -----
+  /** What this round (or step) is asking. skill: one of SKILLS; item: e.g. 'B' or 4. */
+  question(skill, item) {
+    const q = this.learn.current;
+    if (q && q.skill === skill && q.item === String(item)) return; // already asking this: keep its timer
+    this.learn.open({ mission: this.kind, skill, item, level: this.level, round: this.roundIndex });
+  }
+  /** She got it. */
+  correct(chosen) { this.learn.correct({ chosen }); }
+  /** She picked something else. Also marks the round as not right-first-time for the mission level. */
+  wrong(chosen) { this.miss(); this.learn.wrong({ chosen }); }
+  /** Help was shown: 1 question repeated · 2 clue · 3 answer revealed. */
+  helped(level) { this.learn.assist(level); }
+  /** She tapped the speech bubble to hear the question again. */
+  replay() { this.helped(1); this.ask(this.prompt); }
+  /** A tap on the game that hit nothing (reported by the engine). Motor slip, not a wrong answer. */
+  onMissTap() { this.learn.missTap(); }
   cheer(seconds = 1.5) { this.cheerUntil = performance.now() / 1000 + seconds; }
   praise() { return pick(PRAISE); }
 
@@ -137,13 +161,14 @@ export class Mission extends Stage {
   /** Say the question now, and again whenever she goes quiet. */
   ask(segments) {
     this.prompt = segments;
-    say(segments);
+    const q = this.learn.current;
+    say(segments).then(() => { if (this.learn.current === q) this.learn.promptEnded(); }); // latency counts from here
     this.poke();
   }
   poke() {
     clearTimeout(this.idleTimer);
     this.idleTimer = setTimeout(() => {
-      if (this.alive && this.prompt) { say(this.prompt); this.poke(); }
+      if (this.alive && this.prompt) { this.learn.timeout(); say(this.prompt); this.poke(); }
     }, CONFIG.idleRepeatSeconds * 1000);
   }
   stopIdle() { clearTimeout(this.idleTimer); this.prompt = ''; }
@@ -238,6 +263,7 @@ export class Mission extends Stage {
 
   /** Pulse an object's scale after repeated misses. */
   hint(obj, isDone, target = obj) {
+    this.helped(3); // the right answer pulses
     if (obj.userData.hinting) return;
     obj.userData.hinting = true;
     const base = target.scale.clone();

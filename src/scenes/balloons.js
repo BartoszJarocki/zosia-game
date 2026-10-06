@@ -57,6 +57,7 @@ export class BalloonsMission extends Mission {
       const target = pickTarget(pool, 'L:', this.last);
       this.last = target;
       this.item('L:' + target);
+      this.question('letterVisual', target); // one question per balloon to find
       const nOthers = this.L.total - this.L.targets;
       const set = distractors(target, pool, Math.min(pool.length - 1, nOthers), this.L.similar);
       const letters = shuffle([
@@ -94,6 +95,8 @@ export class BalloonsMission extends Mission {
           this.balloons = this.balloons.filter((x) => x !== b);
           this.pop(b);
           popped++;
+          this.correct(target);
+          if (popped < this.L.targets) this.question('letterVisual', target); // next balloon with the same letter
           if (popped < this.L.targets) {
             say(T.number(popped));
             return;
@@ -115,7 +118,7 @@ export class BalloonsMission extends Mission {
           resolve();
         } else {
           wrong++;
-          this.miss();
+          this.wrong(b.userData.letter);
           sfx.oops();
           animate(450, (t) => { b.userData.body.scale.set(1 + Math.sin(t * Math.PI * 4) * 0.08 * (1 - t), 1.18, 1); }, ease.linear);
           say([...T.thatsLetter(b.userData.letter), ...T.findLetter(target)]);
@@ -123,7 +126,7 @@ export class BalloonsMission extends Mission {
         }
       };
 
-      ui.bubble({ big: showLetter(target), pic: '🎈', onTap: () => this.ask(this.prompt), passthrough: true }); // balloons float up behind it
+      ui.bubble({ big: showLetter(target), pic: '🎈', onTap: () => this.replay(), passthrough: true }); // balloons float up behind it
       wait(500).then(() => {
         if (this.alive) this.ask(T.balloonAsk(target));
       });
