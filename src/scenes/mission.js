@@ -10,6 +10,7 @@ import { T, PRAISE } from '../lang/pl.js';
 import { say, sfx, hush } from '../audio.js';
 import { settingsFor } from '../levels.js';
 import { levelFor, recordMission, recordItem } from '../progress.js';
+import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
 
@@ -38,7 +39,7 @@ export class Mission extends Stage {
 
   enter() {
     this.build();
-    ui.missionHud({ rounds: this.rounds, level: this.level, onHome: () => { hush(); this.game.hub(); } });
+    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), onHome: () => { hush(); this.game.hub(); } });
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
       if (this.girl) {
@@ -86,6 +87,7 @@ export class Mission extends Stage {
     ui.celebrate({
       kind: this.kind,
       level,
+      total: maxLevel(this.kind),
       levelUp,
       onHome: () => { hush(); this.game.hub(); },
       onAgain: () => { hush(); this.game.startMission(this.kind); },

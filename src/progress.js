@@ -4,6 +4,7 @@
 //  - Per-letter / per-number stats make the ones she misses come up more often.
 import { CONFIG } from './config.js';
 import { badges } from './ui.js';
+import { maxLevel } from './levels/data.js';
 
 const KEY = 'pup-patrol-progress';
 
@@ -15,7 +16,7 @@ function load() {
   // first run with this version: start from the old badge counts so no stars are lost
   const b = badges.get();
   const missions = {};
-  for (const [k, n] of Object.entries(b)) missions[k] = { level: Math.min(3, 1 + Math.floor(n / 2)), good: 0, lastAcc: 1 };
+  for (const [k, n] of Object.entries(b)) missions[k] = { level: Math.min(maxLevel(k), 1 + Math.floor(n / 2)), good: 0, lastAcc: 1 };
   return { v: 1, missions, items: {} };
 }
 let state = load();
@@ -23,7 +24,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } c
 const mission = (kind) => (state.missions[kind] ||= { level: 1, good: 0, lastAcc: 1 });
 
 export function levelFor(kind) {
-  return CONFIG.level || mission(kind).level;
+  return Math.min(maxLevel(kind), CONFIG.level || mission(kind).level);
 }
 
 /** Last run went badly: make this one a bit gentler. */
@@ -39,7 +40,7 @@ export function recordMission(kind, firstTry, rounds) {
   let levelUp = false;
   if (acc >= 0.7) {
     m.good++;
-    if (m.good >= CONFIG.goodRunsPerLevel && m.level < 3) { m.level++; m.good = 0; levelUp = true; }
+    if (m.good >= CONFIG.goodRunsPerLevel && m.level < maxLevel(kind)) { m.level++; m.good = 0; levelUp = true; }
   }
   save();
   return { level: levelFor(kind), levelUp, acc };

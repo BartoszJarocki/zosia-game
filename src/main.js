@@ -13,6 +13,7 @@ import { StonesMission } from './scenes/stones.js';
 import { LookoutMission } from './scenes/lookout.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
+import { LEVELS, ALL_LETTERS } from './levels/data.js';
 import { registerSW } from 'virtual:pwa-register';
 
 // Offline + installable. A new version is switched in only while the start screen is showing,
@@ -66,4 +67,4 @@ async function boot() {
 boot();
 
 // Handy for poking at the game from the browser console.
-window.__pup = { game, getStage, allSegments, camera };
+window.__pup = { game, getStage, camera, allSegments: () => allSegments(LEVELS, ALL_LETTERS) };

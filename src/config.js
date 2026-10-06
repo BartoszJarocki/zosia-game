@@ -3,18 +3,16 @@
 // ------------------------------------------------------------
 export const CONFIG = {
   pupName: 'Chase',
-  childName: 'Zosia',
+  childName: 'Zosia',        // letters, words and levels are in GAME.md
   childVocative: 'Zosiu',     // "Cześć, Zosiu!"
   childDative: 'Zosi',        // "Pomóż Zosi"
   pupNameSpoken: 'Czejs',     // how the Polish voice should say "Chase"
   pupDative: 'Czejsowi',      // "Daj Czejsowi"
   pupGenitive: 'Czejsa',      // "dotknij Czejsa"
-  letters: 'ABCDEFGHIJKLMNOPRSTUWZ', // Polish letter pool (Q, V, X, Y left out)
   lowercase: false,         // true = show lowercase letters instead
   roundsPerMission: 5,
   level: null,              // force every mission to level 1, 2 or 3 (null = earn levels with badges)
   goodRunsPerLevel: 2,      // runs with most answers right first time needed to unlock the next level
-  nameWords: ['MAMA', 'TATA', 'KOT', 'DOM'], // extra words for the Name Train (level 2: first two, level 3: all)
   idleRepeatSeconds: 12,    // repeat the question if nobody taps for this long
   // Voice: pre-recorded ElevenLabs clips (npm run voices), falling back to the iPad's Polish voice.
   voiceLang: 'pl-PL',

@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { CONFIG } from '../src/config.js';
 import { allSegments } from '../src/lang/pl.js';
+import { parseGame } from '../src/levels/parse.js';
 import { clipKey } from '../src/voice-key.js';
 
 const OUT = 'public/voice';
@@ -61,7 +62,9 @@ async function goodTake(text) {
 }
 
 const args = process.argv.slice(2);
-const segments = allSegments();
+const game = parseGame(fs.readFileSync('GAME.md', 'utf8'), { childName: CONFIG.childName });
+if (game.errors.length) { console.error('GAME.md has problems (run npm run check):\n' + game.errors.join('\n')); process.exit(1); }
+const segments = allSegments(game.levels, game.letterSets.ALL);
 const chars = segments.reduce((n, s) => n + s.length, 0);
 
 if (args[0] === '--list') {

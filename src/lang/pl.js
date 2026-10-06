@@ -104,21 +104,25 @@ export const T = {
   tooFew: () => ['Za mało! Jeszcze!'],
 };
 
-/** Every segment the game can say (for the clip generator). */
-export function allSegments() {
-  const letters = new Set([...CONFIG.letters, ...(CONFIG.childName || '').toUpperCase(), ...CONFIG.nameWords.join('').toUpperCase()]
-    .filter((c) => /[A-Z]/.test(c)));
-  const words = [(CONFIG.childName || '').toUpperCase(), ...CONFIG.nameWords].filter(Boolean);
+/**
+ * Every segment the game can say, for the clip generator. Derived from the level data (GAME.md),
+ * so adding words, letters, floors or levels there automatically adds what needs recording.
+ */
+export function allSegments(levels, allLetters) {
+  const words = [...new Set(levels.name.flatMap((l) => l.words))];
+  const letters = new Set([...allLetters, ...words.join('')].filter((c) => /[A-Z]/.test(c)));
   const nums = Array.from({ length: 10 }, (_, i) => i + 1);
+  const floors = Math.max(...levels.lookout.map((l) => l.max));
+  const maxLevels = Math.max(...Object.values(levels).map((l) => l.length));
   const out = [];
   const add = (segs) => out.push(...segs);
-  nums.slice(0, 7).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < 7) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
+  nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsAsk(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); });
   Object.keys(PLACE_LINES).forEach((k) => add(T.go(k)));
-  [2, 3].forEach((l) => add(T.levelUp(l)));
+  for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));

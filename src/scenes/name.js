@@ -10,6 +10,7 @@ import * as ui from '../ui.js';
 import { shuffle, pick } from '../util.js';
 import { T } from '../lang/pl.js';
 import { distractors } from '../levels.js';
+import { ALL_LETTERS } from '../levels/data.js';
 import { Mission } from './mission.js';
 
 // "Name Train": load the letters of a word onto the train, in order.
@@ -70,7 +71,7 @@ export class NameMission extends Mission {
     const extras = [];
     for (let i = 0; i < this.L.extras; i++) {
       const base = this.word[i % this.word.length];
-      const d = distractors(base, CONFIG.letters, 3, this.L.similar).find((l) => !this.word.includes(l) && !extras.includes(l));
+      const d = distractors(base, ALL_LETTERS, 3, this.L.similar).find((l) => !this.word.includes(l) && !extras.includes(l));
       if (d) extras.push(d);
     }
     const letters = shuffle([...this.word, ...extras]);

@@ -10,6 +10,7 @@ import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
 import { levelFor } from '../progress.js';
+import { maxLevel } from '../levels/data.js';
 import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
 import { pick } from '../util.js';
@@ -208,11 +209,12 @@ export class Hub extends Stage {
     big.material = mat('#ffe066', { emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 });
     marker.add(big);
     const level = levelFor(kind);
-    for (let i = 0; i < 3; i++) {
+    const total = maxLevel(kind);
+    for (let i = 0; i < total; i++) {
       const lit = i < level;
       const st = star(lit ? '#fde047' : '#cbd5e1', 0.32, 0.1);
       if (lit) st.material = mat('#ffe066', { emissive: '#ffb800', emissiveIntensity: 2.2, roughness: 0.3 });
-      st.position.set((i - 1) * 0.8, -1.35, 0);
+      st.position.set((i - (total - 1) / 2) * 0.8, -1.35, 0);
       marker.add(st);
     }
     this.scene.add(marker);

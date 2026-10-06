@@ -23,8 +23,8 @@ export const ICON = {
   speaker: '<svg viewBox="0 0 100 100"><path d="M18 38 H36 L58 20 V80 L36 62 H18 Z" fill="#1e4fbf"/><path d="M70 34 Q82 50 70 66 M78 24 Q98 50 78 76" fill="none" stroke="#1e4fbf" stroke-width="8" stroke-linecap="round"/></svg>',
 };
 
-export const starsHTML = (level, cls = '') =>
-  `<div class="stars ${cls}">${[1, 2, 3].map((i) => `<span class="${i <= level ? 'on' : ''}">★</span>`).join('')}</div>`;
+export const starsHTML = (level, cls = '', total = 3) =>
+  `<div class="stars ${cls}">${Array.from({ length: total }, (_, i) => `<span class="${i < level ? 'on' : ''}">★</span>`).join('')}</div>`;
 
 export function badgeSVG(kind) {
   const m = MISSIONS[kind];
@@ -91,12 +91,12 @@ export function hubHud() {
   ui.append(shelf);
 }
 
-export function missionHud({ rounds, level = 1, onHome }) {
+export function missionHud({ rounds, level = 1, total = 3, onHome }) {
   clear();
   const top = el(`<div class="topbar">
       <button class="round-btn home" aria-label="Home">${ICON.home}</button>
       <div class="paws">${Array.from({ length: rounds }, () => `<span class="paw">${ICON.paw()}</span>`).join('')}</div>
-      <span class="spacer">${starsHTML(level, 'small')}</span>
+      <span class="spacer">${starsHTML(level, 'small', total)}</span>
     </div>`);
   press(top.querySelector('.home'), onHome);
   ui.append(top);
@@ -133,10 +133,10 @@ export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, seq =
 }
 export function hideBubble() { ui.querySelector('.bubble')?.classList.add('hidden'); }
 
-export function celebrate({ kind, level = 1, levelUp = false, onHome, onAgain }) {
+export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome, onAgain }) {
   const c = el(`<div class="celebrate">
       <div class="rays"></div>
-      <div class="big-badge"><div class="flip">${badgeSVG(kind)}</div>${starsHTML(level, levelUp ? 'levelup' : '')}</div>
+      <div class="big-badge"><div class="flip">${badgeSVG(kind)}</div>${starsHTML(level, levelUp ? 'levelup' : '', total)}</div>
       <div class="actions">
         <button class="round-btn huge again" aria-label="Play again">${ICON.again}</button>
         <button class="round-btn huge home" aria-label="Home">${ICON.home}</button>
