@@ -123,7 +123,7 @@ export class BalloonsMission extends Mission {
         }
       };
 
-      ui.bubble({ big: showLetter(target), pic: '🎈', onTap: () => this.ask(this.prompt) });
+      ui.bubble({ big: showLetter(target), pic: '🎈', onTap: () => this.ask(this.prompt), passthrough: true }); // balloons float up behind it
       wait(500).then(() => {
         if (this.alive) this.ask(T.balloonAsk(target));
       });

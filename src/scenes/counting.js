@@ -132,7 +132,7 @@ export class CountingMission extends Mission {
       const bones = [], landed = [];
       let count = 0, done = false, reminded = false, idleT = null;
 
-      ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.ask(this.prompt) });
+      ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.ask(this.prompt), passthrough: true }); // Chase sits right under it
       wait(400).then(() => { if (this.alive) this.ask(auto ? T.treatsAsk(n) : T.giveThenTap(n)); });
 
       const finish = async () => {

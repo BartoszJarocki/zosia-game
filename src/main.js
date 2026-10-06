@@ -1,5 +1,5 @@
 import './style.css';
-import { setStage, getStage } from './engine.js';
+import { setStage, getStage, camera } from './engine.js';
 import { unlockAudio, sfx, hush } from './audio.js';
 import { pawWipe } from './fx/transition.js';
 import * as ui from './ui.js';
@@ -66,4 +66,4 @@ async function boot() {
 boot();
 
 // Handy for poking at the game from the browser console.
-window.__pup = { game, getStage, allSegments, THREE_REVISION: 1 };
+window.__pup = { game, getStage, allSegments, camera };

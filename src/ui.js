@@ -116,7 +116,7 @@ export function setProgress(done) {
  *  big: glyph, dots: number of dots (under the glyph, or alone if big is empty)
  *  pic: emoji picture clue, word + at: a whole word with one letter lit, seq: "3 → ?"
  */
-export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, seq = null, onTap }) {
+export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, seq = null, onTap, passthrough = false }) {
   const b = ui.querySelector('.bubble');
   if (!b) return;
   const dotRow = dots ? `<span class="dots ${big ? '' : 'solo'}">${'<i></i>'.repeat(dots)}</span>` : '';
@@ -126,6 +126,7 @@ export function bubble({ big = '', pic = '', dots = 0, word = '', at = -1, seq =
   else if (big || dots) main = `<span class="big">${big}${dotRow}</span>`;
   b.innerHTML = `${main}${pic ? `<span class="pic">${pic}</span>` : ''}<span class="spk">${ICON.speaker}</span>`;
   b.classList.remove('hidden', 'pop');
+  b.classList.toggle('passthrough', passthrough);
   void b.offsetWidth;
   b.classList.add('pop');
   b.onpointerdown = () => { sfx.pop(); onTap?.(); };
