@@ -16,6 +16,9 @@ export const CONFIG = {
   assistSeconds: { shortPrompt: 5, hint: 11, reveal: 18, remind: 30 },
   // a play session: this many missions, then the Lookout as the finale, then free play (nothing is ever locked)
   session: { missions: 2, newAfterMinutes: 15 },
+  // tiredness (0–1, from slower answers, random taps, silences, replays, more help): below `tired` the
+  // finale comes next and nothing new is asked; below `finish` → "Jeszcze tylko jedno!", an easy one, goodbye
+  attention: { tired: 0.6, finish: 0.35 },
   // Voice: pre-recorded ElevenLabs clips (npm run voices), falling back to the iPad's Polish voice.
   voiceLang: 'pl-PL',
   speechRate: 0.85,

@@ -3,7 +3,7 @@
 //
 //   mission  (fewer than targetMissions done)   the hub suggests a place, alternating letters / numbers
 //   finale   (enough done)                      the hub suggests the Lookout
-//   free     (finale done)                      no more suggestions: she plays whatever she likes
+//   free     (finale done, or wound down early)  no more suggestions: she plays whatever she likes
 //
 // Suggestions never lock anything: any place can be tapped at any time.
 
@@ -26,17 +26,25 @@ export const DOMAIN = { letters: 'letters', balloons: 'letters', name: 'letters'
  * @property {number[]} recentLatency     ms, correct answers
  * @property {number[]} recentAssistLevels  help level of correct answers
  * @property {string[]} recentErrors      errorType of the other events
+ * @property {Array<object>} recentQuestions  one record per solved question: latencyMs, assist, and what
+ *                                     happened before it (wrongChoice, overTap, timeout, missTap, replays)
+ * @property {{ latency: number[], assist: number[] }} baseline  the first few answers of the session
  * @property {boolean} finaleTriggered    the hub has called for the finale
  * @property {boolean} finaleDone
+ * @property {boolean} endedEarly         wound down because she seemed tired (Phase 6)
  */
 export function createSession(now, { targetMissions = SESSION.targetMissions } = {}) {
   return {
     id: now, startedAt: now, lastActiveAt: now,
     missionsCompleted: 0, targetMissions, completed: [],
     recentLatency: [], recentAssistLevels: [], recentErrors: [],
-    finaleTriggered: false, finaleDone: false,
+    recentQuestions: [], baseline: { latency: [], assist: [] }, pending: blankQuestion(),
+    finaleTriggered: false, finaleDone: false, endedEarly: false,
   };
 }
+
+const blankQuestion = () => ({ wrongChoice: 0, overTap: 0, timeout: 0, missTap: 0, replays: 0 });
+const BASELINE = 4; // answers
 
 /** Long enough without playing that the next play is a new session. */
 export function isStale(s, now, { newSessionAfterMs = SESSION.newSessionAfterMs } = {}) {
@@ -48,16 +56,41 @@ const push = (list, v, limit) => { list.push(v); if (list.length > limit) list.s
 /** Fold one learning event into the session's recent history. */
 export function noteEvent(s, ev, { limit = SESSION.recentLimit } = {}) {
   if (ev.at) s.lastActiveAt = Math.max(s.lastActiveAt, ev.at);
+  s.pending ||= blankQuestion();
   if (ev.correct) {
     push(s.recentLatency, ev.latencyMs, limit);
     push(s.recentAssistLevels, ev.assistLevel, limit);
-  } else if (ev.errorType) push(s.recentErrors, ev.errorType, limit);
+    push(s.recentQuestions, { ...s.pending, latencyMs: ev.latencyMs, assist: ev.assistLevel }, limit);
+    if (s.baseline.latency.length < BASELINE) { s.baseline.latency.push(ev.latencyMs); s.baseline.assist.push(ev.assistLevel); }
+    s.pending = blankQuestion();
+  } else if (ev.errorType) {
+    push(s.recentErrors, ev.errorType, limit);
+    if (ev.errorType in s.pending) s.pending[ev.errorType]++;
+  }
+  return s;
+}
+
+/** She asked to hear the question again (tapped the bubble). */
+export function noteReplay(s) {
+  (s.pending ||= blankQuestion()).replays++;
+  return s;
+}
+
+/** She seems to be getting tired: the finale comes after the current mission. */
+export function shorten(s) {
+  if (nextStep(s) === 'mission') s.targetMissions = Math.min(s.targetMissions, s.missionsCompleted + 1);
+  return s;
+}
+
+/** Time to stop: after the current mission it's a gentle goodbye, then free play (no more suggestions). */
+export function windDown(s) {
+  if (!s.finaleDone) s.endedEarly = true;
   return s;
 }
 
 /** Where the session is: 'mission' | 'finale' | 'free'. */
 export function nextStep(s) {
-  if (s.finaleDone) return 'free';
+  if (s.finaleDone || s.endedEarly) return 'free';
   return s.missionsCompleted >= s.targetMissions ? 'finale' : 'mission';
 }
 
@@ -101,5 +134,5 @@ export function suggestNext(s, kinds, rng = Math.random) {
 
 /** What gets saved about a session (progress.sessions.recent). */
 export function summary(s) {
-  return { id: s.id, startedAt: s.startedAt, endedAt: s.lastActiveAt, missions: [...s.completed], finale: s.finaleDone };
+  return { id: s.id, startedAt: s.startedAt, endedAt: s.lastActiveAt, missions: [...s.completed], finale: s.finaleDone, ...(s.endedEarly ? { early: true } : {}) };
 }

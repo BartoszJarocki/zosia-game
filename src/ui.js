@@ -103,6 +103,14 @@ export function missionHud({ rounds, level = 1, total = 3, onHome }) {
   ui.append(el(`<button class="bubble hidden" aria-label="Say again"></button>`));
 }
 
+/** The mission got shorter (or longer): redraw the paws, keeping the ones already earned. */
+export function setRounds(n) {
+  const paws = ui.querySelector('.paws');
+  if (!paws) return;
+  const on = paws.querySelectorAll('.paw.on').length;
+  paws.innerHTML = Array.from({ length: n }, (_, i) => `<span class="paw${i < on ? ' on' : ''}">${ICON.paw()}</span>`).join('');
+}
+
 export function setProgress(done) {
   ui.querySelectorAll('.paw').forEach((p, i) => {
     const on = i < done;

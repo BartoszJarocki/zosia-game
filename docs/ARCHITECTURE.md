@@ -204,6 +204,20 @@ Hub.enter() ─▶ nextStep() / suggestNext()  'mission' → suggest a place · 
 - Mission lengths come from GAME.md (`rounds`), following the brief: Kitty Park 4, Balloon Hill 2–3, Name Train 1 word,
   Cone Road 3, River 1–2 crossings, Treat House 3, Lookout 1–2 trips. A "good run" is now ≥ 65% first try (2 of 3).
 
+## Tiredness (Phase 6)
+
+`src/session/attention.js` (pure) scores the last 5 answers against the session's first 4, from 0 to 1:
+answers slower (median, so one long pause doesn't count) · random-tap bursts · silences (timeouts) · replays ·
+more help than at the start. Weighted sum → `ok` (≥ 0.6) · `tired` · `finish` (< 0.35); thresholds in `CONFIG.attention`.
+Nothing is judged before 5 answers.
+
+Checked by `Mission.checkAttention()` between rounds (always right after a success):
+- **tired** → no new items (`TIRED_MIX`), and the session's finale comes after this mission (`shorten`).
+- **finish** → "Jeszcze tylko jedno, Zosiu!", the next round is the last and uses an item she knows (`EASY_MIX`),
+  celebration, then the hub says goodbye ("czas na odpoczynek") and stays quiet (`windDown`; saved as `early`).
+  The Name Train finishes its word instead of being cut short.
+`?learnlog` also prints the attention state when it isn't ok.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

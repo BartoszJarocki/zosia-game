@@ -4,7 +4,8 @@
 import { CONFIG } from '../config.js';
 import { learning } from '../learning/events.js';
 import { recordSession } from '../progress.js';
-import { SESSION, createSession, isStale, noteEvent, completeMission, summary } from './director.js';
+import { SESSION, createSession, isStale, noteEvent, noteReplay, completeMission, shorten, windDown, summary } from './director.js';
+import { attention } from './attention.js';
 
 const staleAfter = () => ({ newSessionAfterMs: (CONFIG.session?.newAfterMinutes ?? 15) * 60 * 1000 });
 let current = null;
@@ -27,6 +28,23 @@ export function missionDone(kind, now = Date.now()) {
   const result = completeMission(s, kind, now);
   recordSession(summary(s));
   return result;
+}
+
+/** She tapped the bubble to hear the question again. */
+export function replayed() { noteReplay(getSession()); }
+
+/**
+ * How is she doing? Applies it to the session (tired → finale next; finish → wind down) and returns
+ * 'ok' | 'tired' | 'finish'. Once winding down, it stays that way for the session.
+ */
+export function checkAttention(now = Date.now()) {
+  const s = getSession(now);
+  if (s.endedEarly) return 'finish';
+  const a = (s.attention = attention(s, CONFIG.attention));
+  if (a.state === 'finish') windDown(s);
+  else if (a.state === 'tired') shorten(s);
+  if (a.state !== 'ok' && /[?&]learnlog/.test(globalThis.location?.search || '')) console.info('[attention]', a.state, a.score, a.factors);
+  return a.state;
 }
 
 learning.subscribe((ev) => noteEvent(getSession(ev.at || Date.now()), ev));

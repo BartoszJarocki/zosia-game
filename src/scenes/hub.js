@@ -205,9 +205,9 @@ export class Hub extends Stage {
       callFinale(session);
       line = idle = T.finaleCall();
     } else if (!session.thanked) {
-      // the finale is done: thank her once, then it's free play (no more nudging)
+      // the finale is done (or she was tired): thank her once, then it's free play (no more nudging)
       session.thanked = true;
-      line = T.sessionDone();
+      line = session.endedEarly ? T.restTime() : T.sessionDone();
       confetti(90);
       this.cheerUntil = performance.now() / 1000 + 3;
     }

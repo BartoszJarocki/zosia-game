@@ -93,6 +93,8 @@ export class NameMission extends Mission {
     return g;
   }
 
+  get canWindDown() { return false; } // a word is finished, not cut short
+
   bubbleFor(r) {
     const target = this.word[r];
     if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r, onTap: () => this.replay() });

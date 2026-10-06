@@ -24,7 +24,9 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
    - **after a wrong tap:** "To jest Em. Spróbuj jeszcze raz!", then a wrong option goes away,
      then the answer pulses. She always makes the last tap herself.
 4. **A session** — after 2 missions the game suggests the Lookout as the finale; after it, she can keep
-   playing anything she likes. Suggestions never lock a place.
+   playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down,
+   random taps, needing more and more help), nothing new is asked and the finale comes sooner; if she seems
+   very tired: "Jeszcze tylko jedno!", an easy one she knows, a celebration and a gentle goodbye.
 5. **Celebration** — badge, stars, confetti and fireworks, then "again" or "home".
 
 ## How levels work

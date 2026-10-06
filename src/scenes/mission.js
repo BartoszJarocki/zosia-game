@@ -13,7 +13,11 @@ import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
-import { missionDone } from '../session/session.js';
+import { missionDone, replayed, checkAttention } from '../session/session.js';
+
+/** Item mixes (see learning/scheduler.js): tired → nothing new; winding down → something she knows. */
+const TIRED_MIX = { learning: 0.6, familiar: 0.4 };
+const EASY_MIX = { familiar: 1, learning: 0.15 };
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
@@ -76,6 +80,7 @@ export class Mission extends Stage {
       ui.setProgress(r + 1);
       sfx.pop();
       await wait(450);
+      if (this.alive) await this.checkAttention(r);
     }
     if (!this.alive) return;
     await this.outro();
@@ -83,6 +88,24 @@ export class Mission extends Stage {
   }
 
   async outro() {}
+
+  /**
+   * Between rounds (always right after a success): if she seems tired, ask nothing new; if it's time
+   * to stop, the next round is the last one — an easy one, announced with "Jeszcze tylko jedno!".
+   */
+  async checkAttention(r) {
+    const state = checkAttention();
+    if (state === 'ok' || this.windingDown) return;
+    if (state === 'tired') { this.easyMix ||= TIRED_MIX; return; }
+    this.easyMix = EASY_MIX;
+    if (r >= this.rounds - 1 || !this.canWindDown) return; // the mission ends now anyway (or can't be cut short)
+    this.windingDown = true;
+    this.rounds = r + 2;
+    ui.setRounds(this.rounds);
+    await this.say(T.oneMore());
+  }
+  /** Can this mission be cut short? (Name Train: the word has to be finished.) */
+  get canWindDown() { return true; }
 
   async finish() {
     ui.hideBubble();
@@ -186,7 +209,7 @@ export class Mission extends Stage {
   /** Help was shown: 1 question repeated · 2 clue · 3 answer revealed. */
   helped(level) { this.learn.assist(level); }
   /** She tapped the speech bubble to hear the question again. */
-  replay() { this.helped(1); if (this.aid) onActivity(this.aid.state); this.ask(this.prompt); }
+  replay() { this.helped(1); replayed(); if (this.aid) onActivity(this.aid.state); this.ask(this.prompt); }
   /** A tap on the game that hit nothing (reported by the engine). Motor slip, not a wrong answer. */
   onMissTap() { this.learn.missTap(); }
   cheer(seconds = 1.5) { this.cheerUntil = performance.now() / 1000 + seconds; }
