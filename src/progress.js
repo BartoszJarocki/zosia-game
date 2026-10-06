@@ -1,26 +1,32 @@
-// Tracks how Zosia is doing, so levels follow her skill instead of just play time.
-//  - A mission levels up after CONFIG.goodRunsPerLevel "good" runs (most answers right first time).
-//  - A rough run turns on "assist" next time (fewer choices, answer shown) without ever taking stars away.
-//  - Per-letter / per-number stats make the ones she misses come up more often.
+// Tracks how Zosia is doing.
+//  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs.
+//  - A rough run turns on "assist" next time, without ever taking stars away.
+//  - Skill mastery (precise): every learning event updates skills[skill][item] (see learning/mastery.js).
+// The saved shape and its upgrades live in progress/migrations.js.
 import { CONFIG } from './config.js';
 import { badges } from './ui.js';
 import { maxLevel } from './levels/data.js';
+import { migrate } from './progress/migrations.js';
+import { applyEvent } from './learning/mastery.js';
+import { learning } from './learning/events.js';
 
 const KEY = 'pup-patrol-progress';
 
 function load() {
-  try {
-    const p = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (p && p.v === 1) return p;
-  } catch {}
-  // first run with this version: start from the old badge counts so no stars are lost
-  const b = badges.get();
-  const missions = {};
-  for (const [k, n] of Object.entries(b)) missions[k] = { level: Math.min(maxLevel(k), 1 + Math.floor(n / 2)), good: 0, lastAcc: 1 };
-  return { v: 1, missions, items: {} };
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
+  return migrate(raw, { badges: badges.get(), maxLevel });
 }
-let state = load();
+const loaded = load();
+let state = loaded.state;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+if (loaded.changed) save(); // keep the upgraded save
+
+// every learning event updates mastery
+learning.subscribe((ev) => { applyEvent(state.skills, ev); save(); });
+
+/** All skill stats: { [skill]: { [item]: SkillStat } } (read-only use please). */
+export const getSkills = () => state.skills;
 const mission = (kind) => (state.missions[kind] ||= { level: 1, good: 0, lastAcc: 1 });
 
 export function levelFor(kind) {
@@ -67,4 +73,4 @@ export function pickTarget(pool, prefix, prev) {
   return options[options.length - 1];
 }
 
-export function resetProgress() { state = { v: 1, missions: {}, items: {} }; save(); }
+export function resetProgress() { state = migrate(null).state; save(); }
