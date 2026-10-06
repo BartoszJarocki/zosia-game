@@ -34,7 +34,7 @@ export function numberChoices(target, max, n, near = false) {
 
 /** What a mission easier by one notch looks like after a rough run. */
 const ASSIST = {
-  letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), show: 'letter', similar: false }),
+  letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),
   balloons: (s) => ({ ...s, total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }),
   name: (s) => ({ ...s, ghost: true, extras: 0, similar: false }),
   cones: (s) => ({ ...s, choices: 3, bubble: 'both', sign: 'both' }),

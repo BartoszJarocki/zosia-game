@@ -7,6 +7,9 @@ const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'sie
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
 const NUM_GEN = ['zera', 'jednego', 'dwóch', 'trzech', 'czterech', 'pięciu', 'sześciu', 'siedmiu', 'ośmiu', 'dziewięciu', 'dziesięciu'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+/** A letter's sound, held: "mmmm", "ssss" (only letters you can hold, see levels/parse.js SOUNDABLE). */
+const PHON = { A: 'aaaa', E: 'eeee', F: 'ffff', H: 'hhhh', I: 'iiii', L: 'llll', M: 'mmmm', N: 'nnnn', O: 'oooo', R: 'rrrr', S: 'ssss', U: 'uuuu', W: 'wwww', Z: 'zzzz' };
+const ph = (l) => PHON[l.toUpperCase()] || l;
 const L = (l) => cap(letterName(l));
 const word = (l) => (WORDS[l] || [''])[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
@@ -75,6 +78,13 @@ export const T = {
   // Kitty Park
   kittyAsk: (l) => [`Kotek schował się za literą ${L(l)}! Znajdź ${L(l)}! ${L(l)} jak ${word(l)}!`],
   kittyFound: (l) => [`Znalazłaś kotka! ${L(l)} jak ${word(l)}!`],
+  // Kitty Park V2: how each level asks
+  kittyHid: () => ['Kotek się schował!'],
+  kittyMatch: () => ['Kotek schował się za taką literką! Znajdź taką samą!'],
+  findSame: () => ['Znajdź taką samą literkę!'],
+  whichSound: (l) => [`Która literka robi: ${ph(l)}?`],
+  soundLike: (l) => [`${cap(ph(l))}… jak ${word(l)}!`],
+  soundIs: (l) => [`${cap(ph(l))}… to ${L(l)}!`],
 
   // Balloon Hill
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
@@ -143,7 +153,10 @@ export function allSegments(levels, allLetters) {
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsAsk(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
+  // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
+  const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
+  sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
@@ -151,7 +164,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

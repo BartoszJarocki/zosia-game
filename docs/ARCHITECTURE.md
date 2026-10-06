@@ -282,6 +282,24 @@ After each finished mission (not after the finale, not at the session's start) t
 No speech, nothing to get wrong, nothing blocked: the hub's usual line and every place work meanwhile, and the
 invitation fades by itself. The cruiser always honks when tapped. `window.__pup.dev.micro = 'BUBBLES'` forces one.
 
+## Kitty Park V2 (Phase 11)
+
+Six levels, each meeting a letter a different way (GAME.md `ask`), not just more blocks:
+
+| Level | ask | The bubble | She hears | Skill |
+|---|---|---|---|---|
+| 1 | match | the letter | "Znajdź taką samą!" (no name) | letterVisual |
+| 2 | name | the letter | "Kotek się schował! Znajdź Be!" | letterVisual |
+| 3 | audio | 🐱 | "Kotek się schował! Znajdź Be!" | letterAudio |
+| 4 | name + similar | the letter | lookalikes (B/P/R, E/F, O/C, M/W) among the blocks | letterVisual |
+| 5 | word | its picture | "Be jak banan! Znajdź Be!" | letterAudio |
+| 6 | sound | 👂 | "Która literka robi: mmmm?" (SOUNDS: letters you can hold) | letterSound |
+
+- **Level gates** (`src/levels/gate.js`, GAME.md `needs`): level 6 opens only when the average letterAudio mastery over
+  its letters is ≥ 0.6 — good runs alone are not enough. Any mission's level can have a gate.
+- Older tables with `show` still parse (`letter` → name, `picture` → word). A gentler run after a rough one asks
+  an easier way (audio/word → name, sound → word).
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

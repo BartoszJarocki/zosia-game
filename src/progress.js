@@ -5,7 +5,8 @@
 // The saved shape and its upgrades live in progress/migrations.js.
 import { CONFIG } from './config.js';
 import { badges } from './ui.js';
-import { maxLevel } from './levels/data.js';
+import { maxLevel, LEVELS } from './levels/data.js';
+import { meetsNeeds } from './levels/gate.js';
 import { migrate } from './progress/migrations.js';
 import { applyEvent } from './learning/mastery.js';
 import { learning } from './learning/events.js';
@@ -52,7 +53,10 @@ export function recordMission(kind, firstTry, rounds) {
   let levelUp = false;
   if (acc >= 0.65) { // two thirds right first time (2 of 3, 3 of 4, 4 of 5…)
     m.good++;
-    if (m.good >= CONFIG.goodRunsPerLevel && m.level < maxLevel(kind)) { m.level++; m.good = 0; levelUp = true; }
+    // the next level may also need a skill to be known well enough (GAME.md "needs"), not just good runs
+    if (m.good >= CONFIG.goodRunsPerLevel && m.level < maxLevel(kind) && meetsNeeds(state.skills, kind, LEVELS[kind]?.[m.level])) {
+      m.level++; m.good = 0; levelUp = true;
+    }
   }
   save();
   return { level: levelFor(kind), levelUp, acc };

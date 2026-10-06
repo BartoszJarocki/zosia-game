@@ -38,3 +38,30 @@ test('rounds: limits are checked', () => {
   assert.equal(errors.length, 1);
   assert.match(errors[0], /rounds/);
 });
+
+const lettersTable = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`letters\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
+
+test('Kitty Park: six levels, each asking a different way; level 6 is gated on mastery', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  assert.deepEqual(levels.letters.map((l) => l.ask), ['match', 'name', 'audio', 'name', 'word', 'sound']);
+  assert.deepEqual(levels.letters[5].needs, { skill: 'letterAudio', min: 0.6 });
+  assert.equal(levels.letters[3].similar, true);
+});
+
+test('Kitty Park: older tables with "show" still work', () => {
+  const { levels, errors } = only(parseGame(lettersTable('pool | choices | show | similar', 'ALL | 3 | picture | no'), {}));
+  assert.deepEqual(errors, []);
+  assert.equal(levels.letters[0].ask, 'word');
+});
+
+test('Kitty Park: "sound" only with letters you can hold', () => {
+  const { errors } = only(parseGame(lettersTable('pool | choices | ask | similar', 'MSBT | 3 | sound | no'), {}));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /not BT/);
+});
+
+test('needs: a broken gate is explained', () => {
+  const { errors } = only(parseGame(lettersTable('pool | choices | ask | similar | needs', 'ALL | 3 | name | no | reading 2'), {}));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /needs/);
+});

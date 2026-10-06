@@ -54,6 +54,7 @@ A set can use `{name}` (the child's name), other sets, and plain capital letters
 | ALL | ABCDEFGHIJKLMNOPRSTUWZ |
 | START | {name} + AMTO |
 | MORE | START + EULDPKBW |
+| SOUNDS | MSAOZLUEI |
 
 `ALL` is every letter the game may use (Q, V, X, Y are left out: they are rare in Polish and hard
 to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g. B → banan 🍌.
@@ -67,16 +68,26 @@ to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g
 A kitten hides behind one of the letter blocks: "Kotek schował się za literą Be!" Tapping the right
 block makes it fly away and the kitten appears.
 
-| Level | pool | choices | show | similar | rounds |
-|---|---|---|---|---|---|
-| 1 | START | 3 | letter | no | 4 |
-| 2 | MORE | 3 | letter | no | 4 |
-| 3 | ALL | 4 | picture | yes | 4 |
+| Level | pool | choices | ask | similar | rounds | needs |
+|---|---|---|---|---|---|---|
+| 1 | START | 3 | match | no | 4 | — |
+| 2 | START | 3 | name | no | 4 | — |
+| 3 | MORE | 3 | audio | no | 4 | — |
+| 4 | MORE | 3 | name | yes | 4 | — |
+| 5 | ALL | 3 | word | no | 4 | — |
+| 6 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.6 |
 
 - **pool** — which letters can be asked (a letter set, letters, or both with `+`)
 - **choices** — how many blocks (2–4)
-- **show** — `letter`: the letter is in the bubble (matching) · `picture`: only the picture clue, she has to listen
-- **similar** — `yes` puts lookalike letters (E/F, M/W, O/C…) among the wrong answers on purpose
+- **ask** — how the question is asked (each level a different way of meeting a letter):
+  `match` the letter is in the bubble: "find the same one" (no name) ·
+  `name` shown and named: "Znajdź Be!" ·
+  `audio` only named, nothing shown ·
+  `word` named with its picture word, the picture in the bubble: "Be jak banan! Znajdź Be!" ·
+  `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold — the `SOUNDS` set)
+- **similar** — `yes` puts lookalike letters (B/P/R, E/F, M/W, O/C…) among the wrong answers on purpose
+- **needs** — optional: the level opens only once that skill is known well enough over the level's letters
+  (average mastery, 0–1), not just after enough good runs. `letterAudio 0.6` = she knows the names of those letters
 - **rounds** — how many kittens to find (1–8)
 
 ### 🎈 Balloon Hill · `balloons`

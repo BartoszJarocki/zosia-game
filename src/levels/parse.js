@@ -5,13 +5,20 @@
 //   ## Letter sets        → a table:  | Set | Letters |
 //   ### Name · `kind`     → a mission; the first table after it has one row per level.
 
+import { parseNeeds } from './gate.js';
+
+/** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
+export const SOUNDABLE = 'AEFHILMNORSUWZ';
+
 /** What each mission's columns mean, their allowed values and limits (the game's capabilities). */
 export const SCHEMA = {
   letters: {
     pool: { type: 'letters' },
     choices: { type: 'int', min: 2, max: 4 },
-    show: { type: 'enum', values: ['letter', 'picture'] },
+    ask: { type: 'enum', values: ['match', 'name', 'audio', 'word', 'sound'], optional: true },
+    show: { type: 'enum', values: ['letter', 'picture'], optional: true }, // (older tables: letter = name, picture = word)
     similar: { type: 'bool' },
+    needs: { type: 'needs', optional: true },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 4 }, // kittens to find
   },
   balloons: {
@@ -168,6 +175,7 @@ function value(raw, spec, ctx) {
       if (a < spec.min || b > spec.max) throw new Error(`must stay within ${spec.min}–${spec.max} (got ${v})`);
       return [a, b];
     }
+    case 'needs': return parseNeeds(v);
     case 'letters': {
       const s = resolveLetters(v, ctx.letterSets, ctx.name);
       if (s.length < 2) throw new Error(`needs at least 2 letters (got "${s}")`);
@@ -205,6 +213,11 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
+  if (kind === 'letters') {
+    s.ask ||= s.show === 'picture' ? 'word' : 'name'; // (older tables used "show")
+    const odd = s.ask === 'sound' ? [...(s.pool || '')].filter((c) => !SOUNDABLE.includes(c)) : [];
+    if (odd.length) errors.push(`${where}: ask "sound" only works for letters you can hold (${SOUNDABLE}); not ${odd.join('')}`);
+  }
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);

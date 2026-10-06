@@ -12,8 +12,14 @@ import { T } from '../lang/pl.js';
 import { distractors } from '../levels.js';
 import { Mission } from './mission.js';
 
-// "Kitty Park": a kitten hides behind one of the letter blocks.
-//  L1 match the letter shown · L2 more letters · L3 only hear it (picture clue), 4 blocks incl. lookalikes.
+// "Kitty Park": a kitten hides behind one of the letter blocks. Each level asks in a different way
+// (GAME.md "ask"), so the letter is met as a shape, a name, a word and a sound — not just more blocks:
+//   match  the letter is shown: "find the same one" (no name)       → letterVisual
+//   name   the letter is shown and named: "Znajdź Be!"               → letterVisual
+//   audio  only named (nothing shown)                               → letterAudio
+//   word   named with its picture word: "Be jak banan! Znajdź Be!"  → letterAudio
+//   sound  its sound: "Która literka robi: mmmm?"                   → letterSound
+const SKILL = { match: 'letterVisual', name: 'letterVisual', audio: 'letterAudio', word: 'letterAudio', sound: 'letterSound' };
 export class LettersMission extends Mission {
   constructor(game) {
     super(game, 'letters');
@@ -45,7 +51,8 @@ export class LettersMission extends Mission {
   round() {
     return new Promise((resolve) => {
       const pool = [...this.L.pool];
-      const skill = this.L.show === 'picture' ? 'letterAudio' : 'letterVisual'; // picture-only = she has to listen
+      const ask = this.L.ask || 'name';
+      const skill = SKILL[ask];
       const target = this.pick(skill, pool);
       this.last = target;
       this.item('L:' + target);
@@ -100,7 +107,7 @@ export class LettersMission extends Mission {
             this.success(new THREE.Vector3(b.position.x, 1.6, b.position.z), { big: true });
             this.lookAt(kitten);
             blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 500));
-            await say([this.praise(), ...T.kittyFound(target)]);
+            await say([this.praise(), ...(ask === 'sound' ? T.soundIs(target) : []), ...T.kittyFound(target)]);
             if (!this.alive) return;
             // kitty scampers off
             const side = Math.sign(kitten.position.x || 1);
@@ -121,17 +128,32 @@ export class LettersMission extends Mission {
         });
       });
 
-      const bubble = (big) => ui.bubble({ big, pic: emoji, onTap: () => this.replay() });
-      bubble(this.L.show === 'letter' ? showLetter(target) : '');
+      // what the speech bubble shows: the letter (match, name), its picture (word), or just a clue icon
+      const letter = showLetter(target);
+      const bubble = (big, pic) => ui.bubble({ big, pic, onTap: () => this.replay() });
+      const show = { match: [letter, ''], name: [letter, ''], audio: ['', '🐱'], word: ['', emoji], sound: ['', '👂'] }[ask];
+      bubble(...show);
       const right = blocks.find((x) => x.userData.letter === target);
+      const prompt = {
+        match: T.kittyMatch(),
+        name: [...T.kittyHid(), ...T.findLetter(target)],
+        audio: [...T.kittyHid(), ...T.findLetter(target)],
+        word: [...T.kittyHid(), ...T.letterLike(target), ...T.findLetter(target)],
+        sound: [...T.kittyHid(), ...T.whichSound(target)],
+      }[ask];
       this.question(skill, target, {
-        short: T.whereLetter(target),
-        hint: () => { bubble(showLetter(target)); return T.letterLike(target); }, // the letter appears, plus its word
+        short: ask === 'match' ? T.findSame() : ask === 'sound' ? T.whichSound(target) : T.whereLetter(target),
+        // a clue that fits how it was asked: its word (and the letter itself when it wasn't shown)
+        hint: () => {
+          if (ask === 'sound') { bubble('', emoji); return T.soundLike(target); }
+          if (ask === 'audio' || ask === 'word') bubble(letter, emoji);
+          return T.letterLike(target);
+        },
         simplify: () => this.removeOption(lastWrong || blocks.find((x) => x !== right && x.parent)),
         reveal: () => this.hint(right, () => solved),
       });
       wait(500).then(() => {
-        if (this.alive) this.ask(T.kittyAsk(target));
+        if (this.alive) this.ask(prompt);
       });
     });
   }
