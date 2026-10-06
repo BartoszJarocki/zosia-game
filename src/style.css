@@ -283,3 +283,6 @@ svg { display: block; }
 .pv-hold::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: currentColor; opacity: .6; }
 .pv-hold.holding::after { width: 100%; transition: width var(--hold, 1.5s) linear; }
 .pv-done { color: #15803d; font-weight: 700; min-height: 1.4em; }
+/* which version is running (start screen, grown-ups' page) */
+.start .build { position: absolute; right: 14px; bottom: max(10px, env(safe-area-inset-bottom)); font-size: 12px; color: rgba(255,255,255,.75); letter-spacing: .5px; }
+.pv-build { font-size: 13px; font-weight: 500; color: #8a93a8; margin-left: 8px; }

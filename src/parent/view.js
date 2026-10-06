@@ -3,6 +3,7 @@
 import { getSkills, getSessions, levelFor, dev as progressDev } from '../progress.js';
 import { SKILLS } from '../learning/events.js';
 import { badges, MISSIONS } from '../ui.js';
+import * as ui from '../ui.js';
 import { CONFIG, showLetter } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
 import { LETTER_SKILLS, NUMBER_SKILLS, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted } from './report.js';
@@ -137,7 +138,7 @@ export function showParentView({ onClose }) {
   page.className = 'parent-view';
   page.innerHTML = `
     <header class="pv-head">
-      <h1>${name}'s progress</h1>
+      <h1>${name}'s progress <small class="pv-build">${esc(ui.buildLabel())}</small></h1>
       <button class="pv-close">Back to the game</button>
     </header>
     <p class="pv-note">Estimates from play, not a test. Mastery moves a little with every answer: right first time without help counts most,

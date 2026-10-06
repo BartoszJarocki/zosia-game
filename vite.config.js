@@ -3,7 +3,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // Installable app (desktop shortcut / iPad home screen) that works offline:
 // the service worker precaches the game, fonts, icons and every voice clip.
+// shown small on the start screen, so it's always clear which version is running
+const BUILD = { sha: process.env.GIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev', at: new Date().toISOString() };
+
 export default defineConfig({
+  define: { __BUILD__: JSON.stringify(BUILD) },
   plugins: [
     VitePWA({
       registerType: 'prompt', // we decide when to switch versions (only on the start screen)

@@ -72,11 +72,20 @@ const press = (node, fn) => node.addEventListener('pointerdown', (e) => { e.prev
 
 export function clear() { ui.innerHTML = ''; }
 
+/** "4e01bb5 · 6.10 22:51" — which version this is (for grown-ups; tiny and faint). */
+export function buildLabel() {
+  const b = typeof __BUILD__ === 'object' ? __BUILD__ : { sha: 'dev', at: '' };
+  const d = b.at ? new Date(b.at) : null;
+  const when = d ? `${d.getDate()}.${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+  return [b.sha, when].filter(Boolean).join(' · ');
+}
+
 export function showStart(onGo) {
   clear();
   const s = el(`<div class="start">
       <div class="start-badge">${nameBadge()}</div>
       <button class="play" aria-label="Play">${ICON.paw('#fff')}</button>
+      <small class="build">${buildLabel()}</small>
     </div>`);
   s.querySelector('.play').addEventListener('pointerdown', (e) => { e.preventDefault(); onGo(); }, { once: true });
   ui.append(s);
