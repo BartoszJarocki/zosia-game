@@ -15,8 +15,8 @@ import { Mission } from './mission.js';
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 // "Treat House": counting for real.
-//  give    – "give Chase N treats": tap the box; bones land on a ten-frame (rows of 5).
-//            L1/L2 the box stops at N. L3 she decides when to stop, then taps Chase.
+//  give    – "give Chase N treats": move treats from the pile to Chase (drag, or tap one), one by one, onto a
+//            ten-frame (rows of 5). Ghost spots early; later she decides when to stop and taps Chase.
 //  howMany – bones are already there: count them (tap to count) and pick the numeral. Wrong choices are ±1.
 export class CountingMission extends Mission {
   constructor(game) {
@@ -61,7 +61,7 @@ export class CountingMission extends Mission {
     box.userData.tapHeight = 0.8;
     this.scene.add(box);
     this.shadowUnder(box, 1.3, 0.3);
-    this.tappable(box, () => this.onBox?.());
+    this.tappable(box, () => { sfx.pop(); hop(this.box, 0.15, 300); }); // (the treats are in the pile next to it)
   }
 
   /** Ten-frame layout: rows of five in front of Chase. */
@@ -119,39 +119,85 @@ export class CountingMission extends Mission {
   }
 
   // ---------- "give Chase N treats" ----------
+  // A pile of treats by the box; she moves them one by one to Chase (drag, or just tap one: it hops over by
+  // itself). Each lands on its own spot and is counted aloud: one-to-one counting with real objects.
+  //   slots yes: ghost spots show where the N treats go · no: they just line up
+  //   auto  yes: done when N are there · no: she decides when to stop and taps Chase
   giveRound() {
     return new Promise((resolve) => {
       const [lo, hi] = this.L.give;
       const n = this.pick('counting', range(lo, hi));
       this.last = n;
       this.item('Q:' + n);
-      const auto = this.L.auto;
-      const slotsN = auto ? n : n > 5 ? 10 : Math.max(5, n + 2);
-      const slots = this.makeSlots(slotsN);
-      const bones = [], landed = [];
-      let count = 0, done = false, marked = false;
+      const auto = this.L.auto, ghost = this.L.slots !== false;
+      const spotsN = auto ? n : n > 5 ? 10 : Math.max(5, n + 2); // the ten-frame layout (rows of five)
+      const slots = ghost ? this.makeSlots(auto ? n : spotsN) : [];
+      if (ghost && !auto) slots.slice(n).forEach((s) => s.visible = false); // only N spots on show
+      const given = [], landed = [];
+      let done = false, marked = false;
       const PALE = '#fef3c7', FULL = '#fde047';
-      const short = () => (count === 0 ? T.tapTheBox() : !auto && count >= n ? T.tapPupWhenDone() : T.treatsDone(n));
+
+      // the pile: a few more than needed, lying by the box
+      const pile = [];
+      for (let i = 0; i < Math.min(12, n + (auto ? 2 : 3)); i++) {
+        const bone = makeBone(1.4); // big enough for little fingers
+        const a = i * 2.4, r = 0.3 + (i % 4) * 0.32;
+        bone.position.set(-1.1 + Math.cos(a) * r, 0.16 + (i % 3) * 0.04, 2.95 + Math.sin(a) * r * 0.55); // in the open, in front of the box
+        bone.rotation.set(0, a, 0);
+        bone.userData.tapHeight = 0.3;
+        bone.userData.home = bone.position.clone();
+        this.scene.add(bone);
+        pile.push(bone);
+        this.draggable(bone, {
+          height: 0.14,
+          onPick: () => { this.poke(); sfx.pop(); this.lookAt(bone); },
+          onDrop: (b, p) => (p.distanceTo(new THREE.Vector3(1.6, 0, 1)) < 2.8 ? (give(b), true) : false), // anywhere near Chase
+          onTap: (b) => { this.poke(); give(b); }, // the fallback: it hops over by itself
+        });
+      }
+      const count = () => given.length;
+      const short = () => (count() === 0 ? T.dragTreat() : !auto && count() >= n ? T.tapPupWhenDone() : T.treatsDone(n));
       this.question('counting', n, {
         short,
-        hint: () => { // the n spots she has to fill light up softly
-          if (!auto && !marked) { marked = true; slots.slice(count, n).forEach((s) => s.material.color.set(PALE)); }
-          if (count < n) hop(this.box, 0.3);
+        hint: () => { // the spots still to fill light up softly
+          if (!marked) {
+            marked = true;
+            if (ghost) slots.slice(count(), n).forEach((s) => { s.visible = true; s.material.color.set(PALE); });
+            else this.showSpots(count(), n, auto ? n : spotsN);
+          }
           return short();
         },
-        reveal: () => { const c0 = count; if (count < n) this.hint(this.box, () => done || count > c0); },
+        reveal: () => { const next = pile.find((b) => !given.includes(b)); const c0 = count(); if (next && count() < n) this.hint(next, () => done || count() > c0); },
       });
 
       ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true }); // Chase sits right under it
-      wait(400).then(() => { if (this.alive) this.ask(auto ? T.treatsAsk(n) : T.giveThenTap(n)); });
+      wait(400).then(() => { if (this.alive) this.ask(auto ? [...T.treatsGive(n), ...T.dragTreat()] : T.giveThenTap(n)); });
+
+      // one treat goes to Chase: onto the next spot, counted aloud
+      const give = (bone) => {
+        if (done || given.includes(bone) || count() >= spotsN) return;
+        this.untap(bone);
+        given.push(bone);
+        const i = count() - 1;
+        const to = this.slotPos(i, auto ? n : spotsN);
+        const from = bone.position.clone();
+        sfx.pop();
+        landed.push(animate(420, (t) => {
+          bone.position.lerpVectors(from, to, t);
+          bone.position.y += Math.sin(t * Math.PI) * 0.9;
+        }, ease.inOut).then(() => { bone.rotation.set(0, 0.3, 0); sfx.crunch(); if (slots[i]) slots[i].material.color.set(FULL); }));
+        say(T.number(count()));
+        if (auto && count() === n) { finish(); return; }
+        if (!auto) this.pupGlow(true); // "tap Chase when you're done" comes from the quiet-time help
+      };
 
       const finish = async () => {
         this.correct(n);
         done = true;
         this.stopIdle();
-        this.onBox = null;
         this.onPup = null;
         this.pupGlow(false);
+        pile.forEach((b) => this.untap(b));
         await Promise.all(landed);
         await wait(200);
         if (!this.alive) return;
@@ -159,49 +205,32 @@ export class CountingMission extends Mission {
         this.success(this.pup.position.clone().add(new THREE.Vector3(0, 2.2, 0)));
         await say([...T.treatsDone(n), this.praise()]);
         if (!this.alive) return;
-        await this.gobble(bones);
+        await this.gobble(given);
         await say(T.yum());
         if (!this.alive) return;
-        await Promise.all(slots.map((s) => this.shrinkAway(s, 250)));
+        await Promise.all([...slots, ...pile.filter((b) => !given.includes(b)), ...(this.spots || [])].map((s) => this.shrinkAway(s, 250)));
+        this.spots = null;
         resolve();
-      };
-
-      this.onBox = () => {
-        if (done || count >= slotsN) return;
-        this.poke();
-        this.lookAt(this.box);
-        count++;
-        const i = count - 1;
-        sfx.pop();
-        const { bone, flight } = this.flyBone(this.slotPos(i, slotsN), () => slots[i] && slots[i].material.color.set(FULL));
-        bones.push(bone);
-        landed.push(flight);
-        say(T.number(count));
-        if (auto && count === n) { finish(); return; }
-        if (!auto) this.pupGlow(true); // "tap Chase when you're done" comes from the quiet-time help
       };
 
       if (!auto) {
         this.onPup = async () => {
-          if (done || count === 0) { sfx.bark(); hop(this.pup, 0.5); return; }
+          if (done || count() === 0) { sfx.bark(); hop(this.pup, 0.5); return; }
           this.poke();
           await Promise.all(landed);
-          if (count === n) { finish(); return; }
-          this.wrong(count, [], { feedback: false }); // gave the wrong number of treats: answered below
+          if (count() === n) { finish(); return; }
+          this.wrong(count(), [], { feedback: false }); // gave the wrong number of treats: answered below
           sfx.oops();
           wiggle(this.pup);
-          if (count > n) {
-            // too many: give the extras back, one by one
+          if (count() > n) {
+            // too many: give the extras back to the pile, one by one
             done = true;
             await this.say(T.tooMany());
-            while (count > n && this.alive) {
-              const bn = bones.pop();
-              const p0 = bn.position.clone(), to = this.box.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+            while (count() > n && this.alive) {
+              const bn = given.pop();
+              const p0 = bn.position.clone(), to = bn.userData.home;
               await animate(380, (t) => { bn.position.lerpVectors(p0, to, t); bn.position.y += Math.sin(t * Math.PI); }, ease.linear);
-              bn.removeFromParent();
-              slots[count - 1]?.material.color.set(marked && count - 1 < n ? PALE : '#ffffff');
-              count--;
-              await this.say(T.number(count));
+              await this.say(T.number(count()));
             }
             if (this.alive) finish();
           } else {
@@ -210,6 +239,18 @@ export class CountingMission extends Mission {
         };
       }
     });
+  }
+
+  /** Help without ghost spots: show pale spots where the next treats go (from..to-1). */
+  showSpots(from, to, layout) {
+    this.spots ||= [];
+    for (let i = from; i < to; i++) {
+      const s = mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 24), new THREE.MeshStandardMaterial({ color: '#fef3c7', transparent: true, opacity: 0.85 }), { shadow: false });
+      s.position.copy(this.slotPos(i, layout)).setY(0.08);
+      this.scene.add(s);
+      this.spots.push(s);
+    }
+    sfx.pop();
   }
 
   pupGlow(on) {

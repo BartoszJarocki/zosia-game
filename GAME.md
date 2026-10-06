@@ -159,17 +159,18 @@ Tap the stepping stones 1, 2, 3… so Zosia hops across the river to Chase.
 
 Counting for real, at Chase's pup house.
 
-| Level | types | give | howMany | auto | rounds |
-|---|---|---|---|---|---|
-| 1 | give | 1–3 | — | yes | 3 |
-| 2 | give, howMany | 2–5 | 1–4 | yes | 3 |
-| 3 | give, howMany | 3–7 | 2–6 | no | 3 |
+| Level | types | give | howMany | auto | slots | rounds |
+|---|---|---|---|---|---|---|
+| 1 | give | 1–3 | — | yes | yes | 3 |
+| 2 | give, howMany | 2–5 | 1–4 | yes | no | 3 |
+| 3 | give, howMany | 3–7 | 2–6 | no | no | 3 |
 
-- **types** — round kinds, taking turns: `give` ("Daj mu trzy smakołyki": tap the treat box) and
+- **types** — round kinds, taking turns: `give` ("Daj mu trzy smakołyki!": move the treats from the pile to Chase — drag them, or tap one and it hops over) and
   `howMany` ("Ile smakołyków?": count the bones, tapping them counts aloud, then pick the numeral; wrong
   choices are ±1)
 - **give** / **howMany** — the number ranges (give up to 10, howMany up to 9; `—` if unused)
-- **auto** — `yes`: the box stops at the right number · `no`: she decides when to stop and taps Chase
+- **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
+- **slots** — `yes`: ghost spots show where the treats go (○ ○ ○) · `no`: no spots (help shows them)
   (too many: he gives one back; too few: "jeszcze!") · **rounds** — how many tasks (1–8)
 
 ### 🗼 The Lookout · `lookout`

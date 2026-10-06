@@ -55,6 +55,7 @@ export const SCHEMA = {
     give: { type: 'range', min: 1, max: 10 },
     howMany: { type: 'range', min: 1, max: 9, optional: true },
     auto: { type: 'bool' },
+    slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
   },
   lookout: {

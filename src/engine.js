@@ -4,6 +4,7 @@ import { Post } from './fx/post.js';
 import { windTime } from './world/nature.js';
 import { optimizeScene } from './fx/optimize.js';
 import { CONFIG } from './config.js';
+import { startDrag } from './input/drag.js';
 
 // ---------- renderer ----------
 export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -63,6 +64,11 @@ export class Stage {
     this.cameraPosition = camera.position;
   }
   tappable(obj, fn) { obj.userData.onTap = fn; if (!this.tappables.includes(obj)) this.tappables.push(obj); return obj; }
+  /**
+   * Something she can drag across the ground (input/drag.js). opts: { height, onDrop(obj, point) → accepted?,
+   * onTap(obj) (the fallback: a tap without dragging), onPick(obj) }. Not accepted → it floats back.
+   */
+  draggable(obj, opts) { obj.userData.drag = opts; return this.tappable(obj, () => {}); }
   untap(obj) { this.tappables = this.tappables.filter((o) => o !== obj); delete obj.userData.onTap; }
   onUpdate(fn) { this.updaters.push(fn); return () => { this.updaters = this.updaters.filter((f) => f !== fn); }; }
   /** Pick up everything in the scene that animates itself (userData.tick / userData.sway). */
@@ -160,6 +166,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
       if (d < best) { best = d; target = o; }
     }
   }
+  if (target?.userData.drag) { startDrag(target, e, { camera, dom: renderer.domElement, isAlive: () => current?.alive, wake: () => (lastActive = performance.now()) }); return; }
   if (target) target.userData.onTap(target);
   else current.onMissTap?.(); // a tap that hit nothing: missions log it as a motor slip
 });

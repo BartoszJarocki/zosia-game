@@ -25,7 +25,7 @@ export function pointOnPlane(e, camera, dom, height) {
 }
 
 /** Begin dragging obj from this pointerdown. */
-export function startDrag(obj, e, { camera, dom, isAlive }) {
+export function startDrag(obj, e, { camera, dom, isAlive, wake = () => {} }) {
   if (active) return;
   const d = obj.userData.drag;
   const start = { x: e.clientX, y: e.clientY };
@@ -41,6 +41,7 @@ export function startDrag(obj, e, { camera, dom, isAlive }) {
     if (ev.pointerId !== e.pointerId) return;
     if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > TAP_PX) { moved = true; d.onPick?.(obj); }
     if (!moved || !isAlive()) return;
+    wake(); // full frame rate while dragging
     const p = pointOnPlane(ev, camera, dom, height);
     if (p) obj.position.set(p.x + offset.x, height + lift, p.z + offset.z);
   };

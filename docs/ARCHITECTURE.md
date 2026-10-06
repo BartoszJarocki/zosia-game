@@ -99,7 +99,7 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
   currently ignored** (no signal).
 - HTML: overlay in `#ui` (`:where(#ui > *)` catches taps by default; the top bar and passthrough bubbles let them through).
   Elevator panel buttons (`ui.liftPanel`), home/again buttons, the bubble (tap = repeat the question).
-- No drag-and-drop yet. No multi-touch handling (every pointerdown is a tap).
+- Drag and drop since Phase 13 (`stage.draggable`). No multi-touch handling (every pointerdown is a tap or a drag).
 
 ## Reusable helpers worth keeping
 
@@ -308,6 +308,17 @@ Nothing is spelled from memory: the word is always there to look at. GAME.md `mo
 next letter lit, for new words). `NameMission.fill` lists the wagons she fills; at the end the letters are said
 in word order, then the word, and the train drives off. `ui.bubble({ word, at, done })` can now mark letters done
 without lighting the next one.
+
+## Drag and drop + Treat House V2 (Phase 13)
+
+- `stage.draggable(obj, { height, onDrop(obj, point) → accepted?, onTap, onPick })` (`src/input/drag.js`): the engine
+  starts a drag when a pointerdown lands on a draggable; it follows the finger across the plane y = height, is
+  dropped on release (not accepted → floats back). A press that barely moves is a tap → `onTap`: the fallback for
+  anyone who can't drag yet. Frames stay at full rate while dragging.
+- Treat House "give": a pile of treats in front of the box (a few more than needed); she moves them to Chase one by
+  one (drag, or tap one: it hops over), each onto its own spot of a ten-frame, counted aloud. GAME.md `slots`:
+  ghost spots ○○○ early, none later (the clue shows them); `auto no`: she decides when to stop and taps Chase
+  (too many → the extras go back to the pile, one by one).
 
 ## Findings relevant to the roadmap
 

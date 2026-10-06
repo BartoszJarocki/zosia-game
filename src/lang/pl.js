@@ -122,7 +122,6 @@ export const T = {
   riverFirstNext: () => [`Pomóż ${dat} przejść przez rzekę! Zacznij od jedynki, a potem po kolei!`],
 
   // Treat House
-  treatsAsk: (n) => [`${pup} jest głodny! Daj mu ${NUM[n]} ${treats(n)}. Dotknij pudełka ze smakołykami!`],
   treatsDone: (n) => [`${cap(NUM[n])} ${treats(n)}!`],
   yum: () => ['Mniam, mniam! Dziękuję!'],
 
@@ -139,6 +138,8 @@ export const T = {
   howMany: () => [`Ile smakołyków ma ${pup}? Policz i dotknij numeru!`],
   giveThenTap: (n) => [`Daj ${pupDat} ${NUM[n]} ${treats(n)}, a potem dotknij ${pupGen}!`],
   tapPupWhenDone: () => [`Gotowe? Dotknij ${pupGen}!`],
+  treatsGive: (n) => [`${pup} jest głodny! Daj mu ${NUM[n]} ${treats(n)}!`],
+  dragTreat: () => [`Przesuń smakołyk do ${pupGen}!`],
   tooMany: () => ['Oj, za dużo! Jeden oddaję.'],
   tooFew: () => ['Za mało! Jeszcze!'],
 };
@@ -156,7 +157,7 @@ export function allSegments(levels, allLetters) {
   const out = [];
   const add = (segs) => out.push(...segs);
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
-  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsAsk(n)); add(T.treatsDone(n)); });
+  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -169,7 +170,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }
