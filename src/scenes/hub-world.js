@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { animate, ease, hop } from '../engine.js';
 import { makeKitten, makeTrain, makeBalloon, mat, mesh, rbox } from '../models.js';
-import { glyphTexture } from '../textures.js';
+import { makeTree } from '../world/nature.js';
+import { glyphTexture, labelTexture } from '../textures.js';
 import { sparkle } from '../fx/particles.js';
 import { flatten } from '../fx/optimize.js';
 import { sfx } from '../audio.js';
@@ -133,6 +134,111 @@ export function addWorld(hub, world, unseen = [], { places }) {
   if (newBalloons) lines.push(...T.worldBalloon());
   if (newTypes.has('lookout-lights')) lines.push(...T.worldLights());
   return lines;
+}
+
+// ---------- hub events (adventure/events.js): a story at a place, tap it to go there ----------
+// a tree of its own for the lost kitten, where the island's random trees never grow (always in view)
+// (front left, between Balloon Hill and the Name Train: in frame on any screen, off the roads)
+const KITTEN_TREE = new THREE.Vector3(-9.8, 0, 11.2);
+const BALLOON_HILL = new THREE.Vector3(-13.5, 0, 8);
+
+/** Show an event on the island. Returns { nudge() } (a little sound when the hub reminds her). */
+export function addEvent(hub, event) {
+  const go = () => hub.go(event.mission);
+  if (event.id === 'lost-kitten') return lostKitten(hub, go);
+  if (event.id === 'balloons-escaping') return escapingBalloons(hub, go);
+  if (event.id === 'lookout-alarm') return lookoutAlarm(hub, go);
+  return { nudge() {} };
+}
+
+let alertTex = null;
+/** A white speech bubble with a red "!" (drawn once). */
+function alertTexture() {
+  if (alertTex) return alertTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.strokeStyle = '#ef4444'; g.lineWidth = 14;
+  g.beginPath(); g.arc(128, 116, 96, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(104, 206); g.lineTo(128, 246); g.lineTo(152, 206); g.closePath(); g.fillStyle = '#ef4444'; g.fill(); // the bubble's tail
+  g.fillStyle = '#ef4444'; g.font = '700 150px Fredoka, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('!', 128, 124);
+  alertTex = new THREE.CanvasTexture(c);
+  alertTex.colorSpace = THREE.SRGBColorSpace;
+  return alertTex;
+}
+
+/** "!" in a speech bubble, bobbing over something. */
+function alertBubble(hub, at, go) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: alertTexture(), depthTest: false }));
+  sp.scale.setScalar(1.3);
+  sp.renderOrder = 5;
+  sp.userData.tapHeight = 0;
+  sp.userData.tick = (dt, t) => { sp.position.set(at.x, at.y + Math.sin(t * 3) * 0.15, at.z); sp.scale.setScalar(1.3 + Math.max(0, Math.sin(t * 6)) * 0.12); };
+  hub.scene.add(sp);
+  hub.tappable(sp, go);
+  return sp;
+}
+
+function lostKitten(hub, go) {
+  const tree = makeTree({ type: 'round', scale: 1.05, seed: 77 });
+  tree.position.copy(KITTEN_TREE);
+  hub.scene.add(tree);
+  const top = new THREE.Box3().setFromObject(tree).max.y;
+  const perch = KITTEN_TREE.clone().setY(top - 0.35);
+  const k = makeKitten();
+  k.scale.setScalar(1.4);
+  k.position.copy(perch);
+  k.rotation.y = 0.4;
+  k.userData.tapHeight = 0.6;
+  k.userData.tick = (dt, t) => { k.userData.idle(t); k.rotation.z = Math.sin(t * 2.2) * 0.08; }; // a bit wobbly up there
+  hub.scene.add(k);
+  hub.tappable(k, go);
+  alertBubble(hub, perch.clone().add(new THREE.Vector3(0, 2.1, 0)), go);
+  setTimeout(() => hub.alive && sfx.meow(), 1200);
+  return { nudge: () => sfx.meow() };
+}
+
+function escapingBalloons(hub, go) {
+  const cols = ['#ef4444', '#3b82f6', '#f59e0b'];
+  cols.forEach((c, i) => {
+    const b = makeBalloon(c, labelTexture('ABC'[i]));
+    b.scale.setScalar(0.8);
+    b.userData.tapHeight = 0;
+    const phase = i / cols.length;
+    b.userData.tick = (dt, t) => {
+      const k = (t / 9 + phase) % 1; // rise for 9 s, then a new one comes up
+      const a = i * 2.1 + k * 3;
+      b.position.set(BALLOON_HILL.x + Math.cos(a) * (1 + k * 1.5), 3 + k * 6.5, BALLOON_HILL.z + Math.sin(a) * (1 + k * 1.2));
+      b.scale.setScalar(0.8 * Math.min(1, k * 8, (1 - k) * 6));
+      b.rotation.z = Math.sin(t * 1.5 + i) * 0.15;
+    };
+    hub.scene.add(b);
+    hub.tappable(b, go);
+  });
+  return { nudge: () => sfx.pop() };
+}
+
+function lookoutAlarm(hub, go) {
+  const g = new THREE.Group();
+  const red = new THREE.MeshStandardMaterial({ color: '#ff2a2a', emissive: '#ff2a2a', emissiveIntensity: 3, roughness: 0.3 });
+  const beacon = mesh(new THREE.SphereGeometry(0.5, 16, 12), red, { y: 12.6, shadow: false });
+  g.add(beacon);
+  // a red band flashing round the top deck: easy to see from anywhere on the island
+  g.add(mesh(new THREE.TorusGeometry(2.72, 0.16, 8, 48), red, { y: 9.9, rx: Math.PI / 2, shadow: false }));
+  g.add(mesh(new THREE.TorusGeometry(3.3, 0.14, 8, 48), red, { y: 2.6, rx: Math.PI / 2, shadow: false }));
+  g.position.set(0, 0, -10.5);
+  g.userData.tapHeight = 9;
+  g.userData.tick = (dt, t) => {
+    const on = Math.sin(t * 9) > 0;
+    red.emissiveIntensity = on ? 4.5 : 0.3;
+    beacon.scale.setScalar(on ? 1.2 : 1);
+  };
+  hub.scene.add(g);
+  hub.tappable(g, go);
+  alertBubble(hub, new THREE.Vector3(4.4, 8.6, -9.4), go);
+  setTimeout(() => hub.alive && sfx.siren(2), 900);
+  return { nudge: () => sfx.siren(1) };
 }
 
 /**

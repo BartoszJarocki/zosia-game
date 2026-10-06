@@ -23,7 +23,8 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
      the answer pulses after ~18 s, one last reminder at ~30 s, then quiet (no endless nagging)
    - **after a wrong tap:** "To jest Em. Spróbuj jeszcze raz!", then a wrong option goes away,
      then the answer pulses. She always makes the last tap herself.
-4. **A session** — after 2 missions the game suggests the Lookout as the finale; after it, she can keep
+4. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
+   tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
    playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down,
    random taps, needing more and more help), nothing new is asked and the finale comes sooner; if she seems
    very tired: "Jeszcze tylko jedno!", an easy one she knows, a celebration and a gentle goodbye.

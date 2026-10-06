@@ -6,9 +6,14 @@ import { learning } from '../learning/events.js';
 import { recordSession } from '../progress.js';
 import { SESSION, createSession, isStale, noteEvent, noteReplay, completeMission, shorten, windDown, summary } from './director.js';
 import { attention } from './attention.js';
+import { eventById } from '../adventure/events.js';
+import { completeEvent } from '../adventure/rewards.js';
 
 const staleAfter = () => ({ newSessionAfterMs: (CONFIG.session?.newAfterMinutes ?? 15) * 60 * 1000 });
 let current = null;
+
+/** Developer overrides (tests, #parent dev tools): suggest: a place to suggest next instead of the director's pick. */
+export const dev = { suggest: null };
 
 /** A new session (the start button). */
 export function startSession(now = Date.now()) {
@@ -27,6 +32,8 @@ export function missionDone(kind, now = Date.now()) {
   const s = getSession(now);
   const result = completeMission(s, kind, now);
   recordSession(summary(s));
+  // the hub's story for this place ("the kitten needs help") is resolved by doing that mission
+  if (s.pendingEvent && eventById(s.pendingEvent)?.mission === kind) { completeEvent(s.pendingEvent); s.pendingEvent = null; }
   return result;
 }
 

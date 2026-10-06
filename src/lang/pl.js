@@ -51,6 +51,10 @@ export const T = {
   worldTrain: () => ['Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!'],
   worldBalloon: () => ['Nowy balonik przy Bazie!'],
   worldLights: () => ['Baza świeci kolorowymi światełkami!'],
+  // hub events: little stories that point at a place
+  eventKitten: () => ['Ojej! Kotek potrzebuje pomocy! Dotknij kotka!'],
+  eventBalloons: () => ['Ojej! Baloniki uciekają! Dotknij balonika!'],
+  eventAlarm: () => ['Alarm w Bazie! Psi Patrol, do akcji! Dotknij Bazy!'],
   restTime: () => [`Super się bawiliśmy, ${voc}! Teraz czas na odpoczynek. Psi Patrol dziękuje!`],
   tapGirl: () => [`To ${kid}!`, `Cześć, ${voc}!`, `${kid} i ${pup}, gotowi do akcji!`],
   tapPup: () => ['Hau, hau!', `${pup} rusza do akcji!`, 'Gotowy do akcji!'],
@@ -144,7 +148,8 @@ export function allSegments(levels, allLetters) {
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
-    T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights].forEach((f) => add(f()));
+    T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
+    T.eventKitten, T.eventBalloons, T.eventAlarm].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

@@ -15,11 +15,12 @@ import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
 import { pick } from '../util.js';
 import { T } from '../lang/pl.js';
-import { getSession } from '../session/session.js';
+import { getSession, dev } from '../session/session.js';
 import { nextStep, suggestNext, callFinale } from '../session/director.js';
 import { confetti } from '../ui.js';
 import { takeUnseen } from '../adventure/rewards.js';
-import { addWorld } from './hub-world.js';
+import { addWorld, addEvent } from './hub-world.js';
+import { pickEvent } from '../adventure/events.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
@@ -197,18 +198,25 @@ export class Hub extends Stage {
     // session director: gently suggest where to go next (every place can still be tapped)
     const session = getSession();
     const step = nextStep(session);
-    this.suggested = suggestNext(session, Object.keys(PLACES));
+    this.suggested = step === 'mission' && dev.suggest ? dev.suggest : suggestNext(session, Object.keys(PLACES));
     if (this.suggested) this.highlight(this.suggested);
+    // …told as a little story when there is one ("Ojej! Kotek potrzebuje pomocy!")
+    const event = pickEvent({ step, suggested: this.suggested });
+    session.pendingEvent = event?.id || null;
+    const shown = event && addEvent(this, event);
+    const story = event && T[event.line]();
+    const nudge = () => { shown?.nudge(); return story || [...T.hubIdle(), ...T.suggest(this.suggested)]; };
     let line, idle;
     if (this.greet) {
-      line = T.greet();
-      idle = () => [...T.hubIdle(), ...T.suggest(this.suggested)];
+      line = story ? [...T.greet(), ...story] : T.greet();
+      idle = nudge;
     } else if (step === 'mission') {
-      line = [pick(T.hubAgain()), ...T.suggest(this.suggested)];
-      idle = () => [...T.hubIdle(), ...T.suggest(this.suggested)];
+      line = [pick(T.hubAgain()), ...(story || T.suggest(this.suggested))];
+      idle = nudge;
     } else if (step === 'finale') {
       callFinale(session);
-      line = idle = T.finaleCall();
+      line = story || T.finaleCall();
+      idle = () => { shown?.nudge(); return line; };
     } else if (!session.thanked) {
       // the finale is done (or she was tired): thank her once, then it's free play (no more nudging)
       session.thanked = true;

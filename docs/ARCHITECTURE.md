@@ -241,6 +241,20 @@ Hub.enter() ─▶ addWorld(hub, world, takeUnseen())                          s
 - Taps: invisible place zones (`userData.zone`) give way to a real tappable object behind them.
 - Engine: tweens now start when requested (they used to start at the last frame's time, skipping up to 33 ms when idle).
 
+## Island events (Phase 8)
+
+`src/adventure/events.js` (pure): at most one event per hub visit, chosen from the session director's step and suggestion.
+
+| Event | When | On the island | Tap → |
+|---|---|---|---|
+| `lookout-alarm` | the finale is due | flashing red beacon + bands on the Lookout, siren, "Alarm w Bazie!" | the Lookout |
+| `lost-kitten` | Kitty Park is suggested | a kitten up a tree with a "!" bubble, meowing | Kitty Park |
+| `balloons-escaping` | Balloon Hill is suggested | lettered balloons rising from the hill | Balloon Hill |
+
+- Events are stories for the suggestion, never locks: every place stays tappable; ignoring one is fine.
+- The session remembers the shown event (`pendingEvent`); finishing its mission records it in `world.completedEvents`.
+- Hub nudges repeat the story (with a meow / pop / siren), at most twice. `window.__pup.dev.suggest = 'letters'` forces a suggestion (tests, Phase 17 dev tools).
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and
