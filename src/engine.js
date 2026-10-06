@@ -43,7 +43,7 @@ let clock = 0;
 /** Run fn(progress) every frame for `ms`. Resolves when done. Cancelled (never resolves) on scene change. */
 export function animate(ms, fn, easing = ease.inOut) {
   return new Promise((resolve) => {
-    tweens.add({ start: clock || performance.now(), ms, fn, easing, resolve });
+    tweens.add({ start: performance.now(), ms, fn, easing, resolve }); // from now, not from the last frame (idle frames are 33 ms apart)
   });
 }
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -144,8 +144,9 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const live = current.tappables.filter((o) => o.visible);
-  const hits = ray.intersectObjects(live, true);
-  let target = hits.length ? findTappable(hits[0].object) : null;
+  const hits = ray.intersectObjects(live, true).map((h) => findTappable(h.object)).filter(Boolean);
+  // a real thing (kitten, train…) wins over an invisible tap zone standing in front of it
+  let target = hits.find((o) => !o.userData.zone) || hits[0] || null;
   if (!target) {
     // nearest tappable within a generous screen radius
     const maxD = Math.min(rect.width, rect.height) * 0.14;
@@ -177,7 +178,7 @@ renderer.setAnimationLoop((now) => {
   last = now;
   clock = now;
   for (const tw of tweens) {
-    const p = Math.min(1, (now - tw.start) / tw.ms);
+    const p = Math.max(0, Math.min(1, (now - tw.start) / tw.ms));
     tw.fn(tw.easing(p));
     if (p >= 1) { tweens.delete(tw); tw.resolve(); }
   }

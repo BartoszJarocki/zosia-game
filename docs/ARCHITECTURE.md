@@ -218,6 +218,29 @@ Checked by `Mission.checkAttention()` between rounds (always right after a succe
   The Name Train finishes its word instead of being cut short.
 `?learnlog` also prints the attention state when it isn't ok.
 
+## Adventure Bay remembers (Phase 7)
+
+```
+Mission.finish() ─▶ onMissionComplete(kind, { completions, finale })      src/adventure/rewards.js (the only writer)
+                      └─ milestoneRewards() → ids ─▶ applyReward(world, id)  src/adventure/world.js (pure: rules, dedupe, caps)
+                      └─ world.unseen += id ─▶ progress save (v4: world)
+Hub.enter() ─▶ addWorld(hub, world, takeUnseen())                          src/scenes/hub-world.js (drawing + reveal)
+```
+
+| Milestone | Reward id | On the island |
+|---|---|---|
+| Kitty Park finished (each time, up to 6) | `kitten-N` | a rescued kitten wanders near the park, meows when tapped |
+| Balloon Hill finished (each time, up to 5) | `balloon-N` | a balloon tied to the Lookout |
+| The River (first time) | `bridge` | an arched bridge over the pond |
+| Name Train (first time) | `train` | rails round the beach, a little train with her name |
+| the session finale (first time) | `lookout-lights` | chasing party lights on the Lookout |
+
+- Each id counts once, ever (replays never duplicate). Existing players get rewards for their badges on upgrade (shown, not announced).
+- New things pop in with sparkles and one line ("Zobacz! Nad rzeką stoi nowy most!"); `world.unseen` survives a reload.
+- Cost: everything unlocked adds ~45 draw calls (kittens are instanced; train and balloons flattened).
+- Taps: invisible place zones (`userData.zone`) give way to a real tappable object behind them.
+- Engine: tweens now start when requested (they used to start at the last frame's time, skipping up to 33 ms when idle).
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

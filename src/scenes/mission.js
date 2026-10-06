@@ -14,6 +14,7 @@ import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
 import { missionDone, replayed, checkAttention } from '../session/session.js';
+import { onMissionComplete } from '../adventure/rewards.js';
 
 /** Item mixes (see learning/scheduler.js): tired → nothing new; winding down → something she knows. */
 const TIRED_MIX = { learning: 0.6, familiar: 0.4 };
@@ -109,9 +110,10 @@ export class Mission extends Stage {
 
   async finish() {
     ui.hideBubble();
-    ui.badges.add(this.kind);
+    const got = ui.badges.add(this.kind);
     const { level, levelUp } = recordMission(this.kind, this.firstTry, this.rounds);
-    missionDone(this.kind); // the session director counts it (the hub suggests what's next)
+    const { finale } = missionDone(this.kind); // the session director counts it (the hub suggests what's next)
+    onMissionComplete(this.kind, { completions: got[this.kind], finale }); // Adventure Bay changes (shown in the hub)
     sfx.fanfare();
     setTimeout(() => sfx.siren(2), 900);
     this.cheer(6);

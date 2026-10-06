@@ -4,10 +4,12 @@
 //   v1  { v, missions: { kind: { level, good, lastAcc } }, items: { 'L:B': { n, ok } } }
 //   v2  + skills: { [skill]: { [item]: SkillStat } }  (seeded from the v1 item stats)
 //   v3  + sessions: { count, recent: [{ id, startedAt, endedAt, missions: [kind], finale }] }
+//   v4  + world: WorldState (adventure/world.js), seeded from badges so past play shows on the island
 
 import { emptyStat } from '../learning/mastery.js';
+import { emptyWorld, normalizeWorld, applyReward, rewardsFromBadges } from '../adventure/world.js';
 
-export const VERSION = 3;
+export const VERSION = 4;
 
 /** Which skill the old item prefixes measured. */
 const LEGACY_PREFIX = { 'L:': 'letterVisual', 'N:': 'numeral', 'Q:': 'counting', 'H:': 'quantity' };
@@ -52,6 +54,12 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
     s.sessions = { count: 0, recent: [] }; // play sessions start being counted from here
     s.v = 3;
   }
+  if (s.v === 3) {
+    const w = emptyWorld();
+    for (const id of rewardsFromBadges(badges)) applyReward(w, id); // already there, not "new" (no reveal)
+    s.world = w;
+    s.v = 4;
+  }
   // defaults for anything missing (also protects against hand-edited or partial saves)
   if (!s.missions || typeof s.missions !== 'object') s.missions = {};
   if (!s.items || typeof s.items !== 'object') s.items = {};
@@ -59,5 +67,6 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
   if (!s.sessions || typeof s.sessions !== 'object') s.sessions = { count: 0, recent: [] };
   if (!Array.isArray(s.sessions.recent)) s.sessions.recent = [];
   if (!Number.isInteger(s.sessions.count)) s.sessions.count = s.sessions.recent.length;
+  if (JSON.stringify(normalizeWorld(s.world)) !== JSON.stringify(s.world)) s.world = normalizeWorld(s.world);
   return { state: s, changed: JSON.stringify(s) !== before };
 }

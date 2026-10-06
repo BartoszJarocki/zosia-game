@@ -9,7 +9,7 @@ import { dust, sparkle } from '../fx/particles.js';
 import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
-import { levelFor } from '../progress.js';
+import { levelFor, getWorld } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
@@ -18,6 +18,8 @@ import { T } from '../lang/pl.js';
 import { getSession } from '../session/session.js';
 import { nextStep, suggestNext, callFinale } from '../session/director.js';
 import { confetti } from '../ui.js';
+import { takeUnseen } from '../adventure/rewards.js';
+import { addWorld } from './hub-world.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
@@ -115,7 +117,10 @@ export class Hub extends Stage {
 
     // places
     const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse };
-    for (const kind of Object.keys(PLACES)) this.addPlace(kind, builders[kind]?.()); // (the Lookout is already standing)
+    this.placeGroups = {};
+    for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
+    // what she has done shows on the island (new things are revealed, but not behind the start screen)
+    this.worldLines = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups });
 
     // trees, bushes, houses, grass — kept off the roads and places
     const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
@@ -211,6 +216,7 @@ export class Hub extends Stage {
       confetti(90);
       this.cheerUntil = performance.now() / 1000 + 3;
     }
+    if (this.worldLines.length) line = [...this.worldLines, ...(line || [])]; // "Zobacz! …" first
     if (line) say(line);
     // a nudge when she goes quiet, at most twice per visit (never endless)
     let nudges = 0;
@@ -271,6 +277,7 @@ export class Hub extends Stage {
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(hr, hr, hh, 16), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(p.pos.x, hh / 2, p.pos.z);
     hit.userData.tapHeight = 0;
+    hit.userData.zone = true; // invisible: anything real behind it gets the tap first
     this.scene.add(hit);
     marker.userData.tapHeight = 0;
     this.tappable(hit, () => this.go(kind));

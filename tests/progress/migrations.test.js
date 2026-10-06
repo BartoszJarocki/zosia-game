@@ -66,11 +66,11 @@ test('seedSkills skips empty stats', () => {
   assert.deepEqual(seedSkills({ 'L:A': { n: 0, ok: 0 } }), {});
 });
 
-test('v2 save (Phase 2–4): everything kept, sessions added, version 3', () => {
+test('v2 save (Phase 2–4): everything kept, sessions added, up to the current version', () => {
   const v2 = { v: 2, missions: { letters: { level: 2, good: 0, lastAcc: 1 } }, items: { 'L:B': { n: 1, ok: 1 } }, skills: { letterVisual: { B: { attempts: 1, mastery: 0.2 } } } };
   const { state, changed } = migrate(v2);
   assert.equal(changed, true);
-  assert.equal(state.v, 3);
+  assert.equal(state.v, VERSION);
   assert.deepEqual(state.missions, v2.missions);
   assert.deepEqual(state.skills, v2.skills);
   assert.deepEqual(state.sessions, { count: 0, recent: [] });
@@ -80,6 +80,6 @@ test('broken sessions field is repaired, sessions kept when valid', () => {
   assert.deepEqual(migrate({ v: 3, sessions: 'x' }).state.sessions, { count: 0, recent: [] });
   const rec = [{ id: 1, startedAt: 1, endedAt: 2, missions: ['letters'], finale: false }];
   assert.deepEqual(migrate({ v: 3, sessions: { recent: rec } }).state.sessions, { count: 1, recent: rec });
-  const ok = { v: 3, missions: {}, items: {}, skills: {}, sessions: { count: 7, recent: rec } };
+  const ok = { ...migrate({ v: 3 }).state, sessions: { count: 7, recent: rec } };
   assert.equal(migrate(ok).changed, false);
 });

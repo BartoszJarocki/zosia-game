@@ -45,6 +45,12 @@ export const T = {
   finaleCall: () => ['Teraz wielka misja w Bazie! Dotknij Bazy!'],
   sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`, 'Możesz dalej się bawić!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
+  // Adventure Bay changes (said the first time the hub shows them)
+  worldKitten: () => ['Zobacz! Uratowany kotek bawi się teraz koło parku!'],
+  worldBridge: () => ['Zobacz! Nad rzeką stoi nowy most!'],
+  worldTrain: () => ['Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!'],
+  worldBalloon: () => ['Nowy balonik przy Bazie!'],
+  worldLights: () => ['Baza świeci kolorowymi światełkami!'],
   restTime: () => [`Super się bawiliśmy, ${voc}! Teraz czas na odpoczynek. Psi Patrol dziękuje!`],
   tapGirl: () => [`To ${kid}!`, `Cześć, ${voc}!`, `${kid} i ${pup}, gotowi do akcji!`],
   tapPup: () => ['Hau, hau!', `${pup} rusza do akcji!`, 'Gotowy do akcji!'],
@@ -137,7 +143,8 @@ export function allSegments(levels, allLetters) {
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
-    T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime].forEach((f) => add(f()));
+    T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
+    T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

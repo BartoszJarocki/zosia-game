@@ -21,10 +21,15 @@ function load() {
 const loaded = load();
 let state = loaded.state;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+/** For modules that own part of the save (adventure/rewards.js): write it now. */
+export const saveProgress = save;
 if (loaded.changed) save(); // keep the upgraded save
 
 // every learning event updates mastery
 learning.subscribe((ev) => { applyEvent(state.skills, ev); save(); });
+
+/** Adventure Bay's state (adventure/world.js). Change it only through adventure/rewards.js. */
+export const getWorld = () => state.world;
 
 /** All skill stats: { [skill]: { [item]: SkillStat } } (read-only use please). */
 export const getSkills = () => state.skills;
