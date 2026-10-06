@@ -7,6 +7,8 @@ const parsed = parseGame(md, { childName: CONFIG.childName });
 if (parsed.errors.length) console.error('GAME.md has problems:\n' + parsed.errors.join('\n'));
 
 export const LEVELS = parsed.levels;
+/** { [kind]: { title } } from the GAME.md headings. */
+export const MISSION_INFO = parsed.missions;
 export const LETTER_SETS = parsed.letterSets;
 export const ALL_LETTERS = parsed.letterSets.ALL || 'ABCDEFGHIJKLMNOPRSTUWZ';
 /** How many levels a mission has (= rows in its table). */

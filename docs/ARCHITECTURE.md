@@ -110,7 +110,7 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
 ## Debug routes
 
 `#letters #balloons #name #cones #stones #counting #lookout` (jump straight into a mission), `#avatar` (character close-up),
-`#reset`, `?q=low|medium|high` (force graphics tier), `?perf` (draw calls/frame stats in `window.__perf`),
+`#reset`, `#parent` (read-only progress page for grown-ups: `src/parent/`), `?q=low|medium|high` (force graphics tier), `?perf` (draw calls/frame stats in `window.__perf`),
 `window.__pup` (`game`, `getStage()`, `camera`, `allSegments()`).
 
 ## Learning events (Phase 1)

@@ -43,7 +43,7 @@ const game = {
 
 // iOS: stop pinch-zoom / double-tap zoom / rubber-banding.
 for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
-document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', (e) => { if (!e.target.closest?.('.parent-view')) e.preventDefault(); }, { passive: false }); // the parent page scrolls
 
 async function boot() {
   // 3D letters are drawn with the Fredoka font, so wait for it (but never hang).
@@ -51,6 +51,13 @@ async function boot() {
 
   const jump = location.hash.slice(1);
   if (jump === 'reset') { resetProgress(); try { localStorage.removeItem('pup-patrol-badges'); } catch {} location.hash = ''; }
+  // #parent: read-only progress page for grown-ups (no 3D running behind it)
+  if (jump === 'parent') {
+    ui.clear();
+    const { showParentView } = await import('./parent/view.js');
+    showParentView({ onClose: () => { location.hash = ''; location.reload(); } });
+    return;
+  }
 
   // The hub slowly orbits behind the start button; a tap unlocks sound + speech.
   setStage(new Hub(game, { silent: true }));
@@ -61,7 +68,7 @@ async function boot() {
     game.hub({ greet: true });
   });
 
-  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #avatar
+  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }
