@@ -255,6 +255,16 @@ Hub.enter() ─▶ addWorld(hub, world, takeUnseen())                          s
 - The session remembers the shown event (`pendingEvent`); finishing its mission records it in `world.completedEvents`.
 - Hub nudges repeat the story (with a meow / pop / siren), at most twice. `window.__pup.dev.suggest = 'letters'` forces a suggestion (tests, Phase 17 dev tools).
 
+## The Lookout as the session finale (Phase 9)
+
+`LookoutMission` has two modes, chosen when it starts: the normal mission, or the **finale** when the session
+director says it is due (the hub's alarm called her there; playing the Lookout earlier is the normal mission).
+
+Finale: alarm on (red beacon on the tower, the car's light flashes red, siren, Chase barks) → "Alarm w Bazie! Szybko,
+wsiadamy do windy!" → **one easy press** (floors 1–3, numeral + dots, a number she knows: `EASY_MIX`) → floors counted
+aloud → the very top (siren, all signs light up, the beacon flashes faster) → the slide → big celebration
+("Hura! Psi Patrol uratował dzień!"). About 30 s. It doesn't count towards the Lookout's level (`countsForLevel = false`).
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

@@ -8,7 +8,9 @@ import { discTexture, TILE_COLORS } from '../textures.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { T } from '../lang/pl.js';
-import { Mission } from './mission.js';
+import { Mission, EASY_MIX } from './mission.js';
+import { getSession } from '../session/session.js';
+import { nextStep } from '../session/director.js';
 
 const LZ = -2;              // where the Lookout stands
 const CAR_Z = LZ + 1.75;    // the glass elevator rides up its front
@@ -18,9 +20,22 @@ const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) =>
 // "Baza" (the Lookout): ride the glass elevator. Press the floor button; the floors are counted
 // aloud on the way up. At the end: to the very top, and down the slide!
 //  L1 floors 1–3 (numeral + dots) · L2 floors 1–5 · L3 floors 1–7, "we're on 3 — one floor up/down!"
+//
+// Session finale mode (when the session director says the finale is due — the hub's alarm called her here):
+// the alarm is on, ONE easy ride (floors 1–3, numeral + dots, a number she knows), floors counted aloud,
+// up to the top with the siren and lights, down the slide, a big celebration. Not another quiz (~30–45 s).
 export class LookoutMission extends Mission {
   constructor(game) {
     super(game, 'lookout');
+    this.finale = nextStep(getSession()) === 'finale';
+    if (this.finale) {
+      this.L = { ...this.L, mode: 'go', bubble: 'both' };
+      this.rounds = 1;
+      this.easyMix = EASY_MIX;
+      this.countsForLevel = false;
+      this.bigFinish = true;
+      this.doneLine = T.finaleDone;
+    }
     this.N = this.L.max;
     this.view = { pos: new THREE.Vector3(2.4, 5.4, 13), look: new THREE.Vector3(2.4, 4.2, CAR_Z), minWidth: 11.5 };
     this.post = { tilt: 0.3, focus: 0.5, band: 0.36 };
@@ -86,6 +101,18 @@ export class LookoutMission extends Mission {
     this.doorsOpen = true;
     this.setDoors(1);
 
+    // finale: the Lookout's alarm is on (a red beacon on top), Chase is ready for action
+    if (this.finale) {
+      const red = new THREE.MeshStandardMaterial({ color: '#ff2a2a', emissive: '#ff2a2a', emissiveIntensity: 3, roughness: 0.3 });
+      const beacon = mesh(sphere(0.38, 16), red, { y: 13.1, z: LZ, shadow: false });
+      beacon.userData.dynamic = true;
+      this.scene.add(beacon);
+      this.onUpdate((dt, t) => { const on = Math.sin(t * (this.atTop ? 14 : 9)) > 0; red.emissiveIntensity = on ? 4.5 : 0.3; beacon.scale.setScalar(on ? 1.2 : 1); });
+      this.roofLight.material.color.set('#ff6b6b');
+      this.roofLight.material.emissive.set('#ff2a2a'); // the car's light flashes red too (alarm!)
+      setTimeout(() => { if (!this.alive) return; sfx.siren(2); sfx.bark(); hop(this.pup, 0.3); this.pup.userData.setHappy(3); }, 500);
+    }
+
     // camera follows the car (or the riders, on the slide)
     const p = new THREE.Vector3();
     this.onUpdate((dt, t) => {
@@ -98,7 +125,7 @@ export class LookoutMission extends Mission {
         this.view.look.z += (p.z - this.view.look.z) * k;
       }
       this.view.pos.set(this.view.look.x, this.view.look.y + 1.3, this.view.look.z + 11.2);
-      this.roofLight.material.emissiveIntensity = this.moving ? (Math.floor(t * 6) % 2 ? 3 : 0.4) : 0.4;
+      this.roofLight.material.emissiveIntensity = this.moving || this.finale ? (Math.floor(t * 6) % 2 ? 3 : 0.4) : 0.4;
     });
   }
 
@@ -148,7 +175,7 @@ export class LookoutMission extends Mission {
         up = this.floor <= 1 ? true : this.floor >= this.N ? false : Math.random() < 0.6;
         target = this.floor + (up ? 1 : -1);
       } else {
-        const pool = this.L.mode === 'relative' ? range(2, this.N - 1) : range(1, this.N);
+        const pool = this.finale ? range(1, Math.min(3, this.N)) : this.L.mode === 'relative' ? range(2, this.N - 1) : range(1, this.N);
         target = this.pick('numeral', pool);
       }
       this.last = target;
@@ -206,6 +233,7 @@ export class LookoutMission extends Mission {
       wait(r === 0 ? 700 : 300).then(() => {
         if (!this.alive) return;
         if (relative) this.ask(T.liftRel(this.floor, up));
+        else if (this.finale) this.ask([...T.finaleStart(), ...T.liftPress(target)]);
         else this.ask(r === 0 ? [...T.liftStart(), ...T.liftGo(target)] : T.liftGo(target));
       });
     });
@@ -220,7 +248,9 @@ export class LookoutMission extends Mission {
     if (!this.alive) return;
     sfx.siren(2);
     sfx.ding();
+    this.atTop = true; // (finale: the beacon flashes faster)
     this.signs.forEach((s, i) => setTimeout(() => this.lightSign(i + 1), i * 90));
+    if (this.finale) { this.cheer(2); this.pup.userData.setHappy(3); hop(this.pup, 0.3); }
     await wait(1800);
     if (!this.alive) return;
     // poof: up into the pod, onto the slide

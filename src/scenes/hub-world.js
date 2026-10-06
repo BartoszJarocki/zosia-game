@@ -238,6 +238,8 @@ function lookoutAlarm(hub, go) {
   hub.tappable(g, go);
   alertBubble(hub, new THREE.Vector3(4.4, 8.6, -9.4), go);
   setTimeout(() => hub.alive && sfx.siren(2), 900);
+  // Chase hears it: a bark and a hop, ready for action
+  setTimeout(() => { if (!hub.alive || !hub.pup) return; sfx.bark(); hop(hub.pup, 0.5); hub.pup.userData.setHappy(2.5); }, 1700);
   return { nudge: () => sfx.siren(1) };
 }
 

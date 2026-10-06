@@ -18,7 +18,7 @@ import { onMissionComplete } from '../adventure/rewards.js';
 
 /** Item mixes (see learning/scheduler.js): tired → nothing new; winding down → something she knows. */
 const TIRED_MIX = { learning: 0.6, familiar: 0.4 };
-const EASY_MIX = { familiar: 1, learning: 0.15 };
+export const EASY_MIX = { familiar: 1, learning: 0.15 };
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
@@ -111,14 +111,15 @@ export class Mission extends Stage {
   async finish() {
     ui.hideBubble();
     const got = ui.badges.add(this.kind);
-    const { level, levelUp } = recordMission(this.kind, this.firstTry, this.rounds);
+    // (a deliberately easy run, like the session finale, doesn't count towards the mission's level)
+    const { level, levelUp } = this.countsForLevel === false ? { level: this.level, levelUp: false } : recordMission(this.kind, this.firstTry, this.rounds);
     const { finale } = missionDone(this.kind); // the session director counts it (the hub suggests what's next)
     onMissionComplete(this.kind, { completions: got[this.kind], finale }); // Adventure Bay changes (shown in the hub)
     sfx.fanfare();
     setTimeout(() => sfx.siren(2), 900);
     this.cheer(6);
     this.pup?.userData.setHappy(8);
-    fireworks(this, this.view.look, { bursts: levelUp ? 9 : 6 });
+    fireworks(this, this.view.look, { bursts: levelUp || this.bigFinish ? 9 : 6 });
     ui.celebrate({
       kind: this.kind,
       level,
@@ -127,7 +128,7 @@ export class Mission extends Stage {
       onHome: () => { hush(); this.game.hub(); },
       onAgain: () => { hush(); this.game.startMission(this.kind); },
     });
-    await say([...T.done(), ...(levelUp ? T.levelUp(level) : [])]);
+    await say([...(this.doneLine?.() || T.done()), ...(levelUp ? T.levelUp(level) : [])]);
     while (this.alive) {
       if (this.pup) await hop(this.pup, 0.6, 500);
       if (!this.alive) return;

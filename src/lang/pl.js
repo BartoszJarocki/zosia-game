@@ -113,6 +113,8 @@ export const T = {
 
   // The Lookout (Baza): elevator + slide
   liftStart: () => ['Do Bazy! Wsiadamy do windy!'],
+  finaleStart: () => ['Alarm w Bazie! Szybko, wsiadamy do windy!'],
+  finaleDone: () => [`Hura! Psi Patrol uratował dzień! Brawo, ${voc}!`],
   liftGo: (n) => [`Jedziemy na piętro numer ${NUM[n]}! Wciśnij guzik z numerem ${NUM[n]}!`],
   liftPress: (n) => [`Wciśnij guzik z numerem ${NUM[n]}!`],
   liftRel: (cur, up) => [`Jesteśmy na piętrze numer ${NUM[cur]}. Jedź jedno piętro ${up ? 'wyżej' : 'niżej'}!`],
@@ -149,7 +151,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }
