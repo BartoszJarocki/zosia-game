@@ -134,5 +134,9 @@ export function suggestNext(s, kinds, rng = Math.random) {
 
 /** What gets saved about a session (progress.sessions.recent). */
 export function summary(s) {
-  return { id: s.id, startedAt: s.startedAt, endedAt: s.lastActiveAt, missions: [...s.completed], finale: s.finaleDone, ...(s.endedEarly ? { early: true } : {}) };
+  const changes = Object.values(s.changes || {})
+    .filter((c) => Math.abs(c.to - c.from) >= 0.01)
+    .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from))
+    .slice(0, 10);
+  return { id: s.id, startedAt: s.startedAt, endedAt: s.lastActiveAt, missions: [...s.completed], finale: s.finaleDone, ...(s.endedEarly ? { early: true } : {}), ...(changes.length ? { changes } : {}) };
 }

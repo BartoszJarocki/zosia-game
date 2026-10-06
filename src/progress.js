@@ -8,7 +8,8 @@ import { badges } from './ui.js';
 import { maxLevel, LEVELS } from './levels/data.js';
 import { meetsNeeds } from './levels/gate.js';
 import { migrate } from './progress/migrations.js';
-import { applyEvent } from './learning/mastery.js';
+import { applyEvent, emptyStat } from './learning/mastery.js';
+import { emptyWorld } from './adventure/world.js';
 import { learning } from './learning/events.js';
 import { pickLearningItem } from './learning/scheduler.js';
 
@@ -100,3 +101,27 @@ export function recordSession(sum) {
 export const getSessions = () => state.sessions;
 
 export function resetProgress() { state = migrate(null).state; save(); }
+
+/** Developer tools (the grown-ups' page). Everything saves at once. */
+export const dev = {
+  /** Set a mission's level (clamped to 1…max); returns the new level. */
+  setLevel(kind, level) {
+    const m = mission(kind);
+    m.level = Math.max(1, Math.min(maxLevel(kind), level | 0));
+    m.good = 0;
+    save();
+    return m.level;
+  },
+  /** Pretend a skill item is known this well (0–1); enough answers that it isn't "little data". */
+  setMastery(skill, item, value) {
+    const s = ((state.skills[skill] ||= {})[String(item)] ||= emptyStat());
+    s.mastery = Math.round(Math.max(0, Math.min(1, value)) * 1000) / 1000;
+    s.attempts = Math.max(s.attempts, 3);
+    s.lastSeenAt = Date.now();
+    save();
+  },
+  clearSkills() { state.skills = {}; save(); },
+  clearWorld() { state.world = emptyWorld(); save(); },
+  /** Everything: levels, mastery, sessions, the island, and the badges. */
+  resetAll() { resetProgress(); try { localStorage.removeItem('pup-patrol-badges'); } catch {} },
+};

@@ -81,3 +81,40 @@ export function maxNumber(levels) {
   ].filter(Number.isFinite);
   return Math.max(3, ...tops);
 }
+
+/** Play sessions in parent terms (from progress.sessions). */
+export function sessionStats(sessions, now = Date.now()) {
+  const recent = sessions?.recent || [];
+  const mins = recent.map((s) => Math.max(0, (s.endedAt - s.startedAt) / 60000)).filter((m) => m > 0);
+  const week = recent.filter((s) => now - s.startedAt < 7 * 86_400_000).length;
+  return {
+    count: sessions?.count || 0,
+    avgMinutes: mins.length ? Math.round((mins.reduce((a, b) => a + b, 0) / mins.length) * 10) / 10 : null,
+    lastWeek: week,
+    finales: recent.filter((s) => s.finale).length,
+    early: recent.filter((s) => s.early).length,
+  };
+}
+
+/** The biggest mastery changes in the last few sessions (each session saves what moved). */
+export function recentChanges(sessions, { last = 3, top = 6 } = {}) {
+  const changes = (sessions?.recent || []).slice(-last).flatMap((s) => s.changes || []);
+  const byKey = new Map();
+  for (const c of changes) {
+    const k = c.skill + '|' + c.item;
+    const prev = byKey.get(k);
+    byKey.set(k, prev ? { ...prev, to: c.to } : { ...c }); // earliest "from", latest "to"
+  }
+  return [...byKey.values()]
+    .map((c) => ({ ...c, label: LABEL[c.skill] || c.skill, delta: Math.round((c.to - c.from) * 100) / 100 }))
+    .filter((c) => Math.abs(c.delta) >= 0.05)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, top);
+}
+
+/** Total answers that needed some help (all skills). */
+export function totalAssisted(skills) {
+  let n = 0;
+  for (const items of Object.values(skills || {})) for (const s of Object.values(items)) n += s.assisted || 0;
+  return n;
+}

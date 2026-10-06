@@ -218,7 +218,9 @@ export class Hub extends Stage {
       this.micro = runMicroReward(this, type, { truck, pup, girl, ...this.worldObjs });
     }
     session.rewardedUpTo = session.completed.length;
-    this.suggested = step === 'mission' && dev.suggest ? dev.suggest : suggestNext(session, Object.keys(PLACES));
+    const forced = step === 'mission' && (dev.suggestOnce || dev.suggest);
+    dev.suggestOnce = null;
+    this.suggested = forced || suggestNext(session, Object.keys(PLACES));
     if (this.suggested) this.highlight(this.suggested);
     // …told as a little story when there is one ("Ojej! Kotek potrzebuje pomocy!")
     const event = pickEvent({ step, suggested: this.suggested });

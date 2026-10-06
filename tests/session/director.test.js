@@ -102,3 +102,15 @@ test('summary is what gets saved', () => {
   completeMission(s, 'name', 500);
   assert.deepEqual(summary(s), { id: 100, startedAt: 100, endedAt: 500, missions: ['name'], finale: false });
 });
+
+test('summary keeps the biggest mastery changes of the session (for the grown-ups\' page)', () => {
+  const s = createSession(0);
+  s.changes = {
+    'letterVisual|B': { skill: 'letterVisual', item: 'B', from: 0.2, to: 0.5 },
+    'numeral|3': { skill: 'numeral', item: '3', from: 0.5, to: 0.505 }, // too small to mention
+    'quantity|4': { skill: 'quantity', item: '4', from: 0.6, to: 0.4 },
+  };
+  completeMission(s, 'letters', 1);
+  assert.deepEqual(summary(s).changes.map((c) => c.item), ['B', '4']);
+  assert.equal(summary(createSession(0)).changes, undefined, 'nothing moved: no field');
+});

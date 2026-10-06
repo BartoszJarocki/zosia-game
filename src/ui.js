@@ -92,7 +92,14 @@ export function hubHud() {
     shelf.append(el(`<div class="shelf-item">${badgeSVG(kind)}${n > 1 ? `<span>${n}</span>` : ''}</div>`));
   }
   ui.append(shelf);
+  // grown-ups: press and hold the shelf for 3 seconds to open their page (a child's tap does nothing)
+  let t = null;
+  shelf.addEventListener('pointerdown', () => { clearTimeout(t); t = setTimeout(() => onParent?.(), 3000); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) shelf.addEventListener(ev, () => clearTimeout(t));
 }
+let onParent = null;
+/** What a long press on the badge shelf opens (main.js). */
+export function setParentOpener(fn) { onParent = fn; }
 
 export function missionHud({ rounds, level = 1, total = 3, onHome }) {
   clear();

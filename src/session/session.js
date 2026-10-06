@@ -3,7 +3,8 @@
 // summary after each finished mission (progress.sessions).
 import { CONFIG } from '../config.js';
 import { learning } from '../learning/events.js';
-import { recordSession } from '../progress.js';
+import { recordSession, getSkills } from '../progress.js';
+import { resultScore, RATE } from '../learning/mastery.js';
 import { SESSION, createSession, isStale, noteEvent, noteReplay, completeMission, shorten, windDown, summary } from './director.js';
 import { attention } from './attention.js';
 import { eventById } from '../adventure/events.js';
@@ -17,7 +18,7 @@ let current = null;
  *   suggest  a place to suggest next instead of the director's pick
  *   micro    a micro reward type to play next ('BUBBLES'…) instead of a random one
  */
-export const dev = { suggest: null, micro: null };
+export const dev = { suggest: null, micro: null, suggestOnce: null };
 
 /** A new session (the start button). */
 export function startSession(now = Date.now()) {
@@ -58,4 +59,16 @@ export function checkAttention(now = Date.now()) {
   return a.state;
 }
 
-learning.subscribe((ev) => noteEvent(getSession(ev.at || Date.now()), ev));
+learning.subscribe((ev) => {
+  const s = getSession(ev.at || Date.now());
+  noteEvent(s, ev);
+  // what moved this session: mastery before the first answer (worked back from this answer) → now
+  // (progress.js has already folded this event in: it subscribed first)
+  const stat = getSkills()?.[ev.skill]?.[ev.item];
+  if (!stat) return;
+  const key = ev.skill + '|' + ev.item;
+  const seen = (s.changes ||= {})[key];
+  const score = resultScore(ev);
+  const before = seen ? seen.from : score == null ? stat.mastery : Math.max(0, (stat.mastery - score * RATE) / (1 - RATE));
+  s.changes[key] = { skill: ev.skill, item: ev.item, from: Math.round(before * 1000) / 1000, to: stat.mastery };
+});

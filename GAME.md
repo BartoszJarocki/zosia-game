@@ -251,7 +251,8 @@ the island in `src/scenes/hub.js`.
 
 `src/config.js`: child's name and its Polish forms, `goodRunsPerLevel`, help timings (`assistSeconds`),
 session length (`session`), picture words for letters, voice and graphics quality. Spoken lines live in `src/lang/pl.js`.
-Grown-ups can see what she knows at `#parent` (e.g. `https://…/#parent`).
+Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
+(e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.
 
 ## Commands
 

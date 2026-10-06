@@ -56,11 +56,11 @@ svg { display: block; }
 .shelf {
   position: absolute;
   top: max(14px, env(safe-area-inset-top)); left: 16px;
-  display: flex; gap: 10px; pointer-events: none;
+  display: flex; gap: 10px; pointer-events: auto; /* (a 3-second press opens the grown-ups' page) */
   padding: 8px 12px; border-radius: 22px;
   background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
-.shelf:empty { display: none; }
+.shelf:empty { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; min-width: 84px; min-height: 84px; } /* invisible, still pressable */
 .shelf-item { position: relative; width: min(8vw, 8vh, 64px); }
 .shelf-item svg { width: 100%; filter: drop-shadow(0 4px 4px rgba(0,0,0,.25)); }
 .shelf-item span {
@@ -268,3 +268,18 @@ svg { display: block; }
 /* dice pips (Cone Road): a 3×3 grid, recognisable at a glance */
 .bubble .dots.dice { display: grid; grid-template-columns: repeat(3, 1em); grid-auto-rows: 1em; gap: .3em; max-width: none; justify-content: center; }
 .bubble .dots.dice b { width: 1em; height: 1em; }
+.pv-chip.up small { color: #15803d; }
+.pv-chip.down small { color: #b45309; }
+.pv-dev { margin-top: 26px; background: #fff; border-radius: 14px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(20,40,90,.12); }
+.pv-dev summary { font-weight: 700; cursor: pointer; font-size: 17px; }
+.pv-dev h3 { font-size: 15px; margin: 16px 0 6px; }
+.pv-levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; }
+.pv-levels div { display: flex; align-items: center; gap: 6px; }
+.pv-levels span { flex: 1; }
+.pv-dev button { background: #e8eefb; color: var(--blue); border-radius: 10px; padding: 6px 12px; font-weight: 700; position: relative; overflow: hidden; }
+.pv-dev button.danger { background: #fde8e8; color: #b91c1c; }
+.pv-dev .pv-row-btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pv-dev select, .pv-dev input { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
+.pv-hold::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: currentColor; opacity: .6; }
+.pv-hold.holding::after { width: 100%; transition: width var(--hold, 1.5s) linear; }
+.pv-done { color: #15803d; font-weight: 700; min-height: 1.4em; }

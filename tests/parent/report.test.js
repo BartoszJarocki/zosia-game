@@ -72,3 +72,30 @@ test('maxNumber: highest number any level can ask about', () => {
   assert.equal(maxNumber({ cones: [{ max: 3 }, { max: 6 }], stones: [{ n: 7 }], counting: [{ give: [1, 3] }, { give: [2, 5], howMany: [1, 4] }], lookout: [{ max: 5 }] }), 7);
   assert.equal(maxNumber({}), 3);
 });
+
+import { sessionStats, recentChanges, totalAssisted } from '../../src/parent/report.js';
+
+test('sessionStats: count, average length, this week, finales and early ends', () => {
+  const now = 10 * 86_400_000;
+  const s = sessionStats({ count: 5, recent: [
+    { startedAt: now - 9 * 86_400_000, endedAt: now - 9 * 86_400_000 + 6 * 60000, finale: true },
+    { startedAt: now - 60000 * 30, endedAt: now - 60000 * 22, finale: false, early: true },
+  ] }, now);
+  assert.deepEqual(s, { count: 5, avgMinutes: 7, lastWeek: 1, finales: 1, early: 1 });
+  assert.deepEqual(sessionStats(undefined, now), { count: 0, avgMinutes: null, lastWeek: 0, finales: 0, early: 0 });
+});
+
+test('recentChanges: earliest from, latest to, biggest first, tiny ones dropped', () => {
+  const sessions = { recent: [
+    { changes: [{ skill: 'letterVisual', item: 'B', from: 0.2, to: 0.4 }, { skill: 'numeral', item: '3', from: 0.5, to: 0.52 }] },
+    { changes: [{ skill: 'letterVisual', item: 'B', from: 0.4, to: 0.7 }, { skill: 'quantity', item: '4', from: 0.6, to: 0.45 }] },
+  ] };
+  const c = recentChanges(sessions);
+  assert.deepEqual(c.map((x) => [x.item, x.delta]), [['B', 0.5], ['4', -0.15]]);
+  assert.equal(c[0].label, 'sees it');
+});
+
+test('totalAssisted adds up every skill', () => {
+  assert.equal(totalAssisted({ letterVisual: { A: { assisted: 2 } }, numeral: { 1: { assisted: 3 }, 2: {} } }), 5);
+  assert.equal(totalAssisted(undefined), 0);
+});

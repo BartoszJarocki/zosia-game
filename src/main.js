@@ -18,6 +18,22 @@ import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
 import { learning } from './learning/events.js';
 import { startSession, getSession, dev } from './session/session.js';
+import { takeDevNext } from './parent/next.js';
+
+/** Developer tools asked for something on the next trip to the island. */
+function applyDevNext() {
+  const next = takeDevNext();
+  if (!next) return;
+  if (next === 'finale') { const s = getSession(); s.targetMissions = s.missionsCompleted; } // the alarm sounds now
+  else dev.suggestOnce = { 'lost-kitten': 'letters', 'balloons-escaping': 'balloons' }[next] || null;
+}
+
+/** The grown-ups' page over the game (from the badge shelf); back to the island when it closes. */
+async function openParentPage() {
+  hush();
+  const { showParentView } = await import('./parent/view.js');
+  showParentView({ onClose: (e) => { e?.target?.closest('.parent-view')?.remove(); applyDevNext(); game.hub(); } });
+}
 import { registerSW } from 'virtual:pwa-register';
 
 // Offline + installable. A new version is switched in only while the start screen is showing,
@@ -45,6 +61,8 @@ const game = {
   },
 };
 
+ui.setParentOpener(openParentPage);
+
 // iOS: stop pinch-zoom / double-tap zoom / rubber-banding.
 for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', (e) => { if (!e.target.closest?.('.parent-view')) e.preventDefault(); }, { passive: false }); // the parent page scrolls
@@ -68,6 +86,7 @@ async function boot() {
   ui.showStart(() => {
     started = true;
     startSession();
+    applyDevNext();
     unlockAudio();
     sfx.bark();
     game.hub({ greet: true });
