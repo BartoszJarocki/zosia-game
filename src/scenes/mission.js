@@ -11,6 +11,7 @@ import { say, sfx, hush } from '../audio.js';
 import { settingsFor } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
+import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
@@ -44,6 +45,7 @@ export class Mission extends Stage {
   enter() {
     this.build();
     ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), onHome: () => { hush(); this.game.hub(); } });
+    this.onUpdate(() => this.tickAssist());
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
       if (this.girl) {
@@ -55,7 +57,7 @@ export class Mission extends Stage {
     this.run();
   }
 
-  exit() { clearTimeout(this.idleTimer); this.learn.cancel(); }
+  exit() { this.aid = null; this.learn.cancel(); }
 
   async run() {
     await wait(500);
@@ -116,20 +118,73 @@ export class Mission extends Stage {
     const item = pickItem(skill, pool, { mix: this.easyMix, ...opts });
     return typeof pool[0] === 'number' ? Number(item) : item;
   }
-  /** What this round (or step) is asking. skill: one of SKILLS; item: e.g. 'B' or 4. */
-  question(skill, item) {
+  /**
+   * What this round (or step) is asking. skill: one of SKILLS; item: e.g. 'B' or 4.
+   * hooks (all optional) say how this mission helps (src/learning/assist.js):
+   *   short     segments for the short prompt ("Gdzie jest Be?"), or a function returning them
+   *   hint()    show a clue; may return segments to say ("Be jak banan!")
+   *   simplify() make it easier (e.g. one wrong option leaves)
+   *   reveal()  show the answer (e.g. this.hint(obj) pulses it); she still taps it herself
+   */
+  question(skill, item, hooks = {}) {
     const q = this.learn.current;
-    if (q && q.skill === skill && q.item === String(item)) return; // already asking this: keep its timer
+    if (q && q.skill === skill && q.item === String(item)) { Object.assign(this.aid?.hooks || {}, hooks); return; } // same question: keep timers
     this.learn.open({ mission: this.kind, skill, item, level: this.level, round: this.roundIndex });
+    this.aid = { hooks: { ...hooks }, state: createAssist(), quietFrom: performance.now() };
   }
   /** She got it. */
-  correct(chosen) { this.learn.correct({ chosen }); }
-  /** She picked something else. Also marks the round as not right-first-time for the mission level. */
-  wrong(chosen) { this.miss(); this.learn.wrong({ chosen }); }
+  correct(chosen) { this.learn.correct({ chosen }); this.aid = null; }
+  /**
+   * She picked something else: record it and respond with the next step of help.
+   * said: what to say first (e.g. "To jest em."). feedback:false when the scene answers itself.
+   */
+  wrong(chosen, said = [], { feedback = true } = {}) {
+    this.miss();
+    this.learn.wrong({ chosen });
+    if (!this.aid) return;
+    const action = onWrong(this.aid.state);
+    onActivity(this.aid.state);
+    this.aid.quietFrom = performance.now();
+    if (feedback) this.runAssist(action, said);
+  }
+
+  // ----- help driver -----
+  assistTiming() {
+    const s = CONFIG.assistSeconds;
+    return s ? { shortPromptMs: s.shortPrompt * 1000, hintMs: s.hint * 1000, revealMs: s.reveal * 1000, remindMs: s.remind * 1000 } : TIMING;
+  }
+  /** Runs every frame: gives the next bit of help when she has been quiet long enough. */
+  tickAssist() {
+    if (!this.aid || !this.alive || this.speaking) return;
+    const action = onIdle(this.aid.state, performance.now() - this.aid.quietFrom, this.assistTiming());
+    if (!action) return;
+    if (action === 'hint') this.learn.timeout(); // a long hesitation (for fatigue / mastery)
+    this.runAssist(action);
+  }
+  /**
+   * Do one help action: visuals via the scene's hooks, plus a short spoken line (said first).
+   * A hook may return segments to say instead of the short prompt, or a promise when it speaks itself.
+   */
+  runAssist(action, said = []) {
+    const aid = this.aid;
+    if (!aid) return;
+    const h = aid.hooks;
+    const short = (typeof h.short === 'function' ? h.short() : h.short) || this.prompt || [];
+    if (action !== 'retry') this.helped(aid.state.level);
+    const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[action]?.(said);
+    if (out && typeof out.then === 'function') return;
+    this.say([...said, ...(action === 'retry' ? T.tryAgain() : Array.isArray(out) ? out : short)]);
+  }
+  /** Say something (no help fires while speaking). A newer line cuts this one short. */
+  say(segments) {
+    const token = (this.sayToken = (this.sayToken || 0) + 1);
+    this.speaking = true;
+    return say(segments).then(() => { if (token === this.sayToken) this.speaking = false; });
+  }
   /** Help was shown: 1 question repeated · 2 clue · 3 answer revealed. */
   helped(level) { this.learn.assist(level); }
   /** She tapped the speech bubble to hear the question again. */
-  replay() { this.helped(1); this.ask(this.prompt); }
+  replay() { this.helped(1); if (this.aid) onActivity(this.aid.state); this.ask(this.prompt); }
   /** A tap on the game that hit nothing (reported by the engine). Motor slip, not a wrong answer. */
   onMissTap() { this.learn.missTap(); }
   cheer(seconds = 1.5) { this.cheerUntil = performance.now() / 1000 + seconds; }
@@ -167,16 +222,16 @@ export class Mission extends Stage {
   ask(segments) {
     this.prompt = segments;
     const q = this.learn.current;
-    say(segments).then(() => { if (this.learn.current === q) this.learn.promptEnded(); }); // latency counts from here
-    this.poke();
+    this.say(segments).then(() => {
+      if (this.learn.current !== q) return;
+      this.learn.promptEnded();                         // latency counts from here…
+      if (this.aid) this.aid.quietFrom = performance.now(); // …and so does the quiet-time help
+    });
   }
-  poke() {
-    clearTimeout(this.idleTimer);
-    this.idleTimer = setTimeout(() => {
-      if (this.alive && this.prompt) { this.learn.timeout(); say(this.prompt); this.poke(); }
-    }, CONFIG.idleRepeatSeconds * 1000);
-  }
-  stopIdle() { clearTimeout(this.idleTimer); this.prompt = ''; }
+  /** She did something (a tap): the quiet-time help restarts from now. */
+  poke() { if (this.aid) this.aid.quietFrom = performance.now(); }
+  /** The question is over (solved / moving on): no more help for it. */
+  stopIdle() { this.aid = null; this.prompt = ''; }
 
   // ----- shared world -----
   /**
@@ -250,6 +305,15 @@ export class Mission extends Stage {
     const y0 = y + 8;
     obj.position.y = y0;
     return wait(delay).then(() => animate(ms, (t) => { obj.position.y = y0 + (y - y0) * t; }, ease.bounce));
+  }
+
+  /** Help: take one wrong option away (it can't be tapped any more). */
+  removeOption(obj) {
+    if (!obj?.parent || obj.userData.gone) return;
+    obj.userData.gone = true;
+    this.untap(obj);
+    sfx.whoosh();
+    this.shrinkAway(obj, 450);
   }
 
   shrinkAway(obj, ms = 350) {

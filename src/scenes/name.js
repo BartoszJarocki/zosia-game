@@ -52,17 +52,7 @@ export class NameMission extends Mission {
 
     // ghost letters show where each one goes (level 1)
     this.ghosts = [];
-    if (this.L.ghost) {
-      this.train.userData.slots.forEach((slot, i) => {
-        // a soft white card with a pale blue letter, sitting on the wagon: "this one goes here"
-        const g = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: labelTexture(showLetter(this.word[i]), { fg: '#9fb8f5', stroke: 'rgba(255,255,255,0.95)' }), transparent: true, opacity: 0.95, depthWrite: false }));
-        this.train.updateMatrixWorld(true);
-        g.position.copy(this.train.localToWorld(slot.clone())).add(new THREE.Vector3(0, -0.2, 0.62));
-        g.userData.tick = (dt, t) => (g.position.y = 1.25 + Math.sin(t * 2.5 + i) * 0.05);
-        this.scene.add(g);
-        this.ghosts.push(g);
-      });
-    }
+    if (this.L.ghost) this.word.split('').forEach((_, i) => { this.ghosts[i] = this.makeGhost(i); });
 
     const edge = this.view.minWidth / 2;
     this.addHeroes(new THREE.Vector3(-edge + 1.2, 0, 2.6), 0.5, new THREE.Vector3(edge - 1.2, 0, 2.4), -0.5);
@@ -92,6 +82,17 @@ export class NameMission extends Mission {
     });
   }
 
+  /** A soft white card with a pale blue letter, sitting on wagon i: "this one goes here". */
+  makeGhost(i) {
+    const slot = this.train.userData.slots[i];
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: labelTexture(showLetter(this.word[i]), { fg: '#9fb8f5', stroke: 'rgba(255,255,255,0.95)' }), transparent: true, opacity: 0.95, depthWrite: false }));
+    this.train.updateMatrixWorld(true);
+    g.position.copy(this.train.localToWorld(slot.clone())).add(new THREE.Vector3(0, -0.2, 0.62));
+    g.userData.tick = (dt, t) => (g.position.y = 1.25 + Math.sin(t * 2.5 + i) * 0.05);
+    this.scene.add(g);
+    return g;
+  }
+
   bubbleFor(r) {
     const target = this.word[r];
     if (this.L.bubble === 'word') ui.bubble({ word: [...this.word].map(showLetter).join(''), at: r, onTap: () => this.replay() });
@@ -103,9 +104,28 @@ export class NameMission extends Mission {
     return new Promise((resolve) => {
       const target = this.word[r];
       this.item('L:' + target);
-      this.question('letterVisual', target);
-      let wrong = 0, solved = false;
+      let solved = false;
       this.last = target;
+      const right = () => this.blocks.find((x) => x.userData.letter === target);
+      this.question('letterVisual', target, {
+        short: T.findLetter(target),
+        hint: () => { // its letter appears on the wagon
+          if (!this.ghosts[r]) {
+            const g = (this.ghosts[r] = this.makeGhost(r));
+            const off = this.onUpdate((dt, t) => { if (!g.parent) off(); else g.userData.tick(dt, t); }); // made after the scene was collected
+            sfx.pop();
+          }
+          return T.letterLike(target);
+        },
+        simplify: () => { // an extra letter (not in the word) leaves; otherwise the right block steps forward
+          const later = this.word.slice(r + 1);
+          const extra = this.blocks.find((x) => x.userData.letter && x.userData.letter !== target && !later.includes(x.userData.letter) && x.parent);
+          if (extra) { this.removeOption(extra); extra.userData.letter = null; return; }
+          const b = right();
+          if (b && !b.userData.forward) { b.userData.forward = true; this.jumpTo(b, b.position.clone().add(new THREE.Vector3(0, 0, 0.7)), { height: 0.6, ms: 400 }); }
+        },
+        reveal: () => { const b = right(); if (b) this.hint(b, () => solved); },
+      });
 
       const onTap = async (b) => {
         if (solved || !b.userData.letter) return;
@@ -132,15 +152,9 @@ export class NameMission extends Mission {
           await say(T.letter(target));
           resolve();
         } else {
-          wrong++;
-          this.wrong(b.userData.letter);
+          this.wrong(b.userData.letter, T.thatsLetter(b.userData.letter));
           sfx.oops();
           wiggle(b);
-          say([...T.thatsLetter(b.userData.letter), ...T.findLetter(target)]);
-          if (wrong >= 2) {
-            const right = this.blocks.find((x) => x.userData.letter === target);
-            if (right) this.hint(right, () => solved);
-          }
         }
       };
       this.blocks.forEach((b) => { if (b.userData.letter) this.tappable(b, onTap); });

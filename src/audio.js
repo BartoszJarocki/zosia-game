@@ -56,7 +56,7 @@ function noise(dur, { vol = 0.3, when = 0, freq = 1500 } = {}) {
 export const sfx = {
   pop: () => tone(500, 0.1, { to: 900, vol: 0.25 }),
   good: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, { type: 'triangle', vol: 0.2, when: i * 0.09 })),
-  oops: () => tone(320, 0.2, { to: 220, vol: 0.15 }),
+  oops: () => { tone(392, 0.11, { vol: 0.08, to: 415 }); tone(440, 0.13, { vol: 0.07, when: 0.1, to: 466 }); }, // a soft, curious "hm?" (not a fail sound)
   bark: () => {
     tone(480, 0.1, { type: 'sawtooth', vol: 0.1, to: 260 });
     noise(0.08, { vol: 0.15, freq: 900 });
@@ -168,6 +168,7 @@ function speakTTS(text) {
  */
 export async function say(segments) {
   const parts = [segments].flat().filter(Boolean);
+  globalThis.__sayLog?.push(parts.join(' ')); // tests: what was said (set window.__sayLog = [])
   const token = ++speakToken;
   stopVoice();
   await manifestReady;

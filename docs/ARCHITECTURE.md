@@ -53,7 +53,7 @@ Every round follows the same pattern today:
 5. wrong → `wrong++`, `this.miss()`, `sfx.oops()`, wiggle, `say(thatsX + whereY)`, and after 2 wrong `this.hint(obj)` (pulse)
    (River "next" mode and Lookout "relative" mode also *reveal* the number after the first slip)
 
-Helpers on the base: `ask/poke/stopIdle` (prompt + idle repeat every `idleRepeatSeconds` = 12 s, **verbatim, forever**),
+Helpers on the base: `ask/poke/stopIdle` (prompt + idle repeat every `idleRepeatSeconds` = 12 s, **verbatim, forever**; replaced in Phase 4),
 `success` (sparkles, happy faces, camera push), `hint` (pulse), `dropIn`, `shrinkAway`, `jumpTo`, `shadowUnder`,
 `lookAt`, `cheer`, `praise`, `meadow` (shared world), `addHeroes`.
 
@@ -129,8 +129,8 @@ Mission.ask() → prompt finished │ idle repeat → timeout │ bubble tap →
 - **One open question at a time** per mission. Re-asking the same skill + item keeps its timer.
 - **Latency** is measured from the end of the first spoken prompt (or from opening, if she answers earlier).
 - **firstTry** = solved with no wrong choice before it. Miss taps and timeouts are recorded but don't cost the first try.
-- **Help levels:** 1 question repeated (idle repeat or bubble tap) · 2 clue (number shown after a slip, counting together)
-  · 3 answer revealed (pulse).
+- **Help levels:** 1 question repeated (short prompt, retry line or bubble tap) · 2 clue (hint / simplify)
+  · 3 answer revealed (pulse). See *Unified help* below.
 - **overTap:** 3+ taps within 1.2 s (the burst's wrong taps still count as attempts).
 - Events live in memory only (last 200), on `window.__pup.learning`; `?learnlog` prints them to the console.
   The legacy `items` stats and mission levels are unchanged and still drive the game.
@@ -145,6 +145,49 @@ Mission.ask() → prompt finished │ idle repeat → timeout │ bubble tap →
 | Treat House (`counting`) | `counting` (give N); `quantity` (how many?) | number |
 | Lookout | `numeral`; `sequence` for "one floor up/down" | floor |
 
+## Unified help (Phase 4)
+
+One pure state machine (`src/learning/assist.js`) drives help in every mission; the `Mission` base runs it
+(`tickAssist` every frame, `wrong()` on a wrong pick) and scenes only say *how* help looks via hooks:
+
+```js
+this.question(skill, item, {
+  short,       // segments (or a function) for the short prompt: "Gdzie jest Be?"
+  hint(),      // a clue; may return segments to say ("Be jak banan!") or a promise if it speaks itself
+  simplify(),  // make it easier (e.g. this.removeOption(wrongBlock))
+  reveal(),    // show the answer (this.hint(obj) pulses it); she still taps it herself
+});
+this.wrong(chosen, T.thatsLetter(chosen));   // the base says it, then the next help step
+```
+
+| Quiet (since the prompt ended or her last tap) | Action | Level |
+|---|---|---|
+| ~5 s | short prompt | 1 |
+| ~11 s | hint (also logged as a `timeout`) | 2 |
+| ~18 s | reveal + short prompt | 3 |
+| ~30 s | one last short prompt, then silence | – |
+
+| Wrong pick | Action | Level |
+|---|---|---|
+| 1st | "To jest X. Spróbuj jeszcze raz!" | 1 |
+| 2nd | simplify + short prompt | 2 |
+| 3rd+ | reveal + short prompt | 3 |
+
+- Steps already covered by wrong taps are skipped (help never steps back down); no help fires while the game is speaking.
+- Timings: `CONFIG.assistSeconds`. Wrong taps play a soft "hm?" (`sfx.oops`) and a wobble; nothing red.
+
+| Mission | hint | simplify | reveal |
+|---|---|---|---|
+| Kitty Park | letter shown in the bubble + "Be jak banan!" | the block she picked leaves | block pulses |
+| Balloon Hill | balloons slow down + "Be jak banan!" | a wrong balloon floats away | target balloons pulse |
+| Name Train | ghost letter on the wagon + "Zet jak Zosia!" | an extra block leaves (or the right one steps forward) | block pulses |
+| Cone Road | bubble shows numeral + dots, "Trzy kropki!" | a wrong cone leaves | sign pulses |
+| River | number shown (in "what's next?" mode) or "Trzy kropki!" | number shown | stone pulses |
+| Treat House | give: the N spots light up · how many: count together | how many: a wrong block leaves + count together | box pulses / block pulses |
+| Lookout | number + dots in the bubble, "Trzy kropki!" | number shown | button pulses |
+
+Tests: `tests/learning/assist.test.js` (state machine). `window.__sayLog = []` collects every spoken line, for browser tests.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and
@@ -154,8 +197,8 @@ Mission.ask() → prompt finished │ idle repeat → timeout │ bubble tap →
 3. **No timing data.** No latency is measured anywhere.
 4. **Motor errors are invisible or counted as knowledge errors.** A tap beside a balloon is ignored; a wrong balloon counts the
    same as not knowing the letter.
-5. **The idle prompt repeats verbatim every 12 s, forever.** The brief wants shorter prompts → hint and no endless repetition (Phase 4).
-6. **Red "wrong" UI exists in one place:** the elevator button shake flashes `#fecaca` (fix in Phase 4).
+5. ~~The idle prompt repeats verbatim every 12 s, forever.~~ Replaced by the help ladder (Phase 4).
+6. ~~Red "wrong" UI exists in one place~~ (elevator button flash): removed in Phase 4.
 7. **Mission length is fixed at 5 rounds** (Lookout = 5 trips, River = 3 crossings), longer than the brief's targets (Phase 5).
 8. **River records no items**, so its numbers never influence selection.
 9. **No tests.** Pure logic (parser, progress, item picking) has no automated coverage.

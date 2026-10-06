@@ -220,4 +220,4 @@ svg { display: block; }
 .lift-btn.hint { animation: breathe 1s ease-in-out infinite; border-color: #fbbf24; }
 .lift-btn.nope { animation: nope .45s; }
 .lift.locked .lift-btn { pointer-events: none; }
-@keyframes nope { 20%, 60% { transform: translateX(-7px); background: #fecaca; } 40%, 80% { transform: translateX(7px); } }
+@keyframes nope { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } } /* a soft wobble, no red */

@@ -4,6 +4,7 @@
 import { CONFIG, WORDS, letterName, sayWord } from '../config.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
+const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
 const NUM_GEN = ['zera', 'jednego', 'dwóch', 'trzech', 'czterech', 'pięciu', 'sześciu', 'siedmiu', 'ośmiu', 'dziewięciu', 'dziesięciu'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const L = (l) => cap(letterName(l));
@@ -68,13 +69,17 @@ export const T = {
   spellWord: (w) => [`${sayWord(w)}!`],
 
   yes: () => ['Tak!'],
+  tryAgain: () => ['Spróbuj jeszcze raz!'],
+  letterLike: (l) => [`${L(l)} jak ${word(l)}!`],
+  howManyShort: () => ['Ile smakołyków?'],
+  tapTheBox: () => ['Dotknij pudełka!'],
   countTogether: () => ['Policzmy razem!'],
 
   // Cone Road
   conesFirst: (n) => [`Ojej! Pachołki na drodze! Dotknij pachołka z numerem ${NUM[n]}!`],
   conesMore: (n) => [`Więcej pachołków! Dotknij numeru ${NUM[n]}!`],
   conesDots: (first) => [first ? 'Ojej! Pachołki na drodze! Policz kropki i znajdź ten numer!' : 'Policz kropki! Który to numer?'],
-  dots: (n) => [`${cap(NUM[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
+  dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
 
   // River
   riverFirst: () => [`Pomóż ${dat} przejść przez rzekę! Dotknij numeru jeden!`],
@@ -119,12 +124,13 @@ export function allSegments(levels, allLetters) {
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsAsk(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); });
   Object.keys(PLACE_LINES).forEach((k) => add(T.go(k)));
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
-    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide].forEach((f) => add(f()));
+    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
+    T.tryAgain, T.howManyShort, T.tapTheBox].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

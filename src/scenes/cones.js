@@ -85,12 +85,11 @@ export class ConesMission extends Mission {
       const target = this.pick(skill, pool);
       this.last = target;
       this.item('N:' + target);
-      this.question(skill, target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = numberChoices(target, this.L.max, n, this.level >= 2);
       const colors = shuffle(TILE_COLORS);
       const cones = [];
-      let wrong = 0, solved = false;
+      let solved = false, lastWrong = null;
       const zLocal = -this.world.position.z; // cones appear at world z = 0
       const dotsOnSign = this.L.sign === 'both';
 
@@ -135,7 +134,7 @@ export class ConesMission extends Mission {
             if (!this.alive) return;
             // cones jump off the road
             sfx.whoosh();
-            await Promise.all(cones.map((x) => {
+            await Promise.all(cones.filter((x) => x.parent).map((x) => {
               const x0 = x.position.x, side = x0 === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(x0);
               return animate(600, (t) => {
                 x.position.x = x0 + side * t * 6;
@@ -147,22 +146,23 @@ export class ConesMission extends Mission {
             await this.drive(r);
             resolve();
           } else {
-            wrong++;
-            this.wrong(num);
+            lastWrong = c;
+            this.wrong(num, T.thatsNumber(num));
             sfx.oops();
             wiggle(c);
-            say([...T.thatsNumber(num), ...T.whereNumber(target)]);
-            if (wrong >= 2) { const rc = cones.find((x) => x.userData.num === target); this.hint(rc, () => solved, rc.userData.sign); }
           }
         });
       });
 
       const b = this.L.bubble;
-      ui.bubble({
-        big: b === 'dots' ? '' : String(target),
-        dots: b === 'numeral' ? 0 : target,
-        pic: '🚧',
-        onTap: () => this.replay(),
+      const bubble = (big, dots) => ui.bubble({ big, dots, pic: '🚧', onTap: () => this.replay() });
+      bubble(b === 'dots' ? '' : String(target), b === 'numeral' ? 0 : target);
+      const rc = cones.find((x) => x.userData.num === target);
+      this.question(skill, target, {
+        short: T.whereNumber(target),
+        hint: () => { bubble(String(target), target); return T.dots(target); }, // numeral and dots together
+        simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : cones.find((x) => x !== rc && x.parent)),
+        reveal: () => this.hint(rc, () => solved, rc.userData.sign),
       });
       wait(600).then(() => {
         if (!this.alive) return;

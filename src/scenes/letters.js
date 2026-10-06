@@ -49,15 +49,13 @@ export class LettersMission extends Mission {
       const target = this.pick(skill, pool);
       this.last = target;
       this.item('L:' + target);
-      this.question(skill, target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...distractors(target, pool, n - 1, this.L.similar)]);
       const colors = shuffle(TILE_COLORS);
       const emoji = (WORDS[target] || [])[1] || '';
       const gap = n > 3 ? 2.55 : 2.8;
       const blocks = [];
-      let wrong = 0;
-      let solved = false;
+      let solved = false, lastWrong = null;
 
       const kitten = makeKitten();
       kitten.visible = false;
@@ -101,7 +99,7 @@ export class LettersMission extends Mission {
             setTimeout(() => sfx.meow(), 250);
             this.success(new THREE.Vector3(b.position.x, 1.6, b.position.z), { big: true });
             this.lookAt(kitten);
-            blocks.filter((x) => x !== b).forEach((x) => this.shrinkAway(x, 500));
+            blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 500));
             await say([this.praise(), ...T.kittyFound(target)]);
             if (!this.alive) return;
             // kitty scampers off
@@ -115,20 +113,22 @@ export class LettersMission extends Mission {
             b.removeFromParent();
             resolve();
           } else {
-            wrong++;
-            this.wrong(letter);
+            lastWrong = b;
+            this.wrong(letter, T.thatsLetter(letter));
             sfx.oops();
             wiggle(b);
-            say([...T.thatsLetter(letter), ...T.whereLetter(target)]);
-            if (wrong >= 2) this.hint(blocks.find((x) => x.userData.letter === target), () => solved);
           }
         });
       });
 
-      ui.bubble({
-        big: this.L.show === 'letter' ? showLetter(target) : '',
-        pic: emoji,
-        onTap: () => this.replay(),
+      const bubble = (big) => ui.bubble({ big, pic: emoji, onTap: () => this.replay() });
+      bubble(this.L.show === 'letter' ? showLetter(target) : '');
+      const right = blocks.find((x) => x.userData.letter === target);
+      this.question(skill, target, {
+        short: T.whereLetter(target),
+        hint: () => { bubble(showLetter(target)); return T.letterLike(target); }, // the letter appears, plus its word
+        simplify: () => this.removeOption(lastWrong || blocks.find((x) => x !== right && x.parent)),
+        reveal: () => this.hint(right, () => solved),
       });
       wait(500).then(() => {
         if (this.alive) this.ask(T.kittyAsk(target));

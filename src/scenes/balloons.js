@@ -38,10 +38,11 @@ export class BalloonsMission extends Mission {
     this.scene.add(fence);
     for (let i = 0; i < 4; i++) { const b = makeBush({ seed: i * 5 + 2 }); b.position.set(-9 + i * 1.8, 0, -3.5 - i * 0.4); this.scene.add(b); }
     this.balloons = [];
+    this.speedK = 1; // help slows them down
     this.onUpdate((dt, t) => {
       for (const b of this.balloons) {
         const d = b.userData;
-        b.position.y += d.speed * dt;
+        b.position.y += d.speed * this.speedK * dt;
         b.position.x = d.x0 + Math.sin(t * 0.8 + d.phase) * 0.35;
         b.rotation.z = Math.sin(t * 1.1 + d.phase) * 0.08;
         if (b.position.y > TOP) { b.position.y = BOTTOM; d.inflate = 0; } // float back around so nothing is missed
@@ -56,7 +57,6 @@ export class BalloonsMission extends Mission {
       const target = this.pick('letterVisual', pool);
       this.last = target;
       this.item('L:' + target);
-      this.question('letterVisual', target); // one question per balloon to find
       const nOthers = this.L.total - this.L.targets;
       const set = distractors(target, pool, Math.min(pool.length - 1, nOthers), this.L.similar);
       const letters = shuffle([
@@ -67,7 +67,8 @@ export class BalloonsMission extends Mission {
       const lanes = shuffle(letters.map((_, i) => -5.8 + (11.6 * (i + 0.5)) / n));
       const colors = shuffle(TILE_COLORS);
       const [lo, hi] = this.L.speed;
-      let popped = 0, wrong = 0, done = false;
+      let popped = 0, done = false, lastWrong = null;
+      this.speedK = 1;
 
       this.balloons = letters.map((letter, i) => {
         const b = makeBalloon(colors[i % colors.length], labelTexture(showLetter(letter)));
@@ -95,7 +96,7 @@ export class BalloonsMission extends Mission {
           this.pop(b);
           popped++;
           this.correct(target);
-          if (popped < this.L.targets) this.question('letterVisual', target); // next balloon with the same letter
+          if (popped < this.L.targets) this.question('letterVisual', target, hooks); // next balloon with the same letter
           if (popped < this.L.targets) {
             say(T.number(popped));
             return;
@@ -116,14 +117,30 @@ export class BalloonsMission extends Mission {
           }));
           resolve();
         } else {
-          wrong++;
-          this.wrong(b.userData.letter);
+          lastWrong = b;
+          this.wrong(b.userData.letter, T.thatsLetter(b.userData.letter));
           sfx.oops();
           animate(450, (t) => { b.userData.body.scale.set(1 + Math.sin(t * Math.PI * 4) * 0.08 * (1 - t), 1.18, 1); }, ease.linear);
-          say([...T.thatsLetter(b.userData.letter), ...T.findLetter(target)]);
-          if (wrong >= 2) this.balloons.filter((x) => x.userData.letter === target).forEach((x) => this.hint(x, () => done || x.userData.popped, x.userData.body));
         }
       };
+
+      // a wrong balloon drifts off up into the sky
+      const floatAway = (b) => {
+        if (!b || b.userData.popped) return;
+        b.userData.popped = true;
+        this.untap(b);
+        this.balloons = this.balloons.filter((x) => x !== b);
+        sfx.whoosh();
+        const y0 = b.position.y;
+        animate(1100, (t) => { b.position.y = y0 + t * 12; }, ease.in).then(() => b.removeFromParent());
+      };
+      const hooks = {
+        short: T.findLetter(target),
+        hint: () => { this.speedK = 0.5; return T.letterLike(target); },
+        simplify: () => floatAway(lastWrong?.parent ? lastWrong : this.balloons.find((x) => x.userData.letter !== target)),
+        reveal: () => this.balloons.filter((x) => x.userData.letter === target).forEach((x) => this.hint(x, () => done || x.userData.popped, x.userData.body)),
+      };
+      this.question('letterVisual', target, hooks); // one question per balloon to find
 
       ui.bubble({ big: showLetter(target), pic: '🎈', onTap: () => this.replay(), passthrough: true }); // balloons float up behind it
       wait(500).then(() => {

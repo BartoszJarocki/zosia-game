@@ -125,12 +125,22 @@ export class CountingMission extends Mission {
       const n = this.pick('counting', range(lo, hi));
       this.last = n;
       this.item('Q:' + n);
-      this.question('counting', n);
       const auto = this.L.auto;
       const slotsN = auto ? n : n > 5 ? 10 : Math.max(5, n + 2);
       const slots = this.makeSlots(slotsN);
       const bones = [], landed = [];
-      let count = 0, done = false, reminded = false, idleT = null;
+      let count = 0, done = false, marked = false;
+      const PALE = '#fef3c7', FULL = '#fde047';
+      const short = () => (count === 0 ? T.tapTheBox() : !auto && count >= n ? T.tapPupWhenDone() : T.treatsDone(n));
+      this.question('counting', n, {
+        short,
+        hint: () => { // the n spots she has to fill light up softly
+          if (!auto && !marked) { marked = true; slots.slice(count, n).forEach((s) => s.material.color.set(PALE)); }
+          if (count < n) hop(this.box, 0.3);
+          return short();
+        },
+        reveal: () => { const c0 = count; if (count < n) this.hint(this.box, () => done || count > c0); },
+      });
 
       ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true }); // Chase sits right under it
       wait(400).then(() => { if (this.alive) this.ask(auto ? T.treatsAsk(n) : T.giveThenTap(n)); });
@@ -139,7 +149,6 @@ export class CountingMission extends Mission {
         this.correct(n);
         done = true;
         this.stopIdle();
-        clearTimeout(idleT);
         this.onBox = null;
         this.onPup = null;
         this.pupGlow(false);
@@ -164,16 +173,12 @@ export class CountingMission extends Mission {
         count++;
         const i = count - 1;
         sfx.pop();
-        const { bone, flight } = this.flyBone(this.slotPos(i, slotsN), () => slots[i] && slots[i].material.color.set('#fde047'));
+        const { bone, flight } = this.flyBone(this.slotPos(i, slotsN), () => slots[i] && slots[i].material.color.set(FULL));
         bones.push(bone);
         landed.push(flight);
         say(T.number(count));
         if (auto && count === n) { finish(); return; }
-        if (!auto) {
-          this.pupGlow(true);
-          clearTimeout(idleT);
-          idleT = setTimeout(() => { if (this.alive && !done && !reminded) { reminded = true; say(T.tapPupWhenDone()); } }, 4500);
-        }
+        if (!auto) this.pupGlow(true); // "tap Chase when you're done" comes from the quiet-time help
       };
 
       if (!auto) {
@@ -182,25 +187,25 @@ export class CountingMission extends Mission {
           this.poke();
           await Promise.all(landed);
           if (count === n) { finish(); return; }
-          this.wrong(count); // gave the wrong number of treats
+          this.wrong(count, [], { feedback: false }); // gave the wrong number of treats: answered below
           sfx.oops();
           wiggle(this.pup);
           if (count > n) {
             // too many: give the extras back, one by one
             done = true;
-            await say(T.tooMany());
+            await this.say(T.tooMany());
             while (count > n && this.alive) {
               const bn = bones.pop();
               const p0 = bn.position.clone(), to = this.box.position.clone().add(new THREE.Vector3(0, 1.5, 0));
               await animate(380, (t) => { bn.position.lerpVectors(p0, to, t); bn.position.y += Math.sin(t * Math.PI); }, ease.linear);
               bn.removeFromParent();
-              slots[count - 1]?.material.color.set('#ffffff');
+              slots[count - 1]?.material.color.set(marked && count - 1 < n ? PALE : '#ffffff');
               count--;
-              await say(T.number(count));
+              await this.say(T.number(count));
             }
             if (this.alive) finish();
           } else {
-            say(T.tooFew());
+            this.say(T.tooFew());
           }
         };
       }
@@ -227,11 +232,10 @@ export class CountingMission extends Mission {
       const n = this.pick('quantity', range(lo, hi));
       this.last = n;
       this.item('H:' + n);
-      this.question('quantity', n);
       const slotsN = n > 5 ? 10 : 5;
       const slots = this.makeSlots(slotsN);
       const bones = [];
-      let tapCount = 0, solved = false, wrong = 0;
+      let tapCount = 0, solved = false, lastWrong = null;
       // bones tumble in (no counting aloud: that's her job)
       for (let i = 0; i < n; i++) {
         wait(300 + i * 220).then(() => {
@@ -279,33 +283,41 @@ export class CountingMission extends Mission {
             this.success(b.position.clone().add(new THREE.Vector3(0, 1, 0)));
             await say([...T.yes(), ...T.treatsDone(n)]);
             if (!this.alive) return;
-            blocks.forEach((x) => this.shrinkAway(x, 300));
+            blocks.filter((x) => x.parent).forEach((x) => this.shrinkAway(x, 300));
             await this.gobble(bones);
             await say(T.yum());
             if (!this.alive) return;
             await Promise.all(slots.map((s) => this.shrinkAway(s, 250)));
             resolve();
           } else {
-            wrong++;
-            this.wrong(num);
+            lastWrong = b;
+            this.wrong(num, T.thatsNumber(num));
             sfx.oops();
             wiggle(b);
-            this.stopIdle();
-            this.helped(2); // counting the bones together is a strong clue
-            await say([...T.thatsNumber(num), ...T.countTogether()]);
-            // count together, lighting each bone
-            for (let k = 0; k < bones.length && this.alive && !solved; k++) {
-              hop(bones[k], 0.35, 300);
-              sparkle(this, bones[k].position.clone().add(new THREE.Vector3(0, 0.3, 0)), { count: 5, size: 0.1, speed: 1.4 });
-              await say(T.number(k + 1));
-            }
-            tapCount = 0;
-            bones.forEach((x) => (x.userData.counted = false));
-            if (this.alive && !solved) this.ask(T.howMany());
-            if (wrong >= 2) { const rb = blocks.find((x) => x.userData.num === n); this.hint(rb, () => solved); }
           }
         });
         return b;
+      });
+
+      // help: count the bones together, lighting each one (stops if anything else is said)
+      const step = async (segments) => { const p = this.say(segments), mine = this.sayToken; await p; return mine === this.sayToken && this.alive && !solved; };
+      const countTogether = async (said = []) => {
+        if (!(await step([...said, ...T.countTogether()]))) return;
+        for (let k = 0; k < bones.length; k++) {
+          hop(bones[k], 0.35, 300);
+          sparkle(this, bones[k].position.clone().add(new THREE.Vector3(0, 0.3, 0)), { count: 5, size: 0.1, speed: 1.4 });
+          if (!(await step(T.number(k + 1)))) return;
+        }
+        tapCount = 0;
+        bones.forEach((x) => (x.userData.counted = false));
+        await step(T.howManyShort());
+      };
+      const rb = blocks.find((x) => x.userData.num === n);
+      this.question('quantity', n, {
+        short: T.howManyShort(),
+        hint: () => countTogether(),
+        simplify: (said) => { this.removeOption(lastWrong?.parent ? lastWrong : blocks.find((x) => x !== rb && x.parent)); return countTogether(said); },
+        reveal: () => this.hint(rb, () => solved),
       });
 
       ui.bubble({ big: '?', pic: '🦴', onTap: () => this.replay() });

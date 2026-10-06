@@ -103,15 +103,27 @@ export class StonesMission extends Mission {
         this.dropIn(s, 0.18, 150 + i * 110, 650).then(() => { sfx.splash(); this.collect(s); });
         return s;
       });
-      let next = 1, wrong = 0, busy = false, revealed = false;
+      let next = 1, busy = false, revealed = false;
       this.last = next;
-      this.question('numeral', 1); // open now: stones can be tapped before the question is spoken
       const nextMode = this.L.bubble === 'next';
+      const seqBubble = () => nextMode && next > 1 && !revealed; // only "what comes next?" on screen
+      const showNumber = () => { // help: tell her the number
+        revealed = true;
+        ui.bubble({ big: String(next), dots: next, onTap: () => this.replay() });
+        this.prompt = T.riverNext(next);
+      };
+      const hooks = {
+        short: () => (seqBubble() ? T.riverWhatNext() : next === 1 ? T.whereNumber(1) : T.riverNext(next)),
+        hint: () => { if (seqBubble()) { showNumber(); return T.riverNext(next); } return T.dots(next); },
+        simplify: () => { if (seqBubble()) showNumber(); },
+        reveal: () => { const right = stones.find((x) => x.userData.num === next), want = next; if (right) this.hint(right, () => next !== want); },
+      };
+      this.question('numeral', 1, hooks); // open now: stones can be tapped before the question is spoken
 
       const askNext = () => {
-        // "what comes next?" (after the first stone, until a slip reveals it) tests order; otherwise the numeral
-        this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next);
-        if (next === 1 || !nextMode || revealed) {
+        // "what comes next?" (after the first stone, until help shows it) tests order; otherwise the numeral
+        this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next, hooks);
+        if (!seqBubble()) {
           ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
           if (next === 1) this.ask(r === 0 ? (nextMode ? T.riverFirstNext() : T.riverFirst()) : T.riverAgain());
           else this.ask(T.riverNext(next));
@@ -128,7 +140,6 @@ export class StonesMission extends Mission {
         if (s.userData.num === next) {
           busy = true;
           this.correct(s.userData.num);
-          wrong = 0;
           revealed = false;
           this.untap(s);
           s.userData.top.emissive = new THREE.Color('#fde047');
@@ -142,7 +153,8 @@ export class StonesMission extends Mission {
           sfx.splash();
           sparkle(this, to.clone().add(new THREE.Vector3(0, 0.3, 0)), { count: 10, size: 0.12, speed: 2 });
           this.girl.userData.setHappy(0.8);
-          say(T.number(next));
+          await say(T.number(next)); // hear the number she landed on before the next question
+          if (!this.alive) return;
           next++;
           this.last = next;
           if (next > n) {
@@ -176,23 +188,9 @@ export class StonesMission extends Mission {
             askNext();
           }
         } else {
-          wrong++;
-          this.wrong(s.userData.num);
+          this.wrong(s.userData.num, T.thatsNumber(s.userData.num));
           sfx.oops();
           wiggle(s);
-          if (nextMode && !revealed) {
-            // first slip in "what's next?" mode: tell her the number
-            revealed = true;
-            this.helped(2); // the number is now shown
-            say([...T.thatsNumber(s.userData.num), ...T.riverNext(next)]);
-            ui.bubble({ big: String(next), dots: next, onTap: () => this.replay() });
-            this.prompt = T.riverNext(next);
-          } else say([...T.thatsNumber(s.userData.num), ...T.whereNumber(next)]);
-          if (wrong >= 2) {
-            const right = stones.find((x) => x.userData.num === next);
-            const want = next;
-            this.hint(right, () => next !== want);
-          }
         }
       }));
 

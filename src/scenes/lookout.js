@@ -153,12 +153,19 @@ export class LookoutMission extends Mission {
       }
       this.last = target;
       this.item('N:' + target);
-      this.question(relative ? 'sequence' : 'numeral', target); // "one floor up/down" = one more / one less
-      let wrong = 0, busy = false, revealed = false;
+      let busy = false, revealed = false;
 
-      const showTarget = () => ui.bubble({ big: String(target), dots: this.L.bubble === 'both' ? target : 0, pic: '🛗', onTap: () => this.replay() });
+      const showTarget = (dots = this.L.bubble === 'both') => ui.bubble({ big: String(target), dots: dots ? target : 0, pic: '🛗', onTap: () => this.replay() });
       if (relative) ui.bubble({ seq: [this.floor, up ? '⬆' : '⬇'], onTap: () => this.replay() });
       else showTarget();
+      const from = this.floor;
+      const showNumber = () => { revealed = true; showTarget(true); this.prompt = T.liftPress(target); }; // number + dots
+      this.question(relative ? 'sequence' : 'numeral', target, { // "one floor up/down" = one more / one less
+        short: () => (relative && !revealed ? T.liftRel(from, up) : T.liftPress(target)),
+        hint: () => { showNumber(); return T.dots(target); }, // the dots appear: "Trzy kropki!"
+        simplify: () => showNumber(),
+        reveal: () => this.panel.hint(target),
+      });
 
       this.onPress = async (f) => {
         if (busy) return;
@@ -190,18 +197,9 @@ export class LookoutMission extends Mission {
           this.panel.lock(false);
           resolve();
         } else {
-          wrong++;
-          this.wrong(f);
+          this.wrong(f, T.thatsNumber(f));
           sfx.oops();
           this.panel.nope(f);
-          if (relative && !revealed) {
-            revealed = true; // first slip: tell her the number
-            this.helped(2);
-            showTarget();
-            this.prompt = T.liftPress(target);
-          }
-          say([...T.thatsNumber(f), ...T.liftPress(target)]);
-          if (wrong >= 2) { this.panel.hint(target); this.helped(3); }
         }
       };
 

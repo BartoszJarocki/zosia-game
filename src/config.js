@@ -13,7 +13,8 @@ export const CONFIG = {
   roundsPerMission: 5,
   level: null,              // force every mission to level 1, 2 or 3 (null = earn levels with badges)
   goodRunsPerLevel: 2,      // runs with most answers right first time needed to unlock the next level
-  idleRepeatSeconds: 12,    // repeat the question if nobody taps for this long
+  // help when she goes quiet: short prompt → clue → answer pulses → one last reminder, then silence
+  assistSeconds: { shortPrompt: 5, hint: 11, reveal: 18, remind: 30 },
   // Voice: pre-recorded ElevenLabs clips (npm run voices), falling back to the iPad's Polish voice.
   voiceLang: 'pl-PL',
   speechRate: 0.85,
