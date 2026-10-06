@@ -36,6 +36,9 @@ const PLACES = {
   stones: { at: [13.5, 8] },
   counting: { at: [15, -3] },
   // the Lookout itself: drive round the sandy circle and up to its door
+  // behind, either side of the Lookout (roads curve back to them)
+  delivery: { at: [-9.5, -8.5], via: [[-2.6, -1.8], [-5, -4.6]] },
+  picnic: { at: [9.5, -8.5], via: [[2.6, -1.8], [5, -4.6]] },
   lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
@@ -110,6 +113,11 @@ export class Hub extends Stage {
         continue;
       }
       const park = p.pos.clone().add(START.clone().sub(p.pos).setLength(4.2));
+      if (p.via) { // places behind: straight out the back of the roundabout
+        p.curve = new THREE.CatmullRomCurve3([START.clone(), ...p.via.map(([x, z]) => new THREE.Vector3(x, 0, z)), park]);
+        s.add(makeRoad(p.curve));
+        continue;
+      }
       const p1 = new THREE.Vector3(0, 0, 2.8);
       const mid = p1.clone().lerp(park, 0.5).add(new THREE.Vector3(0, 0, 1.5));
       p.curve = new THREE.CatmullRomCurve3([START.clone(), p1, mid, park]);
@@ -119,7 +127,7 @@ export class Hub extends Stage {
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
-    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse };
+    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic };
     this.placeGroups = {};
     for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
@@ -138,7 +146,7 @@ export class Hub extends Stage {
       t.position.set(x, 0, z);
       s.add(t);
     }
-    const houses = [[-8.5, -8, '#fde68a', '#ef4444'], [8.5, -8, '#bfdbfe', '#8b5cf6'], [-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
+    const houses = [[-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
     for (const [x, z, w, r] of houses) {
       const h = makeHouse(w, r);
       h.position.set(x, 0, z);
@@ -444,6 +452,38 @@ function makeNameTrain() {
     g.add(b);
   });
   plain(t); // a parked train is just scenery here
+  return g;
+}
+
+function makePostOffice() {
+  const g = new THREE.Group();
+  g.add(pad(3.2, '#fde68a'));
+  const h = makeHouse('#fef3c7', '#dc2626', { chimney: false });
+  h.position.set(0, 0, -0.9);
+  g.add(h);
+  // a red mailbox and a couple of parcels
+  g.add(mesh(new THREE.CylinderGeometry(0.07, 0.07, 1, 8), mat('#6b7280'), { x: 1.7, y: 0.5, z: 0.6 }));
+  g.add(mesh(rbox(0.8, 0.7, 0.6, 0.1), mat('#dc2626'), { x: 1.7, y: 1.25, z: 0.6 }));
+  for (const [x, z, s] of [[-1.5, 0.9, 0.7], [-0.8, 1.4, 0.55]]) g.add(mesh(rbox(s, s * 0.8, s * 0.8, 0.05), mat('#c08a4a', { roughness: 0.85 }), { x, y: s * 0.4, z }));
+  return g;
+}
+
+function makePicnic() {
+  const g = new THREE.Group();
+  g.add(pad(3.2, '#bbf7d0'));
+  // a checked blanket, a basket, a few bones
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x2 = c.getContext('2d');
+  x2.fillStyle = '#fff'; x2.fillRect(0, 0, 64, 64);
+  x2.fillStyle = '#ef4444';
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if ((x + y) % 2 === 0) x2.fillRect(x * 16, y * 16, 16, 16);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  g.add(mesh(new THREE.PlaneGeometry(3.2, 2.4), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }), { y: 0.13, rx: -Math.PI / 2, shadow: false }));
+  g.add(mesh(rbox(1.1, 0.65, 0.75, 0.1), mat('#b45309', { roughness: 0.8 }), { x: 0.9, y: 0.45, z: -0.4 }));
+  g.add(mesh(new THREE.TorusGeometry(0.38, 0.05, 6, 16, Math.PI), mat('#92400e'), { x: 0.9, y: 0.78, z: -0.4 }));
+  for (const [x, z] of [[-0.8, 0.3], [-0.2, 0.6], [-0.6, -0.4]]) { const b = makeBone(1.2); b.position.set(x, 0.2, z); b.rotation.y = x * 2; g.add(b); }
   return g;
 }
 

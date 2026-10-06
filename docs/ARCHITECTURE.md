@@ -329,6 +329,31 @@ without lighting the next one.
   missing number and one that isn't on the path). She drags the right one in (or taps it), then Zosia hops across by
   herself, counting — the crossing is the reward. Skill sequence.
 
+## New missions (Phases 15–16)
+
+Two new places behind the Lookout (where two houses stood); their roads curve straight out of the back of the
+roundabout (`PLACES[kind].via`).
+
+- **Pup Delivery** (`delivery`, the post office, letters side): first sounds, skill letterSound.
+  `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat. `soundLetter`: letter mailboxes and
+  one parcel with a picture, "Do której skrzynki pójdzie kot?" → drag the parcel into K (or tap the mailbox).
+  Picture words are the game's `WORDS`. Sound-alikes (P/B, T/D, K/G, S/Z, W/F, M/N) are kept apart unless `similar`.
+- **Pup Picnic** (`picnic`, numbers side): more / less / the same by looking, skill comparison (item = the mode, `#`
+  with numerals). Two blankets of treats (`same`: compared with Chase's plate); later the blankets show numerals and
+  the treats appear afterwards. No < > signs. The clue lines both groups up in rows side by side (one-to-one: the
+  longer row has more). Chase trots over and eats the right ones.
+
+## Grown-ups' page (Phase 17)
+
+`#parent`, or press and hold the badge shelf for 3 seconds (opens over the game; a child's tap does nothing).
+- What she knows: per letter / number and skill — mastery, answers, first try, help, answer time, mix-ups.
+- Sessions: how many, average length, recent ones (with "finale ✓" / "wound down early"), and **what changed lately**:
+  each session saves its biggest mastery changes (`summary.changes`: from → to, worked out from the events).
+- Developer tools (collapsed): mission levels − / +, "all missions to the top level", set a mastery value, "next trip"
+  (lost kitten / balloons / Lookout alarm → finale, via `parent/next.js`), clear mastery, clear the island, reset
+  everything. Anything that erases needs a 1.5 s press-and-hold (`holdToConfirm`).
+- Wording avoids conclusions: "estimates from play, not a test", little-data rows are faded.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and

@@ -12,6 +12,8 @@ export const MISSIONS = {
   stones: { label: '1·2·3', color: '#0891b2' },
   counting: { label: '🦴', color: '#f59e0b' },
   lookout: { label: '🐾', color: '#e23b3b' },
+  delivery: { label: '📦', color: '#b45309' },
+  picnic: { label: '🧺', color: '#16a34a' },
 };
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 

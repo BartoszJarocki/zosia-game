@@ -196,6 +196,42 @@ counted aloud on the way up. At the end: to the very top, the alarm, and down th
   `relative`: "We're on floor 3 — go one floor up/down" (one more / one less; needs 3+ floors and 2+ rounds)
 - **rounds** — how many elevator trips (1–8)
 
+### 📦 Pup Delivery · `delivery`
+
+The post office: Chase delivers parcels. First sounds: which word starts with which letter.
+
+| Level | pool | choices | mode | rounds |
+|---|---|---|---|---|
+| 1 | START | 2 | pictureSound | 4 |
+| 2 | START | 3 | pictureSound | 4 |
+| 3 | START | 3 | soundLetter | 4 |
+| 4 | MORE | 3 | soundLetter | 4 |
+
+- **pool** — which letters (their picture words come from `WORDS`: K → kot 🐱)
+- **choices** — how many parcels / mailboxes (2–4)
+- **mode** — `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat ·
+  `soundLetter`: letter mailboxes and one parcel with a picture, "Do której skrzynki pójdzie kot?" →
+  drag the parcel into K (or tap the mailbox)
+- **similar** — optional: `yes` lets sound-alikes (P/B, T/D, K/G, S/Z, W/F, M/N) be choices together
+
+### 🧺 Pup Picnic · `picnic`
+
+A picnic with Chase: more, less, the same — by looking, before numbers.
+
+| Level | max | modes | close | numerals | rounds |
+|---|---|---|---|---|---|
+| 1 | 5 | more | no | no | 3 |
+| 2 | 5 | more, less | no | no | 3 |
+| 3 | 6 | more, less, same | yes | no | 3 |
+| 4 | 9 | more, less | yes | yes | 3 |
+
+- **max** — the biggest amount (3–10)
+- **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?") · `less` · `same`
+  (Chase has a plate: "Gdzie jest tyle samo, co u Czejsa?")
+- **close** — `no`: the amounts are far apart (2+ difference) · `yes`: they differ by one
+- **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
+  (no < > signs). The clue lines both groups up in rows, side by side: the longer row has more.
+
 ---
 
 ## Adding or changing levels

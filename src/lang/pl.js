@@ -35,6 +35,8 @@ const PLACE_TO = {
   stones: 'nad rzekę',
   lookout: 'do Bazy',
   counting: 'do Domku ze Smakołykami',
+  delivery: 'na pocztę',
+  picnic: 'na piknik',
 };
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
@@ -50,6 +52,22 @@ export const T = {
   finaleCall: () => ['Teraz wielka misja w Bazie! Dotknij Bazy!'],
   sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`, 'Możesz dalej się bawić!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
+  // Pup Delivery: first sounds
+  deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
+  startsWith: (l) => [`Co zaczyna się na ${L(l)}?`],
+  whichBox: (l) => [`Do której skrzynki pójdzie ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}?`],
+  thatsWord: (l) => [`To jest ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}.`],
+  // Pup Picnic: more, less, the same
+  picnicStart: () => [`Piknik! ${pup} jest głodny!`],
+  askMore: () => ['Gdzie jest więcej smakołyków?'],
+  askLess: () => ['Gdzie jest mniej smakołyków?'],
+  askSame: () => [`Gdzie jest tyle samo, co u ${pupGen}?`],
+  yesMore: () => ['Tak! Tu jest więcej!'],
+  yesLess: () => ['Tak! Tu jest mniej!'],
+  yesSame: () => ['Tak! Tyle samo!'],
+  hereMore: () => ['Tu jest więcej.'],
+  hereLess: () => ['Tu jest mniej.'],
+  lookCarefully: () => ['Popatrz uważnie!'],
   // Adventure Bay changes (said the first time the hub shows them)
   worldKitten: () => ['Zobacz! Uratowany kotek bawi się teraz koło parku!'],
   worldBridge: () => ['Zobacz! Nad rzeką stoi nowy most!'],
@@ -168,6 +186,8 @@ export function allSegments(levels, allLetters) {
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
+  // Pup Delivery: every letter its levels can ask
+  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.thatsWord(l)); add(T.letterLike(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
@@ -175,7 +195,8 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
     T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits].forEach((f) => add(f()));
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
+    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.hereMore, T.hereLess, T.lookCarefully].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

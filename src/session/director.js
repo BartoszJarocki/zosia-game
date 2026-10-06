@@ -15,7 +15,7 @@ export const SESSION = Object.freeze({
 });
 
 /** Letter games and number games, for variety. */
-export const DOMAIN = { letters: 'letters', balloons: 'letters', name: 'letters', cones: 'numbers', stones: 'numbers', counting: 'numbers', lookout: 'numbers' };
+export const DOMAIN = { letters: 'letters', balloons: 'letters', name: 'letters', cones: 'numbers', stones: 'numbers', counting: 'numbers', lookout: 'numbers', delivery: 'letters', picnic: 'numbers' };
 
 /**
  * @typedef {object} SessionState

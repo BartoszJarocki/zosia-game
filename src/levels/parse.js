@@ -60,6 +60,21 @@ export const SCHEMA = {
     slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
   },
+  delivery: {
+    pool: { type: 'letters' },
+    choices: { type: 'int', min: 2, max: 4 },
+    mode: { type: 'enum', values: ['pictureSound', 'soundLetter'] },
+    similar: { type: 'bool', optional: true, default: false },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 4 }, // parcels
+    needs: { type: 'needs', optional: true },
+  },
+  picnic: {
+    max: { type: 'int', min: 3, max: 10 },
+    modes: { type: 'list', values: ['more', 'less', 'same'] },
+    close: { type: 'bool' },
+    numerals: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 },
+  },
   lookout: {
     max: { type: 'int', min: 2, max: 9 },
     bubble: { type: 'enum', values: ['both', 'numeral'] },
@@ -220,6 +235,7 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
   if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
+  if (kind === 'delivery' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
   if (kind === 'name') {
     s.mode ||= s.ghost ? 'ghost' : s.bubble === 'word' ? 'highlight' : 'ghost'; // (older tables used ghost + bubble)
     const short = s.mode === 'missing' ? (s.words || []).filter((w) => w.length <= s.gaps) : [];

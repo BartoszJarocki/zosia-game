@@ -41,6 +41,8 @@ const ASSIST = {
   stones: (s) => ({ ...s, bubble: 'numeral' }),
   counting: (s) => ({ ...s, auto: true }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
+  delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
+  picnic: (s) => ({ ...s, close: false, numerals: false }),
 };
 
 export function settingsFor(kind) {

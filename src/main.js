@@ -11,6 +11,8 @@ import { NameMission } from './scenes/name.js';
 import { BalloonsMission } from './scenes/balloons.js';
 import { StonesMission } from './scenes/stones.js';
 import { LookoutMission } from './scenes/lookout.js';
+import { DeliveryMission } from './scenes/delivery.js';
+import { PicnicMission } from './scenes/picnic.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
@@ -29,6 +31,7 @@ const updateSW = registerSW({
 const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
+  delivery: DeliveryMission, picnic: PicnicMission,
 };
 
 const game = {
@@ -70,7 +73,7 @@ async function boot() {
     game.hub({ greet: true });
   });
 
-  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #avatar (and #parent, #reset above)
+  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }

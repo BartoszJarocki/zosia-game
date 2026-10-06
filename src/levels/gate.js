@@ -19,7 +19,7 @@ const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) =>
 /** The items a level asks about (what its gate is measured over). */
 export function gateItems(kind, row) {
   switch (kind) {
-    case 'letters': case 'balloons': return [...new Set([...(row.pool || '')])];
+    case 'letters': case 'balloons': case 'delivery': return [...new Set([...(row.pool || '')])];
     case 'name': return [...new Set((row.words || []).join(''))];
     case 'cones': case 'lookout': return range(1, row.max);
     case 'stones': return range(1, row.n);
