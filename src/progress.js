@@ -45,7 +45,7 @@ export function recordMission(kind, firstTry, rounds) {
   const acc = rounds ? firstTry / rounds : 1;
   m.lastAcc = acc;
   let levelUp = false;
-  if (acc >= 0.7) {
+  if (acc >= 0.65) { // two thirds right first time (2 of 3, 3 of 4, 4 of 5…)
     m.good++;
     if (m.good >= CONFIG.goodRunsPerLevel && m.level < maxLevel(kind)) { m.level++; m.good = 0; levelUp = true; }
   }
@@ -75,5 +75,19 @@ export function pickItem(skill, candidates, { mix } = {}) {
   if (recent.length > 8) recent.shift();
   return item;
 }
+
+/** Save (or update) a play session's summary. Only sessions with a finished mission get here. */
+export function recordSession(sum) {
+  const ss = state.sessions;
+  const i = ss.recent.findIndex((x) => x.id === sum.id);
+  if (i === -1) {
+    ss.count++;
+    ss.recent.push(sum);
+    if (ss.recent.length > 30) ss.recent.splice(0, ss.recent.length - 30);
+  } else ss.recent[i] = sum;
+  save();
+}
+/** { count, recent: [{ id, startedAt, endedAt, missions, finale }] } (read-only use please). */
+export const getSessions = () => state.sessions;
 
 export function resetProgress() { state = migrate(null).state; save(); }

@@ -1,5 +1,5 @@
 // #parent: a read-only page for grown-ups (what she knows, from play). Never shown during normal play.
-import { getSkills, levelFor } from '../progress.js';
+import { getSkills, getSessions, levelFor } from '../progress.js';
 import { badges, MISSIONS } from '../ui.js';
 import { CONFIG, showLetter } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
@@ -27,6 +27,16 @@ function grid(reports) {
     ${unseen.length ? `<p class="pv-unseen"><span class="pv-none">Not practised yet:</span> ${unseen.map((r) => `<b>${esc(label(r.item))}</b>`).join(' ')}</p>` : ''}`;
 }
 
+function sessionsList(recent) {
+  if (!recent.length) return '<span class="pv-none">nothing yet</span>';
+  return `<ul class="pv-sessions">${recent.slice(-6).reverse().map((s) => {
+    const mins = Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000));
+    const when = new Date(s.startedAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const names = s.missions.map((k) => esc(MISSION_INFO[k]?.title || k)).join(' → ');
+    return `<li><b>${esc(when)}</b> · about ${mins} min · ${names}${s.finale ? ' · finale ✓' : ''}</li>`;
+  }).join('')}</ul>`;
+}
+
 const chips = (list) => (list.length
   ? list.map((x) => `<span class="pv-chip">${esc(label(x.item))} <small>${esc(x.label)} · ${pct(x.mastery)}</small></span>`).join('')
   : '<span class="pv-none">nothing yet</span>');
@@ -37,6 +47,7 @@ export function showParentView({ onClose }) {
   const nums = Array.from({ length: maxNumber(LEVELS) }, (_, i) => i + 1);
   const got = badges.get();
   const name = esc(CONFIG.childName || 'Your child');
+  const sessions = getSessions();
 
   const page = document.createElement('div');
   page.className = 'parent-view';
@@ -54,7 +65,10 @@ export function showParentView({ onClose }) {
       <div><b>${o.assistPct}%</b><span>needed some help</span></div>
       <div><b>${secs(o.avgLatencyS)}</b><span>average answer time</span></div>
       <div><b>${o.familiar}</b><span>items she knows well</span></div>
+      <div><b>${sessions.count}</b><span>play sessions</span></div>
     </section>
+
+    <section><h2>Recent sessions</h2>${sessionsList(sessions.recent)}</section>
 
     <section><h2>Missions</h2><div class="pv-missions">${Object.keys(MISSIONS).map((k) => `
       <div class="pv-mission"><span>${esc(MISSION_INFO[k]?.title || k)}</span>

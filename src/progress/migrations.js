@@ -3,10 +3,11 @@
 //
 //   v1  { v, missions: { kind: { level, good, lastAcc } }, items: { 'L:B': { n, ok } } }
 //   v2  + skills: { [skill]: { [item]: SkillStat } }  (seeded from the v1 item stats)
+//   v3  + sessions: { count, recent: [{ id, startedAt, endedAt, missions: [kind], finale }] }
 
 import { emptyStat } from '../learning/mastery.js';
 
-export const VERSION = 2;
+export const VERSION = 3;
 
 /** Which skill the old item prefixes measured. */
 const LEGACY_PREFIX = { 'L:': 'letterVisual', 'N:': 'numeral', 'Q:': 'counting', 'H:': 'quantity' };
@@ -47,9 +48,16 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
     s.skills = seedSkills(s.items);
     s.v = 2;
   }
+  if (s.v === 2) {
+    s.sessions = { count: 0, recent: [] }; // play sessions start being counted from here
+    s.v = 3;
+  }
   // defaults for anything missing (also protects against hand-edited or partial saves)
   if (!s.missions || typeof s.missions !== 'object') s.missions = {};
   if (!s.items || typeof s.items !== 'object') s.items = {};
   if (!s.skills || typeof s.skills !== 'object') s.skills = {};
+  if (!s.sessions || typeof s.sessions !== 'object') s.sessions = { count: 0, recent: [] };
+  if (!Array.isArray(s.sessions.recent)) s.sessions.recent = [];
+  if (!Number.isInteger(s.sessions.count)) s.sessions.count = s.sessions.recent.length;
   return { state: s, changed: JSON.stringify(s) !== before };
 }

@@ -5,7 +5,7 @@ import { makePup, makeGirl } from '../characters.js';
 import { makeTree, makeBush, makeRock, makeCloud, makeHills, makeMeadowDetail, makeButterfly, makeBird, contactShadow } from '../world/nature.js';
 import { makeLookout, makeHouse, makePupHouse, makeLighthouse, makeBoat, makeWindmill, makeFence } from '../world/props.js';
 import { makeWater, makeShoreFoam } from '../world/water.js';
-import { dust } from '../fx/particles.js';
+import { dust, sparkle } from '../fx/particles.js';
 import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
@@ -15,6 +15,9 @@ import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
 import { pick } from '../util.js';
 import { T } from '../lang/pl.js';
+import { getSession } from '../session/session.js';
+import { nextStep, suggestNext, callFinale } from '../session/director.js';
+import { confetti } from '../ui.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
@@ -186,10 +189,48 @@ export class Hub extends Stage {
       this.busy = true;
       animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; });
     }
-    say(this.greet ? T.greet() : pick(T.hubAgain()));
-    this.idleTimer = setInterval(() => {
-      if (this.alive && !this.busy) say(T.hubIdle());
+    // session director: gently suggest where to go next (every place can still be tapped)
+    const session = getSession();
+    const step = nextStep(session);
+    this.suggested = suggestNext(session, Object.keys(PLACES));
+    if (this.suggested) this.highlight(this.suggested);
+    let line, idle;
+    if (this.greet) {
+      line = T.greet();
+      idle = () => [...T.hubIdle(), ...T.suggest(this.suggested)];
+    } else if (step === 'mission') {
+      line = [pick(T.hubAgain()), ...T.suggest(this.suggested)];
+      idle = () => [...T.hubIdle(), ...T.suggest(this.suggested)];
+    } else if (step === 'finale') {
+      callFinale(session);
+      line = idle = T.finaleCall();
+    } else if (!session.thanked) {
+      // the finale is done: thank her once, then it's free play (no more nudging)
+      session.thanked = true;
+      line = T.sessionDone();
+      confetti(90);
+      this.cheerUntil = performance.now() / 1000 + 3;
+    }
+    if (line) say(line);
+    // a nudge when she goes quiet, at most twice per visit (never endless)
+    let nudges = 0;
+    this.idleTimer = idle && setInterval(() => {
+      if (!this.alive || this.busy) return;
+      if (++nudges > 2) { clearInterval(this.idleTimer); return; }
+      say(typeof idle === 'function' ? idle() : idle);
     }, 25000);
+  }
+
+  /** The suggested place: its star grows, pulses and sparkles. */
+  highlight(kind) {
+    const m = this.markers?.[kind];
+    if (!m) return;
+    const at = new THREE.Vector3();
+    let next = 1;
+    this.onUpdate((dt, t) => {
+      m.big.scale.setScalar(1.35 + Math.sin(t * 4) * 0.12);
+      if (t > next) { next = t + 2.4; m.marker.getWorldPosition(at); sparkle(this, at, { count: 8, size: 0.22, speed: 1.6 }); }
+    });
   }
 
   exit() { clearInterval(this.idleTimer); }
@@ -207,7 +248,9 @@ export class Hub extends Stage {
     marker.position.set(mx, my, mz);
     const big = star('#fde047', 0.95, 0.28);
     big.material = mat('#ffe066', { emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 });
+    big.userData.dynamic = true; // grows when the place is suggested
     marker.add(big);
+    (this.markers ||= {})[kind] = { marker, big };
     const level = levelFor(kind);
     const total = maxLevel(kind);
     for (let i = 0; i < total; i++) {

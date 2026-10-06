@@ -21,15 +21,17 @@ const pupGen = CONFIG.pupGenitive || pup;
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
 
-export const PLACE_LINES = {
-  letters: 'Jedziemy do Kociego Parku!',
-  balloons: 'Jedziemy na Balonową Łąkę!',
-  name: 'Jedziemy do Literkowego Pociągu!',
-  cones: 'Jedziemy na Pachołkową Drogę!',
-  stones: 'Jedziemy nad rzekę!',
-  lookout: 'Jedziemy do Bazy!',
-  counting: 'Jedziemy do Domku ze Smakołykami!',
+/** Where each place is, as in "Jedziemy …" / "Może …?" */
+const PLACE_TO = {
+  letters: 'do Kociego Parku',
+  balloons: 'na Balonową Łąkę',
+  name: 'do Literkowego Pociągu',
+  cones: 'na Pachołkową Drogę',
+  stones: 'nad rzekę',
+  lookout: 'do Bazy',
+  counting: 'do Domku ze Smakołykami',
 };
+export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
 export const T = {
   number: (n) => [`${cap(NUM[n])}!`],
@@ -39,6 +41,9 @@ export const T = {
   greet: () => [`Cześć, ${voc}! ${pup} jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie!`],
   hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'],
   hubIdle: () => ['Dotknij miejsca, żeby zacząć misję!'],
+  suggest: (kind) => [`Może ${PLACE_TO[kind]}?`],
+  finaleCall: () => ['Teraz wielka misja w Bazie! Dotknij Bazy!'],
+  sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`, 'Możesz dalej się bawić!'],
   tapGirl: () => [`To ${kid}!`, `Cześć, ${voc}!`, `${kid} i ${pup}, gotowi do akcji!`],
   tapPup: () => ['Hau, hau!', `${pup} rusza do akcji!`, 'Gotowy do akcji!'],
   go: (kind) => [PLACE_LINES[kind]],
@@ -126,11 +131,11 @@ export function allSegments(levels, allLetters) {
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyAsk(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); });
-  Object.keys(PLACE_LINES).forEach((k) => add(T.go(k)));
+  Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
-    T.tryAgain, T.howManyShort, T.tapTheBox].forEach((f) => add(f()));
+    T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone].forEach((f) => add(f()));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

@@ -13,6 +13,7 @@ import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
+import { missionDone } from '../session/session.js';
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
@@ -33,7 +34,7 @@ export class Mission extends Stage {
     this.kind = kind;
     this.level = levelFor(kind);
     this.L = settingsFor(kind);
-    this.rounds = CONFIG.roundsPerMission;
+    this.rounds = this.L.rounds ?? 3; // GAME.md "rounds" column (Name Train: the word's letters)
     this.cheerUntil = 0;
     this.walking = false;
     this.prompt = '';
@@ -87,6 +88,7 @@ export class Mission extends Stage {
     ui.hideBubble();
     ui.badges.add(this.kind);
     const { level, levelUp } = recordMission(this.kind, this.firstTry, this.rounds);
+    missionDone(this.kind); // the session director counts it (the hub suggests what's next)
     sfx.fanfare();
     setTimeout(() => sfx.siren(2), 900);
     this.cheer(6);

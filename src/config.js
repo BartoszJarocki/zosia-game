@@ -10,11 +10,12 @@ export const CONFIG = {
   pupDative: 'Czejsowi',      // "Daj Czejsowi"
   pupGenitive: 'Czejsa',      // "dotknij Czejsa"
   lowercase: false,         // true = show lowercase letters instead
-  roundsPerMission: 5,
   level: null,              // force every mission to level 1, 2 or 3 (null = earn levels with badges)
   goodRunsPerLevel: 2,      // runs with most answers right first time needed to unlock the next level
   // help when she goes quiet: short prompt → clue → answer pulses → one last reminder, then silence
   assistSeconds: { shortPrompt: 5, hint: 11, reveal: 18, remind: 30 },
+  // a play session: this many missions, then the Lookout as the finale, then free play (nothing is ever locked)
+  session: { missions: 2, newAfterMinutes: 15 },
   // Voice: pre-recorded ElevenLabs clips (npm run voices), falling back to the iPad's Polish voice.
   voiceLang: 'pl-PL',
   speechRate: 0.85,

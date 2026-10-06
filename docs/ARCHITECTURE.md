@@ -35,7 +35,7 @@ Tests: `npm test` (Node's built-in runner, `tests/`).
 ## Mission interface (`src/scenes/mission.js`)
 
 ```
-constructor(game, kind)   level = levelFor(kind); L = settingsFor(kind); rounds = CONFIG.roundsPerMission
+constructor(game, kind)   level = levelFor(kind); L = settingsFor(kind); rounds = L.rounds (GAME.md "rounds" column)
 enter()                   build() → missionHud() → character idle updater → run()
 run()                     for r in rounds: missed=false; roundItem=null; await round(r);
                           firstTry += !missed; recordItem(roundItem, !missed); paw fills
@@ -64,7 +64,7 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
 
 | Key | Shape | Owner |
 |---|---|---|
-| `pup-patrol-progress` | `{ v: 1, missions: { [kind]: { level, good, lastAcc } }, items: { [prefix+item]: { n, ok } } }` | `progress.js` |
+| `pup-patrol-progress` | `{ v: 3, missions: { [kind]: { level, good, lastAcc } }, items: { [prefix+item]: { n, ok } }, skills, sessions }` (see `progress/migrations.js`) | `progress.js` |
 | `pup-patrol-badges` | `{ [kind]: count }` | `ui.js` (`badges`) |
 | `pup-patrol-quality` | `'low' / 'medium' / 'high' / 'medium-locked'` | `fx/post.js` |
 
@@ -188,6 +188,22 @@ this.wrong(chosen, T.thatsLetter(chosen));   // the base says it, then the next 
 
 Tests: `tests/learning/assist.test.js` (state machine). `window.__sayLog = []` collects every spoken line, for browser tests.
 
+## Sessions (Phase 5)
+
+```
+start button ─▶ startSession()            src/session/session.js (live state) + director.js (pure rules)
+learning events ─▶ noteEvent()             recent latency / help / errors (for Phase 6 fatigue checks)
+Mission.finish() ─▶ missionDone(kind) ─▶ progress.recordSession(summary)   (saved: sessions.count, recent ≤ 30)
+Hub.enter() ─▶ nextStep() / suggestNext()  'mission' → suggest a place · 'finale' → the Lookout · 'free' → nothing
+```
+
+- A session = `CONFIG.session.missions` (2) regular missions → the Lookout as finale → free play. A break of
+  `newAfterMinutes` (15) starts a new one. The Lookout played early is an ordinary mission.
+- Suggestions alternate letter and number games and prefer places not played yet this session. The suggested
+  place's star grows and sparkles; nothing is ever locked. Hub nudges when she is quiet: at most 2 per visit, none in free play.
+- Mission lengths come from GAME.md (`rounds`), following the brief: Kitty Park 4, Balloon Hill 2–3, Name Train 1 word,
+  Cone Road 3, River 1–2 crossings, Treat House 3, Lookout 1–2 trips. A "good run" is now ≥ 65% first try (2 of 3).
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and
@@ -199,7 +215,7 @@ Tests: `tests/learning/assist.test.js` (state machine). `window.__sayLog = []` c
    same as not knowing the letter.
 5. ~~The idle prompt repeats verbatim every 12 s, forever.~~ Replaced by the help ladder (Phase 4).
 6. ~~Red "wrong" UI exists in one place~~ (elevator button flash): removed in Phase 4.
-7. **Mission length is fixed at 5 rounds** (Lookout = 5 trips, River = 3 crossings), longer than the brief's targets (Phase 5).
+7. ~~Mission length is fixed at 5 rounds~~: per-mission `rounds` in GAME.md (Phase 5).
 8. **River records no items**, so its numbers never influence selection.
 9. **No tests.** Pure logic (parser, progress, item picking) has no automated coverage.
 

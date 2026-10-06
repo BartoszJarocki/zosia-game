@@ -6,7 +6,6 @@ import { makeTree, makeBush } from '../world/nature.js';
 import { makeHouse, makeLamp, makeHydrant } from '../world/props.js';
 import { dust } from '../fx/particles.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
-import { CONFIG } from '../config.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
@@ -34,7 +33,7 @@ export class ConesMission extends Mission {
     world.userData.dynamic = true; // scrolls past the truck
     world.userData.bakeInside = true; // …but everything on it is rigid
     this.scene.add(world);
-    const len = STEP * (CONFIG.roundsPerMission + 3);
+    const len = STEP * (this.rounds + 3);
     const road = mesh(new THREE.PlaneGeometry(7, len + 40), mat('#5b6472', { roughness: 0.9 }), { rx: -Math.PI / 2, y: 0.02, z: -len / 2 + 10 });
     road.castShadow = false;
     world.add(road);

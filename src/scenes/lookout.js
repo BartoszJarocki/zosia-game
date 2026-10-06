@@ -188,8 +188,8 @@ export class LookoutMission extends Mission {
           await say([this.praise(), ...T.liftArrived(target)]);
           if (!this.alive) return;
           this.panel.clear();
-          if (this.L.mode !== 'relative') {
-            // back down for the next ride
+          if (this.L.mode !== 'relative' && r < this.rounds - 1) {
+            // back down for the next ride (not after the last one: the finale goes up to the top from here)
             await this.doorsTo(false);
             await this.ride(0, { count: false });
             await this.doorsTo(true);

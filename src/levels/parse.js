@@ -12,6 +12,7 @@ export const SCHEMA = {
     choices: { type: 'int', min: 2, max: 4 },
     show: { type: 'enum', values: ['letter', 'picture'] },
     similar: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 4 }, // kittens to find
   },
   balloons: {
     pool: { type: 'letters' },
@@ -19,6 +20,7 @@ export const SCHEMA = {
     total: { type: 'int', min: 3, max: 9 },
     speed: { type: 'range', min: 0.1, max: 2, float: true },
     similar: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to pop
   },
   name: {
     words: { type: 'words', minLen: 2, maxLen: 7 },
@@ -32,10 +34,11 @@ export const SCHEMA = {
     choices: { type: 'int', min: 2, max: 4 },
     bubble: { type: 'enum', values: ['both', 'numeral', 'dots'] },
     sign: { type: 'enum', values: ['both', 'numeral'] },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // cones on the road
   },
   stones: {
     n: { type: 'int', min: 2, max: 12 },
-    rounds: { type: 'int', min: 1, max: 6, optional: true, default: 3 },
+    rounds: { type: 'int', min: 1, max: 6, optional: true, default: 2 }, // rivers to cross
     bubble: { type: 'enum', values: ['numeral', 'next'] },
   },
   counting: {
@@ -43,11 +46,13 @@ export const SCHEMA = {
     give: { type: 'range', min: 1, max: 10 },
     howMany: { type: 'range', min: 1, max: 9, optional: true },
     auto: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
   },
   lookout: {
     max: { type: 'int', min: 2, max: 9 },
     bubble: { type: 'enum', values: ['both', 'numeral'] },
     mode: { type: 'enum', values: ['go', 'relative'] },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 1 }, // elevator trips
   },
 };
 
@@ -201,5 +206,6 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
+  if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
 }
