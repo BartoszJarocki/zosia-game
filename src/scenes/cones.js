@@ -12,7 +12,6 @@ import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
-import { pickTarget } from '../progress.js';
 import { Mission } from './mission.js';
 
 const STEP = 14; // how far the cruiser drives after each round
@@ -82,10 +81,11 @@ export class ConesMission extends Mission {
   round(r) {
     return new Promise((resolve) => {
       const pool = Array.from({ length: this.L.max }, (_, i) => i + 1);
-      const target = pickTarget(pool, 'N:', this.last);
+      const skill = this.L.bubble === 'dots' ? 'quantity' : 'numeral'; // dots-only = count, then find the numeral
+      const target = this.pick(skill, pool);
       this.last = target;
       this.item('N:' + target);
-      this.question(this.L.bubble === 'dots' ? 'quantity' : 'numeral', target); // dots-only = count, then find the numeral
+      this.question(skill, target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = numberChoices(target, this.L.max, n, this.level >= 2);
       const colors = shuffle(TILE_COLORS);

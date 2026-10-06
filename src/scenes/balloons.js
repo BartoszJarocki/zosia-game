@@ -11,7 +11,6 @@ import * as ui from '../ui.js';
 import { shuffle, pick } from '../util.js';
 import { T } from '../lang/pl.js';
 import { distractors } from '../levels.js';
-import { pickTarget } from '../progress.js';
 import { Mission } from './mission.js';
 
 const TOP = 10.5, BOTTOM = 1.3;
@@ -54,7 +53,7 @@ export class BalloonsMission extends Mission {
   round() {
     return new Promise((resolve) => {
       const pool = [...this.L.pool];
-      const target = pickTarget(pool, 'L:', this.last);
+      const target = this.pick('letterVisual', pool);
       this.last = target;
       this.item('L:' + target);
       this.question('letterVisual', target); // one question per balloon to find

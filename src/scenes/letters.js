@@ -10,7 +10,6 @@ import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
 import { distractors } from '../levels.js';
-import { pickTarget } from '../progress.js';
 import { Mission } from './mission.js';
 
 // "Kitty Park": a kitten hides behind one of the letter blocks.
@@ -46,10 +45,11 @@ export class LettersMission extends Mission {
   round() {
     return new Promise((resolve) => {
       const pool = [...this.L.pool];
-      const target = pickTarget(pool, 'L:', this.last);
+      const skill = this.L.show === 'picture' ? 'letterAudio' : 'letterVisual'; // picture-only = she has to listen
+      const target = this.pick(skill, pool);
       this.last = target;
       this.item('L:' + target);
-      this.question(this.L.show === 'picture' ? 'letterAudio' : 'letterVisual', target); // picture-only = she has to listen
+      this.question(skill, target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...distractors(target, pool, n - 1, this.L.similar)]);
       const colors = shuffle(TILE_COLORS);

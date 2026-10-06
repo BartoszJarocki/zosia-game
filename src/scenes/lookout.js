@@ -8,7 +8,6 @@ import { discTexture, TILE_COLORS } from '../textures.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { T } from '../lang/pl.js';
-import { pickTarget } from '../progress.js';
 import { Mission } from './mission.js';
 
 const LZ = -2;              // where the Lookout stands
@@ -150,7 +149,7 @@ export class LookoutMission extends Mission {
         target = this.floor + (up ? 1 : -1);
       } else {
         const pool = this.L.mode === 'relative' ? range(2, this.N - 1) : range(1, this.N);
-        target = pickTarget(pool, 'N:', this.last);
+        target = this.pick('numeral', pool);
       }
       this.last = target;
       this.item('N:' + target);

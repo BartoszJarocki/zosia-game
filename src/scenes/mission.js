@@ -11,7 +11,7 @@ import { say, sfx, hush } from '../audio.js';
 import { settingsFor } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
-import { levelFor, recordMission, recordItem } from '../progress.js';
+import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
@@ -111,6 +111,11 @@ export class Mission extends Stage {
   item(id) { this.roundItem = id; }
 
   // ----- learning events (see src/learning/) -----
+  /** Choose what to ask next for a skill (adaptive). Numbers in, numbers out. */
+  pick(skill, pool, opts) {
+    const item = pickItem(skill, pool, { mix: this.easyMix, ...opts });
+    return typeof pool[0] === 'number' ? Number(item) : item;
+  }
   /** What this round (or step) is asking. skill: one of SKILLS; item: e.g. 'B' or 4. */
   question(skill, item) {
     const q = this.learn.current;

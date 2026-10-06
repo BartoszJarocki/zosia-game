@@ -10,7 +10,6 @@ import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
-import { pickTarget } from '../progress.js';
 import { Mission } from './mission.js';
 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
@@ -123,7 +122,7 @@ export class CountingMission extends Mission {
   giveRound() {
     return new Promise((resolve) => {
       const [lo, hi] = this.L.give;
-      const n = pickTarget(range(lo, hi), 'Q:', this.last);
+      const n = this.pick('counting', range(lo, hi));
       this.last = n;
       this.item('Q:' + n);
       this.question('counting', n);
@@ -225,7 +224,7 @@ export class CountingMission extends Mission {
   howManyRound() {
     return new Promise((resolve) => {
       const [lo, hi] = this.L.howMany;
-      const n = pickTarget(range(lo, hi), 'H:', this.last);
+      const n = this.pick('quantity', range(lo, hi));
       this.last = n;
       this.item('H:' + n);
       this.question('quantity', n);

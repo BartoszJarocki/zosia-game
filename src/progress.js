@@ -9,6 +9,7 @@ import { maxLevel } from './levels/data.js';
 import { migrate } from './progress/migrations.js';
 import { applyEvent } from './learning/mastery.js';
 import { learning } from './learning/events.js';
+import { pickLearningItem } from './learning/scheduler.js';
 
 const KEY = 'pup-patrol-progress';
 
@@ -60,17 +61,19 @@ export function recordItem(id, firstTry) {
   save();
 }
 
-/** Pick the next target: ones she misses (or hasn't seen much) come up more often; never the same twice running. */
-export function pickTarget(pool, prefix, prev) {
-  const options = pool.length > 1 ? pool.filter((x) => x !== prev) : pool;
-  const weights = options.map((x) => {
-    const it = state.items[prefix + x];
-    if (!it || it.n < 2) return 1.6;              // new: show it
-    return 0.6 + 2.4 * (1 - it.ok / it.n);        // mastered ≈ 0.6, struggling ≈ 3
-  });
-  let r = Math.random() * weights.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < options.length; i++) { r -= weights[i]; if (r <= 0) return options[i]; }
-  return options[options.length - 1];
+// recently asked items per skill (this session), so the scheduler can avoid repeats across missions too
+const recentBySkill = {};
+
+/**
+ * Pick the next item to ask for a skill, from mastery (see learning/scheduler.js).
+ * mix: optional bucket weights, e.g. { familiar: 1 } for an easy last question.
+ */
+export function pickItem(skill, candidates, { mix } = {}) {
+  const recent = (recentBySkill[skill] ||= []);
+  const item = pickLearningItem({ candidates, stats: state.skills[skill] || {}, recent, mix });
+  recent.push(item);
+  if (recent.length > 8) recent.shift();
+  return item;
 }
 
 export function resetProgress() { state = migrate(null).state; save(); }
