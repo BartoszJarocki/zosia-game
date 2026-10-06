@@ -20,6 +20,8 @@ import { nextStep, suggestNext, callFinale } from '../session/director.js';
 import { confetti } from '../ui.js';
 import { takeUnseen } from '../adventure/rewards.js';
 import { addWorld, addEvent } from './hub-world.js';
+import { runMicroReward } from './hub-micro.js';
+import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 
 const START = new THREE.Vector3(0, 0, 0);
@@ -121,7 +123,7 @@ export class Hub extends Stage {
     this.placeGroups = {};
     for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
-    this.worldLines = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups });
+    ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups }));
 
     // trees, bushes, houses, grass — kept off the roads and places
     const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
@@ -176,6 +178,8 @@ export class Hub extends Stage {
     });
     this.tappable(girl, () => this.tapGirl());
     this.tappable(pup, () => this.tapPup());
+    this.tappable(truck, () => this.tapTruck()); // honk! (or a micro reward's siren)
+    truck.userData.tapHeight = 1;
     girl.userData.tapHeight = 1.7;
     pup.userData.tapHeight = 1.6;
 
@@ -198,6 +202,14 @@ export class Hub extends Stage {
     // session director: gently suggest where to go next (every place can still be tapped)
     const session = getSession();
     const step = nextStep(session);
+    // a few seconds of pure play after each finished mission (not after the finale: that's its own party)
+    if (microDue({ completed: session.completed.length, rewardedUpTo: session.rewardedUpTo || 0, finaleJustDone: step === 'free' && !session.thanked })) {
+      const recent = (session.microRecent ||= []);
+      const type = dev.micro || pickMicroReward({ world: getWorld(), recent });
+      recent.push(type);
+      this.micro = runMicroReward(this, type, { truck, pup, girl, ...this.worldObjs });
+    }
+    session.rewardedUpTo = session.completed.length;
     this.suggested = step === 'mission' && dev.suggest ? dev.suggest : suggestNext(session, Object.keys(PLACES));
     if (this.suggested) this.highlight(this.suggested);
     // …told as a little story when there is one ("Ojej! Kotek potrzebuje pomocy!")
@@ -300,7 +312,15 @@ export class Hub extends Stage {
     say(pick(T.tapGirl()));
   }
 
+  tapTruck() {
+    if (this.busy) return;
+    if (this.micro?.active() && this.micro.onTruck) return this.micro.onTruck();
+    sfx.honk();
+    hop(this.truck, 0.2, 360);
+  }
+
   tapPup() {
+    if (this.micro?.active() && this.micro.onPup) return this.micro.onPup();
     sfx.bark();
     this.pup.userData.setHappy(1.5);
     hop(this.pup, 0.5);

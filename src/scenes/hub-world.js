@@ -26,6 +26,7 @@ const TRACK_R = 25.2;
  * Returns the lines to say about what's new (empty when nothing is).
  */
 export function addWorld(hub, world, unseen = [], { places }) {
+  const objs = { kittens: [], train: null }; // for micro rewards
   const s = hub.scene;
   const newTypes = new Set(unseen.map(rewardType));
   const reveal = []; // [object, delay]
@@ -33,21 +34,32 @@ export function addWorld(hub, world, unseen = [], { places }) {
   const newBalloons = unseen.filter((id) => rewardType(id) === 'balloon').length;
 
   // --- rescued kittens: pottering about near the park, they meow when tapped ---
-  const kittens = world.rescuedKittens ? makeKittens(s, world.rescuedKittens) : [];
+  const kittens = (objs.kittens = world.rescuedKittens ? makeKittens(s, world.rescuedKittens) : []);
   kittens.forEach((k, i) => {
     const [x, z] = KITTEN_SPOTS[i % KITTEN_SPOTS.length];
     k.position.set(x, 0.06, z);
-    const phase = i * 1.7, home = new THREE.Vector3(x, 0.06, z);
+    const phase = i * 1.7, home = new THREE.Vector3(x, 0.06, z), there = new THREE.Vector3();
     k.userData.tapHeight = 0.6;
     k.userData.tick = (dt, t) => {
       // wander a little, sit a little
       const walk = Math.max(0, Math.sin(t * 0.35 + phase));
       const a = t * 0.5 * walk + phase;
-      k.position.x = home.x + Math.cos(a) * 0.6;
-      k.position.z = home.z + Math.sin(a) * 0.45;
+      there.set(home.x + Math.cos(a) * 0.6, 0.06, home.z + Math.sin(a) * 0.45);
+      const goal = k.userData.visit || there; // (a micro reward can call it over to the cruiser)
+      const d = Math.hypot(goal.x - k.position.x, goal.z - k.position.z);
+      if (d > 0.05 && (k.userData.visit || d > 0.3)) {
+        // trot there (and back home afterwards)
+        const step = Math.min(d, dt * 7);
+        k.rotation.y = Math.atan2(goal.x - k.position.x, goal.z - k.position.z);
+        k.position.x += ((goal.x - k.position.x) / d) * step;
+        k.position.z += ((goal.z - k.position.z) / d) * step;
+        return;
+      }
+      k.position.x = there.x;
+      k.position.z = there.z;
       if (walk > 0.05) k.rotation.y = -a; // facing the way it goes (roughly)
     };
-    hub.tappable(k, () => { sfx.meow(); hop(k, 0.6); });
+    hub.tappable(k, () => { sfx.meow(); hop(k, 0.6); hub.micro?.active() && hub.micro.onKitten?.(k); });
     if (i >= world.rescuedKittens - newKittens) reveal.push([k, 0]);
   });
 
@@ -84,7 +96,8 @@ export function addWorld(hub, world, unseen = [], { places }) {
       train.rotation.y = -(a + Math.PI / 2); // engine (+X) along the track
     };
     s.add(train);
-    hub.tappable(train, () => { sfx.toot(); hop(train, 0.4); });
+    objs.train = train;
+    hub.tappable(train, () => { if (!(hub.micro?.active() && hub.micro.onTrain?.())) sfx.toot(); hop(train, 0.4); });
     if (newTypes.has('train')) { reveal.push([train, 0]); setTimeout(() => sfx.toot(), 900); }
   }
 
@@ -133,7 +146,7 @@ export function addWorld(hub, world, unseen = [], { places }) {
   if (newTypes.has('train')) lines.push(...T.worldTrain());
   if (newBalloons) lines.push(...T.worldBalloon());
   if (newTypes.has('lookout-lights')) lines.push(...T.worldLights());
-  return lines;
+  return { lines, objs };
 }
 
 // ---------- hub events (adventure/events.js): a story at a place, tap it to go there ----------

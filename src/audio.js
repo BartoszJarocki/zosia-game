@@ -83,6 +83,10 @@ export const sfx = {
   ding: () => { tone(1318, 0.5, { type: 'sine', vol: 0.18 }); tone(1046, 0.7, { type: 'sine', vol: 0.15, when: 0.18 }); },
   doors: () => noise(0.3, { vol: 0.12, freq: 600 }),
   hum: () => tone(110, 0.5, { type: 'triangle', vol: 0.05, to: 150 }),
+  honk: () => { tone(350, 0.18, { type: 'square', vol: 0.07 }); tone(440, 0.18, { type: 'square', vol: 0.06 }); tone(350, 0.3, { type: 'square', vol: 0.07, when: 0.24 }); tone(440, 0.3, { type: 'square', vol: 0.06, when: 0.24 }); },
+  bubble: () => { const f = 700 + Math.random() * 500; tone(f, 0.09, { vol: 0.16, to: f * 1.8 }); },
+  whistle: () => { tone(880, 0.25, { type: 'sine', vol: 0.12, to: 1175 }); tone(1175, 0.55, { type: 'sine', vol: 0.12, when: 0.25, to: 1100 }); noise(0.7, { vol: 0.05, freq: 3000 }); },
+  jingle: () => [659, 784, 880, 784, 659, 784, 988, 1046].forEach((f, i) => tone(f, 0.13, { type: 'triangle', vol: 0.12, when: i * 0.15 })),
   fanfare: () => [523, 659, 784, 1046, 784, 1046].forEach((f, i) =>
     tone(f, i === 5 ? 0.6 : 0.16, { type: 'square', vol: 0.07, when: i * 0.14 })),
 };

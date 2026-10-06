@@ -12,8 +12,12 @@ import { completeEvent } from '../adventure/rewards.js';
 const staleAfter = () => ({ newSessionAfterMs: (CONFIG.session?.newAfterMinutes ?? 15) * 60 * 1000 });
 let current = null;
 
-/** Developer overrides (tests, #parent dev tools): suggest: a place to suggest next instead of the director's pick. */
-export const dev = { suggest: null };
+/**
+ * Developer overrides (tests, #parent dev tools):
+ *   suggest  a place to suggest next instead of the director's pick
+ *   micro    a micro reward type to play next ('BUBBLES'…) instead of a random one
+ */
+export const dev = { suggest: null, micro: null };
 
 /** A new session (the start button). */
 export function startSession(now = Date.now()) {

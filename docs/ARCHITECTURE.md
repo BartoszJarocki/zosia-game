@@ -265,6 +265,23 @@ wsiadamy do windy!" → **one easy press** (floors 1–3, numeral + dots, a numb
 aloud → the very top (siren, all signs light up, the beacon flashes faster) → the slide → big celebration
 ("Hura! Psi Patrol uratował dzień!"). About 30 s. It doesn't count towards the Lookout's level (`countsForLevel = false`).
 
+## Micro-play rewards (Phase 10)
+
+After each finished mission (not after the finale, not at the session's start) the hub opens with ~9 s of pure play:
+`adventure/micro.js` (pure) picks one she can have and not one of the last two; `scenes/hub-micro.js` runs it.
+
+| Type | What sparkles | Tap → |
+|---|---|---|
+| HONK | the cruiser (ring + pulse) | horn, bounce |
+| SIREN | the cruiser | siren + flashing lights |
+| BUBBLES | bubbles float up around the heroes | pop (blip + sparkle) |
+| CHASE_DANCE | Chase (pulse) | spin, bounce, a little tune, a bark |
+| PET_KITTEN (needs a rescued kitten) | the nearest kitten trots over to the cruiser | meow, hop, Chase is happy |
+| TRAIN_WHISTLE (needs the train) | the island train | whistle, puff |
+
+No speech, nothing to get wrong, nothing blocked: the hub's usual line and every place work meanwhile, and the
+invitation fades by itself. The cruiser always honks when tapped. `window.__pup.dev.micro = 'BUBBLES'` forces one.
+
 ## Findings relevant to the roadmap
 
 1. **Learning logic is spread across scenes.** Each of the 7 missions re-implements wrong counting, the 2-strike pulse hint and
