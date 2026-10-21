@@ -19,10 +19,13 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 3. **A mission** — short: a few rounds (the `rounds` column below; paw prints at the top fill in).
    The speech bubble shows what to look for, and tapping it repeats the question.
    Help comes step by step and is the same in every mission:
-   - **if she goes quiet:** a short prompt ("Gdzie jest Be?") after ~5 s, a clue ("Be jak banan!") after ~11 s,
-     the answer pulses after ~18 s, one last reminder at ~30 s, then quiet (no endless nagging)
-   - **after a wrong tap:** "To jest Em. Spróbuj jeszcze raz!", then a wrong option goes away,
-     then the answer pulses. She always makes the last tap herself.
+   - **if she goes quiet:** the speech bubble bounces after ~6 s (no words: she may just be looking), a short
+     prompt ("Gdzie jest Be?") after ~10 s, a clue ("Be jak banan!") after ~17 s, the answer pulses after ~25 s,
+     then quiet (no endless nagging)
+   - **after a wrong tap:** a low falling "no" sound, the thing she tapped shakes its head, and "Nie, to nie ten."
+     ("Nie, to Em." when it only looks like the right letter); then a wrong option goes away, then the answer
+     pulses. She always makes the last tap herself.
+   - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!")
 4. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
    tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
    playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down,
@@ -147,16 +150,19 @@ Numbered cones block the road. Tap the right one and the cruiser drives on (earl
 
 ### 🪨 The River · `stones`
 
-Tap the stepping stones 1, 2, 3… so Zosia hops across the river to Chase.
+Tap the stepping stones 1, 2, 3… so Zosia hops across the river to Chase. The stones come up a row at a
+time, each row one hop nearer Chase: the next number and one or two others side by side.
 
-| Level | n | rounds | bubble |
-|---|---|---|---|
-| 1 | 3 | 2 | numeral |
-| 2 | 5 | 2 | numeral |
-| 3 | 4 | 2 | missing |
-| 4 | 7 | 1 | next |
+| Level | n | rounds | bubble | choices | foils |
+|---|---|---|---|---|---|
+| 1 | 3 | 2 | numeral | 2 | far |
+| 2 | 5 | 2 | numeral | 3 | far |
+| 3 | 4 | 2 | missing | — | — |
+| 4 | 7 | 1 | next | 2 | near |
 
-- **n** — how many stones (2–12) · **rounds** — how many rivers to cross (1–6)
+- **n** — how many stones on the path (2–7; `missing` 3–9) · **rounds** — how many rivers to cross (1–6)
+- **choices** — stones in each row (2–3) · **foils** — the other numbers in a row: `far` ones are easy to tell
+  apart (1 next to 3), `near` ones are the neighbours (3 next to 4)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
   (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
   stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)

@@ -92,5 +92,5 @@ test('River: the missing stone needs 3–9 stones', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
   assert.ok(levels.stones.some((l) => l.bubble === 'missing'));
   const stones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`stones\`\n\n| Level | n | bubble |\n|---|---|---|\n| 1 | ${row} |\n`;
-  assert.match(only(parseGame(stones('12 | missing'), {})).errors[0], /3–9 stones/);
+  assert.match(only(parseGame(stones('2 | missing'), {})).errors[0], /3–9 stones/);
 });

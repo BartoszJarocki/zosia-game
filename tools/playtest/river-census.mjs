@@ -1,40 +1,31 @@
-// How logical is the River path? For many random layouts per level, follow the hops 1 → 2 → … → far bank
-// and count hops that go backwards (towards her own bank) or mostly sideways.
-import { chromium } from 'playwright-core';
-import { mkdirSync as mkdirTmp } from 'node:fs';
-// Chromium's GPU process needs writable temp space; /tmp can be a full per-user tmpfs, which crashes WebGL
-process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
-mkdirTmp(process.env.TMPDIR, { recursive: true });
-const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const START = { x: 0, z: 5.6 }, FAR = { x: 4.5, z: -5.9 }; // src/scenes/stones.js
-for (const level of (process.argv[2] ? process.argv[2].split(',').map(Number) : [1, 2, 4])) {
-  const totals = { hops: 0, back: 0, sideways: 0, layouts: 0, worstBackPerRiver: 0 };
-  let example = null;
-  for (let i = 0; i < 30; i++) {
-    const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
-    try {
-    await page.addInitScript((level) => localStorage.setItem('pup-patrol-progress', JSON.stringify({ v: 4, missions: { stones: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } })), level);
-    await page.goto(`${process.env.BASE || 'https://pup-patrol-theta.vercel.app'}/?q=low#stones`);
-    await page.waitForFunction(() => window.__pup?.getStage()?.tappables?.filter((o) => o.userData.num !== undefined).length >= 3, null, { timeout: 30000 });
-    await page.waitForTimeout(1500);
-    const stones = await page.evaluate(() => window.__pup.getStage().tappables.filter((o) => o.userData.num !== undefined).map((o) => ({ n: o.userData.num, x: +o.position.x.toFixed(1), z: +o.position.z.toFixed(1) })).sort((a, b) => a.n - b.n));
-    await page.close();
-    var got = stones;
-    } catch (e) { await page.close().catch(() => {}); i--; continue; }
-    const stones = got;
-    const path = [START, ...stones, FAR];
-    let back = 0;
-    for (let k = 1; k < path.length; k++) {
-      const dz = path[k].z - path[k - 1].z, dx = path[k].x - path[k - 1].x; // forward = towards Chase = z going down
-      totals.hops++;
-      if (dz > 0.3) { totals.back++; back++; }
-      else if (Math.abs(dx) > Math.abs(dz) * 1.5) totals.sideways++;
-    }
-    totals.layouts++;
-    totals.worstBackPerRiver = Math.max(totals.worstBackPerRiver, back);
-    if (!example || back > example.back) example = { back, stones: stones.map((s) => `${s.n}@(${s.x},${s.z})`).join(' ') };
+// How logical is the River path? Lay out 1000 rivers per GAME.md level with the scene's own generator, follow
+// her hops (her bank → the right stone of each row → the far bank) and count the ones that go backwards
+// (towards her bank) or mostly sideways. The same definitions measured production's random grid on 2026-10-21:
+// level 1 47%, level 2 57%, level 4 62% of hops backwards or sideways.
+// The scene itself is checked by walk.mjs, which logs a STEP for every stone she lands on.
+import { readFileSync } from 'node:fs';
+import { parseGame } from '../../src/levels/parse.js';
+import { riverRows, START, LAND } from '../../src/levels/river.js';
+
+const { levels } = parseGame(readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8'), { childName: 'Zosia' });
+export const hopCensus = (path) => {
+  let back = 0, sideways = 0;
+  for (let k = 1; k < path.length; k++) {
+    const dz = path[k].z - path[k - 1].z, dx = path[k].x - path[k - 1].x; // forward = towards Chase = z going down
+    if (dz > 0.3) back++;
+    else if (Math.abs(dx) > Math.abs(dz) * 1.5) sideways++;
   }
-  console.log(`level ${level}: ${totals.layouts} rivers, ${totals.hops} hops: ${totals.back} backwards (${Math.round(100 * totals.back / totals.hops)}%), ${totals.sideways} mostly sideways (${Math.round(100 * totals.sideways / totals.hops)}%), worst river ${totals.worstBackPerRiver} backward hops`);
-  console.log(`   worst example: ${example.stones}`);
+  return { hops: path.length - 1, back, sideways };
+};
+if (import.meta.url === `file://${process.argv[1]}`) {
+  levels.stones.forEach((L, i) => {
+    if (L.bubble === 'missing') return console.log(`level ${i + 1}: missing stone (the path lies in order, no choosing)`);
+    const t = { hops: 0, back: 0, sideways: 0 };
+    for (let k = 0; k < 1000; k++) {
+      const { rows } = riverRows({ n: L.n, choices: L.choices, foils: L.foils });
+      const c = hopCensus([START, ...rows.map((r) => r.stones.find((s) => s.right)), LAND]);
+      for (const key in t) t[key] += c[key];
+    }
+    console.log(`level ${i + 1}: 1000 rivers, ${t.hops} hops: ${t.back} backwards (${Math.round((100 * t.back) / t.hops)}%), ${t.sideways} mostly sideways (${Math.round((100 * t.sideways) / t.hops)}%)`);
+  });
 }
-await browser.close();

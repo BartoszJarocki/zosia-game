@@ -48,9 +48,11 @@ export const SCHEMA = {
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // cones on the road
   },
   stones: {
-    n: { type: 'int', min: 2, max: 12 },
+    n: { type: 'int', min: 2, max: 9 },
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 2 }, // rivers to cross
     bubble: { type: 'enum', values: ['numeral', 'next', 'missing'] },
+    choices: { type: 'int', min: 2, max: 3, optional: true, default: 2 }, // stones in each row
+    foils: { type: 'enum', values: ['far', 'near'], optional: true, default: 'far' }, // the other numbers in a row
   },
   counting: {
     types: { type: 'list', values: ['give', 'howMany'] },
@@ -249,5 +251,6 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
   if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
+  if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
 }

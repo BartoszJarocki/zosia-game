@@ -1,5 +1,7 @@
 // One comparable row per mission run from out/*/timeline.json.
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { hopCensus } from './river-census.mjs';
+import { START, LAND } from '../../src/levels/river.js';
 const dir = new URL(`./${process.argv[2] || 'out'}/`, import.meta.url).pathname;
 const rows = [];
 for (const name of readdirSync(dir).sort()) {
@@ -30,11 +32,16 @@ for (const name of readdirSync(dir).sort()) {
   const singleChoice = me(/^OPTIONS/).filter((e) => e.text.split(' ').length - 1 === 1).length;
   const questions = me(/^QUESTION/).length;
   const end = me(/celebration|no celebration/)[0]?.t;
-  rows.push({ name, motion, wrongFirst: firstWord(wrongSay), rightFirst: firstWord(rightSay), questions, minutes: end ? ((end - started) / 60000).toFixed(1) : '?', talkBeforeFirstQ: (talkBeforeFirstQ / 1000).toFixed(1), wrongSay, wrongSounds, rightSay, hesitation, cut, singleChoice, errors: errors.length });
+  // the River: her hops through the stones she landed on (a new river starts at 1)
+  const rivers = [];
+  for (const e of me(/^STEP /)) { const [, num, x, z] = e.text.split(' '); if (num === '1') rivers.push([START]); rivers.at(-1)?.push({ x: +x, z: +z }); }
+  const hops = rivers.map((p) => hopCensus(p.length > 1 ? [...p, LAND] : p)).reduce((a, c) => ({ hops: a.hops + c.hops, back: a.back + c.back, sideways: a.sideways + c.sideways }), { hops: 0, back: 0, sideways: 0 });
+  rows.push({ name, motion, wrongFirst: firstWord(wrongSay), rightFirst: firstWord(rightSay), questions, minutes: end ? ((end - started) / 60000).toFixed(1) : '?', talkBeforeFirstQ: (talkBeforeFirstQ / 1000).toFixed(1), wrongSay, wrongSounds, rightSay, hesitation, cut, singleChoice, hops, errors: errors.length });
 }
 for (const r of rows) {
   console.log(`\n## ${r.name}: ${r.questions} questions, ${r.minutes} min, ${r.talkBeforeFirstQ} s of talk before the first question, ${r.cut} clips cut off, ${r.singleChoice} questions with one option, ${r.errors} errors`);
   console.log(`   right tap → first word "${r.rightFirst}", ${JSON.stringify(r.rightSay)}`);
   console.log(`   wrong tap → first word "${r.wrongFirst}", ${JSON.stringify(r.wrongSay)}, sounds ${r.wrongSounds.join(' ')}, object moved ${r.motion}`);
   console.log(`   20 s hesitation → ${r.hesitation.length} lines ${JSON.stringify(r.hesitation)}`);
+  if (r.hops.hops) console.log(`   river → ${r.hops.hops} hops, ${r.hops.back} backwards, ${r.hops.sideways} mostly sideways`);
 }

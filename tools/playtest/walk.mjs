@@ -81,7 +81,7 @@ const options = () => st((kind) => {
   for (const o of s.tappables) {
     const u = o.userData;
     if (u.letter !== undefined && u.letter) out.push({ label: u.letter, ...proj(o, kind === 'delivery' && u.tapHeight === 1.9 ? 1.9 : 0.4), right: u.letter === s.last });
-    else if (u.num !== undefined && (kind !== 'cones' || u.sign)) out.push({ label: String(u.num), ...proj(o, kind === 'cones' ? 2.7 : 0.3), right: u.num === s.last });
+    else if (u.num !== undefined && (kind !== 'cones' || u.sign)) out.push({ label: String(u.num), ...proj(o, kind === 'cones' ? 2.7 : 0.3), right: u.num === s.last, at: [+o.position.x.toFixed(2), +o.position.z.toFixed(2)] });
     else if (kind === 'picnic' && o.geometry?.type === 'BoxGeometry' && o.material?.visible === false) out.push({ label: o.position.x < 0 ? 'left' : 'right', ...proj(o, -0.4), right: null });
     else if (kind === 'counting' && u.drag) out.push({ label: 'bone', ...proj(o, 0.2), right: true });
   }
@@ -147,7 +147,10 @@ for (let r = 0; r < 8; r++) {
   } else if (kind === 'counting' && now.label === 'bone') {
     const n = Number(q.item);
     for (let i = 0; i < n; i++) { const b = (await options()).find((o) => o.label === 'bone'); if (!b) break; await tap(b, `treat ${i + 1}/${n}`); await page.waitForTimeout(700); }
-  } else await tap(now, 'right');
+  } else {
+    await tap(now, 'right');
+    if (kind === 'stones' && now.at) await mark(`STEP ${now.label} ${now.at.join(' ')}`); // where she landed, for the hop census
+  }
   await page.waitForTimeout(300); await snap(`r${r + 1}-tapped-right`);
   await page.waitForTimeout(1200);
 }
