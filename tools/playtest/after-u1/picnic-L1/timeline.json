@@ -1,0 +1,781 @@
+{
+ "kind": "picnic",
+ "level": 1,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 6472,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 8109,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 8111,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8198
+  },
+  {
+   "t": 8111,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 8111,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8359
+  },
+  {
+   "t": 9713,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie! Ojej! Kotek potrzebuje pomocy! Dotknij kotka!"
+  },
+  {
+   "t": 9914,
+   "type": "clip",
+   "ms": 6640,
+   "stoppedAt": 16012,
+   "cut": true,
+   "ended": 16017
+  },
+  {
+   "t": 12823,
+   "type": "tone",
+   "hz": 650,
+   "to": 1000,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 12823,
+   "type": "tone",
+   "hz": 1000,
+   "to": 520,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 13391,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 20977,
+   "type": "say",
+   "text": "Piknik! Czejs jest głodny! Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 20995,
+   "type": "clip",
+   "ms": 2400,
+   "ended": 23387
+  },
+  {
+   "t": 21202,
+   "type": "me",
+   "text": "mission picnic started"
+  },
+  {
+   "t": 23750,
+   "type": "clip",
+   "ms": 2080,
+   "ended": 25829
+  },
+  {
+   "t": 26179,
+   "type": "me",
+   "text": "QUESTION r1/3 comparison:more bubble=\"🧺\""
+  },
+  {
+   "t": 27776,
+   "type": "me",
+   "text": "OPTIONS left right"
+  },
+  {
+   "t": 27781,
+   "type": "me",
+   "text": "TAP left (picnic: try left)"
+  },
+  {
+   "t": 27788,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 27788,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 27788,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 27788,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 27789,
+   "type": "say",
+   "text": "Tak! Tu jest więcej! Pięć!"
+  },
+  {
+   "t": 27851,
+   "type": "clip",
+   "ms": 2000,
+   "ended": 29852
+  },
+  {
+   "t": 30215,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 31259
+  },
+  {
+   "t": 32485,
+   "type": "noise",
+   "ms": 70,
+   "ended": 32560
+  },
+  {
+   "t": 32486,
+   "type": "noise",
+   "ms": 70,
+   "ended": 32647
+  },
+  {
+   "t": 32837,
+   "type": "noise",
+   "ms": 70,
+   "ended": 32912
+  },
+  {
+   "t": 32839,
+   "type": "noise",
+   "ms": 70,
+   "ended": 32998
+  },
+  {
+   "t": 33160,
+   "type": "noise",
+   "ms": 70,
+   "ended": 33243
+  },
+  {
+   "t": 33161,
+   "type": "noise",
+   "ms": 70,
+   "ended": 33317
+  },
+  {
+   "t": 33552,
+   "type": "noise",
+   "ms": 70,
+   "ended": 33627
+  },
+  {
+   "t": 33552,
+   "type": "noise",
+   "ms": 70,
+   "ended": 33701
+  },
+  {
+   "t": 33943,
+   "type": "noise",
+   "ms": 70,
+   "ended": 34022
+  },
+  {
+   "t": 33943,
+   "type": "noise",
+   "ms": 70,
+   "ended": 34096
+  },
+  {
+   "t": 34590,
+   "type": "say",
+   "text": "Mniam, mniam! Dziękuję!"
+  },
+  {
+   "t": 34605,
+   "type": "clip",
+   "ms": 2320,
+   "ended": 36923
+  },
+  {
+   "t": 37938,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 39444,
+   "type": "say",
+   "text": "Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 39444,
+   "type": "clip",
+   "ms": 2080,
+   "ended": 41520
+  },
+  {
+   "t": 41756,
+   "type": "me",
+   "text": "QUESTION r2/3 comparison:more bubble=\"🧺\""
+  },
+  {
+   "t": 43122,
+   "type": "me",
+   "text": "OPTIONS left right"
+  },
+  {
+   "t": 43128,
+   "type": "me",
+   "text": "TAP left (picnic: try left)"
+  },
+  {
+   "t": 43135,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 43135,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 43135,
+   "type": "say",
+   "text": "Nie, tu jest mniej. Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 43195,
+   "type": "clip",
+   "ms": 1360,
+   "ended": 44571
+  },
+  {
+   "t": 44921,
+   "type": "clip",
+   "ms": 2080,
+   "stoppedAt": 45557,
+   "cut": true,
+   "ended": 45609
+  },
+  {
+   "t": 45550,
+   "type": "me",
+   "text": "TAP right (picnic: then right)"
+  },
+  {
+   "t": 45557,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 45557,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 45557,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 45557,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 45557,
+   "type": "say",
+   "text": "Tak! Tu jest więcej! Pięć!"
+  },
+  {
+   "t": 45557,
+   "type": "clip",
+   "ms": 2000,
+   "ended": 47558
+  },
+  {
+   "t": 47908,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 48946
+  },
+  {
+   "t": 50168,
+   "type": "noise",
+   "ms": 70,
+   "ended": 50248
+  },
+  {
+   "t": 50168,
+   "type": "noise",
+   "ms": 70,
+   "ended": 50320
+  },
+  {
+   "t": 50588,
+   "type": "noise",
+   "ms": 70,
+   "ended": 50661
+  },
+  {
+   "t": 50588,
+   "type": "noise",
+   "ms": 70,
+   "ended": 50747
+  },
+  {
+   "t": 50950,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51035
+  },
+  {
+   "t": 50950,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51109
+  },
+  {
+   "t": 51225,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51302
+  },
+  {
+   "t": 51225,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51376
+  },
+  {
+   "t": 51611,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51696
+  },
+  {
+   "t": 51612,
+   "type": "noise",
+   "ms": 70,
+   "ended": 51771
+  },
+  {
+   "t": 52396,
+   "type": "say",
+   "text": "Mniam, mniam! Dziękuję!"
+  },
+  {
+   "t": 52397,
+   "type": "clip",
+   "ms": 2320,
+   "ended": 54715
+  },
+  {
+   "t": 55607,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 56974,
+   "type": "say",
+   "text": "Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 56974,
+   "type": "clip",
+   "ms": 2080,
+   "ended": 59045
+  },
+  {
+   "t": 59132,
+   "type": "me",
+   "text": "QUESTION r3/3 comparison:more bubble=\"🧺\""
+  },
+  {
+   "t": 60649,
+   "type": "me",
+   "text": "OPTIONS left right"
+  },
+  {
+   "t": 60651,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 64147,
+   "type": "say",
+   "text": "Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 64149,
+   "type": "clip",
+   "ms": 2080,
+   "ended": 66224
+  },
+  {
+   "t": 70209,
+   "type": "noise",
+   "ms": 350,
+   "ended": 70555
+  },
+  {
+   "t": 70209,
+   "type": "say",
+   "text": "Popatrz uważnie!"
+  },
+  {
+   "t": 70222,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 71419
+  },
+  {
+   "t": 77418,
+   "type": "say",
+   "text": "Gdzie jest więcej smakołyków?"
+  },
+  {
+   "t": 77421,
+   "type": "clip",
+   "ms": 2080,
+   "ended": 79494
+  },
+  {
+   "t": 82200,
+   "type": "me",
+   "text": "TAP left (picnic: try left)"
+  },
+  {
+   "t": 82203,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 82203,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 82203,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 82203,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 82204,
+   "type": "say",
+   "text": "Tak! Tu jest więcej! Trzy!"
+  },
+  {
+   "t": 82204,
+   "type": "clip",
+   "ms": 2000,
+   "ended": 84208
+  },
+  {
+   "t": 84575,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 85777
+  },
+  {
+   "t": 86663,
+   "type": "noise",
+   "ms": 70,
+   "ended": 86747
+  },
+  {
+   "t": 86663,
+   "type": "noise",
+   "ms": 70,
+   "ended": 86823
+  },
+  {
+   "t": 86999,
+   "type": "noise",
+   "ms": 70,
+   "ended": 87077
+  },
+  {
+   "t": 86999,
+   "type": "noise",
+   "ms": 70,
+   "ended": 87152
+  },
+  {
+   "t": 87394,
+   "type": "noise",
+   "ms": 70,
+   "ended": 87461
+  },
+  {
+   "t": 87394,
+   "type": "noise",
+   "ms": 70,
+   "ended": 87547
+  },
+  {
+   "t": 88091,
+   "type": "say",
+   "text": "Mniam, mniam! Dziękuję!"
+  },
+  {
+   "t": 88091,
+   "type": "clip",
+   "ms": 2320,
+   "ended": 90406
+  },
+  {
+   "t": 91565,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 92019,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 92023,
+   "type": "say",
+   "text": "Udało się, Zosiu! Misja zakończona! Zdobywasz odznakę!"
+  },
+  {
+   "t": 92047,
+   "type": "clip",
+   "ms": 4560,
+   "ended": 96603
+  },
+  {
+   "t": 93400,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 93400,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 93400,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 93400,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 125763,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  },
+  {
+   "t": 125777,
+   "type": "me",
+   "text": "celebration"
+  }
+ ],
+ "events": [
+  {
+   "mission": "picnic",
+   "skill": "comparison",
+   "item": "more",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 1957,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617484211,
+   "chosen": "more",
+   "level": 1,
+   "round": 0
+  },
+  {
+   "mission": "picnic",
+   "skill": "comparison",
+   "item": "more",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 1614,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617499558,
+   "errorType": "wrongChoice",
+   "chosen": "more:2",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "picnic",
+   "skill": "comparison",
+   "item": "more",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 4036,
+   "assistLevel": 0,
+   "attempt": 2,
+   "at": 1792617501981,
+   "chosen": "more",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "picnic",
+   "skill": "comparison",
+   "item": "more",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 11163,
+   "assistLevel": 1,
+   "attempt": 1,
+   "at": 1792617526633,
+   "errorType": "timeout",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "picnic",
+   "skill": "comparison",
+   "item": "more",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 23157,
+   "assistLevel": 3,
+   "attempt": 1,
+   "at": 1792617538627,
+   "chosen": "more",
+   "level": 1,
+   "round": 2
+  }
+ ]
+}

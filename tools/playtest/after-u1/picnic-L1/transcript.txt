@@ -1,0 +1,113 @@
+   6.5  ----  page loaded
+   8.1  tone  480 Hz sawtooth
+   8.1  noise 80
+   8.1  tone  500 Hz sawtooth +160ms
+   8.1  noise 80
+   9.7  SAY   Cześć, Zosiu! Czejs jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie! Ojej! Kotek potrzebuje pomocy! Dotknij kotka!
+   9.9  clip  6640 ms  CUT OFF after 6098 ms
+  12.8  tone  650 Hz triangle
+  12.8  tone  1000 Hz triangle +180ms
+  13.4  ----  island
+  21.0  SAY   Piknik! Czejs jest głodny! Gdzie jest więcej smakołyków?
+  21.0  clip  2400 ms
+  21.2  ----  mission picnic started
+  23.8  clip  2080 ms
+  26.2  ----  QUESTION r1/3 comparison:more bubble="🧺"
+  27.8  ----  OPTIONS left right
+  27.8  ----  TAP left (picnic: try left)
+  27.8  tone  523 Hz triangle
+  27.8  tone  659 Hz triangle +90ms
+  27.8  tone  784 Hz triangle +180ms
+  27.8  tone  1046 Hz triangle +270ms
+  27.8  SAY   Tak! Tu jest więcej! Pięć!
+  27.9  clip  2000 ms
+  30.2  clip  1040 ms
+  32.5  noise 70
+  32.5  noise 70
+  32.8  noise 70
+  32.8  noise 70
+  33.2  noise 70
+  33.2  noise 70
+  33.6  noise 70
+  33.6  noise 70
+  33.9  noise 70
+  33.9  noise 70
+  34.6  SAY   Mniam, mniam! Dziękuję!
+  34.6  clip  2320 ms
+  37.9  tone  500 Hz sine
+  39.4  SAY   Gdzie jest więcej smakołyków?
+  39.4  clip  2080 ms
+  41.8  ----  QUESTION r2/3 comparison:more bubble="🧺"
+  43.1  ----  OPTIONS left right
+  43.1  ----  TAP left (picnic: try left)
+  43.1  tone  494 Hz triangle
+  43.1  tone  392 Hz triangle +170ms
+  43.1  SAY   Nie, tu jest mniej. Gdzie jest więcej smakołyków?
+  43.2  clip  1360 ms
+  44.9  clip  2080 ms  CUT OFF after 636 ms
+  45.5  ----  TAP right (picnic: then right)
+  45.6  tone  523 Hz triangle
+  45.6  tone  659 Hz triangle +90ms
+  45.6  tone  784 Hz triangle +180ms
+  45.6  tone  1046 Hz triangle +270ms
+  45.6  SAY   Tak! Tu jest więcej! Pięć!
+  45.6  clip  2000 ms
+  47.9  clip  1040 ms
+  50.2  noise 70
+  50.2  noise 70
+  50.6  noise 70
+  50.6  noise 70
+  51.0  noise 70
+  51.0  noise 70
+  51.2  noise 70
+  51.2  noise 70
+  51.6  noise 70
+  51.6  noise 70
+  52.4  SAY   Mniam, mniam! Dziękuję!
+  52.4  clip  2320 ms
+  55.6  tone  500 Hz sine
+  57.0  SAY   Gdzie jest więcej smakołyków?
+  57.0  clip  2080 ms
+  59.1  ----  QUESTION r3/3 comparison:more bubble="🧺"
+  60.6  ----  OPTIONS left right
+  60.7  ----  waiting 20 s like a thinking child
+  64.1  SAY   Gdzie jest więcej smakołyków?
+  64.1  clip  2080 ms
+  70.2  noise 350
+  70.2  SAY   Popatrz uważnie!
+  70.2  clip  1200 ms
+  77.4  SAY   Gdzie jest więcej smakołyków?
+  77.4  clip  2080 ms
+  82.2  ----  TAP left (picnic: try left)
+  82.2  tone  523 Hz triangle
+  82.2  tone  659 Hz triangle +90ms
+  82.2  tone  784 Hz triangle +180ms
+  82.2  tone  1046 Hz triangle +270ms
+  82.2  SAY   Tak! Tu jest więcej! Trzy!
+  82.2  clip  2000 ms
+  84.6  clip  1200 ms
+  86.7  noise 70
+  86.7  noise 70
+  87.0  noise 70
+  87.0  noise 70
+  87.4  noise 70
+  87.4  noise 70
+  88.1  SAY   Mniam, mniam! Dziękuję!
+  88.1  clip  2320 ms
+  91.6  tone  500 Hz sine
+  92.0  tone  523 Hz square
+  92.0  tone  659 Hz square +140ms
+  92.0  tone  784 Hz square +280ms
+  92.0  tone  1046 Hz square +420ms
+  92.0  tone  784 Hz square +560ms
+  92.0  tone  1046 Hz square +700ms
+  92.0  SAY   Udało się, Zosiu! Misja zakończona! Zdobywasz odznakę!
+  92.0  clip  4560 ms
+  93.4  tone  700 Hz square
+  93.4  tone  1050 Hz square +350ms
+  93.4  tone  700 Hz square +700ms
+  93.4  tone  1050 Hz square +1050ms
+ 125.8  ----  no open question (mission over?)
+ 125.8  ----  celebration
+
+errors: []

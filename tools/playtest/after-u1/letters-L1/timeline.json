@@ -1,0 +1,963 @@
+{
+ "kind": "letters",
+ "level": 1,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 6406,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 8045,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 8046,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8135
+  },
+  {
+   "t": 8046,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 8046,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8294
+  },
+  {
+   "t": 9717,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie!"
+  },
+  {
+   "t": 9962,
+   "type": "clip",
+   "ms": 6640,
+   "ended": 16603
+  },
+  {
+   "t": 13439,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 20826,
+   "type": "say",
+   "text": "Kotek schował się za taką literką! Znajdź taką samą!"
+  },
+  {
+   "t": 20849,
+   "type": "clip",
+   "ms": 3840,
+   "ended": 24689
+  },
+  {
+   "t": 21311,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 21311,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 21360,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 21481,
+   "type": "me",
+   "text": "mission letters started"
+  },
+  {
+   "t": 25000,
+   "type": "me",
+   "text": "QUESTION r1/4 letterVisual:T bubble=\"T\""
+  },
+  {
+   "t": 26974,
+   "type": "me",
+   "text": "OPTIONS A T* Z"
+  },
+  {
+   "t": 26980,
+   "type": "me",
+   "text": "TAP T (right)"
+  },
+  {
+   "t": 26994,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 26994,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 26994,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 26994,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 26995,
+   "type": "say",
+   "text": "Super! Znalazłaś kotka! Te jak tort!"
+  },
+  {
+   "t": 27054,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 28091
+  },
+  {
+   "t": 27244,
+   "type": "tone",
+   "hz": 650,
+   "to": 1000,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 27244,
+   "type": "tone",
+   "hz": 1000,
+   "to": 520,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 28462,
+   "type": "clip",
+   "ms": 3120,
+   "ended": 31579
+  },
+  {
+   "t": 31581,
+   "type": "noise",
+   "ms": 350,
+   "ended": 31934
+  },
+  {
+   "t": 32332,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 33298,
+   "type": "say",
+   "text": "Kotek schował się za taką literką! Znajdź taką samą!"
+  },
+  {
+   "t": 33298,
+   "type": "clip",
+   "ms": 3840,
+   "ended": 37137
+  },
+  {
+   "t": 33726,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 33726,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 34118,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 37303,
+   "type": "me",
+   "text": "QUESTION r2/4 letterVisual:O bubble=\"O\""
+  },
+  {
+   "t": 38707,
+   "type": "me",
+   "text": "OPTIONS M S O*"
+  },
+  {
+   "t": 38712,
+   "type": "me",
+   "text": "TAP M (wrong on purpose)"
+  },
+  {
+   "t": 38718,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 38718,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 38719,
+   "type": "say",
+   "text": "Nie, to nie ten. Znajdź taką samą literkę!"
+  },
+  {
+   "t": 38777,
+   "type": "clip",
+   "ms": 1360,
+   "ended": 40145
+  },
+  {
+   "t": 39599,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.29}"
+  },
+  {
+   "t": 40514,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 42267
+  },
+  {
+   "t": 44107,
+   "type": "me",
+   "text": "TAP O (right)"
+  },
+  {
+   "t": 44109,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 44109,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 44109,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 44109,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 44109,
+   "type": "say",
+   "text": "Wspaniale! Znalazłaś kotka! O jak owca!"
+  },
+  {
+   "t": 44165,
+   "type": "clip",
+   "ms": 1120,
+   "ended": 45286
+  },
+  {
+   "t": 44361,
+   "type": "tone",
+   "hz": 650,
+   "to": 1000,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 44361,
+   "type": "tone",
+   "hz": 1000,
+   "to": 520,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 45660,
+   "type": "clip",
+   "ms": 3040,
+   "ended": 48699
+  },
+  {
+   "t": 48700,
+   "type": "noise",
+   "ms": 350,
+   "ended": 49052
+  },
+  {
+   "t": 49643,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 50603,
+   "type": "say",
+   "text": "Kotek schował się za taką literką! Znajdź taką samą!"
+  },
+  {
+   "t": 50603,
+   "type": "clip",
+   "ms": 3840,
+   "ended": 54439
+  },
+  {
+   "t": 51227,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 51227,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 51227,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 54738,
+   "type": "me",
+   "text": "QUESTION r3/4 letterVisual:I bubble=\"I\""
+  },
+  {
+   "t": 56987,
+   "type": "me",
+   "text": "OPTIONS I* M Z"
+  },
+  {
+   "t": 56989,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 59572,
+   "type": "say",
+   "text": "Znajdź taką samą literkę!"
+  },
+  {
+   "t": 59574,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 61329
+  },
+  {
+   "t": 65868,
+   "type": "say",
+   "text": "I jak indyk!"
+  },
+  {
+   "t": 65882,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 67153
+  },
+  {
+   "t": 72831,
+   "type": "say",
+   "text": "Znajdź taką samą literkę!"
+  },
+  {
+   "t": 72834,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 74587
+  },
+  {
+   "t": 79065,
+   "type": "me",
+   "text": "TAP I (right)"
+  },
+  {
+   "t": 79068,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 79068,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 79068,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 79069,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 79069,
+   "type": "say",
+   "text": "Hura! Znalazłaś kotka! I jak indyk!"
+  },
+  {
+   "t": 79130,
+   "type": "clip",
+   "ms": 960,
+   "ended": 80081
+  },
+  {
+   "t": 79319,
+   "type": "tone",
+   "hz": 650,
+   "to": 1000,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 79319,
+   "type": "tone",
+   "hz": 1000,
+   "to": 520,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 80451,
+   "type": "clip",
+   "ms": 2720,
+   "ended": 83174
+  },
+  {
+   "t": 83175,
+   "type": "noise",
+   "ms": 350,
+   "ended": 83526
+  },
+  {
+   "t": 84164,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 85126,
+   "type": "say",
+   "text": "Kotek schował się za taką literką! Znajdź taką samą!"
+  },
+  {
+   "t": 85126,
+   "type": "clip",
+   "ms": 3840,
+   "ended": 88955
+  },
+  {
+   "t": 86391,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 86391,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 86391,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 89161,
+   "type": "me",
+   "text": "QUESTION r4/4 letterVisual:S bubble=\"S\""
+  },
+  {
+   "t": 91147,
+   "type": "me",
+   "text": "OPTIONS S* T A"
+  },
+  {
+   "t": 91151,
+   "type": "me",
+   "text": "TAP T (wrong on purpose)"
+  },
+  {
+   "t": 91154,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 91154,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 91155,
+   "type": "say",
+   "text": "Nie, to nie ten. Znajdź taką samą literkę!"
+  },
+  {
+   "t": 91155,
+   "type": "clip",
+   "ms": 1360,
+   "ended": 92529
+  },
+  {
+   "t": 91915,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.36}"
+  },
+  {
+   "t": 92879,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 94630
+  },
+  {
+   "t": 95013,
+   "type": "me",
+   "text": "TAP T (wrong again, quickly)"
+  },
+  {
+   "t": 95017,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 95017,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 95020,
+   "type": "noise",
+   "ms": 350,
+   "ended": 95367
+  },
+  {
+   "t": 95020,
+   "type": "say",
+   "text": "Nie, nie ten. Znajdź taką samą literkę!"
+  },
+  {
+   "t": 95080,
+   "type": "clip",
+   "ms": 1600,
+   "ended": 96678
+  },
+  {
+   "t": 97028,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 98779
+  },
+  {
+   "t": 99241,
+   "type": "me",
+   "text": "TAP S (right)"
+  },
+  {
+   "t": 99245,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 99245,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 99245,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 99245,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 99245,
+   "type": "say",
+   "text": "Hura! Znalazłaś kotka! Es jak słoń!"
+  },
+  {
+   "t": 99245,
+   "type": "clip",
+   "ms": 960,
+   "ended": 100198
+  },
+  {
+   "t": 99495,
+   "type": "tone",
+   "hz": 650,
+   "to": 1000,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 99495,
+   "type": "tone",
+   "hz": 1000,
+   "to": 520,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 100569,
+   "type": "clip",
+   "ms": 3120,
+   "ended": 103686
+  },
+  {
+   "t": 103687,
+   "type": "noise",
+   "ms": 350,
+   "ended": 104038
+  },
+  {
+   "t": 104890,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 105343,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 105347,
+   "type": "say",
+   "text": "Udało się, Zosiu! Misja zakończona! Zdobywasz odznakę!"
+  },
+  {
+   "t": 105385,
+   "type": "clip",
+   "ms": 4560,
+   "ended": 109948
+  },
+  {
+   "t": 106922,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 106922,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 106922,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 106922,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 142820,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  },
+  {
+   "t": 142832,
+   "type": "me",
+   "text": "celebration"
+  }
+ ],
+ "events": [
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "T",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 2302,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617203118,
+   "chosen": "T",
+   "level": 1,
+   "round": 0
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "O",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 1581,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617214845,
+   "errorType": "wrongChoice",
+   "chosen": "M",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "O",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 6972,
+   "assistLevel": 0,
+   "attempt": 2,
+   "at": 1792617220236,
+   "chosen": "O",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "I",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 11429,
+   "assistLevel": 1,
+   "attempt": 1,
+   "at": 1792617241995,
+   "errorType": "timeout",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "I",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 24629,
+   "assistLevel": 3,
+   "attempt": 1,
+   "at": 1792617255195,
+   "chosen": "I",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "S",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 2199,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617267281,
+   "errorType": "wrongChoice",
+   "chosen": "T",
+   "level": 1,
+   "round": 3
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "S",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 6062,
+   "assistLevel": 0,
+   "attempt": 2,
+   "at": 1792617271144,
+   "errorType": "wrongChoice",
+   "chosen": "T",
+   "level": 1,
+   "round": 3
+  },
+  {
+   "mission": "letters",
+   "skill": "letterVisual",
+   "item": "S",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 10289,
+   "assistLevel": 2,
+   "attempt": 3,
+   "at": 1792617275371,
+   "chosen": "S",
+   "level": 1,
+   "round": 3
+  }
+ ]
+}

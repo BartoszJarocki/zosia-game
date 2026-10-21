@@ -1,0 +1,889 @@
+{
+ "kind": "cones",
+ "level": 1,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 6666,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 8297,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 8298,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8387
+  },
+  {
+   "t": 8299,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 8299,
+   "type": "noise",
+   "ms": 80,
+   "ended": 8547
+  },
+  {
+   "t": 9822,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie!"
+  },
+  {
+   "t": 10033,
+   "type": "clip",
+   "ms": 6640,
+   "ended": 16675
+  },
+  {
+   "t": 13508,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 20889,
+   "type": "say",
+   "text": "Ojej! Pachołki na drodze! Dotknij pachołka z numerem dwa!"
+  },
+  {
+   "t": 20914,
+   "type": "clip",
+   "ms": 4880,
+   "ended": 25795
+  },
+  {
+   "t": 21446,
+   "type": "me",
+   "text": "mission cones started"
+  },
+  {
+   "t": 21498,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 21498,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 21498,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 26170,
+   "type": "me",
+   "text": "QUESTION r1/3 numeral:2 bubble=\"2 🚧\""
+  },
+  {
+   "t": 28493,
+   "type": "me",
+   "text": "OPTIONS 2* 1 3"
+  },
+  {
+   "t": 28497,
+   "type": "me",
+   "text": "TAP 2 (right)"
+  },
+  {
+   "t": 28506,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 28506,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 28506,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 28506,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 28507,
+   "type": "say",
+   "text": "Super! Dwa!"
+  },
+  {
+   "t": 28564,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 29603
+  },
+  {
+   "t": 29964,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 31000
+  },
+  {
+   "t": 31000,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 31000,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 31064,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 32099
+  },
+  {
+   "t": 32099,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 32099,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 32099,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 33144
+  },
+  {
+   "t": 33146,
+   "type": "noise",
+   "ms": 350,
+   "ended": 33496
+  },
+  {
+   "t": 33784,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 33784,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 33784,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 33785,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 33785,
+   "type": "tone",
+   "hz": 90,
+   "to": 160,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 35522,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 36605,
+   "type": "say",
+   "text": "Więcej pachołków! Dotknij numeru jeden!"
+  },
+  {
+   "t": 36624,
+   "type": "clip",
+   "ms": 3040,
+   "ended": 39662
+  },
+  {
+   "t": 37318,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 37318,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 37319,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 40081,
+   "type": "me",
+   "text": "QUESTION r2/3 numeral:1 bubble=\"1 🚧\""
+  },
+  {
+   "t": 42695,
+   "type": "me",
+   "text": "OPTIONS 2 1* 3"
+  },
+  {
+   "t": 42698,
+   "type": "me",
+   "text": "TAP 2 (wrong on purpose)"
+  },
+  {
+   "t": 42701,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 42701,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 42701,
+   "type": "say",
+   "text": "Nie, nie ten. Gdzie jest numer jeden?"
+  },
+  {
+   "t": 42761,
+   "type": "clip",
+   "ms": 1600,
+   "ended": 44355
+  },
+  {
+   "t": 43425,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.1}"
+  },
+  {
+   "t": 44727,
+   "type": "clip",
+   "ms": 1680,
+   "ended": 46403
+  },
+  {
+   "t": 48229,
+   "type": "me",
+   "text": "TAP 1 (right)"
+  },
+  {
+   "t": 48232,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 48232,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 48232,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 48232,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 48232,
+   "type": "say",
+   "text": "Świetnie! Jeden!"
+  },
+  {
+   "t": 48295,
+   "type": "clip",
+   "ms": 960,
+   "ended": 49251
+  },
+  {
+   "t": 49601,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 50638
+  },
+  {
+   "t": 50638,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 50638,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 50639,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 51683
+  },
+  {
+   "t": 51685,
+   "type": "noise",
+   "ms": 350,
+   "ended": 52035
+  },
+  {
+   "t": 52715,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 52715,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 52716,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 52716,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 52716,
+   "type": "tone",
+   "hz": 90,
+   "to": 160,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 54554,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 55624,
+   "type": "say",
+   "text": "Więcej pachołków! Dotknij numeru trzy!"
+  },
+  {
+   "t": 55661,
+   "type": "clip",
+   "ms": 3040,
+   "ended": 58691
+  },
+  {
+   "t": 55793,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 56368,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 56368,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 58870,
+   "type": "me",
+   "text": "QUESTION r3/3 numeral:3 bubble=\"3 🚧\""
+  },
+  {
+   "t": 60954,
+   "type": "me",
+   "text": "OPTIONS 2 1 3*"
+  },
+  {
+   "t": 60956,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 63769,
+   "type": "say",
+   "text": "Gdzie jest numer trzy?"
+  },
+  {
+   "t": 63784,
+   "type": "clip",
+   "ms": 1440,
+   "ended": 65219
+  },
+  {
+   "t": 69780,
+   "type": "say",
+   "text": "Trzy kropki!"
+  },
+  {
+   "t": 69799,
+   "type": "clip",
+   "ms": 1840,
+   "ended": 71640
+  },
+  {
+   "t": 77094,
+   "type": "say",
+   "text": "Gdzie jest numer trzy?"
+  },
+  {
+   "t": 77099,
+   "type": "clip",
+   "ms": 1440,
+   "ended": 78531
+  },
+  {
+   "t": 82704,
+   "type": "me",
+   "text": "TAP 3 (right)"
+  },
+  {
+   "t": 82712,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 82712,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 82712,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 82712,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 82713,
+   "type": "say",
+   "text": "Doskonale! Trzy!"
+  },
+  {
+   "t": 82772,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 83972
+  },
+  {
+   "t": 84441,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 85645
+  },
+  {
+   "t": 85646,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 85646,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 85646,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 86691
+  },
+  {
+   "t": 86691,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 86691,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 86691,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 87737
+  },
+  {
+   "t": 87737,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 87737,
+   "type": "say",
+   "text": "Trzy!"
+  },
+  {
+   "t": 87737,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 88941
+  },
+  {
+   "t": 88944,
+   "type": "noise",
+   "ms": 350,
+   "ended": 89293
+  },
+  {
+   "t": 90183,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 90183,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 90183,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 90183,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 90184,
+   "type": "tone",
+   "hz": 90,
+   "to": 160,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 91966,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 92418,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 92418,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 92419,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 92419,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 92419,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 92419,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 92422,
+   "type": "say",
+   "text": "Udało się, Zosiu! Misja zakończona! Zdobywasz odznakę!"
+  },
+  {
+   "t": 92445,
+   "type": "clip",
+   "ms": 4560,
+   "ended": 97006
+  },
+  {
+   "t": 95059,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 95059,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 95059,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 95059,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 125649,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  },
+  {
+   "t": 125661,
+   "type": "me",
+   "text": "celebration"
+  }
+ ],
+ "events": [
+  {
+   "mission": "cones",
+   "skill": "numeral",
+   "item": "2",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 2708,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617353570,
+   "chosen": "2",
+   "level": 1,
+   "round": 0
+  },
+  {
+   "mission": "cones",
+   "skill": "numeral",
+   "item": "1",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 3039,
+   "assistLevel": 0,
+   "attempt": 1,
+   "at": 1792617367768,
+   "errorType": "wrongChoice",
+   "chosen": "2",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "cones",
+   "skill": "numeral",
+   "item": "1",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 8570,
+   "assistLevel": 0,
+   "attempt": 2,
+   "at": 1792617373298,
+   "chosen": "1",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "cones",
+   "skill": "numeral",
+   "item": "3",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 11088,
+   "assistLevel": 1,
+   "attempt": 1,
+   "at": 1792617394846,
+   "errorType": "timeout",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "cones",
+   "skill": "numeral",
+   "item": "3",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 24021,
+   "assistLevel": 3,
+   "attempt": 1,
+   "at": 1792617407779,
+   "chosen": "3",
+   "level": 1,
+   "round": 2
+  }
+ ]
+}

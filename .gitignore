@@ -3,3 +3,7 @@ dist
 .env*
 .vercel
 voice-samples
+tools/playtest/out/
+tools/playtest/baseline/
+tools/playtest/after/
+tools/playtest/*.log

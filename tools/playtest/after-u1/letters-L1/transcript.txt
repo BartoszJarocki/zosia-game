@@ -1,0 +1,129 @@
+   6.4  ----  page loaded
+   8.0  tone  480 Hz sawtooth
+   8.0  noise 80
+   8.0  tone  500 Hz sawtooth +160ms
+   8.0  noise 80
+   9.7  SAY   Cześć, Zosiu! Czejs jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie!
+  10.0  clip  6640 ms
+  13.4  ----  island
+  20.8  SAY   Kotek schował się za taką literką! Znajdź taką samą!
+  20.8  clip  3840 ms
+  21.3  tone  500 Hz sine
+  21.3  tone  500 Hz sine
+  21.4  tone  500 Hz sine
+  21.5  ----  mission letters started
+  25.0  ----  QUESTION r1/4 letterVisual:T bubble="T"
+  27.0  ----  OPTIONS A T* Z
+  27.0  ----  TAP T (right)
+  27.0  tone  523 Hz triangle
+  27.0  tone  659 Hz triangle +90ms
+  27.0  tone  784 Hz triangle +180ms
+  27.0  tone  1046 Hz triangle +270ms
+  27.0  SAY   Super! Znalazłaś kotka! Te jak tort!
+  27.1  clip  1040 ms
+  27.2  tone  650 Hz triangle
+  27.2  tone  1000 Hz triangle +180ms
+  28.5  clip  3120 ms
+  31.6  noise 350
+  32.3  tone  500 Hz sine
+  33.3  SAY   Kotek schował się za taką literką! Znajdź taką samą!
+  33.3  clip  3840 ms
+  33.7  tone  500 Hz sine
+  33.7  tone  500 Hz sine
+  34.1  tone  500 Hz sine
+  37.3  ----  QUESTION r2/4 letterVisual:O bubble="O"
+  38.7  ----  OPTIONS M S O*
+  38.7  ----  TAP M (wrong on purpose)
+  38.7  tone  494 Hz triangle
+  38.7  tone  392 Hz triangle +170ms
+  38.7  SAY   Nie, to nie ten. Znajdź taką samą literkę!
+  38.8  clip  1360 ms
+  39.6  ----  MOTION {"moved":0.29}
+  40.5  clip  1760 ms
+  44.1  ----  TAP O (right)
+  44.1  tone  523 Hz triangle
+  44.1  tone  659 Hz triangle +90ms
+  44.1  tone  784 Hz triangle +180ms
+  44.1  tone  1046 Hz triangle +270ms
+  44.1  SAY   Wspaniale! Znalazłaś kotka! O jak owca!
+  44.2  clip  1120 ms
+  44.4  tone  650 Hz triangle
+  44.4  tone  1000 Hz triangle +180ms
+  45.7  clip  3040 ms
+  48.7  noise 350
+  49.6  tone  500 Hz sine
+  50.6  SAY   Kotek schował się za taką literką! Znajdź taką samą!
+  50.6  clip  3840 ms
+  51.2  tone  500 Hz sine
+  51.2  tone  500 Hz sine
+  51.2  tone  500 Hz sine
+  54.7  ----  QUESTION r3/4 letterVisual:I bubble="I"
+  57.0  ----  OPTIONS I* M Z
+  57.0  ----  waiting 20 s like a thinking child
+  59.6  SAY   Znajdź taką samą literkę!
+  59.6  clip  1760 ms
+  65.9  SAY   I jak indyk!
+  65.9  clip  1280 ms
+  72.8  SAY   Znajdź taką samą literkę!
+  72.8  clip  1760 ms
+  79.1  ----  TAP I (right)
+  79.1  tone  523 Hz triangle
+  79.1  tone  659 Hz triangle +90ms
+  79.1  tone  784 Hz triangle +180ms
+  79.1  tone  1046 Hz triangle +270ms
+  79.1  SAY   Hura! Znalazłaś kotka! I jak indyk!
+  79.1  clip  960 ms
+  79.3  tone  650 Hz triangle
+  79.3  tone  1000 Hz triangle +180ms
+  80.5  clip  2720 ms
+  83.2  noise 350
+  84.2  tone  500 Hz sine
+  85.1  SAY   Kotek schował się za taką literką! Znajdź taką samą!
+  85.1  clip  3840 ms
+  86.4  tone  500 Hz sine
+  86.4  tone  500 Hz sine
+  86.4  tone  500 Hz sine
+  89.2  ----  QUESTION r4/4 letterVisual:S bubble="S"
+  91.1  ----  OPTIONS S* T A
+  91.2  ----  TAP T (wrong on purpose)
+  91.2  tone  494 Hz triangle
+  91.2  tone  392 Hz triangle +170ms
+  91.2  SAY   Nie, to nie ten. Znajdź taką samą literkę!
+  91.2  clip  1360 ms
+  91.9  ----  MOTION {"moved":0.36}
+  92.9  clip  1760 ms
+  95.0  ----  TAP T (wrong again, quickly)
+  95.0  tone  494 Hz triangle
+  95.0  tone  392 Hz triangle +170ms
+  95.0  noise 350
+  95.0  SAY   Nie, nie ten. Znajdź taką samą literkę!
+  95.1  clip  1600 ms
+  97.0  clip  1760 ms
+  99.2  ----  TAP S (right)
+  99.2  tone  523 Hz triangle
+  99.2  tone  659 Hz triangle +90ms
+  99.2  tone  784 Hz triangle +180ms
+  99.2  tone  1046 Hz triangle +270ms
+  99.2  SAY   Hura! Znalazłaś kotka! Es jak słoń!
+  99.2  clip  960 ms
+  99.5  tone  650 Hz triangle
+  99.5  tone  1000 Hz triangle +180ms
+ 100.6  clip  3120 ms
+ 103.7  noise 350
+ 104.9  tone  500 Hz sine
+ 105.3  tone  523 Hz square
+ 105.3  tone  659 Hz square +140ms
+ 105.3  tone  784 Hz square +280ms
+ 105.3  tone  1046 Hz square +420ms
+ 105.3  tone  784 Hz square +560ms
+ 105.3  tone  1046 Hz square +700ms
+ 105.3  SAY   Udało się, Zosiu! Misja zakończona! Zdobywasz odznakę!
+ 105.4  clip  4560 ms
+ 106.9  tone  700 Hz square
+ 106.9  tone  1050 Hz square +350ms
+ 106.9  tone  700 Hz square +700ms
+ 106.9  tone  1050 Hz square +1050ms
+ 142.8  ----  no open question (mission over?)
+ 142.8  ----  celebration
+
+errors: []
