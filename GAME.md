@@ -210,7 +210,7 @@ everyone goes to the very top and down the slide together!
   `go`: "Jedziemy na piętro trzy" and back down each time (the session finale) ·
   `relative`: "We're on floor 3 — go one floor up/down" (one more / one less; needs 3+ floors and 2+ rounds)
 - **rounds** — how many elevator trips (1–8); `pickup` and `find` need more floors than trips (each kitten waits
-  on a floor of its own). After the last trip everyone goes to the top and down the slide, kittens too.
+  on a floor of its own) and have at most 3 trips (the car seats 3 kittens). After the last trip everyone goes to the top and down the slide, kittens too.
 
 ### 📦 Pup Delivery · `delivery`
 

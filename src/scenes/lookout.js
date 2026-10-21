@@ -197,7 +197,7 @@ export class LookoutMission extends Mission {
   async kittenHopsIn(k) {
     this.untap(k);
     this.waiting = null;
-    const [x, z] = SEATS[this.kittens.length % SEATS.length];
+    const [x, z] = SEATS[this.kittens.length];
     const seat = this.car.localToWorld(new THREE.Vector3(x, 0.14, z));
     sfx.meow();
     const s0 = k.scale.x;
@@ -344,8 +344,7 @@ export class LookoutMission extends Mission {
     ui.hideBubble();
     this.panel?.lock(true);
     await this.doorsTo(false);
-    say(this.kittens.length ? T.kittensAll() : T.liftTop());
-    await this.ride(this.N, { count: false });
+    await Promise.all([say(this.kittens.length ? T.kittensAll() : T.liftTop()), this.ride(this.N, { count: false })]); // (all of it said before the slide line)
     if (!this.alive) return;
     sfx.siren(2);
     sfx.ding();

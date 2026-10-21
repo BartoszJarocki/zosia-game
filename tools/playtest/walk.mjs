@@ -118,7 +118,7 @@ await snap('island');
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await mark(`starting ${kind}`); await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
 await mark(`mission ${kind} started`);
 const plan = ['right', 'wrong-then-right', 'hesitate', 'double-wrong', 'right', 'right', 'right', 'right'];
-for (let r = 0; r < 8; r++) {
+for (let r = 0; r < 12; r++) { // (rounds past the plan: right answers, so long missions finish)
   if (!(await waitAsked())) { await mark('no open question (mission over?)'); break; }
   const q = await question();
   await mark(`QUESTION r${q.round + 1}/${q.rounds} ${q.skill}:${q.item} bubble="${q.bubble}"`);
@@ -150,6 +150,8 @@ for (let r = 0; r < 8; r++) {
   } else if (kind === 'counting' && now.label === 'bone') {
     const n = Number(q.item);
     for (let i = 0; i < n; i++) { const b = (await options()).find((o) => o.label === 'bone'); if (!b) break; await tap(b, `treat ${i + 1}/${n}`); await page.waitForTimeout(700); }
+    const pup = await st(() => { const s = window.__pup.getStage(); if (s.L.auto) return null; const p = s.pup.getWorldPosition(s.pup.position.clone()); p.y += 0.8; p.project(window.__pup.camera); return { label: 'Chase', x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight }; });
+    if (pup) { await page.waitForTimeout(600); await tap(pup, 'done: tap Chase'); } // (levels where she decides when to stop)
   } else {
     await tap(now, 'right');
     if (kind === 'stones' && now.at) await mark(`STEP ${now.label} ${now.at.join(' ')}`); // where she landed, for the hop census

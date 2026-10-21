@@ -20,6 +20,7 @@ test('rounds: read from the table, short missions as in the brief', () => {
 test('Lookout kittens: each ride a different floor, so there must be more floors than rides', () => {
   assert.match(only(parseGame(table('max | bubble | mode | rounds', '3 | both | pickup | 3'), {})).errors[0], /more floors than rounds/);
   assert.deepEqual(only(parseGame(table('max | bubble | mode | rounds', '4 | numeral | find | 3'), {})).errors, []);
+  assert.match(only(parseGame(table('max | bubble | mode | rounds', '5 | numeral | pickup | 4'), {})).errors[0], /at most 3 rides/);
 });
 
 // a one-mission file: only look at that mission's errors (the rest of GAME.md is missing on purpose)

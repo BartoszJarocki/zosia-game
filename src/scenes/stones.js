@@ -202,7 +202,7 @@ export class StonesMission extends Mission {
 
       raise(0);
       this.question('numeral', 1, hooks); // open now: the first stones can be tapped before the question is spoken
-      wait(900).then(() => { if (this.alive) askNext(); });
+      wait(900).then(() => { if (this.alive && next === 1 && !busy) askNext(); }); // (unless she already tapped the 1)
     });
   }
 

@@ -166,7 +166,8 @@ export class CountingMission extends Mission {
             if (ghost) slots.slice(count(), n).forEach((s) => { s.visible = true; s.material.color.set(PALE); });
             else this.showSpots(count(), n, auto ? n : spotsN);
           }
-          if (count() > 0) return short();
+          if (count() >= n) return T.giveThenTap(n); // (not auto: "then tap Chase")
+          if (count() > 0) return T.treatsGive(n); // the prompt said "Trzy smakołyki!": the clue says the whole task
           const b = pile.find((x) => !given.includes(x));
           if (b) hop(b, 0.5, 400);
           return T.tapTreat();
@@ -270,7 +271,7 @@ export class CountingMission extends Mission {
       const n = this.pick('counting', range(lo, hi));
       this.last = n;
       this.item('Q:' + n);
-      const seats = [[1.6, -1.3], [-0.3, -0.8], [3.7, -0.3], [-2.1, -0.4]]; // Chase's spot first
+      const seats = [[1.6, -1.3], [-0.3, -0.8], [3.7, -0.3], [5.0, 0.3]]; // Chase's spot first; none behind the treat box
       const friends = seats.slice(0, n).map(([x, z], i) => {
         const obj = i === 0 ? this.pup : makeKitten(['#fb923c', '#9ca3af', '#f5f5f4'][i - 1]);
         let landed = Promise.resolve();
@@ -290,7 +291,7 @@ export class CountingMission extends Mission {
       let done = false;
       const fed = () => friends.filter((f) => f.fed).length;
       const flights = [];
-      const hungryHop = () => friends.filter((f) => !f.fed).forEach((f, i) => wait(i * 160).then(() => { hop(f.obj, 0.35, 320); if (f.kitten) sfx.meow(); else sfx.bark(); }));
+      const hungryHop = () => friends.filter((f) => !f.fed).forEach((f, i) => Promise.all([f.landed, wait(i * 160)]).then(() => { hop(f.obj, 0.35, 320); if (f.kitten) sfx.meow(); else sfx.bark(); }));
       this.question('counting', n, {
         short: T.shareRule(),
         hint: () => { hungryHop(); return T.shareWho(); },

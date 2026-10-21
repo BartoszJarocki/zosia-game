@@ -251,6 +251,7 @@ function crossCheck(kind, s, where, errors) {
   }
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
+  if (kind === 'lookout' && (s.mode === 'pickup' || s.mode === 'find') && s.rounds > 3) errors.push(`${where}: "${s.mode}" has at most 3 rides (the car seats 3 kittens)`);
   if (kind === 'lookout' && (s.mode === 'pickup' || s.mode === 'find') && s.rounds >= s.max) errors.push(`${where}: "${s.mode}" needs more floors than rounds (a kitten waits on a different floor each time)`);
   if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
   if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
