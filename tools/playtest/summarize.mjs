@@ -7,16 +7,18 @@ for (const name of readdirSync(dir).sort()) {
   if (!existsSync(f)) continue;
   const { timeline: tl, errors } = JSON.parse(readFileSync(f, 'utf8'));
   const me = (re) => tl.filter((e) => e.type === 'me' && re.test(e.text));
-  const started = me(/^mission .* started/)[0]?.t ?? 0;
+  const confirmed = me(/^mission .* started/)[0]?.t ?? 0;
+  const started = me(/^starting /).filter((e) => e.t <= confirmed).pop()?.t ?? confirmed; // the call that took, not the check after it
   const firstQ = me(/^QUESTION/)[0]?.t;
   const clips = tl.filter((e) => e.type === 'clip' && e.t >= started);
-  const talkBeforeFirstQ = tl.filter((e) => e.type === 'clip' && e.t >= started - 500 && e.t < firstQ).reduce((a, c) => a + (c.cut ? c.stoppedAt - c.t : c.ms), 0);
+  const talkBeforeFirstQ = tl.filter((e) => e.type === 'clip' && e.t >= started && e.t < firstQ).reduce((a, c) => a + (c.cut ? c.stoppedAt - c.t : c.ms), 0);
   // the response to the first deliberate wrong tap: everything said/played in the next 4 s
   const w = me(/wrong on purpose/)[0];
   const after = w ? tl.filter((e) => e.t >= w.t && e.t < w.t + 4000 && e.type !== 'me') : [];
   const wrongSay = after.filter((e) => e.type === 'say').map((e) => e.text);
   const wrongSounds = after.filter((e) => e.type === 'tone' && e.t < w.t + 400).map((e) => `${e.wave}${e.hz}${e.to > e.hz ? '↗' : e.to < e.hz ? '↘' : ''}${e.to !== e.hz ? e.to : ''}`);
-  const motion = w ? JSON.parse(tl.find((e) => e.type === 'me' && e.t >= w.t && /^MOTION/.test(e.text))?.text.slice(7) || '{}').moved : null;
+  const mo = w ? JSON.parse(tl.find((e) => e.type === 'me' && e.t >= w.t && /^MOTION/.test(e.text))?.text.slice(7) || '{}') : {};
+  const motion = mo.moved == null ? null : `${mo.moved}${mo.frames != null ? ` (${mo.frames} frames)` : ''}`;
   const firstWord = (arr) => (arr[0] || '').split(/[ ,.!?]/)[0];
   // the response to a right tap, for contrast
   const r = me(/\(right\)/)[0];

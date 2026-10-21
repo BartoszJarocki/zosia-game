@@ -110,7 +110,7 @@ let onParent = null;
 /** What a long press on the badge shelf opens (main.js). */
 export function setParentOpener(fn) { onParent = fn; }
 
-export function missionHud({ rounds, level = 1, total = 3, onHome }) {
+export function missionHud({ rounds, level = 1, total = 3, bubbleAt = 'middle', onHome }) {
   clear();
   const top = el(`<div class="topbar">
       <button class="round-btn home" aria-label="Home">${ICON.home}</button>
@@ -119,7 +119,7 @@ export function missionHud({ rounds, level = 1, total = 3, onHome }) {
     </div>`);
   press(top.querySelector('.home'), onHome);
   ui.append(top);
-  ui.append(el(`<button class="bubble hidden" aria-label="Say again"></button>`));
+  ui.append(el(`<button class="bubble hidden ${bubbleAt}" aria-label="Say again"></button>`));
 }
 
 /** The mission got shorter (or longer): redraw the paws, keeping the ones already earned. */
@@ -155,12 +155,21 @@ export function bubble({ big = '', pic = '', dots = 0, dice = false, word = '', 
   else if (seq) main = `<span class="big seq">${seq[0]}<em>${seq[1] || '➜'}</em><span class="q">?</span></span>`;
   else if (big || dots) main = `<span class="big">${big}${dotRow}</span>`;
   b.innerHTML = `${main}${pic ? `<span class="pic">${pic}</span>` : ''}<span class="spk">${ICON.speaker}</span>`;
-  b.classList.remove('hidden', 'pop');
+  b.classList.remove('hidden', 'pop', 'nudge');
   b.classList.toggle('passthrough', passthrough);
   void b.offsetWidth;
   b.classList.add('pop');
   b.onpointerdown = () => { sfx.pop(); onTap?.(); };
 }
+/** The question is waiting: the bubble bounces (no words). */
+export function nudgeBubble() {
+  const b = ui.querySelector('.bubble');
+  if (!b) return;
+  b.classList.remove('nudge');
+  void b.offsetWidth;
+  b.classList.add('nudge');
+}
+
 export function hideBubble() { ui.querySelector('.bubble')?.classList.add('hidden'); }
 
 export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome, onAgain }) {

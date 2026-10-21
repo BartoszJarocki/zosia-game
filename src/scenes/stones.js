@@ -24,6 +24,7 @@ export class StonesMission extends Mission {
     super(game, 'stones');
     this.rounds = this.L.rounds;
     this.view = { pos: new THREE.Vector3(0, 12.5, 10.5), look: new THREE.Vector3(0, 0, 0.3), minWidth: 16 };
+    this.bubbleAt = 'left'; // the far bank and Chase stay in view
     this.post = { tilt: 0.3, focus: 0.5, band: 0.4 };
   }
 

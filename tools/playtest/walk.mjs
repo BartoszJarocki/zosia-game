@@ -99,9 +99,9 @@ const motion = (o) => st(async ({ x, y, kind }) => {
   const obj = pool.sort((a, b) => near(a) - near(b))[0];
   if (!obj) return { moved: null };
   const p0 = obj.position.clone(), r0 = obj.rotation.clone(), s0 = obj.scale.x;
-  let moved = 0;
-  await new Promise((done) => { const t0 = performance.now(); const f = () => { moved = Math.max(moved, obj.position.distanceTo(p0) + Math.abs(obj.rotation.x - r0.x) + Math.abs(obj.rotation.y - r0.y) + Math.abs(obj.rotation.z - r0.z) + Math.abs(obj.scale.x - s0)); if (performance.now() - t0 < 600) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); });
-  return { moved: Math.round(moved * 100) / 100 };
+  let moved = 0, frames = 0;
+  await new Promise((done) => { const t0 = performance.now(); const f = () => { frames++; moved = Math.max(moved, obj.position.distanceTo(p0) + Math.abs(obj.rotation.x - r0.x) + Math.abs(obj.rotation.y - r0.y) + Math.abs(obj.rotation.z - r0.z) + Math.abs(obj.scale.x - s0)); if (performance.now() - t0 < 600) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); });
+  return { moved: Math.round(moved * 100) / 100, frames }; // headless frames can be slow: few frames can miss a shake
 }, { x: o.x, y: o.y, kind });
 
 await mark('page loaded');
@@ -114,7 +114,7 @@ await page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.
 await page.waitForTimeout(3500);
 await mark('island');
 await snap('island');
-for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
+for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await mark(`starting ${kind}`); await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
 await mark(`mission ${kind} started`);
 const plan = ['right', 'wrong-then-right', 'hesitate', 'double-wrong', 'right', 'right', 'right', 'right'];
 for (let r = 0; r < 8; r++) {

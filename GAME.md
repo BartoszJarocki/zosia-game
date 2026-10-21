@@ -111,7 +111,7 @@ and the train drives off. Nothing is spelled from memory: the word is always the
 
 | Level | words | mode | extras | similar |
 |---|---|---|---|---|
-| 1 | {name} | ghost | 0 | no |
+| 1 | {name} | ghost | 1 | no |
 | 2 | {name} | word | 1 | no |
 | 3 | {name}, MAMA, TATA | missing | 2 | no |
 | 4 | {name}, MAMA, TATA, KOT, DOM | highlight | 2 | yes |

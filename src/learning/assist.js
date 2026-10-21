@@ -2,22 +2,22 @@
 // The mission feeds it "she's been quiet for N ms" and "she picked something else"; it answers with
 // what to do. Scenes decide how each action looks and sounds (their assist hooks).
 //
-//   quiet ~5 s   → shortPrompt  ("Where is B?")          level 1
-//   quiet ~11 s  → hint         ("B like banana")        level 2
-//   quiet ~18 s  → reveal       (the answer pulses)      level 3
-//   quiet ~30 s  → remind       (one last short prompt), then silence — never endless repetition
+//   quiet ~6 s   → nudge        (the speech bubble bounces, no words: she may just be looking)
+//   quiet ~10 s  → shortPrompt  ("Where is B?")          level 1
+//   quiet ~17 s  → hint         ("B like banana")        level 2
+//   quiet ~25 s  → reveal       (the answer pulses)      level 3, then silence: never endless repetition
 //
 //   1st wrong    → retry        (neutral "try again")    level 1
 //   2nd wrong    → simplify     (e.g. one wrong option leaves) level 2
 //   3rd+ wrong   → reveal       (the answer pulses)      level 3
 
-export const TIMING = Object.freeze({ shortPromptMs: 5000, hintMs: 11000, revealMs: 18000, remindMs: 30000 });
+export const TIMING = Object.freeze({ nudgeMs: 6000, shortPromptMs: 10000, hintMs: 17000, revealMs: 25000 });
 
 const IDLE_STEPS = [
+  ['nudgeMs', 'nudge', 0],
   ['shortPromptMs', 'shortPrompt', 1],
   ['hintMs', 'hint', 2],
   ['revealMs', 'reveal', 3],
-  ['remindMs', 'remind', 3],
 ];
 
 /** @typedef {{ level: 0|1|2|3, wrongAttempts: number, idleStep: number, revealed: boolean }} AssistState */
@@ -35,7 +35,7 @@ export function onIdle(state, idleMs, timing = TIMING) {
     const [key, action, level] = IDLE_STEPS[state.idleStep];
     if (idleMs < timing[key]) return null;
     state.idleStep++;
-    if (action === 'remind') return 'remind';
+    if (action === 'nudge') { if (state.level === 0) return 'nudge'; continue; } // no help given yet: just draw her eye
     if (level <= state.level) continue; // already that much help (e.g. after wrong taps)
     state.level = level;
     if (action === 'reveal') state.revealed = true;
@@ -64,6 +64,6 @@ export function onWrong(state) {
 export function onActivity(state) {
   // after a wrong tap she is trying again: resume idle help from the current level
   const next = IDLE_STEPS.findIndex(([, , level]) => level > state.level);
-  state.idleStep = Math.max(state.idleStep, next === -1 ? IDLE_STEPS.length - 1 : next);
+  state.idleStep = Math.max(state.idleStep, next === -1 ? IDLE_STEPS.length : next);
   return state;
 }

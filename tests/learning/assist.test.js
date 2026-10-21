@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../../src/learning/assist.js';
+import { createAssist, onIdle, onWrong, onActivity } from '../../src/learning/assist.js';
 
 /** Feed onIdle every 250 ms up to `untilMs`, collecting actions with the time they fired. */
 function idleRun(state, untilMs, from = 0) {
@@ -9,21 +9,22 @@ function idleRun(state, untilMs, from = 0) {
   return out;
 }
 
-test('quiet: short prompt → hint → reveal → one reminder → silence', () => {
+test('quiet: a silent nudge at 6 s, the short prompt at 10 s, a clue at 17 s, the answer at 25 s, then silence', () => {
   const s = createAssist();
-  const acts = idleRun(s, 120000);
-  assert.deepEqual(acts.map((a) => a[0]), ['shortPrompt', 'hint', 'reveal', 'remind']);
-  assert.equal(acts[0][1], TIMING.shortPromptMs);
-  assert.equal(acts[1][1], TIMING.hintMs);
-  assert.equal(acts[2][1], TIMING.revealMs);
-  assert.equal(acts[3][1], TIMING.remindMs);
+  assert.deepEqual(idleRun(s, 120000), [['nudge', 6000], ['shortPrompt', 10000], ['hint', 17000], ['reveal', 25000]]);
   assert.equal(s.level, 3);
 });
 
-test('no endless repetition: nothing after the reminder, however long', () => {
+test('the nudge gives no help: the level stays 0', () => {
   const s = createAssist();
-  idleRun(s, 30000);
-  assert.deepEqual(idleRun(s, 600000, 30250), []);
+  assert.equal(onIdle(s, 6000), 'nudge');
+  assert.equal(s.level, 0);
+});
+
+test('no endless repetition: nothing after the reveal, however long', () => {
+  const s = createAssist();
+  idleRun(s, 25000);
+  assert.deepEqual(idleRun(s, 600000, 25250), []);
 });
 
 test('wrong taps: retry → simplify → reveal (and reveal again after that)', () => {
@@ -41,31 +42,37 @@ test('help never steps back down: after 2 wrong taps, idle goes straight to reve
   const s = createAssist();
   onWrong(s); onWrong(s); // level 2
   onActivity(s);
-  const acts = idleRun(s, 40000).map((a) => a[0]);
-  assert.deepEqual(acts, ['reveal', 'remind']);
+  assert.deepEqual(idleRun(s, 40000), [['reveal', 25000]]);
 });
 
-test('one wrong tap, then quiet: hint comes next (the short prompt was already given)', () => {
+test('one wrong tap, then quiet: the clue comes next (no nudge, no repeated short prompt)', () => {
   const s = createAssist();
-  onWrong(s);            // retry, level 1
+  onWrong(s);
   onActivity(s);
-  assert.deepEqual(idleRun(s, 40000).map((a) => a[0]), ['hint', 'reveal', 'remind']);
+  assert.deepEqual(idleRun(s, 40000), [['hint', 17000], ['reveal', 25000]]);
+});
+
+test('three wrong taps, then quiet: nothing more is said', () => {
+  const s = createAssist();
+  onWrong(s); onWrong(s); onWrong(s);
+  onActivity(s);
+  assert.deepEqual(idleRun(s, 120000), []);
 });
 
 test('after an idle reveal, the next wrong tap keeps revealing', () => {
   const s = createAssist();
-  idleRun(s, TIMING.revealMs);
+  idleRun(s, 25000);
   assert.equal(s.revealed, true);
   assert.equal(onWrong(s), 'reveal');
 });
 
-test('custom timing is respected', () => {
+test('custom timing is respected, one step per call', () => {
   const s = createAssist();
-  const fast = { shortPromptMs: 100, hintMs: 200, revealMs: 300, remindMs: 400 };
-  assert.equal(onIdle(s, 99, fast), null);
-  assert.equal(onIdle(s, 100, fast), 'shortPrompt');
-  assert.equal(onIdle(s, 450, fast), 'hint'); // one step per call
+  const fast = { nudgeMs: 50, shortPromptMs: 100, hintMs: 200, revealMs: 300 };
+  assert.equal(onIdle(s, 49, fast), null);
+  assert.equal(onIdle(s, 50, fast), 'nudge');
+  assert.equal(onIdle(s, 450, fast), 'shortPrompt');
+  assert.equal(onIdle(s, 450, fast), 'hint');
   assert.equal(onIdle(s, 450, fast), 'reveal');
-  assert.equal(onIdle(s, 450, fast), 'remind');
   assert.equal(onIdle(s, 450, fast), null);
 });

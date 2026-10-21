@@ -46,11 +46,12 @@ export class Mission extends Stage {
     this.firstTry = 0;
     this.learn = new QuestionTracker(learning); // turns this mission's taps into learning events
     this.roundIndex = 0;
+    this.bubbleAt = 'middle'; // 'left' keeps the top middle of the scene in view
   }
 
   enter() {
     this.build();
-    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), onHome: () => { hush(); this.game.hub(); } });
+    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => { hush(); this.game.hub(); } });
     this.onUpdate(() => this.tickAssist());
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
@@ -189,7 +190,7 @@ export class Mission extends Stage {
   // ----- help driver -----
   assistTiming() {
     const s = CONFIG.assistSeconds;
-    return s ? { shortPromptMs: s.shortPrompt * 1000, hintMs: s.hint * 1000, revealMs: s.reveal * 1000, remindMs: s.remind * 1000 } : TIMING;
+    return s ? { nudgeMs: s.nudge * 1000, shortPromptMs: s.shortPrompt * 1000, hintMs: s.hint * 1000, revealMs: s.reveal * 1000 } : TIMING;
   }
   /** Runs every frame: gives the next bit of help when she has been quiet long enough. */
   tickAssist() {
@@ -206,6 +207,7 @@ export class Mission extends Stage {
   runAssist(action, said = []) {
     const aid = this.aid;
     if (!aid) return;
+    if (action === 'nudge') { ui.nudgeBubble(); if (this.pup && !this.pupRides) hop(this.pup, 0.3); return; }
     const h = aid.hooks;
     const short = (typeof h.short === 'function' ? h.short() : h.short) || this.prompt || [];
     if (action !== 'retry') this.helped(aid.state.level);

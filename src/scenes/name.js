@@ -151,9 +151,10 @@ export class NameMission extends Mission {
           ghostOn();
           return this.mode === 'missing' ? T.findLetter(target) : T.letterLike(target);
         },
-        simplify: () => { // an extra letter (not in the word) leaves; otherwise the right block steps forward
+        simplify: () => { // an extra letter (not in the word) leaves, keeping one for the last letter; otherwise the right block steps forward
           const later = this.fill.slice(r + 1).map((i) => this.word[i]);
-          const extra = this.blocks.find((x) => x.userData.letter && x.userData.letter !== target && !later.includes(x.userData.letter) && x.parent);
+          const spare = this.blocks.filter((x) => x.userData.letter && x.userData.letter !== target && !later.includes(x.userData.letter) && x.parent);
+          const extra = spare.length > 1 || r === this.rounds - 1 ? spare[0] : null;
           if (extra) { this.removeOption(extra); extra.userData.letter = null; return; }
           const b = right();
           if (b && !b.userData.forward) { b.userData.forward = true; this.jumpTo(b, b.position.clone().add(new THREE.Vector3(0, 0, 0.7)), { height: 0.6, ms: 400 }); }

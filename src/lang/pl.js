@@ -49,7 +49,7 @@ export const T = {
   praise: (i) => [PRAISE[i]],
 
   // hub
-  greet: () => [`Cześć, ${voc}! ${pup} jest gotowy do akcji! Dokąd jedziemy? Dotknij miejsca na wyspie!`],
+  greet: () => [`Cześć, ${voc}! ${pup} gotowy do akcji! Dokąd jedziemy?`],
   hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'],
   hubIdle: () => ['Dotknij miejsca, żeby zacząć misję!'],
   suggest: (kind) => [`Może ${PLACE_TO[kind]}?`],
@@ -115,7 +115,7 @@ export const T = {
   balloonDone: (l) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${word(l)}!`],
 
   // Name Train
-  spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! ${sayWord(w)} zaczyna się na ${L(w[0])}. Znajdź ${L(w[0])}!`],
+  spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
   spellWord: (w) => [`${sayWord(w)}!`],
   // Name Train V2

@@ -12,8 +12,8 @@ export const CONFIG = {
   lowercase: false,         // true = show lowercase letters instead
   level: null,              // force every mission to level 1, 2 or 3 (null = earn levels with badges)
   goodRunsPerLevel: 2,      // runs with most answers right first time needed to unlock the next level
-  // help when she goes quiet: short prompt → clue → answer pulses → one last reminder, then silence
-  assistSeconds: { shortPrompt: 5, hint: 11, reveal: 18, remind: 30 },
+  // help when she goes quiet: the bubble bounces → short prompt → clue → answer pulses, then silence
+  assistSeconds: { nudge: 6, shortPrompt: 10, hint: 17, reveal: 25 },
   // a play session: this many missions, then the Lookout as the finale, then free play (nothing is ever locked)
   session: { missions: 2, newAfterMinutes: 15 },
   // tiredness (0–1, from slower answers, random taps, silences, replays, more help): below `tired` the
