@@ -224,8 +224,7 @@ export class LookoutMission extends Mission {
           this.panel.lock(false);
           resolve();
         } else {
-          this.wrong(f, T.thatsNumber(f));
-          sfx.oops();
+          this.wrong(f);
           this.panel.nope(f);
         }
       };

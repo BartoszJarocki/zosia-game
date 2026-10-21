@@ -12,6 +12,9 @@ const LOOKALIKE = {
   D: 'OB', I: 'LTJ', L: 'IT', T: 'IL', U: 'OW', K: 'R', H: 'N', Z: 'SN', S: 'Z', J: 'I', A: 'H',
 };
 
+/** Easy to confuse with each other (B and P, E and F…). */
+export const isLookalike = (a, b) => (LOOKALIKE[a] || '').includes(b) || (LOOKALIKE[b] || '').includes(a);
+
 /**
  * Pick `n` wrong answers for `target`.
  * similar=false: avoid lookalikes (fair for beginners). similar=true: include one or two on purpose.

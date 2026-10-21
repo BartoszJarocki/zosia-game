@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Stage, addSkyAndLights, wait, hop, animate, ease, post } from '../engine.js';
+import { Stage, addSkyAndLights, wait, hop, animate, ease, post, shakeNo } from '../engine.js';
 import { mat, mesh } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { groundMat } from '../scenery.js';
@@ -8,7 +8,7 @@ import { sparkle, fireworks } from '../fx/particles.js';
 import { CONFIG } from '../config.js';
 import { T, PRAISE } from '../lang/pl.js';
 import { say, sfx, hush } from '../audio.js';
-import { settingsFor } from '../levels.js';
+import { settingsFor, isLookalike } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
@@ -163,18 +163,28 @@ export class Mission extends Stage {
   /** She got it. */
   correct(chosen) { this.learn.correct({ chosen }); this.aid = null; }
   /**
-   * She picked something else: record it and respond with the next step of help.
-   * said: what to say first (e.g. "To jest em."). feedback:false when the scene answers itself.
+   * She picked something else. A clear, kind "no" (a falling tone, the thing she tapped shakes its head and so
+   * does Chase, "Nie, to nie ten."), then the question again or the next step of help.
+   * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
    */
-  wrong(chosen, said = [], { feedback = true } = {}) {
+  wrong(chosen, { obj = null, said = null, feedback = true } = {}) {
     this.miss();
     this.learn.wrong({ chosen });
+    sfx.no();
+    if (obj) shakeNo(obj);
+    if (this.pup) shakeNo(this.pup, { amp: 0.6 });
     if (!this.aid) return;
     const action = onWrong(this.aid.state);
     onActivity(this.aid.state);
     this.aid.quietFrom = performance.now();
-    if (feedback) this.runAssist(action, said);
+    if (feedback) this.runAssist(action, said || T.no());
   }
+  /** At levels that mix lookalikes on purpose, a lookalike mix-up gets named: "Nie, to Pe." */
+  lookalikeNo(target, chosen) {
+    return this.L.similar && isLookalike(target, chosen) ? T.noLookalike(chosen) : null;
+  }
+  /** A step done right: a bright chime, and "Tak!" to say before what it was ("Tak! Dwa!"). */
+  yes() { sfx.yes(); return T.yesStep(); }
 
   // ----- help driver -----
   assistTiming() {
@@ -201,7 +211,7 @@ export class Mission extends Stage {
     if (action !== 'retry') this.helped(aid.state.level);
     const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[action]?.(said);
     if (out && typeof out.then === 'function') return;
-    this.say([...said, ...(action === 'retry' ? T.tryAgain() : Array.isArray(out) ? out : short)]);
+    this.say([...said, ...(Array.isArray(out) ? out : short)]);
   }
   /** Say something (no help fires while speaking). A newer line cuts this one short. */
   say(segments) {

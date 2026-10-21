@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, hop, wait } from '../engine.js';
+import { animate, ease, hop, wait, shakeNo } from '../engine.js';
 import { makeStone, mat, mesh } from '../models.js';
 import { makeTree, makeRock, makeBush } from '../world/nature.js';
 import { makeLilyPad, makeReeds } from '../world/props.js';
@@ -156,7 +156,7 @@ export class StonesMission extends Mission {
           sfx.splash();
           sparkle(this, to.clone().add(new THREE.Vector3(0, 0.3, 0)), { count: 10, size: 0.12, speed: 2 });
           this.girl.userData.setHappy(0.8);
-          await say(T.number(next)); // hear the number she landed on before the next question
+          await say([...this.yes(), ...T.number(next)]); // hear the number she landed on before the next question
           if (!this.alive) return;
           next++;
           this.last = next;
@@ -191,9 +191,7 @@ export class StonesMission extends Mission {
             askNext();
           }
         } else {
-          this.wrong(s.userData.num, T.thatsNumber(s.userData.num));
-          sfx.oops();
-          wiggle(s);
+          this.wrong(s.userData.num, { obj: s });
         }
       }));
 
@@ -248,9 +246,8 @@ export class StonesMission extends Mission {
           if (st.userData.num === missing) place(st);
           else {
             lastWrong = st;
-            this.wrong(st.userData.num, T.thatsNumber(st.userData.num));
-            sfx.oops();
-            this.jumpTo(st, st.userData.home, { height: 0.6, ms: 350 }).then(() => wiggle(st));
+            this.wrong(st.userData.num);
+            this.jumpTo(st, st.userData.home, { height: 0.6, ms: 350 }).then(() => shakeNo(st));
           }
         };
         this.draggable(s, {
@@ -275,7 +272,7 @@ export class StonesMission extends Mission {
         stones[missing - 1] = st;
         this.success(gapAt.clone().add(new THREE.Vector3(0, 1, 0)));
         ui.bubble({ word: Array.from({ length: n }, (_, i) => String(i + 1)).join(''), at: missing - 1, done: n, onTap: () => {} });
-        await say(T.number(missing));
+        await say([...this.yes(), ...T.number(missing)]);
         const rest = choices.filter((c) => c !== st);
         rest.forEach((c) => this.shrinkAway(c, 300));
         if (!this.alive) return;

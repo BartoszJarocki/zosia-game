@@ -98,14 +98,14 @@ export class BalloonsMission extends Mission {
           this.correct(target);
           if (popped < this.L.targets) this.question('letterVisual', target, hooks); // next balloon with the same letter
           if (popped < this.L.targets) {
-            say(T.number(popped));
+            say([...this.yes(), ...T.number(popped)]);
             return;
           }
           done = true;
           this.stopIdle();
           sfx.good();
           this.success(null, { big: true });
-          await say([...T.number(popped), ...T.balloonDone(target)]);
+          await say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]);
           if (!this.alive) return;
           // the rest float away
           const rest = this.balloons;
@@ -118,9 +118,7 @@ export class BalloonsMission extends Mission {
           resolve();
         } else {
           lastWrong = b;
-          this.wrong(b.userData.letter, T.thatsLetter(b.userData.letter));
-          sfx.oops();
-          animate(450, (t) => { b.userData.body.scale.set(1 + Math.sin(t * Math.PI * 4) * 0.08 * (1 - t), 1.18, 1); }, ease.linear);
+          this.wrong(b.userData.letter, { obj: b.userData.body, said: this.lookalikeNo(target, b.userData.letter) });
         }
       };
 

@@ -281,10 +281,14 @@ export function hop(obj, height = 0.6, ms = 450) {
   return obj.userData.hopping;
 }
 
-export function wiggle(obj, ms = 500) {
-  if (obj.userData.wiggling) return obj.userData.wiggling;
-  const r0 = obj.rotation.z;
-  obj.userData.wiggling = animate(ms, (t) => { obj.rotation.z = r0 + Math.sin(t * Math.PI * 6) * 0.25 * (1 - t); }, ease.linear)
-    .then(() => { obj.rotation.z = r0; obj.userData.wiggling = null; });
-  return obj.userData.wiggling;
+/** "No": a quick side-to-side head-shake (turns and sways), then back exactly where it was. */
+export function shakeNo(obj, { amp = 1, ms = 520 } = {}) {
+  if (obj.userData.shaking) return obj.userData.shaking;
+  const ry = obj.rotation.y, x = obj.position.x;
+  obj.userData.shaking = animate(ms, (t) => {
+    const k = Math.sin(t * Math.PI * 6) * (1 - t);
+    obj.rotation.y = ry + k * 0.45 * amp;
+    obj.position.x = x + k * 0.16 * amp;
+  }, ease.linear).then(() => { obj.rotation.y = ry; obj.position.x = x; obj.userData.shaking = null; });
+  return obj.userData.shaking;
 }

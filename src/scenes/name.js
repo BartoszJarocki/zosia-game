@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, hop, wait } from '../engine.js';
+import { animate, ease, hop, wait } from '../engine.js';
 import { makeTrain, rbox, mat, mesh } from '../models.js';
 import { makePlatform, makeStationHouse, makeLamp } from '../world/props.js';
 import { dust } from '../fx/particles.js';
@@ -183,12 +183,10 @@ export class NameMission extends Mission {
           this.success(slot.clone().add(new THREE.Vector3(0, 0.8, 0)));
           if (this.ghosts[idx]) this.ghosts[idx].visible = false;
           if (this.mode !== 'ghost') this.bubbleFor(this.fill[r + 1] ?? -1);
-          await say(T.letter(target));
+          await say([...this.yes(), ...T.letter(target)]);
           resolve();
         } else {
-          this.wrong(b.userData.letter, T.thatsLetter(b.userData.letter));
-          sfx.oops();
-          wiggle(b);
+          this.wrong(b.userData.letter, { obj: b, said: this.lookalikeNo(target, b.userData.letter) });
         }
       };
       this.blocks.forEach((b) => { if (b.userData.letter) this.tappable(b, onTap); });

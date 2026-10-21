@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop } from '../engine.js';
 import { rbox, mat, mesh } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { makeHouse, makeFence, makeLamp } from '../world/props.js';
@@ -140,9 +140,7 @@ export class DeliveryMission extends Mission {
             resolve();
           } else {
             lastWrong = p;
-            this.wrong(l, T.thatsWord(l)); // "To jest banan."
-            sfx.oops();
-            wiggle(p);
+            this.wrong(l, { obj: p });
           }
         });
         return p;
@@ -234,9 +232,7 @@ export class DeliveryMission extends Mission {
           resolve();
         } else {
           lastWrong = b;
-          this.wrong(b.userData.letter, T.thatsLetter(b.userData.letter));
-          sfx.oops();
-          wiggle(b);
+          this.wrong(b.userData.letter, { obj: b });
           // the parcel comes back to her
           if (parcel.position.distanceTo(home) > 0.1) this.jumpTo(parcel, home, { height: 0.5, ms: 350 });
         }

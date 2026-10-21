@@ -56,7 +56,9 @@ function noise(dur, { vol = 0.3, when = 0, freq = 1500 } = {}) {
 export const sfx = {
   pop: () => tone(500, 0.1, { to: 900, vol: 0.25 }),
   good: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, { type: 'triangle', vol: 0.2, when: i * 0.09 })),
-  oops: () => { tone(392, 0.11, { vol: 0.08, to: 415 }); tone(440, 0.13, { vol: 0.07, when: 0.1, to: 466 }); }, // a soft, curious "hm?" (not a fail sound)
+  // right and wrong must be told apart in the first moment: up means yes, down means no (both gentle)
+  yes: () => { tone(784, 0.1, { type: 'triangle', vol: 0.16, to: 880 }); tone(1175, 0.18, { type: 'triangle', vol: 0.15, when: 0.09, to: 1318 }); },
+  no: () => { tone(494, 0.15, { type: 'triangle', vol: 0.14, to: 466 }); tone(392, 0.24, { type: 'triangle', vol: 0.13, when: 0.17, to: 349 }); },
   bark: () => {
     tone(480, 0.1, { type: 'sawtooth', vol: 0.1, to: 260 });
     noise(0.08, { vol: 0.15, freq: 900 });

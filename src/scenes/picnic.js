@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, wait, hop } from '../engine.js';
+import { animate, ease, shakeNo, wait, hop } from '../engine.js';
 import { makeBone, rbox, mat, mesh } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { glyphTexture } from '../textures.js';
@@ -145,9 +145,8 @@ export class PicnicMission extends Mission {
           resolve();
         } else {
           const more = counts[i] > counts[1 - i] || (mode === 'same' && counts[i] > ref);
-          this.wrong(item + ':' + counts[i], more ? T.hereMore() : T.hereLess());
-          sfx.oops();
-          groups[i].forEach((x) => wiggle(x));
+          this.wrong(item + ':' + counts[i], { said: more ? T.noMore() : T.noLess() });
+          groups[i].forEach((x) => shakeNo(x));
         }
       };
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, wait } from '../engine.js';
+import { animate, ease, wait } from '../engine.js';
 import { makeTruck, seatRiders, makeCone, rbox, mat, mesh } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { makeTree, makeBush } from '../world/nature.js';
@@ -149,9 +149,7 @@ export class ConesMission extends Mission {
             resolve();
           } else {
             lastWrong = c;
-            this.wrong(num, T.thatsNumber(num));
-            sfx.oops();
-            wiggle(c);
+            this.wrong(num, { obj: c });
           }
         });
       });

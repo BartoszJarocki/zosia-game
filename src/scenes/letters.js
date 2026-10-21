@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wiggle, hop, wait } from '../engine.js';
+import { animate, ease, hop, wait } from '../engine.js';
 import { makeKitten, rbox } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { makeFence, makeBench, makeLamp } from '../world/props.js';
@@ -121,9 +121,7 @@ export class LettersMission extends Mission {
             resolve();
           } else {
             lastWrong = b;
-            this.wrong(letter, T.thatsLetter(letter));
-            sfx.oops();
-            wiggle(b);
+            this.wrong(letter, { obj: b, said: this.lookalikeNo(target, letter) });
           }
         });
       });

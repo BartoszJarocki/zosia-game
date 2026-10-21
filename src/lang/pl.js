@@ -25,6 +25,10 @@ const pupDat = CONFIG.pupDative || pup;
 const pupGen = CONFIG.pupGenitive || pup;
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
+/** After a wrong tap, before the question again ("Nie, to nie ten." "Gdzie jest Zet?"). Always starts with "Nie". */
+export const NO = ['Nie, to nie ten.', 'Nie, nie ten.'];
+/** A step done right, before what it was ("Tak! Dwa!"). */
+export const YES_STEP = ['Tak!', 'Brawo!', 'Super!'];
 
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
 const PLACE_TO = {
@@ -56,7 +60,6 @@ export const T = {
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
   startsWith: (l) => [`Co zaczyna się na ${L(l)}?`],
   whichBox: (l) => [`Do której skrzynki pójdzie ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}?`],
-  thatsWord: (l) => [`To jest ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}.`],
   // Pup Picnic: more, less, the same
   picnicStart: () => [`Piknik! ${pup} jest głodny!`],
   askMore: () => ['Gdzie jest więcej smakołyków?'],
@@ -65,8 +68,8 @@ export const T = {
   yesMore: () => ['Tak! Tu jest więcej!'],
   yesLess: () => ['Tak! Tu jest mniej!'],
   yesSame: () => ['Tak! Tyle samo!'],
-  hereMore: () => ['Tu jest więcej.'],
-  hereLess: () => ['Tu jest mniej.'],
+  noMore: () => ['Nie, tu jest więcej.'],
+  noLess: () => ['Nie, tu jest mniej.'],
   lookCarefully: () => ['Popatrz uważnie!'],
   // Adventure Bay changes (said the first time the hub shows them)
   worldKitten: () => ['Zobacz! Uratowany kotek bawi się teraz koło parku!'],
@@ -88,10 +91,11 @@ export const T = {
   levelUp: (lvl) => [`I nową gwiazdkę! Poziom ${NUM[lvl]}!`],
 
   // shared "wrong answer" feedback
-  thatsLetter: (l) => [`To jest ${L(l)}.`],
+  no: () => [NO[Math.floor(Math.random() * NO.length)]],
+  noLookalike: (l) => [`Nie, to ${L(l)}.`],
+  yesStep: () => [YES_STEP[Math.floor(Math.random() * YES_STEP.length)]],
   whereLetter: (l) => [`Gdzie jest ${L(l)}?`],
   findLetter: (l) => [`Znajdź ${L(l)}!`],
-  thatsNumber: (n) => [`To jest numer ${NUM[n]}.`],
   whereNumber: (n) => [`Gdzie jest numer ${NUM[n]}?`],
   letter: (l) => [`${L(l)}!`],
 
@@ -121,7 +125,6 @@ export const T = {
   whichMissing: () => ['Której literki brakuje?'],
 
   yes: () => ['Tak!'],
-  tryAgain: () => ['Spróbuj jeszcze raz!'],
   letterLike: (l) => [`${L(l)} jak ${word(l)}!`],
   howManyShort: () => ['Ile smakołyków?'],
   tapTheBox: () => ['Dotknij pudełka!'],
@@ -180,23 +183,24 @@ export function allSegments(levels, allLetters) {
   const out = [];
   const add = (segs) => out.push(...segs);
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
-  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.thatsNumber(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.conesWhich(n, true)); add(T.conesWhich(n, false)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
+  nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.conesWhich(n, true)); add(T.conesWhich(n, false)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.letterLike(l)); add(T.thatsLetter(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.letterLike(l)); add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   // Pup Delivery: every letter its levels can ask
-  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.thatsWord(l)); add(T.letterLike(l)); });
+  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.letterLike(l)); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
-    T.tryAgain, T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
+    T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
-    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.hereMore, T.hereLess, T.lookCarefully].forEach((f) => add(f()));
+    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
+  [...NO, ...YES_STEP].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, hop, wait, wiggle } from '../engine.js';
+import { animate, ease, hop, wait } from '../engine.js';
 import { makeBone, pawBadge, rbox, mat, mesh } from '../models.js';
 import { makeBush, makeTree } from '../world/nature.js';
 import { makePupHouse, makeFence } from '../world/props.js';
@@ -219,9 +219,7 @@ export class CountingMission extends Mission {
           this.poke();
           await Promise.all(landed);
           if (count() === n) { finish(); return; }
-          this.wrong(count(), [], { feedback: false }); // gave the wrong number of treats: answered below
-          sfx.oops();
-          wiggle(this.pup);
+          this.wrong(count(), { feedback: false }); // gave the wrong number of treats: answered below
           if (count() > n) {
             // too many: give the extras back to the pile, one by one
             done = true;
@@ -332,9 +330,7 @@ export class CountingMission extends Mission {
             resolve();
           } else {
             lastWrong = b;
-            this.wrong(num, T.thatsNumber(num));
-            sfx.oops();
-            wiggle(b);
+            this.wrong(num, { obj: b });
           }
         });
         return b;
