@@ -111,6 +111,9 @@ Balloons with letters float up. Pop every balloon with the asked letter, countin
 
 Load the letters of a word onto the train in order, then say them together ("Zet! O! Es! I! A! Zosia!")
 and the train drives off. Nothing is spelled from memory: the word is always there to look at.
+A finished word turns into its thing before the train leaves: KOT a kitten hops onto the last wagon, DOM a
+little house pops up, MAMA and TATA a heart floats up, and her own name makes her cheer (the pictures live
+in `src/scenes/name.js`, the lines in `src/lang/pl.js`).
 
 | Level | words | mode | extras | similar |
 |---|---|---|---|---|
@@ -171,16 +174,17 @@ time, each row one hop nearer Chase: the next number and one or two others side 
 
 Counting for real, at Chase's pup house.
 
-| Level | types | give | howMany | auto | slots | rounds |
-|---|---|---|---|---|---|---|
-| 1 | give | 1–3 | — | yes | yes | 3 |
-| 2 | give, howMany | 2–5 | 1–4 | yes | no | 3 |
-| 3 | give, howMany | 3–7 | 2–6 | no | no | 3 |
+| Level | types | give | howMany | share | auto | slots | rounds |
+|---|---|---|---|---|---|---|---|
+| 1 | give, share | 1–3 | — | 2–3 | yes | yes | 3 |
+| 2 | give, howMany, share | 2–5 | 1–4 | 2–4 | yes | no | 3 |
+| 3 | give, howMany, share | 3–7 | 2–6 | 3–4 | no | no | 3 |
 
-- **types** — round kinds, taking turns: `give` ("Daj mu trzy smakołyki!": move the treats from the pile to Chase — drag them, or tap one and it hops over) and
+- **types** — round kinds, taking turns: `give` ("Daj mu trzy smakołyki!": move the treats from the pile to Chase — drag them, or tap one and it hops over),
   `howMany` ("Ile smakołyków?": count the bones, tapping them counts aloud, then pick the numeral; wrong
-  choices are ±1)
-- **give** / **howMany** — the number ranges (give up to 10, howMany up to 9; `—` if unused)
+  choices are ±1) and `share` (Chase and kittens wait at their plates, "Każdy dostaje jeden smakołyk!": she
+  taps whoever is still hungry; one treat each, counted aloud)
+- **give** / **howMany** / **share** — the number ranges (give up to 10, howMany up to 9, share 2–4 friends; `—` if unused)
 - **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
 - **slots** — `yes`: ghost spots show where the treats go (○ ○ ○) · `no`: no spots (help shows them)
   (too many: he gives one back; too few: "jeszcze!") · **rounds** — how many tasks (1–8)
@@ -188,19 +192,25 @@ Counting for real, at Chase's pup house.
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; floors are
-counted aloud on the way up. At the end: to the very top, the alarm, and down the slide!
+counted aloud on the way. Lost kittens wait on the floors: each ride picks one up, and at the end
+everyone goes to the very top and down the slide together!
 
 | Level | max | bubble | mode | rounds |
 |---|---|---|---|---|
-| 1 | 3 | both | go | 1 |
-| 2 | 5 | numeral | go | 1 |
-| 3 | 7 | numeral | relative | 2 |
+| 1 | 3 | both | pickup | 2 |
+| 2 | 5 | numeral | pickup | 3 |
+| 3 | 5 | numeral | find | 3 |
+| 4 | 7 | numeral | relative | 2 |
 
 - **max** — number of floors (2–9)
 - **bubble** — `both`: numeral + dots · `numeral`
-- **mode** — `go`: "Jedziemy na piętro trzy" and back down each time ·
+- **mode** — `pickup`: a kitten waits on a floor, "Kotek czeka na piętrze dwa!" (the number in the bubble);
+  the elevator goes there from wherever it is, counting up or down · `find`: a kitten waits on a floor, "Na
+  którym piętrze czeka kotek?" (only the kitten in the bubble: she reads the floor's sign) ·
+  `go`: "Jedziemy na piętro trzy" and back down each time (the session finale) ·
   `relative`: "We're on floor 3 — go one floor up/down" (one more / one less; needs 3+ floors and 2+ rounds)
-- **rounds** — how many elevator trips (1–8)
+- **rounds** — how many elevator trips (1–8); `pickup` and `find` need more floors than trips (each kitten waits
+  on a floor of its own). After the last trip everyone goes to the top and down the slide, kittens too.
 
 ### 📦 Pup Delivery · `delivery`
 

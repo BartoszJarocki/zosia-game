@@ -118,6 +118,9 @@ export const T = {
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
   spellWord: (w) => [`${sayWord(w)}!`],
+  // what a finished word turns into (Name Train): her name, or one of these
+  wordPicture: (w) => ({ KOT: ['Kot mówi: miau!'], DOM: ['Dom! Tu mieszkamy!'], MAMA: ['Buziaczek dla mamy!'], TATA: ['Buziaczek dla taty!'] })[w]
+    || (w === CONFIG.childName.toUpperCase() ? [`To ty, ${voc}! Twoje imię!`] : []),
   // Name Train V2
   wordStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Pierwsza literka!`],
   nextLetter: () => ['Następna literka!'],
@@ -160,14 +163,29 @@ export const T = {
   liftRel: (cur, up) => [`Jesteśmy na piętrze numer ${NUM[cur]}. Jedź jedno piętro ${up ? 'wyżej' : 'niżej'}!`],
   liftArrived: (n) => [`Piętro numer ${NUM[n]}!`],
   liftTop: () => ['Jedziemy na samą górę! Psi Patrol, gotowi do akcji!'],
+  // the Lookout's lost kittens: one waits on a floor each ride, and they all come down the slide at the end
+  kittensStart: () => ['Kotki zgubiły się w Bazie!'],
+  kittenAt: (n) => [`Kotek czeka na piętrze ${NUM[n]}! Wciśnij ${NUM[n]}!`],
+  kittenWhere: () => ['Na którym piętrze czeka kotek? Wciśnij ten numer!'],
+  kittenLook: () => ['Zobacz numer obok kotka!'],
+  kittenIn: () => ['Hop! Kotek wsiada do windy!', 'Miau! Kotek jest z nami!', 'Hop! Jedziemy razem!'], // (variants: the scene picks one)
+  kittensAll: () => ['Wszystkie kotki są z nami! Jedziemy na samą górę!'],
   slide: () => ['A teraz zjeżdżalnia! Juhuuu!'],
   howMany: () => [`Ile smakołyków ma ${pup}? Policz i dotknij numeru!`],
   giveThenTap: (n) => [`Daj ${pupDat} ${NUM[n]} ${treats(n)}, a potem dotknij ${pupGen}!`],
   tapPupWhenDone: () => [`Gotowe? Dotknij ${pupGen}!`],
   treatsGive: (n) => [`${pup} jest głodny! Daj mu ${NUM[n]} ${treats(n)}!`],
   dragTreat: () => [`Przesuń smakołyk do ${pupGen}!`],
+  tapTreat: () => ['Dotknij smakołyka!'], // (the clue: a tap is enough, it hops over by itself)
   tooMany: () => ['Oj, za dużo! Jeden oddaję.'],
   tooFew: () => ['Za mało! Jeszcze!'],
+  // Treat House "share": everyone gets one
+  shareStart: (n) => [`${pup} i ${n === 2 ? 'kotek' : 'kotki'} są głodne! Każdy dostaje jeden smakołyk!`], // (animals: the non-personal plural)
+  shareRule: () => ['Każdy dostaje jeden smakołyk!'],
+  shareWho: () => ['Kto jeszcze nie ma smakołyka?'],
+  shareHasOne: () => ['Nie, ten już ma!'],
+  shareDone: () => ['Każdy ma jeden!'],
+  shareYum: () => ['Mniam, mniam! Dziękujemy!'],
 };
 
 /**
@@ -182,8 +200,9 @@ export function allSegments(levels, allLetters) {
   const maxLevels = Math.max(...Object.values(levels).map((l) => l.length));
   const out = [];
   const add = (segs) => out.push(...segs);
-  nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
+  nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); add(T.kittenAt(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.conesWhich(n, true)); add(T.conesWhich(n, false)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
+  [2, 3, 4].forEach((n) => add(T.shareStart(n)));
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.letterLike(l)); add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -191,11 +210,11 @@ export function allSegments(levels, allLetters) {
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   // Pup Delivery: every letter its levels can ask
   new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.letterLike(l)); });
-  words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); });
+  words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); add(T.wordPicture(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
-    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide,
+    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,

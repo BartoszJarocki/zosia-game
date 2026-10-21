@@ -14,7 +14,12 @@ test('rounds: read from the table, short missions as in the brief', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
   assert.ok(levels.letters.every((l) => l.rounds >= 3 && l.rounds <= 5));
   assert.ok(levels.stones.every((l) => l.rounds <= 2));
-  assert.ok(levels.lookout.every((l) => l.rounds <= 2));
+  assert.deepEqual(levels.lookout.map((l) => [l.mode, l.rounds]), [['pickup', 2], ['pickup', 3], ['find', 3], ['relative', 2]]); // her favourite: a few more rides
+});
+
+test('Lookout kittens: each ride a different floor, so there must be more floors than rides', () => {
+  assert.match(only(parseGame(table('max | bubble | mode | rounds', '3 | both | pickup | 3'), {})).errors[0], /more floors than rounds/);
+  assert.deepEqual(only(parseGame(table('max | bubble | mode | rounds', '4 | numeral | find | 3'), {})).errors, []);
 });
 
 // a one-mission file: only look at that mission's errors (the rest of GAME.md is missing on purpose)

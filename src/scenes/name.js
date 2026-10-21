@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { animate, ease, hop, wait } from '../engine.js';
-import { makeTrain, rbox, mat, mesh } from '../models.js';
-import { makePlatform, makeStationHouse, makeLamp } from '../world/props.js';
-import { dust } from '../fx/particles.js';
+import { makeTrain, makeKitten, rbox, mat, mesh } from '../models.js';
+import { makePlatform, makeStationHouse, makeLamp, makeHouse } from '../world/props.js';
+import { dust, sparkle } from '../fx/particles.js';
 import { glyphTexture, labelTexture, TILE_COLORS } from '../textures.js';
 import { CONFIG, showLetter } from '../config.js';
 import { say, sfx } from '../audio.js';
@@ -20,7 +20,17 @@ import { Mission } from './mission.js';
 //   word       the whole word in the bubble, wagons empty: which letter comes next?
 //   missing    the train arrives loaded, one letter missing (Z O _ I A): which one?
 //   highlight  the whole word in the bubble with the next letter lit (for new words)
-// At the end the letters are said one by one, then the word, and the train drives off (that's the reward).
+// At the end the letters are said one by one, then the word, the word turns into its thing (PICTURES), and the
+// train drives off (that's the reward).
+
+// What a finished word turns into: a picture in the bubble and something in the scene. Her name: she cheers.
+const PICTURES = {
+  KOT: { pic: '🐱', show: (m) => m.kittenRides() },
+  DOM: { pic: '🏠', show: (m) => m.houseAppears() },
+  MAMA: { pic: '❤️', show: (m) => m.heartFloats() },
+  TATA: { pic: '❤️', show: (m) => m.heartFloats() },
+};
+const NAME_PICTURE = { pic: '👧', show: (m) => m.girlCheers() };
 export class NameMission extends Mission {
   constructor(game) {
     super(game, 'name');
@@ -202,6 +212,57 @@ export class NameMission extends Mission {
     });
   }
 
+  /** KOT: a kitten pops up on the last wagon and rides off with the train. */
+  kittenRides() {
+    const k = makeKitten();
+    k.scale.setScalar(0.95);
+    const slot = this.train.userData.slots[this.word.length - 1].clone().add(new THREE.Vector3(0, 0.64, 0)); // on top of the last block
+    this.train.updateMatrixWorld(true);
+    k.position.copy(this.train.localToWorld(slot));
+    this.scene.add(k);
+    this.train.attach(k);
+    k.rotation.set(0, Math.PI, 0); // (the train is turned round: face the camera; attach() can leave x and z at π)
+    this.onUpdate((dt, t) => k.userData.idle(t));
+    sfx.meow();
+    hop(k, 0.8, 500);
+    sparkle(this, k.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.6, 0)), { count: 14 });
+  }
+  /** DOM: a little house pops up on the platform. */
+  houseAppears() {
+    const h = makeHouse('#bfdbfe', '#ef4444');
+    h.scale.setScalar(0.75);
+    h.position.set(-6.6, 0.5, -4.6); // on the platform, where the train is about to go
+    this.scene.add(h);
+    this.dropIn(h, 0.5, 0, 700).then(() => { sfx.boing(); sparkle(this, h.position.clone().add(new THREE.Vector3(0, 1.8, 0)), { count: 18 }); });
+  }
+  /** MAMA / TATA: a big heart floats up from the train. */
+  heartFloats() {
+    const s = new THREE.Shape();
+    s.moveTo(0, -0.5);
+    s.bezierCurveTo(-0.9, 0.1, -0.5, 0.75, 0, 0.35);
+    s.bezierCurveTo(0.5, 0.75, 0.9, 0.1, 0, -0.5);
+    const heart = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.25, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 3 }),
+      new THREE.MeshStandardMaterial({ color: '#f43f5e', emissive: '#f43f5e', emissiveIntensity: 0.35, roughness: 0.35 }));
+    heart.position.set(0, 2, -1);
+    this.scene.add(heart);
+    sfx.pop();
+    animate(2600, (t) => {
+      heart.position.y = 2 + t * 2.2;
+      heart.scale.setScalar((0.4 + Math.min(1, t * 3) * 0.9) * (1 + Math.sin(t * Math.PI * 6) * 0.06));
+      heart.rotation.y = Math.sin(t * Math.PI * 2) * 0.3;
+    }, ease.out).then(() => this.shrinkAway(heart, 300));
+  }
+  /** Her name: she cheers and jumps, sparkles all round. */
+  async girlCheers() {
+    const to = new THREE.Vector3(-this.view.minWidth / 2 + 3.2, 0, 3); // a hop into view first
+    this.walking = true;
+    await this.jumpTo(this.girl, to, { height: 0.9, ms: 520 });
+    this.walking = false;
+    this.cheer(2.5);
+    this.girl.userData.setHappy(3);
+    sparkle(this, to.clone().add(new THREE.Vector3(0, 1.8, 0)), { count: 22 });
+  }
+
   async outro() {
     await wait(300);
     // spell it together, letter by letter
@@ -214,10 +275,18 @@ export class NameMission extends Mission {
       await say(T.letter(letter));
     }
     if (!this.alive) return;
-    ui.hideBubble();
+    const picture = PICTURES[this.word] || (this.word === CONFIG.childName.toUpperCase() ? NAME_PICTURE : null);
+    const all = [...this.word].map((_, i) => i);
+    ui.bubble({ word: [...this.word].map(showLetter).join(''), done: all, pic: picture?.pic || '', onTap: () => {} });
     this.success(null, { big: true });
     await say([...T.spellWord(this.word), this.praise()]);
     if (!this.alive) return;
+    ui.hideBubble(); // (the picture rises where the bubble was)
+    if (picture) {
+      picture.show(this);
+      await say(T.wordPicture(this.word));
+      if (!this.alive) return;
+    }
     sfx.toot();
     this.trainSpeed = 0.35;
     this.ghosts.forEach((g) => g.removeFromParent());

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { animate, ease, wait, hop } from '../engine.js';
-import { mat, mesh, rbox, cyl, sphere } from '../models.js';
+import { mat, mesh, rbox, cyl, sphere, makeKitten } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { makeLookout } from '../world/props.js';
 import { sparkle, dust } from '../fx/particles.js';
@@ -8,6 +8,7 @@ import { discTexture, TILE_COLORS } from '../textures.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { T } from '../lang/pl.js';
+import { pick } from '../util.js';
 import { Mission, EASY_MIX } from './mission.js';
 import { getSession } from '../session/session.js';
 import { nextStep } from '../session/director.js';
@@ -16,10 +17,15 @@ const LZ = -2;              // where the Lookout stands
 const CAR_Z = LZ + 1.75;    // the glass elevator rides up its front
 const Y0 = 3.0, YTOP = 7.45; // car floor at the ground floor / top floor (just under the pod)
 const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
+const LEDGE_X = 2.2;        // each floor's little balcony, right of the shaft, where a kitten waits
+const FUR = ['#fb923c', '#9ca3af', '#f5f5f4', '#57534e'];
+const SEATS = [[-0.48, 0.34], [0, 0.38], [0.48, 0.34]]; // kittens ride at the front of the car
 
 // "Baza" (the Lookout): ride the glass elevator. Press the floor button; the floors are counted
-// aloud on the way up. At the end: to the very top, and down the slide!
-//  L1 floors 1–3 (numeral + dots) · L2 floors 1–5 · L3 floors 1–7, "we're on 3 — one floor up/down!"
+// aloud on the way. At the end: to the very top, and down the slide!
+//  pickup: a lost kitten waits on a floor ("Kotek czeka na piętrze dwa!"); the elevator goes there from wherever
+//          it is and the kitten hops in · find: the same, but only the kitten is in the bubble: she reads the
+//          number next to it · relative: "we're on 3 — one floor up/down!" · go: up and back down (the finale)
 //
 // Session finale mode (when the session director says the finale is due — the hub's alarm called her here):
 // the alarm is on, ONE easy ride (floors 1–3, numeral + dots, a number she knows), floors counted aloud,
@@ -37,12 +43,16 @@ export class LookoutMission extends Mission {
       this.doneLine = T.finaleDone;
     }
     this.N = this.L.max;
-    this.view = { pos: new THREE.Vector3(2.4, 5.4, 13), look: new THREE.Vector3(2.4, 4.2, CAR_Z), minWidth: 11.5 };
+    this.view = { pos: new THREE.Vector3(1.6, 5.4, 13), look: new THREE.Vector3(1.6, 4.2, CAR_Z), minWidth: 11.5 };
+    this.bubbleAt = 'left'; // the middle of the view is the balconies, where the kittens wait
     this.post = { tilt: 0.3, focus: 0.5, band: 0.36 };
     this.drift = 0.06;
     this.floor = 0;
     this.pupRides = true;
     this.follow = 'car';
+    this.kittens = []; // the ones riding with us
+    this.waiting = null; // the kitten on a balcony, waiting to be picked up
+    this.visited = [];
   }
 
   floorY(f) { return Y0 + (YTOP - Y0) * (f / this.N); }
@@ -66,6 +76,7 @@ export class LookoutMission extends Mission {
       s.userData.top = top;
       this.scene.add(s);
       this.scene.add(mesh(rbox(0.5, 0.06, 0.06, 0.02), metal, { x: 1.1, y: this.floorY(f) + 0.72, z: CAR_Z - 0.4 }));
+      this.scene.add(mesh(rbox(1.0, 0.12, 0.8, 0.04), mat('#1f55c9', { roughness: 0.4 }), { x: LEDGE_X, y: this.floorY(f) - 0.06, z: CAR_Z - 0.25 })); // a balcony
       return s;
     });
 
@@ -117,6 +128,7 @@ export class LookoutMission extends Mission {
     const p = new THREE.Vector3();
     this.onUpdate((dt, t) => {
       (this.follow === 'riders' ? this.girl : this.car).getWorldPosition(p);
+      if (this.waiting && this.follow === 'car') p.y = (p.y + this.waiting.position.y) / 2; // the car and the kitten both in view
       const ty = Math.max(3.4, p.y + (this.follow === 'riders' ? 0.6 : 1.1));
       const k = Math.min(1, dt * 3);
       this.view.look.y += (ty - this.view.look.y) * k;
@@ -166,8 +178,38 @@ export class LookoutMission extends Mission {
     animate(400, (t) => s.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.3), ease.linear);
   }
 
+  /** A lost kitten pops up on floor f's balcony. */
+  kittenOn(f) {
+    const k = makeKitten(FUR[this.kittens.length % FUR.length]);
+    k.scale.setScalar(0.62);
+    k.position.set(LEDGE_X, this.floorY(f), CAR_Z - 0.2);
+    k.rotation.y = -0.35;
+    this.scene.add(k);
+    this.onUpdate((dt, t) => k.userData.idle(t));
+    this.dropIn(k, this.floorY(f), 0, 600).then(() => {
+      sfx.meow();
+      sparkle(this, k.position.clone().add(new THREE.Vector3(0, 0.4, 0)), { count: 10, size: 0.1 });
+      if (this.waiting === k) this.tappable(k, () => { sfx.meow(); hop(k, 0.25, 350); }); // (once it has landed: a hop mid-drop would leave it in the air)
+    });
+    return k;
+  }
+  /** The car is at the kitten's floor with the doors open: in it hops. */
+  async kittenHopsIn(k) {
+    this.untap(k);
+    this.waiting = null;
+    const [x, z] = SEATS[this.kittens.length % SEATS.length];
+    const seat = this.car.localToWorld(new THREE.Vector3(x, 0.14, z));
+    sfx.meow();
+    const s0 = k.scale.x;
+    await Promise.all([this.jumpTo(k, seat, { height: 0.7, ms: 520 }), animate(520, (t) => { k.scale.setScalar(s0 + (0.38 - s0) * t); k.rotation.y = -0.35 * (1 - t); })]);
+    this.car.attach(k);
+    this.kittens.push(k);
+    sfx.boing();
+  }
+
   round(r) {
     if (!this.panel) this.panel = ui.liftPanel({ floors: this.N, onPress: (f) => this.onPress?.(f) });
+    if (this.L.mode === 'pickup' || this.L.mode === 'find') return this.kittenRound(r);
     const relative = this.L.mode === 'relative' && r > 0;
     return new Promise((resolve) => {
       let target, up = true;
@@ -238,11 +280,71 @@ export class LookoutMission extends Mission {
     });
   }
 
+  // ---------- lost kittens: one waits on a floor each ride ----------
+  kittenRound(r) {
+    const find = this.L.mode === 'find';
+    return new Promise((resolve) => {
+      const target = this.pick('numeral', range(1, this.N).filter((f) => f !== this.floor && !this.visited.includes(f)));
+      this.visited.push(target);
+      this.last = target;
+      this.item('N:' + target);
+      const k = (this.waiting = this.kittenOn(target));
+      let busy = false, revealed = false;
+      const showNumber = () => { revealed = true; ui.bubble({ big: String(target), dots: target, pic: '🐱', onTap: () => this.replay() }); this.prompt = T.liftPress(target); };
+      if (find) ui.bubble({ big: '?', pic: '🐱', onTap: () => this.replay() });
+      else ui.bubble({ big: String(target), dots: this.L.bubble === 'both' ? target : 0, pic: '🐱', onTap: () => this.replay() });
+      this.question('numeral', target, {
+        short: () => (find && !revealed ? T.kittenWhere() : T.liftPress(target)),
+        hint: () => { // find: the sign next to the kitten pulses; otherwise the dots appear
+          if (!find) { showNumber(); return T.dots(target); }
+          this.lightSign(target);
+          return T.kittenLook();
+        },
+        simplify: () => showNumber(),
+        reveal: () => this.panel.hint(target),
+      });
+
+      this.onPress = async (f) => {
+        if (busy) return;
+        this.poke();
+        this.lookAt(this.signs[f - 1] || this.car);
+        if (f !== target) { this.wrong(f); this.panel.nope(f); return; }
+        busy = true;
+        this.correct(f);
+        this.stopIdle();
+        this.panel.light(f);
+        this.panel.lock(true);
+        sfx.pop();
+        await this.doorsTo(false);
+        await this.ride(target);
+        if (!this.alive) return;
+        sfx.ding();
+        this.lightSign(target);
+        await this.doorsTo(true);
+        this.success(this.car.position.clone().add(new THREE.Vector3(0, 1.7, 0.6)));
+        await say([this.praise(), ...T.liftArrived(target)]);
+        if (!this.alive) return;
+        await this.kittenHopsIn(k);
+        await say([pick(T.kittenIn())]); // (one of the variants)
+        if (!this.alive) return;
+        this.panel.clear();
+        this.panel.lock(false);
+        resolve();
+      };
+
+      wait(r === 0 ? 900 : 400).then(() => {
+        if (!this.alive) return;
+        const ask = find ? T.kittenWhere() : T.kittenAt(target);
+        this.ask(r === 0 ? [...T.kittensStart(), ...ask] : ask);
+      });
+    });
+  }
+
   async outro() {
     ui.hideBubble();
     this.panel?.lock(true);
     await this.doorsTo(false);
-    say(T.liftTop());
+    say(this.kittens.length ? T.kittensAll() : T.liftTop());
     await this.ride(this.N, { count: false });
     if (!this.alive) return;
     sfx.siren(2);
@@ -258,8 +360,8 @@ export class LookoutMission extends Mission {
     sparkle(this, this.car.position.clone().add(new THREE.Vector3(0, 1, 0)), { count: 20 });
     this.panel?.remove();
     this.panel = null;
-    for (const c of [this.girl, this.pup]) { this.car.remove(c); this.scene.add(c); c.scale.setScalar(0.5); }
-    this.girl.position.copy(at(0)); this.pup.position.copy(at(0));
+    const riders = [this.girl, this.pup, ...this.kittens];
+    for (const c of riders) { this.car.remove(c); this.scene.add(c); c.scale.setScalar(c === this.girl || c === this.pup ? 0.5 : 0.42); c.position.copy(at(0)); }
     this.follow = 'riders';
     await say(T.slide());
     if (!this.alive) return;
@@ -267,21 +369,22 @@ export class LookoutMission extends Mission {
     this.pup.userData.setHappy(5);
     sfx.whoosh();
     const tan = new THREE.Vector3();
-    await animate(4200, (k) => {
-      const tg = Math.min(1, k), tp = Math.max(0, k - 0.06);
-      this.girl.position.copy(at(tg)).add(new THREE.Vector3(0, 0.22, 0));
-      this.pup.position.copy(at(tp)).add(new THREE.Vector3(0, 0.22, 0));
-      curve.getTangentAt(Math.min(0.999, tg), tan);
-      this.girl.rotation.y = Math.atan2(tan.x, tan.z);
-      curve.getTangentAt(Math.min(0.999, tp), tan);
-      this.pup.rotation.y = Math.atan2(tan.x, tan.z);
+    const lag = 0.06, span = 1 + lag * (riders.length - 1); // one after another, a little apart, all the way down
+    await animate(4200 + 250 * (riders.length - 2), (k) => {
+      riders.forEach((c, i) => {
+        const tc = Math.min(1, Math.max(0, k * span - lag * i));
+        c.position.copy(at(tc)).add(new THREE.Vector3(0, 0.22, 0));
+        curve.getTangentAt(Math.min(0.999, tc), tan);
+        c.rotation.y = Math.atan2(tan.x, tan.z);
+      });
     }, (t) => t * t * (3 - 2 * t));
     if (!this.alive) return;
     // land on the grass, run out a little, celebrate
     const land = at(1).add(new THREE.Vector3(-0.9, 0, 0.6));
     land.y = 0;
     sfx.boing();
-    await Promise.all([this.jumpTo(this.girl, land, { height: 0.8, ms: 420 }), this.jumpTo(this.pup, land.clone().add(new THREE.Vector3(1.1, 0, 0.2)), { height: 0.7, ms: 480 })]);
+    await Promise.all([this.jumpTo(this.girl, land, { height: 0.8, ms: 420 }), this.jumpTo(this.pup, land.clone().add(new THREE.Vector3(1.1, 0, 0.2)), { height: 0.7, ms: 480 }),
+      ...this.kittens.map((c, i) => { c.rotation.y = 0; sfx.meow(); return this.jumpTo(c, land.clone().add(new THREE.Vector3(-0.8 + i * 0.75, 0, 1.2)), { height: 0.6, ms: 420 + i * 90 }); })]);
     dust(this, land, { count: 6 });
     this.girl.rotation.y = 0.3;
     this.pup.rotation.y = -0.2;

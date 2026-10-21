@@ -84,6 +84,7 @@ const options = () => st((kind) => {
     else if (u.num !== undefined && (kind !== 'cones' || u.sign)) out.push({ label: String(u.num), ...proj(o, kind === 'cones' ? 2.7 : 0.3), right: u.num === s.last, at: [+o.position.x.toFixed(2), +o.position.z.toFixed(2)] });
     else if (kind === 'picnic' && o.geometry?.type === 'BoxGeometry' && o.material?.visible === false) out.push({ label: o.position.x < 0 ? 'left' : 'right', ...proj(o, -0.4), right: null });
     else if (kind === 'counting' && u.drag) out.push({ label: 'bone', ...proj(o, 0.2), right: true });
+    else if (kind === 'counting' && u.hungry !== undefined) out.push({ label: 'plate', ...proj(o, 0), right: u.hungry });
   }
   return out;
 }, kind);
@@ -144,6 +145,8 @@ for (let r = 0; r < 8; r++) {
     await tap(a, 'picnic: try left'); await page.waitForTimeout(900);
     const ev = await st(() => window.__pup.learning.recent(1)[0]);
     if (!ev?.correct) { await page.waitForTimeout(1500); await tap(b, 'picnic: then right'); }
+  } else if (kind === 'counting' && now.label === 'plate') {
+    for (let i = 0; i < 5; i++) { const p = (await options()).find((o) => o.label === 'plate' && o.right); if (!p) break; await tap(p, `plate ${i + 1}`); await page.waitForTimeout(800); }
   } else if (kind === 'counting' && now.label === 'bone') {
     const n = Number(q.item);
     for (let i = 0; i < n; i++) { const b = (await options()).find((o) => o.label === 'bone'); if (!b) break; await tap(b, `treat ${i + 1}/${n}`); await page.waitForTimeout(700); }

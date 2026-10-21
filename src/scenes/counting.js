@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { animate, ease, hop, wait } from '../engine.js';
-import { makeBone, pawBadge, rbox, mat, mesh } from '../models.js';
+import { makeBone, makeKitten, pawBadge, rbox, mat, mesh } from '../models.js';
 import { makeBush, makeTree } from '../world/nature.js';
 import { makePupHouse, makeFence } from '../world/props.js';
 import { sparkle } from '../fx/particles.js';
@@ -18,6 +18,7 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 //  give    – "give Chase N treats": move treats from the pile to Chase (drag, or tap one), one by one, onto a
 //            ten-frame (rows of 5). Ghost spots early; later she decides when to stop and taps Chase.
 //  howMany – bones are already there: count them (tap to count) and pick the numeral. Wrong choices are ±1.
+//  share   – Chase and kittens wait at their plates: she taps whoever is still hungry. One treat each.
 export class CountingMission extends Mission {
   constructor(game) {
     super(game, 'counting');
@@ -115,7 +116,7 @@ export class CountingMission extends Mission {
 
   round(r) {
     const type = this.L.types[r % this.L.types.length];
-    return type === 'howMany' ? this.howManyRound() : this.giveRound();
+    return type === 'howMany' ? this.howManyRound() : type === 'share' ? this.shareRound() : this.giveRound();
   }
 
   // ---------- "give Chase N treats" ----------
@@ -159,13 +160,16 @@ export class CountingMission extends Mission {
       const short = () => (count() === 0 ? T.dragTreat() : !auto && count() >= n ? T.tapPupWhenDone() : T.treatsDone(n));
       this.question('counting', n, {
         short,
-        hint: () => { // the spots still to fill light up softly
+        hint: () => { // the spots still to fill light up softly; nothing given yet: a treat hops ("tap me")
           if (!marked) {
             marked = true;
             if (ghost) slots.slice(count(), n).forEach((s) => { s.visible = true; s.material.color.set(PALE); });
             else this.showSpots(count(), n, auto ? n : spotsN);
           }
-          return short();
+          if (count() > 0) return short();
+          const b = pile.find((x) => !given.includes(x));
+          if (b) hop(b, 0.5, 400);
+          return T.tapTreat();
         },
         reveal: () => { const next = pile.find((b) => !given.includes(b)); const c0 = count(); if (next && count() < n) this.hint(next, () => done || count() > c0); },
       });
@@ -185,7 +189,7 @@ export class CountingMission extends Mission {
         landed.push(animate(420, (t) => {
           bone.position.lerpVectors(from, to, t);
           bone.position.y += Math.sin(t * Math.PI) * 0.9;
-        }, ease.inOut).then(() => { bone.rotation.set(0, 0.3, 0); sfx.crunch(); if (slots[i]) slots[i].material.color.set(FULL); }));
+        }, ease.inOut).then(() => { bone.rotation.set(0, 0.3, 0); sfx.crunch(); if (slots[i]) slots[i].material.color.set(FULL); this.pupWags(); }));
         say(T.number(count()));
         if (auto && count() === n) { finish(); return; }
         if (!auto) this.pupGlow(true); // "tap Chase when you're done" comes from the quiet-time help
@@ -249,6 +253,100 @@ export class CountingMission extends Mission {
       this.spots.push(s);
     }
     sfx.pop();
+  }
+
+  /** A treat landed by Chase: a little hop and a happy face, every time. */
+  pupWags() {
+    this.pup.userData.setHappy(0.8);
+    hop(this.pup, 0.22, 280);
+  }
+
+  // ---------- "everyone gets one" ----------
+  // Chase and one to three kittens wait at their plates; she taps whoever is still hungry and a treat flies over,
+  // counted aloud. One for each: one-to-one counting. Tapping one who already has a treat is a wrong answer.
+  shareRound() {
+    return new Promise((resolve) => {
+      const [lo, hi] = this.L.share;
+      const n = this.pick('counting', range(lo, hi));
+      this.last = n;
+      this.item('Q:' + n);
+      const seats = [[1.6, -1.3], [-0.3, -0.8], [3.7, -0.3], [-2.1, -0.4]]; // Chase's spot first
+      const friends = seats.slice(0, n).map(([x, z], i) => {
+        const obj = i === 0 ? this.pup : makeKitten(['#fb923c', '#9ca3af', '#f5f5f4'][i - 1]);
+        let landed = Promise.resolve();
+        if (i > 0) {
+          obj.scale.setScalar(1.25);
+          obj.position.set(x, 0, z);
+          this.scene.add(obj);
+          this.onUpdate((dt, t) => obj.userData.idle(t));
+          landed = this.dropIn(obj, 0, 150 + i * 220, 600).then(() => sfx.meow());
+        }
+        const plate = mesh(new THREE.CylinderGeometry(0.42, 0.36, 0.08, 28), mat('#ffffff', { roughness: 0.4 }), { x, y: 0.06, z: z + 1.05 });
+        plate.userData.tapHeight = 0;
+        plate.userData.hungry = true;
+        this.scene.add(plate);
+        return { obj, plate, landed, kitten: i > 0, fed: false, bone: null };
+      });
+      let done = false;
+      const fed = () => friends.filter((f) => f.fed).length;
+      const flights = [];
+      const hungryHop = () => friends.filter((f) => !f.fed).forEach((f, i) => wait(i * 160).then(() => { hop(f.obj, 0.35, 320); if (f.kitten) sfx.meow(); else sfx.bark(); }));
+      this.question('counting', n, {
+        short: T.shareRule(),
+        hint: () => { hungryHop(); return T.shareWho(); },
+        simplify: () => { hungryHop(); },
+        reveal: () => { const f = friends.find((x) => !x.fed); if (f) this.hint(f.obj, () => f.fed || done); },
+      });
+
+      const feed = (f) => {
+        if (done) return;
+        this.poke();
+        this.lookAt(f.obj);
+        if (f.fed) { this.wrong('fed', { obj: f.obj, said: T.shareHasOne() }); return; }
+        f.fed = true;
+        f.plate.userData.hungry = false;
+        const { bone, flight } = this.flyBone(f.plate.position.clone().setY(0.16));
+        f.bone = bone;
+        flights.push(Promise.all([flight, f.landed]).then(() => { f.obj.userData.setHappy?.(0.8); hop(f.obj, 0.3, 300); if (f.kitten) sfx.meow(); })); // (a hop mid-drop would leave it in the air)
+        say(T.number(fed()));
+        if (fed() === n) finish();
+      };
+      for (const f of friends) {
+        if (f.kitten) this.tappable(f.obj, () => feed(f));
+        this.tappable(f.plate, () => feed(f));
+      }
+      this.onPup = () => feed(friends[0]);
+
+      const finish = async () => {
+        done = true;
+        this.correct(n);
+        this.stopIdle();
+        this.onPup = null;
+        friends.forEach((f) => { this.untap(f.plate); if (f.kitten) this.untap(f.obj); });
+        await Promise.all(flights);
+        await wait(250);
+        if (!this.alive) return;
+        sfx.good();
+        this.success(this.pup.position.clone().add(new THREE.Vector3(0, 2.2, 0)));
+        await say([...T.shareDone(), ...T.treatsDone(n), this.praise()]);
+        if (!this.alive) return;
+        // everyone eats at once
+        await Promise.all(friends.map((f) => {
+          const mouth = f.obj.position.clone().add(new THREE.Vector3(0, f.kitten ? 0.9 : 1.3, 0.5));
+          const p0 = f.bone.position.clone();
+          return animate(260, (t) => { f.bone.position.lerpVectors(p0, mouth, t); f.bone.scale.setScalar(1.1 * (1 - t) + 0.001); }, ease.in)
+            .then(() => { f.bone.removeFromParent(); sfx.crunch(); hop(f.obj, 0.5, 380); });
+        }));
+        this.pup.userData.setHappy(2);
+        await say(T.shareYum());
+        if (!this.alive) return;
+        await Promise.all(friends.flatMap((f) => (f.kitten ? [f.obj, f.plate] : [f.plate])).map((x) => this.shrinkAway(x, 300)));
+        resolve();
+      };
+
+      ui.bubble({ dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true });
+      wait(500 + n * 220).then(() => { if (this.alive) this.ask(T.shareStart(n)); });
+    });
   }
 
   pupGlow(on) {

@@ -42,6 +42,6 @@ for (const r of rows) {
   console.log(`\n## ${r.name}: ${r.questions} questions, ${r.minutes} min, ${r.talkBeforeFirstQ} s of talk before the first question, ${r.cut} clips cut off, ${r.singleChoice} questions with one option, ${r.errors} errors`);
   console.log(`   right tap → first word "${r.rightFirst}", ${JSON.stringify(r.rightSay)}`);
   console.log(`   wrong tap → first word "${r.wrongFirst}", ${JSON.stringify(r.wrongSay)}, sounds ${r.wrongSounds.join(' ')}, object moved ${r.motion}`);
-  console.log(`   20 s hesitation → ${r.hesitation.length} lines ${JSON.stringify(r.hesitation)}`);
+  console.log(`   20 s hesitation → ${r.hesitation.length} lines ${JSON.stringify(r.hesitation)}${new Set(r.hesitation).size < r.hesitation.length ? ' REPEATS A LINE' : ''}`);
   if (r.hops.hops) console.log(`   river → ${r.hops.hops} hops, ${r.hops.back} backwards, ${r.hops.sideways} mostly sideways`);
 }

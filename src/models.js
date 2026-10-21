@@ -127,9 +127,9 @@ export function pawBadge(color = '#dc2626') {
   return p;
 }
 
-export function makeKitten() {
+export function makeKitten(fur = '#fb923c') {
   const k = new THREE.Group();
-  const orange = mat('#fb923c');
+  const orange = mat(fur);
   const cream = mat('#fff1e0');
   const black = mat('#1d130b', { roughness: 0.3 });
   const white = mat('#ffffff');

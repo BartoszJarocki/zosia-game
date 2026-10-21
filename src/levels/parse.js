@@ -55,9 +55,10 @@ export const SCHEMA = {
     foils: { type: 'enum', values: ['far', 'near'], optional: true, default: 'far' }, // the other numbers in a row
   },
   counting: {
-    types: { type: 'list', values: ['give', 'howMany'] },
+    types: { type: 'list', values: ['give', 'howMany', 'share'] },
     give: { type: 'range', min: 1, max: 10 },
     howMany: { type: 'range', min: 1, max: 9, optional: true },
+    share: { type: 'range', min: 2, max: 4, optional: true }, // friends at the table: Chase and kittens
     auto: { type: 'bool' },
     slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
@@ -80,7 +81,7 @@ export const SCHEMA = {
   lookout: {
     max: { type: 'int', min: 2, max: 9 },
     bubble: { type: 'enum', values: ['both', 'numeral'] },
-    mode: { type: 'enum', values: ['go', 'relative'] },
+    mode: { type: 'enum', values: ['go', 'pickup', 'find', 'relative'] },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 1 }, // elevator trips
   },
 };
@@ -250,7 +251,9 @@ function crossCheck(kind, s, where, errors) {
   }
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
+  if (kind === 'lookout' && (s.mode === 'pickup' || s.mode === 'find') && s.rounds >= s.max) errors.push(`${where}: "${s.mode}" needs more floors than rounds (a kitten waits on a different floor each time)`);
   if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
   if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
+  if (kind === 'counting' && s.types?.includes('share') && !s.share) errors.push(`${where}: types includes share, so set a share range`);
 }
