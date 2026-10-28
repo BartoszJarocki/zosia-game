@@ -66,7 +66,7 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
 |---|---|---|
 | `pup-patrol-progress` | `{ v: 3, missions: { [kind]: { level, good, lastAcc } }, items: { [prefix+item]: { n, ok } }, skills, sessions }` (see `progress/migrations.js`) | `progress.js` |
 | `pup-patrol-badges` | `{ [kind]: count }` | `ui.js` (`badges`) |
-| `pup-patrol-quality` | `'low' / 'medium' / 'high' / 'medium-locked'` | `fx/post.js` |
+| `pup-patrol-quality-v2` | `'low' / 'medium' / 'high' / 'medium-locked'` | `fx/post.js` (the v1 key is dropped once, because the old watcher could lock it wrongly) |
 
 - Migration exists once: a missing/old `progress` is rebuilt from badge counts (`level = 1 + badges / 2`), so stars are never lost.
 - Writes are synchronous on every change, wrapped in try/catch (private mode etc.).
