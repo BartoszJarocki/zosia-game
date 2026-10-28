@@ -22,6 +22,7 @@ import { confetti } from '../ui.js';
 import { takeUnseen } from '../adventure/rewards.js';
 import { addWorld, addEvent, KITTEN_LAWN } from './hub-world.js';
 import { runMicroReward } from './hub-micro.js';
+import { addToys } from './hub-toys.js';
 import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 
@@ -78,16 +79,16 @@ export class Hub extends Stage {
     s.add(mesh(new THREE.CylinderGeometry(26.4, 27.4, 1, 128), mat('#f4d88f', { roughness: 1 }), { y: -0.55 }));
     s.add(mesh(new THREE.CylinderGeometry(24, 24.8, 1, 128), groundMat('#5dbb4f', 34), { y: -0.44 }));
 
-    // the mainland across the bay + lighthouse + boats
+    // the mainland across the bay + lighthouse + boats (the lighthouse and the back of the bay are in view: toys)
     s.add(makeHills({ radius: 105, count: 16, height: [9, 22], color: '#58b957', seed: 7, trees: detail() > 0.5 }));
     const rock = makeRock({ scale: 4, seed: 3 });
-    rock.position.set(-40, -1, -24);
+    rock.position.set(-22, -1, -27);
     s.add(rock);
     const lh = makeLighthouse();
-    lh.position.set(-40, 1.2, -24);
+    lh.position.set(-22, 1.2, -27);
     lh.scale.setScalar(1.3);
     s.add(lh);
-    [['#ef4444', 44, 0.03], ['#f59e0b', 52, -0.022], ['#8b5cf6', 60, 0.017]].forEach(([c, r, sp], i) => {
+    const boats = [['#ef4444', 36, 0.03], ['#f59e0b', 41, -0.022], ['#8b5cf6', 47, 0.017]].map(([c, r, sp], i) => {
       const b = makeBoat(c);
       b.scale.setScalar(1.4);
       const a0 = i * 2.1;
@@ -99,6 +100,7 @@ export class Hub extends Stage {
         b.rotation.z = Math.sin(t * 1.1 + i) * 0.05;
       };
       s.add(b);
+      return b;
     });
 
     // Lookout
@@ -145,6 +147,7 @@ export class Hub extends Stage {
       s.add(h);
       return h;
     });
+    this.dropToys = addToys(this, { boats, lighthouse: lh, windmill: this.placeGroups.balloons?.windmill, houses });
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
@@ -297,6 +300,7 @@ export class Hub extends Stage {
   }
 
   exit() {
+    this.dropToys?.();
     clearInterval(this.idleTimer);
     clearTimeout(this.holdTimer);
     this.night?.restore(); // (the windows' glass is shared with every scene)
@@ -337,7 +341,7 @@ export class Hub extends Stage {
       marker.lookAt(this.cameraPosition.x, marker.position.y, this.cameraPosition.z);
     });
     // invisible tap zone, so the landmark itself stays plain scenery (and can be merged into a few meshes)
-    const [hr, hh] = p.hit || [3.3, 4.5];
+    const [hr, hh] = p.hit || [3.0, 3.2]; // about the place itself (its star is tappable too)
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(hr, hr, hh, 16), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(p.pos.x, hh / 2, p.pos.z);
     hit.userData.tapHeight = 0;
@@ -640,6 +644,7 @@ function makeBalloonHill() {
   w.position.set(-2.4, 0, -1.8);
   w.scale.setScalar(0.55);
   g.add(w);
+  g.windmill = w; // (a toy: tapping it whirls the sails; not userData, so the hill stays plain scenery)
   return g;
 }
 
