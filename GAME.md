@@ -240,6 +240,7 @@ The post office: Chase delivers parcels. First sounds: which word starts with wh
 | 2 | START | 3 | pictureSound | 4 |
 | 3 | START | 3 | soundLetter | 4 |
 | 4 | MORE | 3 | soundLetter | 4 |
+| 5 | ALL | 3 | soundLetter | 4 |
 
 - **pool** — which letters (their picture words come from `WORDS`, taking turns: K → kot 🐱, then kaczka 🦆)
 - **choices** — how many parcels / mailboxes (2–4)

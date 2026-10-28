@@ -117,7 +117,6 @@ export class DeliveryMission extends Mission {
       const pool = [...this.L.pool].filter((l) => WORDS[l]);
       const target = this.pick('letterSound', pool);
       this.last = target;
-      this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...this.others(target, pool, n - 1)]);
       const pics = Object.fromEntries(opts.map((l) => [l, this.wordFor(l)]));
@@ -175,7 +174,6 @@ export class DeliveryMission extends Mission {
       const pool = [...this.L.pool].filter((l) => WORDS[l]);
       const target = this.pick('letterSound', pool);
       this.last = target;
-      this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const letters = shuffle([target, ...this.others(target, pool, n - 1)]);
       const [said, pic] = this.wordFor(target);
