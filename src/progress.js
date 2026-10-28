@@ -63,14 +63,6 @@ export function recordMission(kind, firstTry, rounds) {
   return { level: levelFor(kind), levelUp, acc };
 }
 
-/** Remember whether a letter/number was got right first time. */
-export function recordItem(id, firstTry) {
-  const it = (state.items[id] ||= { n: 0, ok: 0 });
-  it.n++;
-  if (firstTry) it.ok++;
-  save();
-}
-
 // recently asked items per skill (this session), so the scheduler can avoid repeats across missions too
 const recentBySkill = {};
 

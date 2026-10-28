@@ -12,7 +12,7 @@ import { settingsFor, isLookalike } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
-import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
+import { levelFor, recordMission, pickItem } from '../progress.js';
 import { missionDone, replayed, checkAttention } from '../session/session.js';
 import { onMissionComplete } from '../adventure/rewards.js';
 
@@ -71,13 +71,11 @@ export class Mission extends Stage {
     for (let r = 0; r < this.rounds; r++) {
       if (!this.alive) return;
       this.missed = false;
-      this.roundItem = null;
       this.roundIndex = r;
       await this.round(r);
       this.learn.cancel(); // anything left open in this round is dropped
       if (!this.alive) return;
       if (!this.missed) this.firstTry++;
-      if (this.roundItem) recordItem(this.roundItem, !this.missed);
       this.stopIdle();
       ui.setProgress(r + 1);
       sfx.pop();
@@ -139,7 +137,8 @@ export class Mission extends Stage {
 
   // ----- helpers for subclasses -----
   miss() { this.missed = true; }
-  item(id) { this.roundItem = id; }
+  /** Names what the round was about ('L:B'). Nothing reads it any more (learning events carry skill + item). */
+  item() {}
 
   // ----- learning events (see src/learning/) -----
   /** Choose what to ask next for a skill (adaptive). Numbers in, numbers out. */

@@ -2,7 +2,7 @@
 // Rule: never lose progress. Old fields are kept as they are; new ones get defaults.
 //
 //   v1  { v, missions: { kind: { level, good, lastAcc } }, items: { 'L:B': { n, ok } } }
-//   v2  + skills: { [skill]: { [item]: SkillStat } }  (seeded from the v1 item stats)
+//   v2  + skills: { [skill]: { [item]: SkillStat } }  (seeded from the v1 item stats; items is no longer written)
 //   v3  + sessions: { count, recent: [{ id, startedAt, endedAt, missions: [kind], finale }] }
 //   v4  + world: WorldState (adventure/world.js), seeded from badges so past play shows on the island
 
@@ -41,7 +41,7 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
   const before = JSON.stringify(s);
   if (!s || !Number.isInteger(s.v) || s.v < 1) {
     // nothing usable (first run, or progress from before levels existed): rebuild levels from badges
-    s = { v: 1, missions: {}, items: {} };
+    s = { v: 1, missions: {} };
     for (const [kind, n] of Object.entries(badges || {})) {
       if (n > 0) s.missions[kind] = { level: Math.min(maxLevel(kind), 1 + Math.floor(n / 2)), good: 0, lastAcc: 1 };
     }
@@ -62,7 +62,6 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
   }
   // defaults for anything missing (also protects against hand-edited or partial saves)
   if (!s.missions || typeof s.missions !== 'object') s.missions = {};
-  if (!s.items || typeof s.items !== 'object') s.items = {};
   if (!s.skills || typeof s.skills !== 'object') s.skills = {};
   if (!s.sessions || typeof s.sessions !== 'object') s.sessions = { count: 0, recent: [] };
   if (!Array.isArray(s.sessions.recent)) s.sessions.recent = [];

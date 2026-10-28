@@ -38,6 +38,7 @@ test('migrating twice changes nothing the second time', () => {
 test('no save yet: levels rebuilt from badges, capped at the mission max', () => {
   const { state } = migrate(null, { badges: { letters: 3, balloons: 0, cones: 9 }, maxLevel: (k) => (k === 'cones' ? 3 : 4) });
   assert.equal(state.v, VERSION);
+  assert.equal('items' in state, false, 'the old per-item stats are not written any more');
   assert.equal(state.missions.letters.level, 2);
   assert.equal(state.missions.cones.level, 3);
   assert.equal(state.missions.balloons, undefined);
@@ -48,11 +49,10 @@ test('broken or odd saves never crash and never lose what is there', () => {
   for (const bad of [undefined, 'oops', 42, [], { v: 'x' }, { v: 0 }]) {
     const { state } = migrate(bad);
     assert.equal(state.v, VERSION);
-    assert.ok(state.missions && state.items && state.skills);
+    assert.ok(state.missions && state.skills);
   }
   const partial = migrate({ v: 2, missions: { name: { level: 2, good: 0, lastAcc: 1 } } }).state;
   assert.equal(partial.missions.name.level, 2);
-  assert.deepEqual(partial.items, {});
   assert.deepEqual(partial.skills, {});
 });
 
