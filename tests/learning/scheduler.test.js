@@ -21,16 +21,34 @@ test('one candidate: that one; never the same twice in a row', () => {
   for (let i = 0; i < 200; i++) assert.notEqual(pickLearningItem({ candidates: ['A', 'B'], recent: ['A'], rng }), 'A');
 });
 
-test('the mix roughly follows 50 / 30 / 15 / 5', () => {
+const shares = (candidates, stats, opts = {}) => {
+  const rng = rngFrom(7), counts = { learning: 0, familiar: 0, difficult: 0, new: 0 }, N = 20000;
+  for (let i = 0; i < N; i++) counts[categorize(stats[pickLearningItem({ candidates, stats, rng, ...opts })])]++;
+  return Object.fromEntries(Object.entries(counts).map(([k, n]) => [k, Math.round((100 * n) / N)]));
+};
+
+test('once nearly everything has been asked, the mix follows 50 / 30 / 15 / 5', () => {
+  const stats = {};
+  for (const c of 'ABCDEFG') stats[c] = stat(0.5);   // learning
+  for (const c of 'HIJKLM') stats[c] = stat(0.9);    // familiar
+  for (const c of 'NOPRST') stats[c] = stat(0.1);    // difficult
+  // U is new (1 of 20)
+  const s = shares([...'ABCDEFGHIJKLMNOPRSTU'], stats);
+  for (const k of Object.keys(MIX)) assert.ok(Math.abs(s[k] - MIX[k] * 100) <= 3, `${k}: ${s[k]}% vs ${MIX[k] * 100}%`);
+});
+
+test('while much of the pool is unseen, unseen items get about that share of turns', () => {
   const stats = {};
   for (const c of 'ABCD') stats[c] = stat(0.5);   // learning
   for (const c of 'EFGH') stats[c] = stat(0.9);   // familiar
   for (const c of 'IJKL') stats[c] = stat(0.1);   // difficult
-  // M N O P are new
-  const candidates = [...'ABCDEFGHIJKLMNOP'];
-  const rng = rngFrom(7), counts = { learning: 0, familiar: 0, difficult: 0, new: 0 }, N = 20000;
-  for (let i = 0; i < N; i++) counts[categorize(stats[pickLearningItem({ candidates, stats, rng })])]++;
-  for (const k of Object.keys(MIX)) assert.ok(Math.abs(counts[k] / N - MIX[k]) < 0.03, `${k}: ${(counts[k] / N).toFixed(3)} vs ${MIX[k]}`);
+  // M N O P are new: a quarter of the pool
+  assert.deepEqual(shares([...'ABCDEFGHIJKLMNOP'], stats), { learning: 39, familiar: 24, difficult: 12, new: 25 });
+});
+
+test('a tired mix asks nothing new, however much is unseen', () => {
+  const stats = { A: stat(0.5), B: stat(0.9) };
+  assert.deepEqual(shares([...'ABCDEFGHIJ'], stats, { mix: { learning: 0.6, familiar: 0.4 } }), { learning: 60, familiar: 40, difficult: 0, new: 0 });
 });
 
 test('easy successes stay frequent even when most items are weak', () => {

@@ -165,7 +165,8 @@ await page.waitForTimeout(2500);
 await snap('end');
 const timeline = await st(() => window.__timeline);
 const events = await st(() => window.__pup.learning.recent(50));
-writeFileSync(`${OUT}timeline.json`, JSON.stringify({ kind, level, errors, timeline, events }, null, 1));
+const progress = await st(() => JSON.parse(localStorage.getItem('pup-patrol-progress'))); // the save after the run
+writeFileSync(`${OUT}timeline.json`, JSON.stringify({ kind, level, errors, timeline, events, progress }, null, 1));
 // a readable transcript
 const lines = timeline.map((e) => {
   const t = (e.t / 1000).toFixed(1).padStart(6);

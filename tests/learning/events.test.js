@@ -68,3 +68,10 @@ test('bus never throws into gameplay: invalid events and failing listeners are r
   assert.deepEqual(seen, ['B'], 'later listeners still run');
   assert.equal(problems.length, 2);
 });
+
+test('scored and options: scored unless marked otherwise; options kept only when it is a count', () => {
+  assert.equal(makeEvent(base).scored, true);
+  assert.equal(makeEvent({ ...base, scored: false }).scored, false);
+  assert.equal(makeEvent({ ...base, options: 3 }).options, 3);
+  for (const options of [0, 2.5, '3', null]) assert.equal('options' in makeEvent({ ...base, options }), false, String(options));
+});
