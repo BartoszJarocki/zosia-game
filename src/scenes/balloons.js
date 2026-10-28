@@ -97,7 +97,7 @@ export class BalloonsMission extends Mission {
       const n = letters.length;
       const colors = shuffle(TILE_COLORS);
       const [lo, hi] = this.L.speed;
-      let popped = 0, done = false, lastWrong = null;
+      let popped = 0, done = false, lastWrong = null, help = 0; // help: the clue (2) or the answer shown (3) stays for her next balloons
       this.speedK = 1;
 
       ui.bubble({ big: showLetter(target), onTap: () => this.replay() }); // (left, and just the letter: the lanes need its width)
@@ -132,7 +132,10 @@ export class BalloonsMission extends Mission {
           this.pop(b);
           popped++;
           this.correct(target);
-          if (popped < this.L.targets) this.question('letterVisual', target, hooks, { options: this.balloons.length }); // next balloon with the same letter
+          if (popped < this.L.targets) { // next balloon with the same letter
+            this.question('letterVisual', target, hooks, { options: choices() });
+            if (help) this.helped(help);
+          }
           if (popped < this.L.targets) {
             say([...this.yes(), ...T.number(popped)]);
             return;
@@ -170,11 +173,13 @@ export class BalloonsMission extends Mission {
       };
       const hooks = {
         short: T.findLetter(target),
-        hint: () => { this.speedK = 0.5; return T.letterLike(target); },
+        hint: () => { help = Math.max(help, 2); this.speedK = 0.5; return T.letterLike(target); },
         simplify: () => floatAway(lastWrong?.parent ? lastWrong : this.balloons.find((x) => x.userData.letter !== target)),
-        reveal: () => this.balloons.filter((x) => x.userData.letter === target).forEach((x) => this.hint(x, () => done || x.userData.popped, x.userData.body)),
+        reveal: () => { help = 3; this.balloons.filter((x) => x.userData.letter === target).forEach((x) => this.hint(x, () => done || x.userData.popped, x.userData.body)); },
       };
-      this.question('letterVisual', target, hooks, { options: n }); // one question per balloon to find
+      // several balloons are right at once, so a guess is right more often than 1 in n (mastery takes that out)
+      const choices = () => this.balloons.length / (this.L.targets - popped);
+      this.question('letterVisual', target, hooks, { options: choices() }); // one question per balloon to find
       wait(500).then(() => {
         if (this.alive) this.ask(T.balloonAsk(target));
       });

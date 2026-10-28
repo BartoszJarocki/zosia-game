@@ -234,7 +234,8 @@ class LetterTrain extends Mission {
         },
         reveal: () => { const b = right(); if (b) this.hint(b, () => solved); },
       };
-      const options = () => this.blocks.filter((x) => x.userData.letter).length;
+      // blocks she can pick from, per right answer (missing: every open gap's letter is right)
+      const options = () => this.blocks.filter((x) => x.userData.letter).length / (this.mode === 'missing' ? this.open().length : 1);
       this.question('letterVisual', target, hooks, { options: options() });
 
       const onTap = async (b) => {
@@ -246,7 +247,7 @@ class LetterTrain extends Mission {
         if (into === undefined) { this.wrong(b.userData.letter, { obj: b, said: this.lookalikeNo(target, b.userData.letter) }); return; }
         solved = true;
         const letter = b.userData.letter;
-        if (into !== idx) { const missed = this.missed; this.question('letterVisual', letter, hooks, { options: options() }); this.missed = missed; } // (a wrong tap before still counts)
+        if (into !== idx) this.learn.retarget(letter); // (a wrong tap or help before still counts)
         this.correct(letter);
         this.stopIdle();
         this.untap(b);

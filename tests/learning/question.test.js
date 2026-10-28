@@ -143,3 +143,14 @@ test('scored: false and options travel with every event of the question', () => 
   assert.equal(plain.scored, true);
   assert.equal('options' in plain, false);
 });
+
+test('retarget: the other right answer keeps the wrong taps and the help that came before it', () => {
+  const { q, advance } = setup();
+  ask(q);
+  q.promptEnded();
+  advance(2000); q.wrong({ chosen: 'P' });
+  q.assist(2);
+  advance(1500); q.retarget('A');
+  const e = q.correct({ chosen: 'A' });
+  assert.deepEqual([e.item, e.firstTry, e.attempt, e.assistLevel, e.latencyMs], ['A', false, 2, 2, 3500]);
+});

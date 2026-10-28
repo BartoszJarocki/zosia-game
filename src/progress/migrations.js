@@ -5,7 +5,7 @@
 //   v2  + skills: { [skill]: { [item]: SkillStat } }  (seeded from the v1 item stats; items is no longer written)
 //   v3  + sessions: { count, recent: [{ id, startedAt, endedAt, missions: [kind], finale }] }
 //   v4  + world: WorldState (adventure/world.js), seeded from badges so past play shows on the island
-//   v5  mastery on the scale that takes guessing out (learning/mastery.js); old values rescaled
+//   v5  mastery on the scale that takes guessing out (learning/mastery.js); old values rescaled; the island keepsakes added in v5 seeded from badges
 
 import { emptyStat, rateAfter } from '../learning/mastery.js';
 import { emptyWorld, normalizeWorld, applyReward, rewardsFromBadges } from '../adventure/world.js';
@@ -79,6 +79,10 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
     for (const items of Object.values(s.skills || {})) {
       for (const st of Object.values(items || {})) if (st && typeof st === 'object') st.mastery = rescaleMastery(st.mastery, st.attempts);
     }
+    // the island's new keepsakes (Treat House, Cone Road, Lookout…) unlock at early completions she is already past,
+    // so they come from her badges now, like v4's did; already there, not "new" (no reveal)
+    s.world = normalizeWorld(s.world);
+    for (const id of rewardsFromBadges(badges)) applyReward(s.world, id);
     s.v = 5;
   }
   // defaults for anything missing (also protects against hand-edited or partial saves)

@@ -93,6 +93,19 @@ test('v4 → v5: mastery moves to the scale that takes guessing out, counts kept
   assert.deepEqual({ ...state.skills.letterAudio.B, mastery: 0.98 }, v4.skills.letterAudio.B, 'only mastery changes');
 });
 
+test('v4 → v5: what she already played shows on the island at once (the new keepsakes come from her badges)', () => {
+  const world = { rescuedKittens: 6, bridgeBuilt: true, trainUnlocked: false, balloonsAtLookout: 0, lookoutLights: true, completedEvents: ['lost-kitten'], rewards: ['kitten-1', 'kitten-2', 'kitten-3', 'kitten-4', 'kitten-5', 'kitten-6', 'bridge'], unseen: [] };
+  const v4 = { v: 4, missions: {}, skills: {}, sessions: { count: 3, recent: [] }, world };
+  const { state } = migrate(v4, { badges: { letters: 14, stones: 2, counting: 12, cones: 1, lookout: 10 } });
+  const w = state.world;
+  assert.deepEqual([w.rescuedKittens, w.bridgeBuilt, w.lookoutLights, w.completedEvents], [6, true, true, ['lost-kitten']], 'what was there stays');
+  assert.equal(w.trafficLight, true, 'one Cone Road run: the traffic light');
+  assert.ok(w.treatsAtHouse > 0 && w.lookoutKittens > 0, 'Treat House and Lookout keepsakes from her badges');
+  assert.equal(w.parcels, 0, 'no Delivery badges: no parcels');
+  assert.deepEqual(w.unseen, [], 'already there, not announced');
+  assert.deepEqual(migrate(state, { badges: { counting: 12 } }).changed, false, 'and it happens once');
+});
+
 test('rescaleMastery: nothing seen stays nothing', () => {
   assert.equal(rescaleMastery(0, 0), 0);
   assert.equal(rescaleMastery(0.5, 0), 0);

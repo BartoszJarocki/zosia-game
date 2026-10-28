@@ -39,6 +39,11 @@ export class QuestionTracker {
     if (this.q) this.q.assist = Math.max(this.q.assist, Math.min(3, Math.max(0, level | 0)));
   }
 
+  /** The same question, now about another item (she picked the other missing letter): its wrong taps and help stay. */
+  retarget(item) {
+    if (this.q) this.q.item = String(item);
+  }
+
   /** The question was solved. Closes it. */
   correct({ chosen } = {}) {
     if (!this.q) return null;

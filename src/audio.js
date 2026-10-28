@@ -24,6 +24,15 @@ export function unlockAudio() {
 // hidden page; sound comes back when she looks again or, if iOS wants a gesture for that, on her next tap.
 function wake() { if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) hush(); else wake(); });
+/** Resolves when the page is on screen (now, or when she comes back), so a sequence of lines pauses instead of running on. */
+function shown() {
+  if (!document.hidden) return null;
+  return new Promise((resolve) => document.addEventListener('visibilitychange', function back() {
+    if (document.hidden) return;
+    document.removeEventListener('visibilitychange', back);
+    resolve();
+  }));
+}
 window.addEventListener('pointerdown', wake, true);
 
 function tone(freq, dur, { type = 'sine', vol = 0.2, when = 0, to = freq } = {}) {
@@ -188,6 +197,7 @@ export async function say(segments) {
   const token = ++speakToken;
   stopVoice();
   await manifestReady;
+  if (document.hidden) { await shown(); if (token !== speakToken) return; } // (a line asked for while she's away waits for her)
   for (let i = 0; i < parts.length; i++) {
     const text = parts[i];
     if (token !== speakToken) return;
