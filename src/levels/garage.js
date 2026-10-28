@@ -58,7 +58,7 @@ export function patternRound(kind, rng = Math.random) {
 /**
  * Two baskets and four blocks in the order she gets them: { baskets: [{ colour, size }], blocks: [{ colour, size, rule }] }.
  * Every block carries the rule it is sorted by, so the switch is simply blocks whose rule changes halfway.
- *   colour  two baskets of one size in two colours, same-size blocks: only the colour differs
+ *   colour  two baskets of one size in two colours, blocks of no particular size: only the colour differs
  *   size    a big and a small wicker basket (colour null), blocks all one colour: only the size differs
  *   switch  a big basket and a small one in two colours, blocks that are big in one colour and small in the
  *           other: the first two go by colour, the last two by size, and every block points the other way
@@ -66,7 +66,7 @@ export function patternRound(kind, rng = Math.random) {
 export function sortRound(kind, rng = Math.random) {
   const [a, b] = shuffle(COLOURS, rng);
   if (kind === 'colour') {
-    return { baskets: [{ colour: a, size: 'big' }, { colour: b, size: 'big' }], blocks: shuffle([a, b, a, b], rng).map((colour) => ({ colour, size: 'small', rule: 'colour' })) };
+    return { baskets: [{ colour: a, size: 'big' }, { colour: b, size: 'big' }], blocks: shuffle([a, b, a, b], rng).map((colour) => ({ colour, size: null, rule: 'colour' })) };
   }
   if (kind === 'size') {
     return { baskets: shuffle([{ colour: null, size: 'big' }, { colour: null, size: 'small' }], rng), blocks: shuffle(['big', 'small', 'big', 'small'], rng).map((size) => ({ colour: a, size, rule: 'size' })) };

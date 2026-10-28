@@ -24,6 +24,15 @@ const pup = CONFIG.pupNameSpoken || CONFIG.pupName;
 const pupDat = CONFIG.pupDative || pup;
 const pupGen = CONFIG.pupGenitive || pup;
 
+// The Garage. Colours agree with the noun: klocek and koszyk are masculine, flaga feminine (czerwony klocek,
+// czerwona flaga, do czerwonego koszyka).
+const COLOUR = { red: ['czerwony', 'czerwona', 'czerwonego'], blue: ['niebieski', 'niebieska', 'niebieskiego'], yellow: ['żółty', 'żółta', 'żółtego'], green: ['zielony', 'zielona', 'zielonego'] };
+const SIZE = { big: ['duży', 'dużego'], small: ['mały', 'małego'] };
+const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt' };
+const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
+/** A block or basket by the rule she sorts by: colour or size (masculine forms). */
+const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
+
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
 /** After a wrong tap, before the question again ("Nie, to nie ten." "Gdzie jest Zet?"). Always starts with "Nie". */
 export const NO = ['Nie, to nie ten.', 'Nie, nie ten.'];
@@ -41,6 +50,7 @@ const PLACE_TO = {
   counting: 'do Domku ze Smakołykami',
   delivery: 'na pocztę',
   picnic: 'na piknik',
+  garage: 'do garażu',
 };
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
@@ -186,6 +196,28 @@ export const T = {
   shareHasOne: () => ['Nie, ten już ma!'],
   shareDone: () => ['Każdy ma jeden!'],
   shareYum: () => ['Mniam, mniam! Dziękujemy!'],
+
+  // The Garage: the cruiser's door (shapes), the flags (patterns), the blocks (sorting)
+  doorBroken: () => ['Ojej! Drzwi radiowozu są zepsute!'],
+  shapeFits: () => ['Który kształt pasuje?'],
+  shape: (s) => [`${cap(SHAPE[s])}!`],
+  whereShape: (s) => [`Gdzie jest ${SHAPE[s]}?`],
+  shapeClue: (s) => [SHAPE_CLUE[s]],
+  noShape: (s) => [`Nie, to ${SHAPE[s]}.`],
+  shapeLast: (s) => [`I ${SHAPE[s]}!`],
+  doorFixed: () => ['Drzwi naprawione!'],
+  flagsStart: () => ['Wieszamy flagi!'],
+  flagNext: () => ['Jaka flaga teraz?'],
+  flagGap: () => ['Jakiej flagi brakuje?'],
+  flag: (c) => [`${cap(COLOUR[c][1])}!`],
+  noFlag: (c) => [`Nie, ta jest ${COLOUR[c][1]}.`],
+  blocksStart: () => ['Sprzątamy klocki!'],
+  block: (rule, v) => [`${cap(sorted(rule, v)[0])} klocek!`],
+  whichBasket: () => ['Do którego koszyka?'],
+  into: (rule, v) => [`${cap(sorted(rule, v)[0])} do ${sorted(rule, v).at(-1)}!`],
+  noBasket: (rule, v) => [`Nie, ten koszyk jest ${sorted(rule, v)[0]}.`],
+  sortSwitch: () => ['Teraz duże i małe!', 'Duży do dużego, mały do małego!'],
+  tidied: () => ['Posprzątane!'],
 };
 
 /**
@@ -221,5 +253,10 @@ export function allSegments(levels, allLetters) {
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
   [...NO, ...YES_STEP].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false));
+  // the Garage
+  Object.keys(SHAPE).forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
+  Object.keys(COLOUR).forEach((c) => { add(T.flag(c)); add(T.noFlag(c)); add(T.block('colour', c)); add(T.into('colour', c)); add(T.noBasket('colour', c)); });
+  Object.keys(SIZE).forEach((sz) => { add(T.block('size', sz)); add(T.into('size', sz)); add(T.noBasket('size', sz)); });
+  [T.doorBroken, T.shapeFits, T.doorFixed, T.flagsStart, T.flagNext, T.flagGap, T.blocksStart, T.whichBasket, T.sortSwitch, T.tidied].forEach((f) => add(f()));
   return [...new Set(out)];
 }

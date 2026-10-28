@@ -23,6 +23,7 @@ import { addWorld, addEvent } from './hub-world.js';
 import { runMicroReward } from './hub-micro.js';
 import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
+import { makeGarageLandmark } from '../world/garage-props.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
@@ -39,6 +40,7 @@ const PLACES = {
   // behind, either side of the Lookout (roads curve back to them)
   delivery: { at: [-9.5, -8.5], via: [[-2.6, -1.8], [-5, -4.6]] },
   picnic: { at: [9.5, -8.5], via: [[2.6, -1.8], [5, -4.6]] },
+  garage: { at: [0, 13] }, // shapes and patterns: in front, between the letter and the number games
   lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
@@ -127,7 +129,7 @@ export class Hub extends Stage {
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
-    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic };
+    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
     this.placeGroups = {};
     for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
