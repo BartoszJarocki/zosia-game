@@ -77,7 +77,7 @@ A kitten hides behind one of the letter blocks: "Kotek się schował! Znajdź Be
 block makes it fly away and the kitten appears, then sits down in a row at the front with the others she found;
 at the end they all play together ("Uratowałaś wszystkie kotki!"). The story is told in the first round only;
 after that she hears the praise, the letter's word and the next question ("Brawo! Be jak banan!" "Znajdź Pe!").
-When the answer is shown, the kitten's tail peeks out from behind its block.
+When the answer is shown, the kitten peeks out over its block.
 
 | Level | pool | choices | ask | similar | rounds | needs |
 |---|---|---|---|---|---|---|

@@ -48,7 +48,8 @@ export class LettersMission extends Mission {
       this.jumpTo(kitten, to, { height: 1, ms: 600 }),
       animate(600, (t) => kitten.scale.setScalar(s0 + (1 - s0) * t)),
     ]);
-    animate(300, (t) => { kitten.rotation.y *= 1 - t; });
+    const r0 = kitten.rotation.y;
+    animate(300, (t) => { kitten.rotation.y = r0 * (1 - t); }); // (and turns to face her)
   }
 
   /** Everyone she found comes out to play: they chase each other round in a ring, hopping. */
@@ -125,7 +126,6 @@ export class LettersMission extends Mission {
         blocks.push(b);
         this.shadowUnder(b, 1.35, 0.3);
         this.dropIn(b, 1, i * 120).then(() => sfx.pop());
-        if (letter === target) kitten.position.set(b.position.x, 0, b.position.z - 0.2);
 
         this.tappable(b, async () => {
           if (solved) return;
@@ -154,9 +154,8 @@ export class LettersMission extends Mission {
             this.lookAt(kitten);
             blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 500));
             // the first time "Znalazłaś kotka! Es jak ser!" (that is the praise); then shorter, "Brawo! Es jak ser!",
-            // so she gets the next one sooner
-            const sound = ask === 'sound' ? T.soundIs(target) : [];
-            const lines = r === 0 ? [...sound, ...T.kittyFound(target)] : [this.praise(), ...(ask === 'sound' ? sound : T.letterLike(target))];
+            // so she gets the next one sooner. Letter sounds: "Brawo! Mmmm… to Em!" (she knows the story by then)
+            const lines = ask === 'sound' ? [this.praise(), ...T.soundIs(target)] : r === 0 ? T.kittyFound(target) : [this.praise(), ...T.letterLike(target)];
             await Promise.all([say(lines), this.toSeat(kitten)]);
             if (!this.alive) return;
             offKitten();
@@ -193,11 +192,11 @@ export class LettersMission extends Mission {
           return T.letterLike(target);
         },
         simplify: () => this.removeOption(lastWrong || blocks.find((x) => x !== right && x.parent)),
-        // the answer: that block pulses and the kitten's tail peeks out from behind it, wagging
+        // the answer: that block pulses and the kitten peeks out over its top
         reveal: () => {
           this.hint(right, () => solved);
-          kitten.position.set(right.position.x + 0.8, 0, right.position.z - 0.75);
-          kitten.rotation.y = -Math.PI / 2;
+          kitten.position.set(right.position.x, 1.45, right.position.z - 0.55);
+          kitten.rotation.y = 0;
           kitten.visible = true;
         },
       });
