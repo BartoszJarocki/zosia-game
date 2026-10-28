@@ -137,7 +137,7 @@ export function setParentOpener(fn) { onParent = fn; }
 
 export function missionHud({ rounds, level = 1, total = 3, bubbleAt = 'middle', onHome }) {
   clear();
-  const top = el(`<div class="topbar">
+  const top = el(`<div class="topbar" style="--stars: ${total}">
       <button class="round-btn home hold" aria-label="Home (hold)">${ICON.home}${RING}</button>
       <div class="paws">${Array.from({ length: rounds }, () => `<span class="paw">${ICON.paw()}</span>`).join('')}</div>
       <span class="spacer">${starsHTML(level, 'small', total)}</span>

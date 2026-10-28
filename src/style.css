@@ -82,6 +82,11 @@ svg { display: block; }
   pointer-events: none;
 }
 .topbar > * { pointer-events: auto; }
+/* long missions (8 paws) and many levels (9 stars) share one row: the stars get smaller, then the paws shrink to fit */
+.topbar { gap: 10px; }
+.topbar .paws { flex: 0 1 auto; min-width: 0; }
+.topbar .paw { flex: 0 1 auto; min-width: 0; }
+.topbar .spacer { flex: none; }
 .round-btn {
   width: var(--btn); height: var(--btn); border-radius: 50%;
   display: grid; place-items: center;
@@ -172,7 +177,7 @@ svg { display: block; }
 .stars { display: flex; justify-content: center; gap: .1em; font-size: min(7vw, 6vh, 56px); line-height: 1; margin-top: .2em; }
 .stars span { color: rgba(255,255,255,.6); text-shadow: 0 2px 0 rgba(0,0,0,.2); }
 .stars span.on { color: #fde047; text-shadow: 0 3px 0 #ca8a04, 0 0 14px rgba(253,224,71,.8); }
-.stars.small { font-size: min(4.5vw, 4vh, 34px); margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.stars.small { font-size: min(4.5vw, 4vh, 34px, calc(28vw / var(--stars, 3))); margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .stars.levelup span.on:last-of-type { animation: starPop .8s 1.2s both; }
 
 /* ---------- confetti ---------- */
