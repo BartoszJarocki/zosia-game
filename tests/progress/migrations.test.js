@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migrate, seedSkills, VERSION } from '../../src/progress/migrations.js';
+import { migrate, seedSkills, rescaleMastery, VERSION } from '../../src/progress/migrations.js';
 
 const v1 = {
   v: 1,
@@ -14,8 +14,8 @@ test('existing v1 save: levels and item stats kept, skills seeded, version bumpe
   assert.equal(changed, true);
   assert.deepEqual(state.missions, v1.missions, 'mission levels untouched');
   assert.deepEqual(state.items, v1.items, 'old stats untouched');
-  assert.equal(state.skills.letterVisual.B.mastery, 1, '6 of 6 right = full confidence');
-  assert.equal(state.skills.letterVisual.M.mastery, 0.167); // 1/3 right × confidence 3/6
+  assert.equal(state.skills.letterVisual.B.mastery, 0.804, '6 of 6 right: what 6 clean answers give today');
+  assert.equal(state.skills.letterVisual.M.mastery, 0, '1 of 3 right is what guessing among 3 gets');
   assert.equal(state.skills.numeral['4'].attempts, 2);
   assert.ok(state.skills.counting['3']);
   assert.ok(state.skills.quantity['2']);
@@ -38,6 +38,7 @@ test('migrating twice changes nothing the second time', () => {
 test('no save yet: levels rebuilt from badges, capped at the mission max', () => {
   const { state } = migrate(null, { badges: { letters: 3, balloons: 0, cones: 9 }, maxLevel: (k) => (k === 'cones' ? 3 : 4) });
   assert.equal(state.v, VERSION);
+  assert.equal('items' in state, false, 'the old per-item stats are not written any more');
   assert.equal(state.missions.letters.level, 2);
   assert.equal(state.missions.cones.level, 3);
   assert.equal(state.missions.balloons, undefined);
@@ -48,11 +49,10 @@ test('broken or odd saves never crash and never lose what is there', () => {
   for (const bad of [undefined, 'oops', 42, [], { v: 'x' }, { v: 0 }]) {
     const { state } = migrate(bad);
     assert.equal(state.v, VERSION);
-    assert.ok(state.missions && state.items && state.skills);
+    assert.ok(state.missions && state.skills);
   }
   const partial = migrate({ v: 2, missions: { name: { level: 2, good: 0, lastAcc: 1 } } }).state;
   assert.equal(partial.missions.name.level, 2);
-  assert.deepEqual(partial.items, {});
   assert.deepEqual(partial.skills, {});
 });
 
@@ -72,7 +72,7 @@ test('v2 save (Phase 2–4): everything kept, sessions added, up to the current 
   assert.equal(changed, true);
   assert.equal(state.v, VERSION);
   assert.deepEqual(state.missions, v2.missions);
-  assert.deepEqual(state.skills, v2.skills);
+  assert.deepEqual(state.skills, { letterVisual: { B: { attempts: 1, mastery: 0.4 } } }, 'one right answer then is one right answer now');
   assert.deepEqual(state.sessions, { count: 0, recent: [] });
 });
 
@@ -82,4 +82,18 @@ test('broken sessions field is repaired, sessions kept when valid', () => {
   assert.deepEqual(migrate({ v: 3, sessions: { recent: rec } }).state.sessions, { count: 1, recent: rec });
   const ok = { ...migrate({ v: 3 }).state, sessions: { count: 7, recent: rec } };
   assert.equal(migrate(ok).changed, false);
+});
+
+test('v4 → v5: mastery moves to the scale that takes guessing out, counts kept', () => {
+  const stat = (mastery, attempts) => ({ attempts, correctFirstTry: attempts, assisted: 0, wrong: 2, mastery, confusions: { P: 1 } });
+  const v4 = { v: 4, missions: {}, skills: { letterAudio: { B: stat(0.98, 10), M: stat(0.85, 40), A: stat(0.72, 40) }, numeral: { 3: stat(0.2, 1) } }, sessions: { count: 0, recent: [] } };
+  const { state } = migrate(v4);
+  assert.equal(state.v, 5);
+  assert.deepEqual([state.skills.letterAudio.B.mastery, state.skills.letterAudio.M.mastery, state.skills.letterAudio.A.mastery, state.skills.numeral[3].mastery], [0.898, 0.464, 0, 0.4]);
+  assert.deepEqual({ ...state.skills.letterAudio.B, mastery: 0.98 }, v4.skills.letterAudio.B, 'only mastery changes');
+});
+
+test('rescaleMastery: nothing seen stays nothing', () => {
+  assert.equal(rescaleMastery(0, 0), 0);
+  assert.equal(rescaleMastery(0.5, 0), 0);
 });
