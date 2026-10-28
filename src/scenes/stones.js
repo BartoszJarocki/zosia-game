@@ -285,7 +285,7 @@ export class StonesMission extends Mission {
       };
 
       // "1 2 ? 4": the numbers with a gap between them (each character is one cell of the bubble's word)
-      const seq = (lit) => Array.from({ length: n }, (_, i) => (i + 1 === missing && !lit ? '?' : String(i + 1))).join(' ');
+      const seq = (lit) => Array.from({ length: n }, (_, i) => (i + 1 === missing && !lit ? '?' : String(i + 1))).join('\u00a0');
       const cell = (num) => 2 * (num - 1);
       ui.bubble({ word: seq(false), at: cell(missing), onTap: () => this.replay() });
       const right = () => choices.find((c) => c.userData.num === missing);
