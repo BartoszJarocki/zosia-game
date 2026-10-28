@@ -85,6 +85,7 @@ const options = () => st((kind) => {
     else if (kind === 'picnic' && o.geometry?.type === 'BoxGeometry' && o.material?.visible === false) out.push({ label: o.position.x < 0 ? 'left' : 'right', ...proj(o, -0.4), right: null });
     else if (kind === 'counting' && u.drag) out.push({ label: 'bone', ...proj(o, 0.2), right: true });
     else if (kind === 'counting' && u.hungry !== undefined) out.push({ label: 'plate', ...proj(o, 0), right: u.hungry });
+    else if (u.choice !== undefined) out.push({ label: String(u.choice), ...proj(o, u.tapHeight ?? 0.3), right: u.choice === s.last }); // (the Garage)
   }
   return out;
 }, kind);

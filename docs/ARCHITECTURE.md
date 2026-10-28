@@ -343,6 +343,32 @@ roundabout (`PLACES[kind].via`).
   the treats appear afterwards. No < > signs. The clue lines both groups up in rows side by side (one-to-one: the
   longer row has more). Chase trots over and eats the right ones.
 
+## The Garage (polish pass)
+
+A place in front of the roundabout, between the Name Train and Cone Road (`PLACES.garage`, the landmark is
+`makeGarageLandmark` in `world/garage-props.js`). Shapes, repeating patterns and sorting: the first non-letter,
+non-number place, so the session director gives it its own `DOMAIN` (`shapes`) and it may follow either kind.
+
+- **Data first.** `src/levels/garage.js` is pure and decides each round: `shapePieces` (three pieces; at `turned`
+  the square stands on a corner and the triangle is one of `ODD_TRIANGLES`), `patternRound` (the row, the gap, the
+  answer, three choices: the row's two colours and one other), `sortRound` (two baskets and four blocks, each block
+  carrying the rule it is sorted by, so the switch level is just blocks whose rule changes halfway; `basketFor`
+  answers where a block goes). `easier` steps every mode down a rung for a gentler run. Tests: `tests/levels/garage.test.js`.
+- **Jobs take turns** (`modes`): `shapes` (the cruiser's door, skill `shape`, item = the shape), `pattern` (the
+  flag line, skill `pattern`, item AB / gap / ABB / AAB), `sort` (skill `sorting`, item = the colour or size, one
+  question per block). Each answer is a drag with a tap fallback: tap a piece or a flag to try it, tap a basket to
+  put the block in it.
+- **Help.** The door's clue shows the shape in the bubble and lights its hole; with a hole for every shape a wrong
+  piece can't be taken away (it is needed later), so the second wrong gives the clue instead. The flags' clue says
+  the row aloud, flag by flag (the rhythm is the scaffold), with a beat of silence at the gap. The blocks' clue is
+  the rule ("Czerwony do czerwonego!"). Wrong answers name what she picked ("Nie, to koło.", "Nie, ten koszyk jest
+  mały.").
+- **Shape outlines** live once in `OUTLINES` (`garage-props.js`): the 3D pieces, the holes (1.12× bigger) and the
+  bubble's SVG pictures all draw from it. The bubble shape is slate grey, so the shape is the clue, not its colour.
+- A finished flag line moves up over the garage door and stays for the visit; the mended door flies onto the cruiser.
+- `tools/playtest/walk.mjs` finds the Garage's options by `userData.choice`; `tools/playtest/garage-probe.mjs`
+  plays it by dragging and measures option sizes and what the bubble covers.
+
 ## Grown-ups' page (Phase 17)
 
 `#parent`, or press and hold the badge shelf for 3 seconds (opens over the game; a child's tap does nothing).
