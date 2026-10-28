@@ -82,11 +82,11 @@ export class Hub extends Stage {
     // the mainland across the bay + lighthouse + boats (the lighthouse and the back of the bay are in view: toys)
     s.add(makeHills({ radius: 105, count: 16, height: [9, 22], color: '#58b957', seed: 7, trees: detail() > 0.5 }));
     const rock = makeRock({ scale: 4, seed: 3 });
-    rock.position.set(-22, -1, -27);
+    rock.position.set(18.5, -1, -21.5);
     s.add(rock);
     const lh = makeLighthouse();
-    lh.position.set(-22, 1.2, -27);
-    lh.scale.setScalar(1.3);
+    lh.position.set(18.5, 1.2, -21.5); // back right: in view, and clear of the badge shelf (top left)
+    lh.scale.setScalar(1);
     s.add(lh);
     const boats = [['#ef4444', 36, 0.03], ['#f59e0b', 41, -0.022], ['#8b5cf6', 47, 0.017]].map(([c, r, sp], i) => {
       const b = makeBoat(c);
