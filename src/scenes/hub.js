@@ -470,7 +470,11 @@ export class Hub extends Stage {
       glass.emissiveIntensity = from.glowI + (1.4 - from.glowI) * k;
       this.starMat.emissiveIntensity = 2.6 - 1.9 * k;
     };
-    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; } };
+    // the sea and the grass fill the picture, not the sky, so an evening tint over the canvas is what says "night" (style.css)
+    const picture = document.getElementById('game');
+    picture.classList.toggle('now', !ms);
+    picture.classList.add('night');
+    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); } };
     if (!ms) return set(1);
     return animate(ms, set, ease.inOut);
   }

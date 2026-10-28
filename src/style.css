@@ -28,6 +28,11 @@ html, body {
 }
 
 #game, #game canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+/* bedtime on the island: an evening tint over the picture; the HUD (#ui) stays bright above it */
+#game::after { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 6s ease-in-out;
+  background: radial-gradient(ellipse at 50% 45%, rgba(40, 48, 120, 0.3), rgba(12, 16, 56, 0.62)); }
+#game.night::after { opacity: 1; }
+#game.night.now::after { transition: none; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
 /* overlays catch taps by default; :where() keeps this weak so .topbar etc. can let taps through */
 :where(#ui > *) { pointer-events: auto; }
