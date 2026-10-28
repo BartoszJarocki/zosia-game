@@ -57,6 +57,37 @@ const PLACE_TO = {
   picnic: 'na piknik',
   garage: 'do garażu',
 };
+/** What the hub says when something new appears on the island, by reward type (adventure/world.js REWARDS). */
+export const WORLD_LINES = {
+  kitten: 'Zobacz! Uratowany kotek bawi się teraz koło parku!',
+  bridge: 'Zobacz! Nad rzeką stoi nowy most!',
+  train: 'Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!',
+  balloon: 'Nowy balonik przy Bazie!',
+  'lookout-lights': 'Baza świeci kolorowymi światełkami!',
+  treat: `Mniam! Nowy smakołyk w misce ${pupGen}!`,
+  'traffic-light': 'Zobacz! Przy drodze stoją nowe światła!',
+  cone: 'Zobacz! Nowy pachołek przy drodze!',
+  parcel: 'Zobacz! Paczka czeka przy domku!',
+  guest: 'Zobacz! Nowy gość na pikniku!',
+  'lookout-kitten': 'Zobacz! Kotek macha do nas z Bazy!',
+  'garage-car': 'Zobacz! Naprawione autko błyszczy!',
+  bunting: 'Zobacz! Kolorowe chorągiewki przy garażu!',
+};
+
+/** "Misja w domu": one small real-world task at the end of a session, by the mission it follows (session/home-task.js). */
+export const HOME_TASKS = {
+  letters: `Poszukaj w książeczce literki ${L(kid[0])}, jak ${kid}!`,
+  balloons: 'Poszukaj z mamą literek na pudełkach!',
+  name: 'Napisz z mamą swoje imię!',
+  cones: 'Pokaż mamie trzy paluszki!',
+  stones: 'Policz z mamą kroki do drzwi!',
+  counting: 'Policz łyżki przy obiedzie!',
+  lookout: 'Pokaż mamie na paluszkach, ile kotków uratowałaś!',
+  delivery: 'Znajdź w domu coś na Em, jak mama!',
+  picnic: 'Kto ma więcej na talerzu, ty czy mama?',
+  garage: 'Znajdź w domu coś okrągłego!',
+};
+
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
 export const T = {
@@ -65,11 +96,18 @@ export const T = {
 
   // hub
   greet: () => [`Cześć, ${voc}! ${pup} gotowy do akcji! Dokąd jedziemy?`],
-  hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'],
-  hubIdle: () => ['Dotknij miejsca, żeby zacząć misję!'],
+  hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'], // (after a finished mission)
+  hubBack: () => ['Dokąd teraz jedziemy?'], // (back without finishing: no "Brawo!")
   suggest: (kind) => [`Może ${PLACE_TO[kind]}?`],
+  tapStar: () => ['Dotknij gwiazdki!'],
   finaleCall: () => ['Teraz wielka misja w Bazie! Dotknij Bazy!'],
-  sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`, 'Możesz dalej się bawić!'],
+  sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`],
+  playOn: () => ['Możesz dalej się bawić!'],
+  homeTask: (kind) => (HOME_TASKS[kind] ? ['Misja w domu!', HOME_TASKS[kind]] : []),
+  goodnight: () => [`Dobranoc, ${voc}! Do jutra!`],
+  asleep: () => [`${pup} śpi… Do jutra!`],
+  // the celebration, after the badge line ("again" or the island?)
+  againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -87,12 +125,8 @@ export const T = {
   noMore: () => ['Nie, tu jest więcej.'],
   noLess: () => ['Nie, tu jest mniej.'],
   lookCarefully: () => ['Popatrz uważnie!'],
-  // Adventure Bay changes (said the first time the hub shows them)
-  worldKitten: () => ['Zobacz! Uratowany kotek bawi się teraz koło parku!'],
-  worldBridge: () => ['Zobacz! Nad rzeką stoi nowy most!'],
-  worldTrain: () => ['Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!'],
-  worldBalloon: () => ['Nowy balonik przy Bazie!'],
-  worldLights: () => ['Baza świeci kolorowymi światełkami!'],
+  // Adventure Bay changes (said the first time the hub shows them), by reward type (adventure/world.js REWARDS)
+  worldNew: (type) => (WORLD_LINES[type] ? [WORLD_LINES[type]] : []),
   // hub events: little stories that point at a place
   eventKitten: () => ['Ojej! Kotek potrzebuje pomocy! Dotknij kotka!'],
   eventBalloons: () => ['Ojej! Baloniki uciekają! Dotknij balonika!'],
@@ -300,13 +334,13 @@ export function allSegments(levels, allLetters) {
   }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
-  [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
+  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
-    T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.kittenTummy, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully, T.here].forEach((f) => add(f()));
-  [...NO, ...YES_STEP, ...RIVER_ON].forEach((line) => add([line]));
+  [...NO, ...YES_STEP, ...RIVER_ON, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
+  Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots()); add(T.conesGoal()); add(T.conesSaved());
   // the Garage
   Object.keys(SHAPE).forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });

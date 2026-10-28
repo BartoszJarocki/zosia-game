@@ -4,7 +4,7 @@
 import { CONFIG } from '../config.js';
 import { learning } from '../learning/events.js';
 import { recordSession, getSkills } from '../progress.js';
-import { resultScore, RATE } from '../learning/mastery.js';
+import { masteryBefore } from '../learning/mastery.js';
 import { SESSION, createSession, isStale, noteEvent, noteReplay, completeMission, shorten, windDown, summary } from './director.js';
 import { attention } from './attention.js';
 import { eventById } from '../adventure/events.js';
@@ -68,7 +68,6 @@ learning.subscribe((ev) => {
   if (!stat) return;
   const key = ev.skill + '|' + ev.item;
   const seen = (s.changes ||= {})[key];
-  const score = resultScore(ev);
-  const before = seen ? seen.from : score == null ? stat.mastery : Math.max(0, (stat.mastery - score * RATE) / (1 - RATE));
+  const before = seen ? seen.from : masteryBefore(stat, ev);
   s.changes[key] = { skill: ev.skill, item: ev.item, from: Math.round(before * 1000) / 1000, to: stat.mastery };
 });
