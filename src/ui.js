@@ -15,6 +15,7 @@ export const MISSIONS = {
   lookout: { label: '🐾', color: '#e23b3b' },
   delivery: { label: '📦', color: '#b45309' },
   picnic: { label: '🧺', color: '#16a34a' },
+  garage: { label: '🔧', color: '#475569' },
 };
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 

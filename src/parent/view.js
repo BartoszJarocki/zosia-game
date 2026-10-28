@@ -17,6 +17,8 @@ const pct = (x) => `${Math.round(x * 100)}%`;
 const secs = (s) => (s == null ? '–' : `${s.toFixed(1)} s`);
 const label = (item) => (/^\d+$/.test(item) ? item : showLetter(item));
 const SAVE_KEY = 'pup-patrol-progress';
+/** The missions that exist in GAME.md (a badge kind can be ready before its levels are). */
+const KINDS = () => Object.keys(MISSIONS).filter((k) => LEVELS[k]);
 /** The saved progress as stored (for the copy button, and each mission's good runs and last run). */
 function readSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { return null; } }
 
@@ -41,7 +43,7 @@ function grid(reports, name = (r) => label(r.item)) {
 /** Each mission: its stars, how far to the next one, the last run, whether the next run is gentler. */
 function missionCards(got) {
   const saved = readSave()?.missions || {};
-  return Object.keys(MISSIONS).map((k) => {
+  return KINDS().map((k) => {
     const m = missionStatus({ level: levelFor(k), max: maxLevel(k), good: saved[k]?.good ?? 0, lastAcc: saved[k]?.lastAcc ?? null, runs: got[k] || 0, need: CONFIG.goodRunsPerLevel, gentle: assistFor(k) });
     return `<div class="pv-mission"><span>${esc(MISSION_INFO[k]?.title || k)}</span>
       <span class="pv-stars">${'★'.repeat(m.level)}<i>${'★'.repeat(Math.max(0, m.max - m.level))}</i></span>
@@ -77,7 +79,7 @@ function changesList(list) {
 }
 
 function devTools() {
-  const kinds = Object.keys(MISSIONS);
+  const kinds = KINDS();
   return `<div class="pv-dev" hidden><h2>Developer tools</h2>
     <p class="pv-note">For testing. Buttons marked "hold" need a long press (about 1.5 s) so nothing is erased by accident.</p>
     <h3>Mission levels</h3>
@@ -159,7 +161,7 @@ function wireDevTools(page, rerender) {
     rerender();
   });
   const actions = {
-    maxAll: () => { Object.keys(MISSIONS).forEach((k) => progressDev.setLevel(k, maxLevel(k))); done('All missions at the top level.'); rerender(); },
+    maxAll: () => { KINDS().forEach((k) => progressDev.setLevel(k, maxLevel(k))); done('All missions at the top level.'); rerender(); },
     clearMastery: () => { progressDev.clearSkills(); done('Mastery cleared.'); rerender(); },
     clearWorld: () => { progressDev.clearWorld(); done('The island is back to the start.'); },
     reset: () => { progressDev.resetAll(); done('Everything reset.'); rerender(); },
