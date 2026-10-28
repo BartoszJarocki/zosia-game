@@ -20,6 +20,12 @@ export function unlockAudio() {
   }
 }
 
+// iPadOS suspends sound when the screen locks, another app opens or a call comes in. Nothing is said into a
+// hidden page; sound comes back when she looks again or, if iOS wants a gesture for that, on her next tap.
+function wake() { if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) hush(); else wake(); });
+window.addEventListener('pointerdown', wake, true);
+
 function tone(freq, dur, { type = 'sine', vol = 0.2, when = 0, to = freq } = {}) {
   if (!ctx) return;
   const t = ctx.currentTime + when;
@@ -123,7 +129,7 @@ export async function preload(segments) {
 }
 
 let voiceGain = null;
-let current = null; // playing AudioBufferSourceNode
+let current = null; // the clip playing: { src, end }
 let speakToken = 0;
 
 function playBuffer(buf, token) {
@@ -133,8 +139,12 @@ function playBuffer(buf, token) {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.connect(voiceGain);
-    src.onended = () => { if (current === src) current = null; resolve(); };
-    current = src;
+    // A suspended context never ends a clip, and the game waits for lines to end (no help while speaking).
+    // Not over a little after its length: nobody heard it, so the rest of the line goes too.
+    const late = setTimeout(hush, buf.duration * 1000 + 2500);
+    const end = () => { clearTimeout(late); if (current?.src === src) current = null; resolve(); };
+    src.onended = end;
+    current = { src, end };
     src.start();
   });
 }
@@ -196,7 +206,8 @@ export async function say(segments) {
 }
 
 function stopVoice() {
-  if (current) { try { current.stop(); } catch {} current = null; }
+  // (a stopped clip's onended can wait for a suspended context, so the line ends here)
+  if (current) { const { src, end } = current; try { src.stop(); } catch {} end(); }
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
 
