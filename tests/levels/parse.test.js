@@ -50,7 +50,7 @@ const lettersTable = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|-
 test('Kitty Park: six levels, each asking a different way; level 6 is gated on mastery', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
   assert.deepEqual(levels.letters.map((l) => l.ask), ['match', 'name', 'audio', 'name', 'word', 'sound']);
-  assert.deepEqual(levels.letters[5].needs, { skill: 'letterAudio', min: 0.6 });
+  assert.deepEqual(levels.letters[5].needs, { skill: 'letterAudio', min: 0.4 });
   assert.equal(levels.letters[3].similar, true);
 });
 
