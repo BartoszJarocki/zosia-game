@@ -248,6 +248,36 @@ A picnic with Chase: more, less, the same — by looking, before numbers.
 - **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
   (no < > signs). The clue lines both groups up in rows, side by side: the longer row has more.
 
+### 🔧 The Garage · `garage`
+
+Chase's cruiser is in for repairs: shapes, patterns and sorting, with every colour named. Each visit she fixes the
+cruiser's door (put each shape in its hole: drag it, or tap it), hangs the flags (which flag comes next?) and tidies
+the blocks into baskets, then the mended cruiser flashes its lights.
+
+| Level | modes | shapes | pattern | sort | rounds |
+|---|---|---|---|---|---|
+| 1 | shapes, pattern, sort | shown | AB | colour | 3 |
+| 2 | shapes, pattern, sort | name | AB | colour | 3 |
+| 3 | shapes, pattern, sort | name | gap | colour | 3 |
+| 4 | shapes, pattern, sort | name | gap | size | 3 |
+| 5 | shapes, pattern, sort | turned | gap | size | 3 |
+| 6 | shapes, pattern, sort | turned | ABB | size | 3 |
+| 7 | shapes, pattern, sort | turned | ABB | switch | 3 |
+
+- **modes** — the jobs, taking turns, one per round: `shapes` (the door), `pattern` (the flags), `sort` (the blocks)
+- **shapes** — `shown`: one hole in the door, the shape in the bubble and named ("Który kształt pasuje? Koło!") ·
+  `name`: a hole for each of koło, kwadrat, trójkąt; she hears which one ("Gdzie jest kwadrat?"), twice, and the
+  last one hops in by itself · `turned`: as `name`, but the pieces lie turned and bigger or smaller, the square
+  stands on a corner, and the triangle is not the textbook one (a square corner, long and flat, tall and thin)
+- **pattern** — `AB`: red, blue, red, blue… which flag comes next? (two colours of the row and one other to
+  choose from) · `gap`: the same kind of row with one flag missing in the middle · `ABB`: red, blue, blue (or red,
+  red, blue)… which comes next? After a right answer the whole row is said aloud, flag by flag
+- **sort** — four blocks, one at a time, into two baskets (drag the block, or tap the basket): `colour`: two
+  colours, "Czerwony do czerwonego!" · `size`: a big and a small basket, "Duży do dużego!" · `switch`: a big basket
+  and a small one in two colours; two blocks go by colour, then "Teraz duże i małe!" and two go by size
+- **rounds** — how many jobs (1–6); with all three modes, 3 is one of each. Colours are always the four far-apart
+  ones (red, blue, yellow, green) and are named every time
+
 ---
 
 ## Adding or changing levels

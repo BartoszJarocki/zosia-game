@@ -12,6 +12,7 @@ export const SKILLS = Object.freeze([
   'counting',     // produce a count (give N)
   'sequence',     // order: what comes next / one more, one less
   'comparison',   // more / less / same
+  'shape', 'pattern', 'sorting', // the Garage: find a shape · what comes next in a row · sort by colour or size
 ]);
 
 /** Why an attempt didn't succeed. Only wrongChoice says something about knowledge. */

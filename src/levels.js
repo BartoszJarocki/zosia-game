@@ -3,6 +3,7 @@
 import { levelFor, assistFor } from './progress.js';
 import { LEVELS, ALL_LETTERS, maxLevel } from './levels/data.js';
 import { shuffle } from './util.js';
+import { easier as easierGarage } from './levels/garage.js';
 
 export { LEVELS };
 
@@ -46,6 +47,7 @@ const ASSIST = {
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
   picnic: (s) => ({ ...s, close: false, numerals: false }),
+  garage: easierGarage,
 };
 
 export function settingsFor(kind) {

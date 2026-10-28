@@ -84,6 +84,13 @@ export const SCHEMA = {
     mode: { type: 'enum', values: ['go', 'pickup', 'find', 'relative'] },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 1 }, // elevator trips
   },
+  garage: {
+    modes: { type: 'list', values: ['shapes', 'pattern', 'sort'] }, // taking turns, one per round
+    shapes: { type: 'enum', values: ['shown', 'name', 'turned'], optional: true },
+    pattern: { type: 'enum', values: ['AB', 'gap', 'ABB'], optional: true },
+    sort: { type: 'enum', values: ['colour', 'size', 'switch'], optional: true },
+    rounds: { type: 'int', min: 1, max: 6, optional: true, default: 3 },
+  },
 };
 
 const clean = (s) => s.replace(/`/g, '').replace(/\*\*/g, '').trim();
@@ -257,4 +264,5 @@ function crossCheck(kind, s, where, errors) {
   if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
   if (kind === 'counting' && s.types?.includes('share') && !s.share) errors.push(`${where}: types includes share, so set a share range`);
+  if (kind === 'garage') for (const m of s.modes || []) if (!s[m]) errors.push(`${where}: modes includes ${m}, so set the ${m} column`);
 }
