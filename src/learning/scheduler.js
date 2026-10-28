@@ -1,6 +1,7 @@
 // Decides which letter / number to ask next, from mastery. Pure (rng and clock injectable).
 // Intent from the roadmap: mostly things she is learning, plenty of easy wins, a few hard ones,
-// a little new — and never the same item over and over.
+// a little new — and never the same item over and over. While much of a pool is still unseen (a new level
+// with 22 letters), unseen items get about that share of turns, so she meets them all within a few runs.
 
 /** Target share of each kind of item (renormalised over the kinds that exist). */
 export const MIX = Object.freeze({ learning: 0.5, familiar: 0.3, difficult: 0.15, new: 0.05 });
@@ -46,7 +47,13 @@ export function pickLearningItem({ candidates, stats = {}, recent = [], now = Da
   // a bucket whose items were all just asked gives way (stops "T I T I T I" when a bucket is small)
   const kinds = Object.keys(groups).filter((k) => groups[k].length && (mix[k] ?? 0) > 0);
   const kindWeight = (k) => mix[k] * (groups[k].reduce((sum, c) => sum + freshness(c), 0) / groups[k].length);
-  const kind = kinds.length ? weightedPick(kinds, kinds.map(kindWeight), rng) : null;
+  const kindWeights = kinds.map(kindWeight);
+  const iNew = kinds.indexOf('new'), unseen = groups.new.length / pool.length;
+  if (iNew !== -1 && unseen < 1) {
+    const rest = kindWeights.reduce((a, b) => a + b, 0) - kindWeights[iNew];
+    kindWeights[iNew] = Math.max(kindWeights[iNew], (rest * unseen) / (1 - unseen)); // new's share ≈ the unseen share
+  }
+  const kind = kinds.length ? weightedPick(kinds, kindWeights, rng) : null;
   const options = kind ? groups[kind] : pool;
 
   const weights = options.map((c) => {

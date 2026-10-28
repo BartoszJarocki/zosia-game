@@ -133,12 +133,15 @@ export function completeMission(s, kind, now) {
 /**
  * Which place the hub should gently suggest next (or null in free play).
  * Prefers places not played yet this session, and a letter game after a number game (and back).
+ * The Lookout is one of the places too (the finale is an easy ride that doesn't count, so this is how it
+ * levels up), but not as the last mission before the finale: no two rides in a row.
  */
 export function suggestNext(s, kinds, rng = Math.random) {
   const step = nextStep(s);
   if (step === 'free') return null;
   if (step === 'finale') return kinds.includes(SESSION.finale) ? SESSION.finale : null;
-  const pool = kinds.filter((k) => k !== SESSION.finale);
+  const finaleNext = s.missionsCompleted + 1 >= s.targetMissions;
+  const pool = finaleNext ? kinds.filter((k) => k !== SESSION.finale) : kinds;
   const last = s.completed.at(-1);
   const fresh = pool.filter((k) => !s.completed.includes(k));
   let cands = fresh.length ? fresh : pool.filter((k) => k !== last);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyWorld, normalizeWorld, applyReward, milestoneRewards, rewardsFromBadges, rewardType, MAX_KITTENS, MAX_BALLOONS } from '../../src/adventure/world.js';
-import { migrate } from '../../src/progress/migrations.js';
+import { migrate, VERSION } from '../../src/progress/migrations.js';
 
 test('each reward counts once, ever', () => {
   const w = emptyWorld();
@@ -82,7 +82,7 @@ test('migration v3 → v4: world seeded from badges, nothing marked as new, the 
   const v3 = { v: 3, missions: { letters: { level: 2, good: 0, lastAcc: 1 } }, items: {}, skills: { numeral: {} }, sessions: { count: 2, recent: [] } };
   const { state, changed } = migrate(v3, { badges: { letters: 2, name: 1 } });
   assert.equal(changed, true);
-  assert.equal(state.v, 4);
+  assert.equal(state.v, VERSION);
   assert.equal(state.world.rescuedKittens, 2);
   assert.equal(state.world.trainUnlocked, true);
   assert.deepEqual(state.world.unseen, []);
