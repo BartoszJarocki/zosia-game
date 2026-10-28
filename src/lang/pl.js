@@ -142,6 +142,8 @@ export const T = {
   conesWhich: (n, first) => [...(first ? ['Ojej! Pachołki na drodze!'] : []), `Który pachołek ma ${dotsAcc(n)}?`],
   conesDots: (first) => [first ? 'Ojej! Pachołki na drodze! Policz kropki i znajdź ten numer!' : 'Policz kropki! Który to numer?'],
   countDots: () => ['Policz kropki!'], // (the clue: the dots light up one by one)
+  conesGoal: () => ['Kotek czeka na końcu drogi!'],
+  conesSaved: () => ['Droga wolna! Uratowałaś kotka!'],
   dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
 
   // River
@@ -230,6 +232,6 @@ export function allSegments(levels, allLetters) {
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.kittenTummy, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...RIVER_ON].forEach((line) => add([line]));
-  add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots());
+  add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots()); add(T.conesGoal()); add(T.conesSaved());
   return [...new Set(out)];
 }

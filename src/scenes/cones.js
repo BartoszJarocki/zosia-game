@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { animate, ease, wait } from '../engine.js';
-import { makeTruck, seatRiders, makeCone, rbox, mat, mesh } from '../models.js';
+import { animate, ease, wait, hop } from '../engine.js';
+import { makeTruck, seatRiders, makeCone, makeKitten, rbox, mat, mesh } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { makeTree, makeBush } from '../world/nature.js';
 import { makeHouse, makeLamp, makeHydrant } from '../world/props.js';
@@ -113,6 +113,24 @@ export class ConesMission extends Mission {
     seatRiders(this.truck, this.girl, this.pup);
     this.speed = 0;
     this.onUpdate((dt, t) => this.truck.userData.update(t, this.speed));
+    // where the road goes: a kitten waits past the last cones, a little nearer after each one
+    const kitten = (this.kitten = makeKitten('#9ca3af'));
+    kitten.scale.setScalar(1.5);
+    kitten.position.set(0, 0, -STEP * this.rounds);
+    world.add(kitten);
+    this.shadowUnder(kitten, 0.5);
+    this.onUpdate((dt, t) => kitten.userData.idle(t));
+  }
+
+  /** The last cone is gone: the kitten at the end of the road is saved. */
+  async outro() {
+    const k = this.kitten;
+    k.position.z = -this.world.position.z; // (right in front, also when a tired run was cut short)
+    sfx.meow();
+    this.cheer(2);
+    await hop(k, 0.8, 450);
+    hop(k, 0.5, 400);
+    await say(T.conesSaved());
   }
 
   round(r) {
@@ -231,9 +249,10 @@ export class ConesMission extends Mission {
       this.question(skill, target, hooks, { options: n });
       wait(600).then(() => {
         if (!this.alive) return;
-        if (ask === 'dots') this.ask(T.conesDots(r === 0));
-        else if (ask === 'name') this.ask(T.conesWhich(target, r === 0));
-        else this.ask(r === 0 ? T.conesFirst(target) : T.conesMore(target));
+        const goal = r === 0 ? T.conesGoal() : []; // ("Kotek czeka na końcu drogi!")
+        if (ask === 'dots') this.ask([...goal, ...T.conesDots(r === 0)]);
+        else if (ask === 'name') this.ask([...goal, ...T.conesWhich(target, r === 0)]);
+        else this.ask([...goal, ...(r === 0 ? T.conesFirst(target) : T.conesMore(target))]);
       });
     });
   }

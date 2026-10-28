@@ -138,6 +138,8 @@ in `src/scenes/name.js`, the lines in `src/lang/pl.js`).
 ### 🚧 Cone Road · `cones`
 
 Numbered cones block the road. Tap the right one and the cruiser drives on (early on, the dots are counted together).
+A kitten waits at the end of the road ("Kotek czeka na końcu drogi!"), a little nearer after each cone; the last
+cone opens the way ("Droga wolna! Uratowałaś kotka!").
 
 | Level | max | choices | bubble | sign | dots | count | rounds |
 |---|---|---|---|---|---|---|---|
