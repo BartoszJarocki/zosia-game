@@ -51,17 +51,39 @@ export const LETTER_NAMES = {
   S: 'es', T: 'te', U: 'U', V: 'fau', W: 'wu', X: 'iks', Y: 'igrek', Z: 'zet',
 };
 
+// Picture words, [word, picture]. The first is the letter's own word ("Be jak banan!"); Pup Delivery uses all of
+// them, so she hears a first sound in different words instead of learning pairs. A word starts with its letter's
+// sound and then a vowel (not "sł", "gr"), is one thing ("pójdzie kaczka"), and is what she would call the picture.
 export const WORDS = {
-  A: ['arbuz', '🍉'], B: ['banan', '🍌'], C: ['cytryna', '🍋'], D: ['dom', '🏠'], E: ['elf', '🧝'],
-  F: ['foka', '🦭'], G: ['gruszka', '🍐'], H: ['hipopotam', '🦛'], I: ['indyk', '🦃'], J: ['jabłko', '🍎'],
-  K: ['kot', '🐱'], L: ['lew', '🦁'], M: ['miś', '🧸'], N: ['nosorożec', '🦏'], O: ['owca', '🐑'],
-  P: ['policja', '🚓'], R: ['rower', '🚲'], S: ['słoń', '🐘'], T: ['tort', '🎂'], U: ['ucho', '👂'],
-  W: ['wieloryb', '🐳'], Z: ['zebra', '🦓'],
+  A: [['arbuz', '🍉'], ['ananas', '🍍']],
+  B: [['banan', '🍌'], ['balon', '🎈']],
+  C: [['cytryna', '🍋'], ['cukierek', '🍬']],
+  D: [['dom', '🏠'], ['dinozaur', '🦕']],
+  E: [['Everest', '🏔️'], ['ekran', '📺']],
+  F: [['foka', '🦭'], ['fala', '🌊']],
+  G: [['gitara', '🎸'], ['góra', '⛰️']],
+  H: [['hipopotam', '🦛'], ['helikopter', '🚁']],
+  I: [['igła', '🪡']],
+  J: [['jabłko', '🍎'], ['jajko', '🥚']],
+  K: [['kot', '🐱'], ['kaczka', '🦆']],
+  L: [['lew', '🦁'], ['lizak', '🍭']],
+  M: [['miś', '🧸'], ['motyl', '🦋']],
+  N: [['nosorożec', '🦏'], ['nos', '👃']],
+  O: [['owca', '🐑'], ['ośmiornica', '🐙']],
+  P: [['pies', '🐶'], ['pomidor', '🍅']],
+  R: [['rower', '🚲'], ['ryba', '🐟']],
+  S: [['ser', '🧀'], ['samolot', '✈️']],
+  T: [['tort', '🎂'], ['telefon', '📱']],
+  U: [['ucho', '👂'], ['uśmiech', '😊']],
+  W: [['wąż', '🐍'], ['wilk', '🐺']],
+  Z: [['zebra', '🦓'], ['zamek', '🏰']],
 };
 
-// Her own letter: "Zet jak Zosia!"
-// (No override for the pup: in Polish "Chase" starts with a "cz" sound, not C.)
-if (CONFIG.childName) WORDS[CONFIG.childName[0].toUpperCase()] = [CONFIG.childName, '👧'];
+/**
+ * A letter's own word, [word, picture]. Her letter's is her name: "Zet jak Zosia!" (said, never a picture to
+ * name, so Pup Delivery keeps to WORDS). No such word for the pup: in Polish "Chase" starts with "cz", not C.
+ */
+export const letterWord = (l) => (CONFIG.childName && l === CONFIG.childName[0].toUpperCase() ? [CONFIG.childName, '👧'] : WORDS[l]?.[0] || ['', '']);
 
 export const letterName = (l) => LETTER_NAMES[l.toUpperCase()] || l;
 export const showLetter = (l) => (CONFIG.lowercase ? l.toLowerCase() : l);

@@ -55,11 +55,12 @@ test('rounds: limits are checked', () => {
 
 const lettersTable = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`letters\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
 
-test('Kitty Park: six levels, each asking a different way; level 6 is gated on mastery', () => {
-  const { levels } = parseGame(md, { childName: 'Zosia' });
-  assert.deepEqual(levels.letters.map((l) => l.ask), ['match', 'name', 'audio', 'name', 'word', 'sound']);
-  assert.deepEqual(levels.letters[5].needs, { skill: 'letterAudio', min: 0.4 });
-  assert.equal(levels.letters[3].similar, true);
+test('Kitty Park: the sound level is gated on mastery, asks consonants, and is not the top', () => {
+  const { levels, letterSets } = parseGame(md, { childName: 'Zosia' });
+  const sound = levels.letters.findIndex((l) => l.ask === 'sound');
+  assert.deepEqual(levels.letters[sound].needs, { skill: 'letterAudio', min: 0.4 });
+  assert.equal([...levels.letters[sound].pool].filter((l) => 'AEIOUY'.includes(l)).length, 0);
+  assert.equal(levels.letters.at(-1).pool, letterSets.ALL);
 });
 
 test('Kitty Park: older tables with "show" still work', () => {
@@ -143,4 +144,19 @@ test('Treat House: new kinds of round come one level at a time; each level has a
   assert.match(only(parseGame(treats('give, hidden, flash | 1–3 | 2–4 | 1–4 | no | 2'), {})).errors[0], /rounds must be at least 3/);
   assert.match(only(parseGame(treats('give, hidden | 1–3 | 1–4 | — | no | 3'), {})).errors[0], /hidden must stay within 2–4/);
   assert.match(only(parseGame(treats('give | 1–3 | — | — | no | 1'), {})).errors[0], /needs a howMany, flash or hidden round/);
+});
+
+// what a level can change, grouped the way a child feels it (targets and total together are "more balloons")
+const STEPS = {
+  balloons: { letters: (l) => l.pool, balloons: (l) => `${l.targets}/${l.total}`, speed: (l) => l.speed.join('–'), lookalikes: (l) => l.similar },
+  delivery: { letters: (l) => l.pool, choices: (l) => l.choices, mode: (l) => l.mode, soundalikes: (l) => l.similar },
+};
+const changes = (kind, a, b) => Object.entries(STEPS[kind]).filter(([, f]) => f(a) !== f(b)).map(([k]) => k);
+
+test('Balloon Hill and Pup Delivery: each level changes exactly one thing', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  for (const kind of Object.keys(STEPS)) {
+    levels[kind].slice(1).forEach((row, i) => assert.equal(changes(kind, levels[kind][i], row).length, 1, `${kind} level ${i + 1} → ${i + 2} changes ${changes(kind, levels[kind][i], row).join(', ') || 'nothing'}`));
+  }
+  assert.deepEqual(changes('balloons', { pool: 'AB', targets: 2, total: 5, speed: [0.3, 0.45], similar: false }, { pool: 'ABC', targets: 3, total: 7, speed: [0.3, 0.45], similar: false }), ['letters', 'balloons']);
 });

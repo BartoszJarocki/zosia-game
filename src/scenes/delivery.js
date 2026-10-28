@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { animate, ease, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop, camera } from '../engine.js';
+import { dragging } from '../input/drag.js';
 import { rbox, mat, mesh } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { makeHouse, makeFence, makeLamp } from '../world/props.js';
@@ -15,7 +16,7 @@ import { Mission } from './mission.js';
 //   pictureSound  parcels with pictures: "Co zaczyna się na Ka?" → tap the cat           (letterSound)
 //   soundLetter   letter mailboxes + one parcel with a picture: "Do której skrzynki pójdzie kot?"
 //                 → drag the parcel into K (or tap the mailbox)                          (letterSound)
-// The picture words are the game's letter words (config WORDS: K → kot 🐱, B → banan 🍌…).
+// The pictures are the letters' picture words (config WORDS: K → kot 🐱, kaczka 🦆…), taking turns.
 
 /** Letters that sound alike at the start of a word (kept apart unless GAME.md "similar" says otherwise). */
 const SOUNDALIKE = { B: 'P', P: 'B', D: 'T', T: 'D', G: 'K', K: 'G', S: 'Z', Z: 'S', W: 'F', F: 'W', M: 'N', N: 'M' };
@@ -91,6 +92,15 @@ export class DeliveryMission extends Mission {
     for (const x of [-7, 7]) { const l = makeLamp(); l.position.set(x, 0, -3); this.scene.add(l); }
   }
 
+  /** One of a letter's picture words, [word, picture], taking turns: the same letter comes back with another word. */
+  wordFor(l) {
+    const words = WORDS[l];
+    this.turns ??= {};
+    const i = (this.turns[l] ??= Math.floor(Math.random() * words.length));
+    this.turns[l] = i + 1;
+    return words[i % words.length];
+  }
+
   /** Letters to choose between (no sound-alikes unless the level wants them). */
   others(target, pool, n) {
     const alike = this.L.similar ? '' : SOUNDALIKE[target] || '';
@@ -107,14 +117,15 @@ export class DeliveryMission extends Mission {
       const pool = [...this.L.pool].filter((l) => WORDS[l]);
       const target = this.pick('letterSound', pool);
       this.last = target;
-      this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...this.others(target, pool, n - 1)]);
+      const pics = Object.fromEntries(opts.map((l) => [l, this.wordFor(l)]));
+      const said = pics[target][0];
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.2 : 3.8;
       let solved = false, lastWrong = null;
       const parcels = opts.map((l, i) => {
-        const p = makeParcel(WORDS[l][1], colors[i]);
+        const p = makeParcel(pics[l][1], colors[i]);
         p.position.x = (i - (n - 1) / 2) * gap;
         p.rotation.y = (Math.random() - 0.5) * 0.2;
         p.userData.letter = l;
@@ -134,7 +145,7 @@ export class DeliveryMission extends Mission {
             sfx.good();
             this.success(p.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
             parcels.filter((x) => x !== p && x.parent).forEach((x) => this.shrinkAway(x, 400));
-            await say([this.praise(), ...T.letterLike(l)]); // "Ka jak kot!"
+            await say([this.praise(), ...T.letterLike(l, said)]); // "Ka jak kot!"
             if (!this.alive) return;
             await this.deliver(p);
             resolve();
@@ -149,7 +160,7 @@ export class DeliveryMission extends Mission {
       ui.bubble({ big: showLetter(target), pic: '📦', onTap: () => this.replay() });
       this.question('letterSound', target, {
         short: T.startsWith(target),
-        hint: () => T.letterLike(target), // "Ka jak kot!"
+        hint: () => T.letterLike(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : parcels.find((p) => p !== right && p.parent)),
         reveal: () => this.hint(right, () => solved),
       });
@@ -163,9 +174,9 @@ export class DeliveryMission extends Mission {
       const pool = [...this.L.pool].filter((l) => WORDS[l]);
       const target = this.pick('letterSound', pool);
       this.last = target;
-      this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const letters = shuffle([target, ...this.others(target, pool, n - 1)]);
+      const [said, pic] = this.wordFor(target);
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.4 : 4;
       let solved = false, lastWrong = null;
@@ -180,7 +191,7 @@ export class DeliveryMission extends Mission {
         this.tappable(b, () => choose(b)); // tapping a mailbox = putting the parcel in it
         return b;
       });
-      const parcel = makeParcel(WORDS[target][1], '#fde68a');
+      const parcel = makeParcel(pic, '#fde68a');
       parcel.scale.setScalar(0.8);
       parcel.position.set(0, 0, 3);
       this.scene.add(parcel);
@@ -188,16 +199,37 @@ export class DeliveryMission extends Mission {
       this.dropIn(parcel, 0, n * 140 + 200).then(() => sfx.pop());
       parcel.userData.tapHeight = 0.6;
       const home = new THREE.Vector3(0, 0, 3);
+      // Dragged along the ground, the parcel would slide behind the fence under her finger. Past the mailboxes'
+      // front it moves back along her line of sight instead (the same spot on screen), so it climbs their fronts.
+      const FRONT = 0.1;
+      const inFront = (p) => (p.z >= FRONT ? p : camera.position.clone().lerp(p, (camera.position.z - FRONT) / (camera.position.z - p.z)));
+      // the mailbox the top of the parcel is over on screen (the box with the letter: the posts' feet are a nudge away)
+      const under = () => {
+        const c = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.9, 0)).project(camera);
+        return boxes.find((b) => {
+          if (!b.parent || b.userData.gone) return false;
+          const q = [[-0.85, 1.1], [0.85, 1.1], [-0.85, 2.7], [0.85, 2.7]].map(([dx, y]) => new THREE.Vector3(b.position.x + dx, y, b.position.z + 0.55).project(camera));
+          return c.x > Math.min(...q.map((v) => v.x)) && c.x < Math.max(...q.map((v) => v.x)) && c.y > Math.min(...q.map((v) => v.y)) && c.y < Math.max(...q.map((v) => v.y));
+        });
+      };
+      let placed = null, over = null;
+      const offDrag = this.onUpdate(() => {
+        if (dragging() !== parcel) { placed = over = null; return; }
+        if (!placed || !parcel.position.equals(placed)) parcel.position.copy((placed = inFront(parcel.position.clone()))); // (drag.js moved it)
+        const b = under();
+        if (b && b !== over) hop(b, 0.15, 260); // the mailbox it would go into
+        over = b;
+      });
       this.draggable(parcel, {
         height: 0,
         lift: 0.6,
         onPick: () => { this.poke(); sfx.pop(); },
-        // forgiving: moved up towards the mailboxes → into the one nearest left-to-right
-        onDrop: (p, at) => {
-          if (at.z > home.z - 1.2) return false; // not moved towards them
-          const near = boxes.filter((b) => b.parent).sort((a, b) => Math.abs(a.position.x - at.x) - Math.abs(b.position.x - at.x))[0];
-          if (!near || Math.abs(near.position.x - at.x) > gap * 0.75) return false;
-          choose(near);
+        // only a drop on a mailbox posts it; anywhere else it floats back
+        onDrop: () => {
+          parcel.position.copy(inFront(parcel.position.clone()));
+          const b = under();
+          if (!b) return false;
+          choose(b);
           return true;
         },
         onTap: () => { this.poke(); hop(parcel, 0.3); }, // (a tap on the parcel: it just wiggles; tap a mailbox instead)
@@ -226,9 +258,10 @@ export class DeliveryMission extends Mission {
           sfx.ding();
           hop(b, 0.35);
           this.success(to.clone().add(new THREE.Vector3(0, 0.6, 0)), { big: true });
-          await say([this.praise(), ...T.letterLike(target)]);
+          await say([this.praise(), ...T.letterLike(target, said)]);
           if (!this.alive) return;
           await Promise.all(boxes.map((x) => this.shrinkAway(x, 350)));
+          offDrag();
           resolve();
         } else {
           lastWrong = b;
@@ -239,14 +272,14 @@ export class DeliveryMission extends Mission {
       };
 
       const right = boxes.find((b) => b.userData.letter === target);
-      ui.bubble({ big: '', pic: WORDS[target][1], onTap: () => this.replay() });
+      ui.bubble({ big: '', pic, onTap: () => this.replay() });
       this.question('letterSound', target, {
-        short: T.whichBox(target),
-        hint: () => T.letterLike(target), // "Ka jak kot!"
+        short: T.whichBox(said),
+        hint: () => T.letterLike(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : boxes.find((b) => b !== right && b.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      wait(700 + n * 140).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.whichBox(target)] : T.whichBox(target)); });
+      wait(700 + n * 140).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.whichBox(said)] : T.whichBox(said)); });
     });
   }
 

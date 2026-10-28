@@ -1,7 +1,7 @@
 // Everything the game says, in Polish.
 // Each phrase returns a list of short segments; every segment is one pre-recorded clip.
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
-import { CONFIG, WORDS, letterName, sayWord } from '../config.js';
+import { CONFIG, WORDS, letterWord, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
@@ -14,7 +14,7 @@ const ph = (l) => PHON[l.toUpperCase()] || l;
 /** "jedną kropkę", "dwie kropki", "pięć kropek" (accusative: "ma … ") */
 const dotsAcc = (n) => (n === 1 ? 'jedną kropkę' : n <= 4 ? `${NUM_F[n]} kropki` : `${NUM[n]} kropek`);
 const L = (l) => cap(letterName(l));
-const word = (l) => (WORDS[l] || [''])[0];
+const word = (l) => letterWord(l)[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
 const treats = (n) => (n === 1 ? 'smakołyk' : n >= 2 && n <= 4 ? 'smakołyki' : 'smakołyków');
 /** jedno piętro, dwa piętra, pięć pięter */
@@ -112,7 +112,7 @@ export const T = {
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
   startsWith: (l) => [`Co zaczyna się na ${L(l)}?`],
-  whichBox: (l) => [`Do której skrzynki pójdzie ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}?`],
+  whichBox: (w) => [`Do której skrzynki pójdzie ${w}?`], // w: one of the letter's picture words
   // Pup Picnic: more, less, the same
   picnicStart: () => [`Piknik! ${pup} jest głodny!`],
   askMore: () => ['Gdzie jest więcej smakołyków?'],
@@ -160,6 +160,7 @@ export const T = {
   whichSound: (l) => [`Która literka robi: ${ph(l)}?`],
   soundLike: (l) => [`${cap(ph(l))}… jak ${word(l)}!`],
   soundIs: (l) => [`${cap(ph(l))}… to ${L(l)}!`],
+  kittensPlay: () => [`Uratowałaś wszystkie kotki, ${voc}! Teraz bawią się razem!`], // (the end: they play in a ring)
 
   // Balloon Hill
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
@@ -185,7 +186,7 @@ export const T = {
   whoseIs: (whose) => [`To pociąg ${whose}!`],
 
   yes: () => ['Tak!'],
-  letterLike: (l) => [`${L(l)} jak ${word(l)}!`],
+  letterLike: (l, w = word(l)) => [`${L(l)} jak ${w}!`],
   howManyShort: () => ['Ile smakołyków?'],
   tapTheBox: () => ['Dotknij pudełka!'],
   countTogether: () => ['Policzmy razem!'],
@@ -322,7 +323,7 @@ export function allSegments(levels, allLetters) {
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   // Pup Delivery: every letter its levels can ask
-  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.letterLike(l)); });
+  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); (WORDS[l] || []).forEach(([w]) => { add(T.whichBox(w)); add(T.letterLike(l, w)); }); });
   // Name Train: each row's words, their syllables, and whose they are; letters only names use (Y) get the train's lines
   new Set(words.join('')).forEach((l) => { if (!letters.has(l)) { add(T.letter(l)); add(T.findLetter(l)); add(T.spellNext(l)); } });
   levels.name.forEach((row) => row.words.forEach((w) => {
@@ -337,7 +338,7 @@ export function allSegments(levels, allLetters) {
   [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.kittensPlay, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.kittenTummy, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully, T.here].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...RIVER_ON, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));

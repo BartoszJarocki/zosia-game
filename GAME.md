@@ -59,10 +59,13 @@ A set can use `{name}` (the child's name), other sets, and plain capital letters
 | ALL | ABCDEFGHIJKLMNOPRSTUWZ |
 | START | {name} + AMTO |
 | MORE | START + EULDPKBW |
-| SOUNDS | MSAOZLUEI |
+| SOUNDS | MSZLNFRW |
 
 `ALL` is every letter the game may use (Q, V, X, Y are left out: they are rare in Polish and hard
-to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g. B → banan 🍌.
+to picture). `SOUNDS` are consonants whose sound can be held (mmm, sss): a vowel's sound is its name, so asking
+it would repeat the name levels. Every letter needs a picture word in `src/config.js` (`WORDS`), e.g. B → banan 🍌, balon 🎈: the
+first is the letter's word ("Be jak banan!"), her name for her own letter ("Zet jak Zosia!"). A picture word starts
+with its letter's sound and then a vowel (not "słoń", "gruszka") and is what she would call the picture.
 
 ---
 
@@ -70,17 +73,28 @@ to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g
 
 ### 🐱 Kitty Park · `letters`
 
-A kitten hides behind one of the letter blocks: "Kotek schował się za literą Be!" Tapping the right
-block makes it fly away and the kitten appears.
+A kitten hides behind one of the letter blocks: "Kotek się schował! Znajdź Be!" Tapping the right
+block makes it fly away and the kitten appears, then sits down in a row at the front with the others she found;
+at the end they all play together ("Uratowałaś wszystkie kotki!"). The story is told in the first round only;
+after that she hears the praise, the letter's word and the next question ("Brawo! Be jak banan!" "Znajdź Pe!").
+When the answer is shown, the kitten peeks out over its block.
 
 | Level | pool | choices | ask | similar | rounds | needs |
 |---|---|---|---|---|---|---|
 | 1 | START | 3 | match | no | 4 | — |
 | 2 | START | 3 | name | no | 4 | — |
-| 3 | MORE | 3 | audio | no | 4 | — |
-| 4 | MORE | 3 | name | yes | 4 | — |
-| 5 | ALL | 3 | word | no | 4 | — |
-| 6 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.4 |
+| 3 | MORE | 3 | name | no | 4 | — |
+| 4 | MORE | 3 | audio | no | 4 | — |
+| 5 | MORE | 3 | name | yes | 4 | — |
+| 6 | ALL | 3 | name | no | 4 | — |
+| 7 | ALL | 3 | word | no | 4 | — |
+| 8 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.4 |
+| 9 | ALL | 3 | word | yes | 4 | — |
+| 10 | ALL | 4 | word | yes | 4 | — |
+
+Each level brings one new thing: new letters (3, 6), a harder way of asking (2, 4, 7, 8), lookalikes (5, 9) or
+a fourth block (10). When it brings one, another may get easier again: lookalikes come with letters shown and
+named (5), and all the letters arrive shown and named (6) before they are asked by their word (7).
 
 - **pool** — which letters can be asked (a letter set, letters, or both with `+`)
 - **choices** — how many blocks (2–4)
@@ -89,7 +103,7 @@ block makes it fly away and the kitten appears.
   `name` shown and named: "Znajdź Be!" ·
   `audio` only named, nothing shown ·
   `word` named with its picture word, the picture in the bubble: "Be jak banan! Znajdź Be!" ·
-  `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold — the `SOUNDS` set)
+  `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold, so `SOUNDS` are consonants)
 - **similar** — `yes` puts lookalike letters (B/P/R, E/F, M/W, O/C…) among the wrong answers on purpose
 - **needs** — optional: the level opens only once that skill is known well enough over the level's letters
   (average mastery, 0–1, over the ones she has been asked, once that is at least half of them), not just after
@@ -104,11 +118,19 @@ Balloons with letters float up. Pop every balloon with the asked letter, countin
 | Level | pool | targets | total | speed | similar | rounds |
 |---|---|---|---|---|---|---|
 | 1 | START | 2 | 5 | 0.3–0.45 | no | 3 |
-| 2 | MORE | 3 | 7 | 0.45–0.65 | no | 2 |
-| 3 | ALL | 3 | 8 | 0.6–0.85 | yes | 2 |
+| 2 | MORE | 2 | 5 | 0.3–0.45 | no | 3 |
+| 3 | MORE | 3 | 7 | 0.3–0.45 | no | 2 |
+| 4 | MORE | 3 | 7 | 0.45–0.65 | no | 2 |
+| 5 | ALL | 3 | 7 | 0.45–0.65 | no | 2 |
+| 6 | ALL | 3 | 7 | 0.45–0.65 | yes | 2 |
+| 7 | ALL | 4 | 9 | 0.45–0.65 | yes | 2 |
+
+Each level changes one thing: the letters (2, 5), how many balloons (3, 7), how fast (4) or lookalikes (6).
 
 - **targets** — how many balloons have the right letter (1–4) · **total** — balloons in the air (3–9)
-- **speed** — how fast they rise, a range (each balloon picks a speed inside it)
+- **speed** — how fast they rise, a range (each lane of balloons picks a speed inside it). They rise in five
+  lanes that never touch, up to just under the speech bubble (top left) and the top bar, then float away and
+  come back up from the bottom
 - **similar** — as in Kitty Park · **rounds** — how many letters to pop (aim for 30–45 seconds in all)
 
 ### 🚂 Name Train · `name`
@@ -317,8 +339,9 @@ The post office: Chase delivers parcels. First sounds: which word starts with wh
 | 2 | START | 3 | pictureSound | 4 |
 | 3 | START | 3 | soundLetter | 4 |
 | 4 | MORE | 3 | soundLetter | 4 |
+| 5 | ALL | 3 | soundLetter | 4 |
 
-- **pool** — which letters (their picture words come from `WORDS`: K → kot 🐱)
+- **pool** — which letters (their picture words come from `WORDS`, taking turns: K → kot 🐱, then kaczka 🦆)
 - **choices** — how many parcels / mailboxes (2–4)
 - **mode** — `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat ·
   `soundLetter`: letter mailboxes and one parcel with a picture, "Do której skrzynki pójdzie kot?" →
