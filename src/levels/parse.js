@@ -30,12 +30,12 @@ export const SCHEMA = {
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to pop
   },
   name: {
-    words: { type: 'words', minLen: 2, maxLen: 7 },
-    mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight'], optional: true },
-    gaps: { type: 'int', min: 1, max: 3, optional: true, default: 1 }, // (missing: how many letters are missing)
+    words: { type: 'words', minLen: 2, maxLen: 8, extra: 'Y' }, // (Y only in names, e.g. RYSIEK: shown and named, never asked elsewhere)
+    mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight', 'whose'], optional: true },
+    gaps: { type: 'int', min: 1, max: 3, optional: true, default: 2 }, // (missing: how many letters are missing)
     ghost: { type: 'bool', optional: true },                      // (older tables: ghost yes = mode ghost)
     bubble: { type: 'enum', values: ['letter', 'word'], optional: true }, // (older tables: word = mode highlight)
-    extras: { type: 'int', min: 0, max: 3 },
+    extras: { type: 'int', min: 0, max: 3, optional: true, default: 0 }, // (whose: always three trains)
     similar: { type: 'bool', optional: true, default: false },
   },
   cones: {
@@ -138,6 +138,17 @@ export function parseGame(md, { childName = '' } = {}) {
     if (!letterSets.ALL) errors.push('GAME.md: the letter sets need an "ALL" row (every letter the game may use)');
   }
 
+  // ---- Name Train words: each word's syllables (the finale claps them) and whose it is ("pociąg Zosi") ----
+  const nameWords = {};
+  const wordsAt = lines.findIndex((l) => /^#{2,4}\s+Name Train words/i.test(l));
+  for (const r of (wordsAt < 0 ? null : tableAfter(lines, wordsAt))?.rows || []) {
+    const word = (r.cells.Word || r.cells.word || '').toUpperCase();
+    const syllables = (r.cells.syllables || '').toUpperCase().split('-').map((s) => s.trim()).filter(Boolean);
+    const whose = r.cells.whose && !/^[—-]$/.test(r.cells.whose) ? r.cells.whose : null;
+    if (syllables.join('') !== word) errors.push(`GAME.md line ${r.line} (Name Train words): the syllables "${r.cells.syllables}" must spell ${word}`);
+    nameWords[word] = { syllables, whose };
+  }
+
   // ---- missions ----
   const levels = {}, missions = {};
   lines.forEach((l, i) => {
@@ -166,7 +177,7 @@ export function parseGame(md, { childName = '' } = {}) {
         try { out[key] = value(raw, spec, { letterSets, name }); }
         catch (e) { errors.push(`${where}: ${key} ${e.message}`); }
       }
-      crossCheck(kind, out, where, errors);
+      crossCheck(kind, out, where, errors, { nameWords });
       return out;
     });
   });
@@ -216,8 +227,8 @@ function value(raw, spec, ctx) {
       for (const w of words) {
         if (!/^[A-Z]+$/.test(w)) throw new Error(`"${w}" must be plain letters A–Z`);
         if (w.length < spec.minLen || w.length > spec.maxLen) throw new Error(`"${w}" must be ${spec.minLen}–${spec.maxLen} letters long`);
-        const missing = [...w].filter((c) => !(ctx.letterSets.ALL || '').includes(c));
-        if (missing.length) throw new Error(`"${w}" uses letters not in the ALL set: ${[...new Set(missing)].join('')}`);
+        const missing = [...w].filter((c) => !((ctx.letterSets.ALL || '') + (spec.extra || '')).includes(c));
+        if (missing.length) throw new Error(`"${w}" uses letters not in the ALL set${spec.extra ? ` (or ${spec.extra})` : ''}: ${[...new Set(missing)].join('')}`);
       }
       if (!words.length) throw new Error('needs at least one word');
       return words;
@@ -239,7 +250,7 @@ export function resolveLetters(expr, sets, name) {
   return [...new Set(out)].join('');
 }
 
-function crossCheck(kind, s, where, errors) {
+function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
@@ -250,6 +261,13 @@ function crossCheck(kind, s, where, errors) {
     s.mode ||= s.ghost ? 'ghost' : s.bubble === 'word' ? 'highlight' : 'ghost'; // (older tables used ghost + bubble)
     const short = s.mode === 'missing' ? (s.words || []).filter((w) => w.length <= s.gaps) : [];
     if (short.length) errors.push(`${where}: with ${s.gaps} missing letter(s), every word needs more letters than that (${short.join(', ')})`);
+    // what the mission needs to know about its words, keyed by word
+    const words = s.words || [];
+    const unknown = words.filter((w) => !nameWords[w]);
+    if (unknown.length) errors.push(`${where}: add ${unknown.join(', ')} to the "Name Train words" table (syllables, and whose it is for names)`);
+    s.syllables = Object.fromEntries(words.filter((w) => nameWords[w]).map((w) => [w, nameWords[w].syllables]));
+    s.whose = Object.fromEntries(words.filter((w) => nameWords[w]?.whose).map((w) => [w, nameWords[w].whose]));
+    if (s.mode === 'whose' && Object.keys(s.whose).length < 3) errors.push(`${where}: "whose" asks for three different trains, so it needs at least 3 words with a "whose" form (got ${Object.keys(s.whose).join(', ') || 'none'})`);
   }
   if (kind === 'letters') {
     s.ask ||= s.show === 'picture' ? 'word' : 'name'; // (older tables used "show")

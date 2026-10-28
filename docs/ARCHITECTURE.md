@@ -66,7 +66,7 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
 |---|---|---|
 | `pup-patrol-progress` | `{ v: 3, missions: { [kind]: { level, good, lastAcc } }, items: { [prefix+item]: { n, ok } }, skills, sessions }` (see `progress/migrations.js`) | `progress.js` |
 | `pup-patrol-badges` | `{ [kind]: count }` | `ui.js` (`badges`) |
-| `pup-patrol-quality` | `'low' / 'medium' / 'high' / 'medium-locked'` | `fx/post.js` |
+| `pup-patrol-quality-v2` | `'low' / 'medium' / 'high' / 'medium-locked'` | `fx/post.js` (the v1 key is dropped once, because the old watcher could lock it wrongly) |
 
 - Migration exists once: a missing/old `progress` is rebuilt from badge counts (`level = 1 + badges / 2`), so stars are never lost.
 - Writes are synchronous on every change, wrapped in try/catch (private mode etc.).
@@ -139,7 +139,7 @@ Mission.ask() → prompt finished │ idle repeat → timeout │ bubble tap →
 |---|---|---|
 | Kitty Park (`letters`) | `letterVisual`; `letterAudio` when only the picture is shown | letter |
 | Balloon Hill | `letterVisual`, one question per balloon to find | letter |
-| Name Train | `letterVisual` | letter |
+| Name Train | `letterVisual` (`whose`: finding a whole name) | letter (`whose`: the word, e.g. `ZOSIA`) |
 | Cone Road | `numeral`; `quantity` when the bubble shows only dots | number |
 | River (`stones`) | `numeral`; `sequence` for "what comes next" steps | number |
 | Treat House (`counting`) | `counting` (give N); `quantity` (how many?) | number |
@@ -180,7 +180,7 @@ this.wrong(chosen, T.thatsLetter(chosen));   // the base says it, then the next 
 |---|---|---|---|
 | Kitty Park | letter shown in the bubble + "Be jak banan!" | the block she picked leaves | block pulses |
 | Balloon Hill | balloons slow down + "Be jak banan!" | a wrong balloon floats away | target balloons pulse |
-| Name Train | ghost letter on the wagon + "Zet jak Zosia!" | an extra block leaves (or the right one steps forward) | block pulses |
+| Name Train | ghost letter on the wagon + "Zet jak Zosia!" (`whose`: the name in the bubble, its train toots) | an extra block leaves (or the right one steps forward; `whose`: a wrong train drives off) | block pulses (`whose`: "To pociąg Zosi!") |
 | Cone Road | bubble shows numeral + dots, "Trzy kropki!" | a wrong cone leaves | sign pulses |
 | River | number shown (in "what's next?" mode) or "Trzy kropki!" | number shown | stone pulses |
 | Treat House | give: the N spots light up · how many: count together | how many: a wrong block leaves + count together | box pulses / block pulses |
@@ -300,14 +300,22 @@ Six levels, each meeting a letter a different way (GAME.md `ask`), not just more
 - Older tables with `show` still parse (`letter` → name, `picture` → word). A gentler run after a rough one asks
   an easier way (audio/word → name, sound → word).
 
-## Name Train V2 (Phase 12)
+## Name Train V2 (Phase 12, polish pass)
 
 Nothing is spelled from memory: the word is always there to look at. GAME.md `mode`:
-`ghost` (faint letters on the wagons: match) → `word` (the word in the bubble, wagons empty: which comes next?) →
-`missing` (the train arrives loaded with a gap, "Z _ S I A": which one? `gaps` 1–3) → `highlight` (the word with the
-next letter lit, for new words). `NameMission.fill` lists the wagons she fills; at the end the letters are said
-in word order, then the word, and the train drives off. `ui.bubble({ word, at, done })` can now mark letters done
-without lighting the next one.
+`ghost` (faint letters on the wagons: match) · `highlight` (the word with the next letter lit) · `word` (the word
+in the bubble, the next wagon glowing: which letter goes here?) · `missing` (the train arrives with gaps and the
+whole word in the bubble: which letters are missing? any missing one is right) · `whose` (three trains with name
+boards, "Który pociąg jest Zosi?": `WhoseTrain`; a miss makes the right train toot, never a "no").
+`src/scenes/name.js` exports `NameMission` as a factory: the level's mode picks `LetterTrain` or `WhoseTrain`.
+The choices that don't need three.js (which word: never twice in a row, her name about one run in three; which
+gaps; extras that look like no letter of the word; whose names to ask, in what order) live in
+`src/levels/train.js`. GAME.md's "Name Train words" table gives each word's syllables and whose form ("Kasi");
+`parse.js` attaches them to each level row as `row.syllables[word]` and `row.whose[word]` and checks every word
+has a row. At the end the train whistles once per syllable while the syllable's blocks hop ("Zo! Sia!"), then the
+word, its picture (a heart and "Buziaczek dla Kasi!" for people), and the train drives off.
+Long words get two rows of blocks; on a portrait screen the camera frames the train and the rows sit nearer, so
+blocks stay over 70 px (`tools/playtest/name-layout.mjs` measures it; `name-finale.mjs` films the syllables).
 
 ## Drag and drop + Treat House V2 (Phase 13)
 
