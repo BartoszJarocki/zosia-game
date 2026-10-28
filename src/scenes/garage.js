@@ -331,11 +331,11 @@ export class GarageMission extends Mission {
       return o;
     });
     // the blocks wait on a pallet by Chase, who hands them out one at a time
-    const pallet = mesh(rbox(2.3, 0.2, 2.1, 0.05), mat('#b7773f', { roughness: 0.9 }), { x: 3.4, y: 0.1, z: 3.3 });
+    const pallet = mesh(rbox(2.5, 0.2, 2.3, 0.05), mat('#b7773f', { roughness: 0.9 }), { x: 2.9, y: 0.1, z: FRONT_Z });
     this.scene.add(pallet);
     const blocks = s.blocks.map((b, i) => {
       const o = makeBlock(b.colour, b.size);
-      o.position.set(2.88 + (i % 2) * 1.05, 0.2 + o.userData.half, 2.8 + Math.floor(i / 2) * 1.0); // two by two
+      o.position.set(2.3 + (i % 2) * 1.2, 0.2 + o.userData.half, FRONT_Z - 0.55 + Math.floor(i / 2) * 1.1); // two by two, centred on the depth where she sorts them
       o.rotation.y = (i - 1.5) * 0.12;
       this.scene.add(o);
       o.userData.shadow = this.shadowUnder(o, o.userData.half * 1.3, 0.28);

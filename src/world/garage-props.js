@@ -167,7 +167,7 @@ export function makeBasket(colour, size = 'big') {
 
 /** A toy block (klocek): big, small, or (size null, when only its colour matters) in between. */
 export function makeBlock(colour, size) {
-  const s = { big: 0.95, small: 0.6 }[size] ?? 0.75;
+  const s = { big: 1.1, small: 0.55 }[size] ?? 0.75; // twice the size: depth on screen never flips big and small
   const b = mesh(rbox(s, s, s, s * 0.12), mat(COLOUR_HEX[colour], { roughness: 0.4 }));
   b.userData.half = s / 2;
   return b;
