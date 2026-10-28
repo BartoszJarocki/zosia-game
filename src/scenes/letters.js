@@ -99,7 +99,6 @@ export class LettersMission extends Mission {
       const skill = SKILL[ask];
       const target = this.pick(skill, pool);
       this.last = target;
-      this.item('L:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...distractors(target, pool, n - 1, this.L.similar)]);
       const colors = shuffle(TILE_COLORS);

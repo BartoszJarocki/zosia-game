@@ -47,11 +47,12 @@ test('rounds: limits are checked', () => {
 
 const lettersTable = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`letters\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
 
-test('Kitty Park: six levels, each asking a different way; level 6 is gated on mastery', () => {
-  const { levels } = parseGame(md, { childName: 'Zosia' });
-  assert.deepEqual(levels.letters.map((l) => l.ask), ['match', 'name', 'audio', 'name', 'word', 'sound']);
-  assert.deepEqual(levels.letters[5].needs, { skill: 'letterAudio', min: 0.4 });
-  assert.equal(levels.letters[3].similar, true);
+test('Kitty Park: the sound level is gated on mastery, asks consonants, and is not the top', () => {
+  const { levels, letterSets } = parseGame(md, { childName: 'Zosia' });
+  const sound = levels.letters.findIndex((l) => l.ask === 'sound');
+  assert.deepEqual(levels.letters[sound].needs, { skill: 'letterAudio', min: 0.4 });
+  assert.equal([...levels.letters[sound].pool].filter((l) => 'AEIOUY'.includes(l)).length, 0);
+  assert.equal(levels.letters.at(-1).pool, letterSets.ALL);
 });
 
 test('Kitty Park: older tables with "show" still work', () => {
