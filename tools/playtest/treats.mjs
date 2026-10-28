@@ -130,22 +130,24 @@ if (check === 'overfeed' || check === 'taps') {
     await page.waitForTimeout(1500);
     const none = await saidSince(k);
     expect(!none.some((l) => /Za mało|za dużo/.test(l)) && !(await events()).some((e) => e.includes('wrongChoice')), `Chase with no treats: just a bark, no wrong answer (${JSON.stringify(none)})`);
-    await click((await proj('pile'))[0]);
-    await page.waitForTimeout(900);
+    // (the machine can be slow: wait for what the game says, not for a fixed time)
+    const saysMore = (k, ms = 10000) => page.waitForFunction((k) => window.__sayLog.length > k, k, { timeout: ms }).catch(() => {});
+    const giveOne = async () => { const k = (await said()).length; await click((await proj('pile'))[0]); await saysMore(k); };
+    await giveOne();
+    await page.waitForTimeout(600);
     k = (await said()).length;
     await click((await proj('chase'))[0]);
-    await page.waitForTimeout(2200);
+    await saysMore(k);
+    await page.waitForTimeout(300);
     expect(JSON.stringify(await saidSince(k)) === JSON.stringify(['Za mało! Jeszcze!']), `1 of ${n}, tap Chase: ${JSON.stringify(await saidSince(k))}`);
-    await click((await proj('pile'))[0]);
-    await page.waitForTimeout(700);
-    // the last one: tap Chase while it is still in the air, then again at once
+    await giveOne();
+    // the last one: tap Chase while it is still in the air, then again at once (taps are handled in order)
     k = (await said()).length;
     await click((await proj('pile'))[0]);
-    await page.waitForTimeout(60);
     await click((await proj('chase'))[0]);
-    await page.waitForTimeout(80);
     await click((await proj('chase'))[0]);
-    await page.waitForTimeout(3500);
+    await page.waitForFunction(() => window.__pup.learning.recent(5).some((e) => e.correct), null, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(1500);
     const ev = await events();
     expect(ev.filter((e) => e.startsWith(`counting:${n} OK`)).length === 1, `late tap while the treat flies, twice: solved once (${ev.join(' | ')})`);
     log(`said: ${JSON.stringify(await saidSince(k))}`);
@@ -213,15 +215,32 @@ if (check === 'kinds') {
     if (kind === 'howMany') { await click((await proj('block')).find((b) => b.num === q.item)); }
     else if (kind === 'share') { for (let i = 0; i < 4; i++) { const p = (await proj('plate'))[0]; if (!p) break; await click(p); await page.waitForTimeout(700); } }
     else {
-      for (let i = 0; i < q.item; i++) { await click((await proj('pile'))[0]); await page.waitForTimeout(650); }
+      // OFF=flash:+1,hidden:-1 gives that many too many (or too few) first
+      const off = Number((process.env.OFF || '').split(',').find((x) => x.startsWith(kind + ':'))?.split(':')[1] || 0);
+      const giveSome = async (k) => { for (let i = 0; i < k; i++) { await click((await proj('pile'))[0]); await page.waitForTimeout(650); } };
+      const heard = (line) => page.waitForFunction((l) => window.__sayLog.includes(l), line, { timeout: 30000 }).then(() => true, () => false);
+      await giveSome(q.item + off);
       await page.waitForTimeout(500);
       await snap(`${kind}-given`);
+      const k = (await said()).length;
       await click((await proj('chase'))[0]);
+      if (off > 0) {
+        expect(await heard('Teraz dobrze? Dotknij Czejsa!'), `${kind}, ${off} too many: ${JSON.stringify(await saidSince(k))}`);
+        await snap(`${kind}-gave-back`);
+        await click((await proj('chase'))[0]);
+      } else if (off < 0) {
+        expect(await heard('Za mało! Jeszcze!'), `${kind}, ${-off} too few: ${JSON.stringify(await saidSince(k))}`);
+        await snap(`${kind}-too-few`);
+        await giveSome(-off);
+        await page.waitForTimeout(500);
+        await click((await proj('chase'))[0]);
+      }
       await page.waitForTimeout(kind === 'give' ? 300 : 2600);
       await snap(`${kind}-checked`);
     }
     await page.waitForFunction(() => !window.__pup.getStage().learn.isOpen, null, { timeout: 20000 }).catch(() => {});
-    log(`${kind}: ${(await events()).slice(-1)[0]}`);
+    const last = (await events()).slice(-1)[0];
+    expect(last?.startsWith(`${q.skill}:${q.item} OK`), `${kind}: solved (${last})`);
   }
   await page.waitForSelector('.celebrate', { timeout: 60000 }).then(() => log('celebration'), () => log('no celebration'));
   log(`said: ${JSON.stringify(await said())}`);

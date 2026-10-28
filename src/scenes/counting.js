@@ -180,8 +180,8 @@ export class CountingMission extends Mission {
 
   /**
    * Treats from the pile to Chase's tray, one by one (drag one over, or tap it and it hops by itself), each
-   * counted aloud. f.done resolves once exactly n are there: as soon as the n-th is given when auto, otherwise
-   * when she taps Chase. A wrong amount is answered and she carries on: too few, "Za mało! Jeszcze!"; too many,
+   * counted aloud. Right once exactly n are there: as soon as the n-th is given when auto, otherwise when she
+   * taps Chase (f.done resolves after the bowl has shown it). A wrong amount is answered and she carries on: too few, "Za mało! Jeszcze!"; too many,
    * Chase gives the extra ones back and she taps him again herself. compare(f) runs once before the first
    * verdict (flash, hidden: the bowl's treats line up next to hers).
    */
@@ -191,6 +191,7 @@ export class CountingMission extends Mission {
     f.count = () => f.given.length;
     f.next = () => f.pile.find((b) => !f.given.includes(b));
     f.done = new Promise((resolve) => (f.resolve = resolve));
+    const right = () => { this.correct(n); this.stopIdle(); };
     const finish = () => {
       f.state = 'done';
       this.onPup = null;
@@ -211,7 +212,7 @@ export class CountingMission extends Mission {
         bone.scale.setScalar(s0 + (ON_TRAY - s0) * t);
       }, ease.inOut).then(() => { bone.rotation.set(0, LIE, 0); sfx.crunch(); rings[i]?.material.color.set(FULL); this.pupWags(); }));
       say(T.number(f.count()));
-      if (auto && f.count() === n) finish();
+      if (auto && f.count() === n) { right(); finish(); }
       else if (!auto) this.pupGlow(true); // "tap Chase when you're done" comes from the quiet-time help
       return true;
     };
@@ -238,9 +239,10 @@ export class CountingMission extends Mission {
       this.poke();
       f.state = 'checking';
       await Promise.all(f.landed); // (a tap while a treat is still flying counts it)
+      const c = f.count();
+      if (c === n) right(); // her answer is the tap; the bowl only shows it
       if (compare && !f.compared) { f.compared = true; await compare(f); }
       if (!this.alive) return;
-      const c = f.count();
       if (c === n) { finish(); return; }
       this.wrong(c, { feedback: false }); // a wrong amount: answered here, in words
       if (c < n) { f.state = 'giving'; this.say(T.tooFew()); return; }
@@ -296,8 +298,6 @@ export class CountingMission extends Mission {
     wait(400).then(() => { if (this.alive) this.ask(auto ? [...T.treatsGive(n), ...T.dragTreat()] : T.giveThenTap(n)); });
     await f.done;
     if (!this.alive) return;
-    this.correct(n);
-    this.stopIdle();
     await this.eatUp(f, [...T.treatsDone(n), this.praise()]);
   }
 
@@ -608,7 +608,7 @@ export class CountingMission extends Mission {
       await bowl.userData.to('aside');
       if (stay) return;
       await wait(2000);
-      if (!this.alive || f.state === 'checking') return;
+      if (!this.alive || f.compared || f.state === 'checking') return; // (once checked, its treats are on the tray)
       await bowl.userData.to('shut');
       open = false;
     };
@@ -638,8 +638,6 @@ export class CountingMission extends Mission {
     this.ask(ask);
     await f.done;
     if (!this.alive) return;
-    this.correct(n);
-    this.stopIdle();
     await this.eatUp(f, [...T.same(), ...T.treatsDone(n), this.praise()], under);
     if (this.alive) await this.shrinkAway(dish, 300);
   }
