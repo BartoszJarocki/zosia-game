@@ -2,9 +2,9 @@
 // Only frames the engine renders at full rate count: when nothing moves it renders 30 fps on purpose
 // (engine.js), and those frames say nothing about the device.
 
-export const WINDOW_S = 3;  // judge every 3 s of full-rate frames
-export const SLOW_FPS = 42; // under this: step down
-export const FAST_FPS = 57; // over this two windows in a row: step up
+const WINDOW_S = 3;  // judge every 3 s of full-rate frames
+const SLOW_FPS = 42; // under this: step down
+const FAST_FPS = 57; // over this two windows in a row: step up
 
 export const createWatch = () => ({ frames: 0, seconds: 0, fastWindows: 0 });
 

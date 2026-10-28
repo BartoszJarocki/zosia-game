@@ -140,7 +140,7 @@ function playBuffer(buf, token) {
     src.buffer = buf;
     src.connect(voiceGain);
     // A suspended context never ends a clip, and the game waits for lines to end (no help while speaking).
-    // Not over a little after its length: nobody heard it, so the rest of the line goes too.
+    // A clip still not done a little after its length was not heard, so the rest of its line is dropped too.
     const late = setTimeout(hush, buf.duration * 1000 + 2500);
     const end = () => { clearTimeout(late); if (current?.src === src) current = null; resolve(); };
     src.onended = end;
