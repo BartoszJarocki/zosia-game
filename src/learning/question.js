@@ -20,9 +20,12 @@ export class QuestionTracker {
   get isOpen() { return Boolean(this.q); }
   get current() { return this.q; }
 
-  /** Start a question. An unresolved previous question is dropped silently (e.g. the scene moved on). */
-  open({ mission, skill, item, level, round }) {
-    this.q = { mission, skill, item: String(item), level, round, openedAt: this.now(), promptEndAt: null, wrong: 0, assist: 0, taps: [] };
+  /**
+   * Start a question. An unresolved previous question is dropped silently (e.g. the scene moved on).
+   * scored: false when it can't really be got wrong · options: how many things she can pick from
+   */
+  open({ mission, skill, item, level, round, scored = true, options }) {
+    this.q = { mission, skill, item: String(item), level, round, scored, options, openedAt: this.now(), promptEndAt: null, wrong: 0, assist: 0, taps: [] };
     return this.q;
   }
 
@@ -89,6 +92,8 @@ export class QuestionTracker {
       item: q.item,
       level: q.level,
       round: q.round,
+      scored: q.scored,
+      options: q.options,
       latencyMs: this.now() - from,
       assistLevel: q.assist,
       at: this.clock(),

@@ -19,10 +19,13 @@ test('gateItems per mission', () => {
   assert.deepEqual(gateItems('name', { words: ['MAMA', 'TATA'] }), ['M', 'A', 'T']);
 });
 
-test('meetsNeeds: average mastery over the level\'s items (unseen count as 0)', () => {
-  const row = { pool: 'MS', needs: { skill: 'letterAudio', min: 0.6 } };
-  assert.equal(meetsNeeds({}, 'letters', row), false);
-  assert.equal(meetsNeeds({ letterAudio: { M: { mastery: 0.9 } } }, 'letters', row), false, 'S not known yet: (0.9 + 0) / 2');
-  assert.equal(meetsNeeds({ letterAudio: { M: { mastery: 0.9 }, S: { mastery: 0.4 } } }, 'letters', row), true);
+test('meetsNeeds: average mastery over the level\'s items she was asked, once she was asked half of them', () => {
+  const row = { pool: 'MSAOZ', needs: { skill: 'letterAudio', min: 0.6 } };
+  const asked = (mastery) => ({ attempts: 4, mastery });
+  assert.equal(meetsNeeds({}, 'letters', row), false, 'nothing asked yet');
+  assert.equal(meetsNeeds({ letterAudio: { M: asked(0.9), S: asked(0.9) } }, 'letters', row), false, '2 of 5 asked: not enough to go on');
+  assert.equal(meetsNeeds({ letterAudio: { M: asked(0.9), S: asked(0.7), A: asked(0.3) } }, 'letters', row), true, '3 of 5 asked: (0.9 + 0.7 + 0.3) / 3 = 0.63; O and Z never met');
+  assert.equal(meetsNeeds({ letterAudio: { M: asked(0.9), S: asked(0.5), A: asked(0.3) } }, 'letters', row), false, '(0.9 + 0.5 + 0.3) / 3 = 0.57');
+  assert.equal(meetsNeeds({ letterAudio: { M: asked(0.9), S: asked(0.9), A: { attempts: 0, mastery: 0, wrong: 3 } } }, 'letters', row), false, 'A was never solved (she left): it does not count as asked');
   assert.equal(meetsNeeds({}, 'letters', { pool: 'MS' }), true, 'no gate');
 });
