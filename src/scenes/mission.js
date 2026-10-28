@@ -12,7 +12,6 @@ import { settingsFor, isLookalike } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
-import { isBounce } from '../input/bounce.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
 import { missionDone, replayed, checkAttention } from '../session/session.js';
 import { onMissionComplete } from '../adventure/rewards.js';
@@ -23,6 +22,7 @@ export const EASY_MIX = { familiar: 1, learning: 0.15 };
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
+import { isBounce } from '../input/bounce.js';
 
 /** How much grass the device can take. */
 export const detail = () => ({ low: 0.3, medium: 0.6, high: 1 }[post.tier] ?? 0.6);
