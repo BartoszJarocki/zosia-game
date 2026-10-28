@@ -8,7 +8,7 @@
 //   kinds     one round of each kind (give, howMany, share, flash, hidden), screenshots mid-question, then solved
 // The ray check needs three.js from the dev server (npx vite), so run "layout" against it.
 import { chromium } from 'playwright-core';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 mkdirSync(process.env.TMPDIR, { recursive: true });
 
@@ -16,6 +16,7 @@ const [check, levelArg = '4'] = process.argv.slice(2);
 const level = Number(levelArg);
 const BASE = process.env.BASE || 'http://127.0.0.1:4194';
 const OUT = new URL(`./${process.env.OUTDIR || 'out'}/treats-${check}/`, import.meta.url).pathname;
+rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 const report = [];
 const log = (s) => { report.push(s); console.log(s); };
@@ -200,7 +201,11 @@ if (check === 'kinds') {
   await open(...(process.env.PORTRAIT ? [820, 1180] : [1180, 820]));
   const kinds = (process.env.KINDS || 'give,howMany,share,flash,hidden').split(',');
   await start({ auto: false, slots: false, give: [4, 4], howMany: [5, 5], share: [3, 3], flash: [3, 3], hidden: [3, 3] }, kinds);
+  const bowlAt = (x) => page.waitForFunction((x) => { let bowl; window.__pup.getStage().scene.traverse((o) => { if (o.userData.to) bowl = o; }); return bowl && Math.abs(bowl.position.x - x) < 0.05; }, x, { timeout: 30000 }).catch(() => {});
   for (const kind of kinds) {
+    // the moment that makes these rounds: the treats on show (flash), one more slipping under the bowl (hidden)
+    if (kind === 'flash') { await page.waitForFunction(() => window.__sayLog.includes('Szybkie oko! Patrz!'), null, { timeout: 30000 }).catch(() => {}); await bowlAt(-1.75); await snap('flash-shown'); }
+    if (kind === 'hidden') { await page.waitForFunction(() => window.__sayLog.at(-1) === 'I jeszcze jeden!', null, { timeout: 40000 }).catch(() => {}); await page.waitForTimeout(250); await snap('hidden-one-more'); }
     if (!(await asked())) { log(`${kind}: no question`); break; }
     const q = await question();
     await snap(`${kind}-asked`);

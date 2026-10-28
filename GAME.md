@@ -178,20 +178,44 @@ time, each row one hop nearer Chase: the next number and one or two others side 
 
 Counting for real, at Chase's pup house.
 
-| Level | types | give | howMany | share | auto | slots | rounds |
-|---|---|---|---|---|---|---|---|
-| 1 | give, share | 1–3 | — | 2–3 | yes | yes | 3 |
-| 2 | give, howMany, share | 2–5 | 1–4 | 2–4 | yes | no | 3 |
-| 3 | give, howMany, share | 3–7 | 2–6 | 3–4 | no | no | 3 |
+| Level | types | give | howMany | share | hidden | flash | auto | slots | rounds |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | give, howMany, share | 1–3 | 1–3 | 2–3 | — | — | yes | yes | 3 |
+| 2 | give, howMany, share | 1–3 | 1–3 | 2–3 | — | — | yes | no | 3 |
+| 3 | give, howMany, share | 2–5 | 1–4 | 2–4 | — | — | yes | no | 3 |
+| 4 | give, howMany, share | 1–3 | 1–4 | 2–4 | — | — | no | no | 3 |
+| 5 | give, howMany, flash, share | 1–3 | 1–4 | 2–4 | — | 1–3 | no | no | 4 |
+| 6 | give, howMany, flash, hidden, share | 1–3 | 1–4 | 2–4 | 2–3 | 1–3 | no | no | 5 |
+| 7 | give, howMany, flash, hidden, share | 3–7 | 2–6 | 3–4 | 2–4 | 1–4 | no | no | 5 |
+| 8 | give, howMany, flash, hidden, share | 5–10 | 4–9 | 3–4 | 2–4 | 1–4 | no | no | 5 |
 
-- **types** — round kinds, taking turns: `give` ("Daj mu trzy smakołyki!": move the treats from the pile to Chase — drag them, or tap one and it hops over),
-  `howMany` ("Ile smakołyków?": count the bones, tapping them counts aloud, then pick the numeral; wrong
-  choices are ±1) and `share` (Chase and kittens wait at their plates, "Każdy dostaje jeden smakołyk!": she
-  taps whoever is still hungry; one treat each, counted aloud)
-- **give** / **howMany** / **share** — the number ranges (give up to 10, howMany up to 9, share 2–4 friends; `—` if unused)
+The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so every one is easy to see.
+
+- **types** — the kinds of round. Each comes up once per mission (extra rounds repeat one), in a new order
+  each time, never the same kind twice in a row, and the mission ends on an easy one (`share`, or `give`
+  when `auto` is yes):
+  - `give` ("Daj mu trzy smakołyki!"): move the treats from the pile to Chase — drag them, or tap one and it hops over
+  - `howMany` ("Ile smakołyków?"): count the bones on the tray (tapping one counts it aloud), then pick the
+    numeral; wrong choices are ±1. Then Chase eats them one by one while they are counted, ending on her number
+  - `share` (Chase and kittens wait at their plates, "Każdy dostaje jeden smakołyk!"): she taps whoever is
+    still hungry; one treat each, counted aloud
+  - `flash` ("Szybkie oko!"): Chase's bowl lifts for two seconds over a few treats laid out like a die, then
+    covers them: "Ile było? Daj Czejsowi tyle samo!" (seeing how many at a glance)
+  - `hidden` ("Schowane smakołyki"): treats go under the bowl, then one more slides in: "Ile jest pod
+    miską? Daj Czejsowi tyle samo!" (adding without words)
+
+  In `flash` and `hidden` she gives Chase the same number and taps him; the bowl lifts and its treats line
+  up next to hers, one under each, so she sees whether it is the same.
+- **give** / **howMany** / **share** / **hidden** / **flash** — the number ranges (give up to 10, howMany up to 9,
+  share 2–4 friends, hidden 2–4 treats under the bowl in the end, flash 1–4; `—` if unused)
 - **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
-- **slots** — `yes`: ghost spots show where the treats go (○ ○ ○) · `no`: no spots (help shows them)
-  (too many: he gives one back; too few: "jeszcze!") · **rounds** — how many tasks (1–8)
+  (too few: "Za mało! Jeszcze!"; too many: Chase gives the extra ones back, "Teraz dobrze? Dotknij Czejsa!",
+  and she taps him again herself). `flash` and `hidden` always need `no`
+- **slots** — the helping hand. `yes`: ghost rings show where the treats go (○ ○ ○), and the "how many?"
+  numerals have their dots under them · `no`: neither (help shows the rings)
+- **rounds** — how many tasks (1–8), at least one per kind in **types**
+- Rounds that can't really be got wrong (`give` with auto, `share`) are played but don't count towards the next
+  level, so every level has a `howMany`, `flash` or `hidden` round (a gentler run after a rough one turns `auto` on).
 
 ### 🗼 The Lookout · `lookout`
 

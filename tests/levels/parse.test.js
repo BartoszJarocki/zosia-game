@@ -100,3 +100,16 @@ test('River: the missing stone needs 3–9 stones', () => {
   const stones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`stones\`\n\n| Level | n | bubble |\n|---|---|---|\n| 1 | ${row} |\n`;
   assert.match(only(parseGame(stones('2 | missing'), {})).errors[0], /3–9 stones/);
 });
+
+test('Treat House: new kinds of round come one level at a time; each level has a scored round; flash and hidden need ranges, auto no, rounds enough', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  const added = levels.counting.map((l, i) => l.types.filter((t) => !(levels.counting[i - 1]?.types || []).includes(t)));
+  assert.deepEqual(added, [['give', 'howMany', 'share'], [], [], [], ['flash'], ['hidden'], [], []]);
+  const treats = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`counting\`\n\n| Level | types | give | hidden | flash | auto | rounds |\n|---|---|---|---|---|---|---|\n| 1 | ${row} |\n`;
+  assert.deepEqual(only(parseGame(treats('give, hidden, flash | 1–3 | 2–4 | 1–4 | no | 3'), {})).errors, []);
+  assert.match(only(parseGame(treats('give, hidden | 1–3 | — | — | no | 3'), {})).errors[0], /set a hidden range/);
+  assert.match(only(parseGame(treats('give, flash | 1–3 | — | 1–3 | yes | 3'), {})).errors[0], /flash need auto "no"/);
+  assert.match(only(parseGame(treats('give, hidden, flash | 1–3 | 2–4 | 1–4 | no | 2'), {})).errors[0], /rounds must be at least 3/);
+  assert.match(only(parseGame(treats('give, hidden | 1–3 | 1–4 | — | no | 3'), {})).errors[0], /hidden must stay within 2–4/);
+  assert.match(only(parseGame(treats('give | 1–3 | — | — | no | 1'), {})).errors[0], /needs a howMany, flash or hidden round/);
+});

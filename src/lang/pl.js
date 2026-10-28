@@ -187,6 +187,15 @@ export const T = {
   shareHasOne: () => ['Nie, ten już ma!'],
   shareDone: () => ['Każdy ma jeden!'],
   shareYum: () => ['Mniam, mniam! Dziękujemy!'],
+  // Treat House "flash" and "hidden": give Chase as many as are under the bowl
+  flashStart: () => ['Szybkie oko! Patrz!'],
+  flashAsk: () => ['Ile było?'],
+  hiddenMore: () => ['I jeszcze jeden!'],
+  hiddenAsk: () => ['Ile jest pod miską?'],
+  sameForPup: () => [`Daj ${pupDat} tyle samo!`],
+  lookAgain: () => ['Patrz jeszcze raz!'],
+  checkBowl: () => ['Sprawdzamy!'],
+  same: () => ['Tyle samo!'],
 };
 
 /**
@@ -216,7 +225,7 @@ export function allSegments(levels, allLetters) {
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
-    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
+    T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,

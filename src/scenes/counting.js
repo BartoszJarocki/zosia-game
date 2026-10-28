@@ -10,6 +10,7 @@ import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
+import { roundOrder, DICE } from '../levels/treats.js';
 import { Mission } from './mission.js';
 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
@@ -22,6 +23,7 @@ const BONE_Y = TRAY.top + 0.08;
 const ON_TRAY = 1.15, LIE = 0.6; // treats on the tray: their size and slant (side by side without touching)
 const DROP = new THREE.Vector3(TRAY.x, 0, TRAY.z); // a treat dragged near here goes to Chase
 const PILE = new THREE.Vector3(-1.2, 0, 2.8); // the treats she gives lie here, in front of the treat box
+const DISH = new THREE.Vector3(3.9, 0, 2.8); // flash, hidden: the plate with Chase's bowl over it
 const BLOCK = 1.0, BLOCK_Z = 3.15; // "how many?" numerals: a row in front of the tray, low enough to hide no treat
 const PALE = '#fef3c7', FULL = '#fde047';
 // Landscape sees the whole patio; portrait looks down more steeply, so the tall screen shows the patio's depth.
@@ -35,6 +37,8 @@ const VIEWS = {
 //            tray. Ghost rings early; later she decides when to stop and taps Chase.
 //  howMany – bones are already on the tray: count them (tap to count) and pick the numeral. Wrong choices are ±1.
 //  share   – Chase and kittens wait at their plates: she taps whoever is still hungry. One treat each.
+//  flash   – treats seen under Chase's bowl for two seconds; she gives him the same number.
+//  hidden  – treats go under the bowl, then one more; she gives him as many as are under it.
 export class CountingMission extends Mission {
   constructor(game) {
     super(game, 'counting');
@@ -150,9 +154,12 @@ export class CountingMission extends Mission {
     hop(this.pup, 0.7);
   }
 
+  /** A new order each run (src/levels/treats.js), ending on an easy, happy round; winding down skips to it. */
   round(r) {
-    const type = this.L.types[r % this.L.types.length];
-    return type === 'howMany' ? this.howManyRound() : type === 'share' ? this.shareRound() : this.giveRound();
+    const { types, auto } = this.L;
+    this.plan ||= roundOrder(types, this.rounds, { easy: types.filter((t) => t === 'share' || (t === 'give' && auto)) });
+    const kind = this.windingDown && r === this.rounds - 1 ? this.plan.at(-1) : this.plan[r] ?? this.plan.at(-1);
+    return this[`${kind}Round`]();
   }
 
   /** The pile in front of the treat box: big treats for little fingers, popping in one by one. */
@@ -180,7 +187,7 @@ export class CountingMission extends Mission {
    */
   feed({ n, auto = false, layout, rings = [], compare = null }) {
     // state: giving → (she taps Chase) checking → giving again, or done
-    const f = { n, rings, pile: this.makePile(Math.min(12, n + (auto ? 2 : 3))), given: [], landed: [], state: 'giving' };
+    const f = { rings, pile: this.makePile(Math.min(12, n + (auto ? 2 : 3))), given: [], landed: [], state: 'giving' };
     f.count = () => f.given.length;
     f.next = () => f.pile.find((b) => !f.given.includes(b));
     f.done = new Promise((resolve) => (f.resolve = resolve));
@@ -268,7 +275,6 @@ export class CountingMission extends Mission {
   async giveRound() {
     const n = this.pick('counting', range(...this.L.give));
     this.last = n;
-    this.item('Q:' + n);
     const auto = this.L.auto;
     const layout = auto ? n : n > 5 ? 10 : Math.max(5, n + 2); // room for a few too many
     const f = this.feed({ n, auto, layout, rings: this.L.slots ? this.makeRings(0, n, layout) : [] });
@@ -309,7 +315,6 @@ export class CountingMission extends Mission {
       const [lo, hi] = this.L.share;
       const n = this.pick('counting', range(lo, hi));
       this.last = n;
-      this.item('Q:' + n);
       const seats = [[1.6, -1.3], [-0.3, -0.8], [3.7, -0.3], [5.0, 0.3]]; // Chase's spot first; none behind the treat box
       this.showTray(false); // everyone gets a plate instead
       const friends = seats.slice(0, n).map(([x, z], i) => {
@@ -418,7 +423,6 @@ export class CountingMission extends Mission {
   async howManyRound() {
     const n = this.pick('quantity', range(...this.L.howMany));
     this.last = n;
-    this.item('H:' + n);
     const layout = n > 5 ? 10 : n;
     const bones = [];
     let tapCount = 0, solved = false, lastWrong = null;
@@ -446,7 +450,7 @@ export class CountingMission extends Mission {
     const max = Math.max(this.L.howMany[1] + 1, n + 1);
     const colors = shuffle(TILE_COLORS);
     const blocks = numberChoices(n, max, 3, true).map((num, i) => {
-      const m = new THREE.MeshStandardMaterial({ map: glyphTexture(String(num), { bg: colors[i] }), roughness: 0.45 });
+      const m = new THREE.MeshStandardMaterial({ map: glyphTexture(String(num), { bg: colors[i], dots: this.L.slots ? num : 0 }), roughness: 0.45 }); // (the helping hand: dots too)
       const b = new THREE.Mesh(rbox(BLOCK, BLOCK, BLOCK, 0.13), m);
       b.castShadow = true;
       b.position.set(TRAY.x + (i - 1) * 1.6, BLOCK / 2, BLOCK_Z);
@@ -515,5 +519,128 @@ export class CountingMission extends Mission {
     await say([...T.treatsDone(n), ...T.yum()]);
     if (!this.alive) return;
     await this.shrinkAway(b, 300);
+  }
+
+  // ---------- "flash" and "hidden": as many as under the bowl ----------
+  // A plate with Chase's red bowl upside down over it. flash: the bowl lifts for two seconds over 1–4 treats laid
+  // out like a die (seen at a glance), then covers them. hidden: some treats go onto the plate, the bowl covers
+  // them and one more slides in under it (adding without words). Then she gives Chase the same number and taps
+  // him: the bowl lifts and its treats line up on the tray, one under each of hers, so she sees if it's the same.
+  flashRound() { return this.bowlRound('flash'); }
+  hiddenRound() { return this.bowlRound('hidden'); }
+
+  /** The plate and the bowl. bowl.userData.to(pose) moves the bowl: 'shut', 'peek' (back edge up), 'aside'. */
+  makeDish() {
+    const dish = new THREE.Group();
+    dish.add(mesh(new THREE.CylinderGeometry(0.95, 0.85, 0.08, 40), mat('#1e40af', { roughness: 0.55 }), { y: 0.04 }));
+    const bowl = new THREE.Group();
+    const red = mat('#e23b3b', { roughness: 0.35, side: THREE.DoubleSide });
+    bowl.add(mesh(new THREE.SphereGeometry(0.82, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), red, { s: [1, 0.85, 1] }));
+    bowl.add(mesh(new THREE.TorusGeometry(0.82, 0.05, 8, 40), mat('#b91c1c', { roughness: 0.4 }), { rx: Math.PI / 2 }));
+    bowl.add(mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.1, 24), red, { y: 0.72 })); // its foot, now on top
+    const poses = {
+      shut: { p: [0, 0.08, 0], rx: 0 },
+      peek: { p: [0, 0.08 + 0.82 * Math.sin(0.45), 0], rx: 0.45 }, // the back lifts, the front stays down: nothing shows
+      aside: { p: [-1.75, 0.04, -0.15], rx: 0 },
+    };
+    bowl.userData.to = (pose, ms = 450) => {
+      const a = bowl.position.clone(), rx0 = bowl.rotation.x, { p, rx } = poses[pose];
+      const b = new THREE.Vector3(...p), up = a.distanceTo(b) > 1 ? 1.1 : 0;
+      return animate(ms, (t) => { bowl.position.lerpVectors(a, b, t); bowl.position.y += Math.sin(t * Math.PI) * up; bowl.rotation.x = rx0 + (rx - rx0) * t; }, ease.inOut);
+    };
+    bowl.position.set(...poses.shut.p);
+    dish.add(bowl);
+    dish.userData.bowl = bowl;
+    dish.position.copy(DISH);
+    this.scene.add(dish);
+    return dish;
+  }
+
+  async bowlRound(kind) {
+    const n = this.pick('quantity', range(...this.L[kind]));
+    this.last = n;
+    const dish = this.makeDish(), bowl = dish.userData.bowl;
+    const under = []; // the treats on the plate, under the bowl
+    const lay = () => under.forEach((b, i) => { const [x, z] = DICE[under.length][i]; b.position.set(x, 0.18, z); b.rotation.set(0, 0, 0); });
+    const onPlate = () => { const b = makeBone(1.05); dish.add(b); under.push(b); return b; };
+    ui.bubble({ big: '?', pic: '🦴', onTap: () => this.replay(), passthrough: true });
+    await this.dropIn(dish, 0, 0, 600);
+    sfx.pop();
+    if (kind === 'flash') {
+      for (let i = 0; i < n; i++) onPlate();
+      lay();
+      await this.say(T.flashStart());
+      if (!this.alive) return;
+      await bowl.userData.to('aside');
+      await wait(2000);
+      await bowl.userData.to('shut');
+    } else {
+      await bowl.userData.to('aside', 1);
+      await this.say(T.lookCarefully());
+      for (let i = 0; i < n - 1; i++) { // they land where she can see them; no counting aloud
+        if (!this.alive) return;
+        const b = onPlate();
+        const [x, z] = DICE[n - 1][i], to = new THREE.Vector3(x, 0.18, z), from = this.box.position.clone().sub(DISH).setY(1.8);
+        b.position.copy(from);
+        await animate(480, (t) => { b.position.lerpVectors(from, to, t); b.position.y += Math.sin(t * Math.PI) * 1.4; }, ease.linear);
+        sfx.crunch();
+        await wait(250);
+      }
+      await wait(600);
+      await bowl.userData.to('shut');
+      sfx.pop();
+      if (!this.alive) return;
+      this.say(T.hiddenMore());
+      await bowl.userData.to('peek', 300);
+      const b = onPlate(), from = this.box.position.clone().sub(DISH).setY(1.8), to = new THREE.Vector3(0, 0.18, -0.6);
+      b.position.copy(from);
+      await animate(560, (t) => { b.position.lerpVectors(from, to, t); b.position.y += Math.sin(t * Math.PI) * 1.8; }, ease.linear);
+      lay(); // (under the bowl: they shuffle into a die's pattern, for when it lifts)
+      await bowl.userData.to('shut', 300);
+      sfx.crunch();
+    }
+    if (!this.alive) return;
+
+    let open = false;
+    const show = async (stay) => { // the bowl lifts: for two seconds, or for good
+      if (open) return;
+      open = true;
+      await bowl.userData.to('aside');
+      if (stay) return;
+      await wait(2000);
+      if (!this.alive || f.state === 'checking') return;
+      await bowl.userData.to('shut');
+      open = false;
+    };
+    const f = this.feed({
+      n, layout: 5,
+      compare: async () => { // the bowl's treats line up under hers, one each
+        this.say(T.checkBowl());
+        open = true;
+        await bowl.userData.to('aside');
+        for (const [j, b] of under.entries()) {
+          if (!this.alive) return;
+          const p0 = b.getWorldPosition(new THREE.Vector3()), to = this.slotPos(j + 5, 10);
+          this.scene.attach(b);
+          await animate(380, (t) => { b.position.lerpVectors(p0, to, t); b.position.y += Math.sin(t * Math.PI) * 0.8; b.scale.setScalar(1.05 + (ON_TRAY - 1.05) * t); }, ease.inOut);
+          b.rotation.set(0, LIE, 0);
+          sfx.pop();
+        }
+        await wait(500);
+      },
+    });
+    const ask = [...(kind === 'flash' ? T.flashAsk() : T.hiddenAsk()), ...T.sameForPup()];
+    this.question('quantity', n, {
+      short: () => (f.count() === 0 ? ask : T.tapPupWhenDone()),
+      hint: () => { wait(700).then(() => show(false)); return T.lookAgain(); },
+      reveal: () => { show(true); },
+    });
+    this.ask(ask);
+    await f.done;
+    if (!this.alive) return;
+    this.correct(n);
+    this.stopIdle();
+    await this.eatUp(f, [...T.same(), ...T.treatsDone(n), this.praise()], under);
+    if (this.alive) await this.shrinkAway(dish, 300);
   }
 }
