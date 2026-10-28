@@ -109,27 +109,66 @@ Balloons with letters float up. Pop every balloon with the asked letter, countin
 
 ### 🚂 Name Train · `name`
 
-Load the letters of a word onto the train in order, then say them together ("Zet! O! Es! I! A! Zosia!")
-and the train drives off. Nothing is spelled from memory: the word is always there to look at.
-A finished word turns into its thing before the train leaves: KOT a kitten hops onto the last wagon, DOM a
-little house pops up, MAMA and TATA a heart floats up, and her own name makes her cheer (the pictures live
-in `src/scenes/name.js`, the lines in `src/lang/pl.js`).
+Load the letters of a word onto the train in order. Each letter is named as it goes on ("Tak! Zet!"); then the
+train toots once per syllable while Chase bounces and the voice says them, then the word ("Zo! Sia! Zosia!"),
+and the train drives off. Nothing is spelled from memory: the word is always there to look at (in the bubble,
+or as faint letters on the wagons). A finished word turns into its thing before the train leaves: KOT a kitten
+hops onto the last wagon, DOM a little house pops up, MAMA, TATA and the family names a heart floats up
+("Buziaczek dla Kasi!"), and her own name makes her cheer (the pictures live in `src/scenes/name.js`, the lines
+in `src/lang/pl.js`).
 
-| Level | words | mode | extras | similar |
-|---|---|---|---|---|
-| 1 | {name} | ghost | 1 | no |
-| 2 | {name} | word | 1 | no |
-| 3 | {name}, MAMA, TATA | missing | 2 | no |
-| 4 | {name}, MAMA, TATA, KOT, DOM | highlight | 2 | yes |
+The `whose` levels are about whole names: three trains roll in with name boards and she finds the one asked for
+("Który pociąg jest Zosi?"): her own name first, then MAMA or TATA, then a family name. A miss never gets a
+"no": the right train just toots.
 
-- **words** — the words (one is picked each time; 2–7 letters, only letters from `ALL`)
+| Level | words | mode | gaps | extras | similar |
+|---|---|---|---|---|---|
+| 1 | {name} | ghost | — | 1 | no |
+| 2 | {name}, MAMA, TATA | ghost | — | 1 | no |
+| 3 | {name}, MAMA, TATA | whose | — | — | — |
+| 4 | {name}, MAMA, TATA | highlight | — | 1 | no |
+| 5 | {name}, MAMA, TATA | word | — | 1 | no |
+| 6 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | word | — | 1 | no |
+| 7 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 1 | no |
+| 8 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 1 | yes |
+| 9 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | whose | — | — | — |
+
+- **words** — the words (2–8 letters, only letters from `ALL`; names may also use Y, "Igrek", which no other
+  mission asks). Each run picks one: never the same twice in a row, and her own name about one run in three.
+  Every word needs a row in the words table below.
 - **mode** — `ghost`: faint letters on the wagons, match each block to its wagon ·
-  `word`: the whole word in the bubble, wagons empty — which letter comes next? ·
-  `missing`: the train arrives loaded with one letter missing (Z O _ I A) — which one? ·
-  `highlight`: the whole word in the bubble with the next letter lit (good for new words)
-- **gaps** — optional, for `missing`: how many letters are missing (1–3, default 1)
-- **extras** — extra blocks that are not in the word (0–3); with `missing` they are the other choices
-- **similar** — extras are lookalikes of the word's letters
+  `highlight`: the whole word in the bubble with the next letter lit ·
+  `word`: the whole word in the bubble and the next wagon glowing: which letter goes here? ·
+  `missing`: the train arrives loaded with a few letters missing (Z O _ I _) and the whole word in the bubble:
+  which letters are missing? ·
+  `whose`: three trains with name boards, "Który pociąg jest Zosi?" (three rounds; only words with a
+  "whose" form are asked, the others ride on the other trains)
+- **gaps** — for `missing`: how many letters are missing (1–3, default 2); a word of 7 or 8 letters gets one more
+  (up to 3), and a word always keeps at least one letter
+- **extras** — extra blocks that are not in the word (0–3) and never look like any of its letters (no J next
+  to the I of ZOSIA); with `missing` they are the other choices
+- **similar** — `yes`: the extras are lookalikes of the word's letters on purpose (E/F, M/W…)
+
+#### Name Train words
+
+How the voice claps each word in syllables at the end (Polish reading starts from syllables), and whose it is
+("Który pociąg jest **Kasi**?", "Buziaczek dla **Kasi**!"; `—` for things, which are never asked in `whose`).
+
+| Word | syllables | whose |
+|---|---|---|
+| ZOSIA | ZO-SIA | Zosi |
+| MAMA | MA-MA | mamy |
+| TATA | TA-TA | taty |
+| KOT | KOT | — |
+| DOM | DOM | — |
+| KASIA | KA-SIA | Kasi |
+| BARTEK | BAR-TEK | Bartka |
+| RYSIEK | RY-SIEK | Ryśka |
+| JUREK | JU-REK | Jurka |
+| BERNADKA | BER-NAD-KA | Bernadki |
+| MIA | MI-A | Mii |
+| LAURA | LAU-RA | Laury |
+| JAGODA | JA-GO-DA | Jagody |
 
 ### 🚧 Cone Road · `cones`
 

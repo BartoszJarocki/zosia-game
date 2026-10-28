@@ -81,6 +81,7 @@ const options = () => st((kind) => {
   for (const o of s.tappables) {
     const u = o.userData;
     if (u.letter !== undefined && u.letter) out.push({ label: u.letter, ...proj(o, kind === 'delivery' && u.tapHeight === 1.9 ? 1.9 : 0.4), right: u.letter === s.last });
+    else if (u.word) out.push({ label: u.word, ...proj(u.board, 0), right: u.word === s.last }); // (Name Train "whose": tap the name board)
     else if (u.num !== undefined && (kind !== 'cones' || u.sign)) out.push({ label: String(u.num), ...proj(o, kind === 'cones' ? 2.7 : 0.3), right: u.num === s.last, at: [+o.position.x.toFixed(2), +o.position.z.toFixed(2)] });
     else if (kind === 'picnic' && o.geometry?.type === 'BoxGeometry' && o.material?.visible === false) out.push({ label: o.position.x < 0 ? 'left' : 'right', ...proj(o, -0.4), right: null });
     else if (kind === 'counting' && u.drag) out.push({ label: 'bone', ...proj(o, 0.2), right: true });
