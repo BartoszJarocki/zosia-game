@@ -52,7 +52,7 @@ export const SCHEMA = {
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 2 }, // rivers to cross
     bubble: { type: 'enum', values: ['numeral', 'next', 'missing'] },
     choices: { type: 'int', min: 2, max: 3, optional: true, default: 2 }, // stones in each row
-    foils: { type: 'enum', values: ['far', 'near'], optional: true, default: 'far' }, // the other numbers in a row
+    foils: { type: 'enum', values: ['far', 'near'], optional: true, default: 'far' }, // the other numbers in a row (missing: the wrong stone)
   },
   counting: {
     types: { type: 'list', values: ['give', 'howMany', 'share'] },
@@ -256,6 +256,8 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
   if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
+  if (kind === 'cones' && s.dots === 'dice' && s.max > 6) errors.push(`${where}: dice patterns go up to 6, so numbers up to ${s.max} need dots in rows of five (dots: line)`);
+  if (kind === 'cones' && s.count && s.sign === 'numeral') errors.push(`${where}: count "yes" lights the sign's dots as they are counted, so the signs need dots (sign: dots or both)`);
   if (kind === 'letters' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
   if (kind === 'delivery' && s.pool && s.choices > s.pool.length) errors.push(`${where}: choices (${s.choices}) can't be more than the letters in pool (${s.pool.length})`);
   if (kind === 'name') {

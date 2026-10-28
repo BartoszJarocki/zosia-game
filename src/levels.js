@@ -4,6 +4,7 @@ import { levelFor, assistFor } from './progress.js';
 import { LEVELS, ALL_LETTERS, maxLevel } from './levels/data.js';
 import { shuffle } from './util.js';
 import { easier as easierGarage } from './levels/garage.js';
+import { gentler as gentlerRiver } from './levels/river.js';
 
 export { LEVELS };
 
@@ -42,7 +43,7 @@ const ASSIST = {
   balloons: (s) => ({ ...s, total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }),
   name: (s) => ({ ...s, mode: ['missing', 'whose'].includes(s.mode) ? s.mode : 'ghost', extras: s.mode === 'missing' ? 1 : 0, similar: false }), // (whose: two trains)
   cones: (s) => ({ ...s, choices: 3, bubble: 'both', sign: 'both' }),
-  stones: (s) => ({ ...s, bubble: 'numeral' }),
+  stones: gentlerRiver,
   counting: (s) => ({ ...s, auto: true }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),

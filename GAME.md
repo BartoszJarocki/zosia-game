@@ -177,21 +177,31 @@ How the voice claps each word in syllables at the end (Polish reading starts fro
 ### 🚧 Cone Road · `cones`
 
 Numbered cones block the road. Tap the right one and the cruiser drives on (early on, the dots are counted together).
+A kitten waits at the end of the road ("Kotek czeka na końcu drogi!"); after the last cone the cruiser reaches
+it ("Droga wolna! Uratowałaś kotka!").
 
 | Level | max | choices | bubble | sign | dots | count | rounds |
 |---|---|---|---|---|---|---|---|
 | 1 | 3 | 3 | both | both | dice | yes | 3 |
-| 2 | 5 | 3 | numeral | both | dice | yes | 3 |
-| 3 | 5 | 3 | name | dots | dice | no | 3 |
-| 4 | 6 | 4 | dots | numeral | dice | no | 3 |
+| 2 | 5 | 3 | both | both | dice | yes | 3 |
+| 3 | 5 | 3 | numeral | both | dice | yes | 3 |
+| 4 | 5 | 3 | name | dots | dice | yes | 3 |
+| 5 | 5 | 3 | dots | numeral | dice | no | 3 |
+| 6 | 6 | 3 | dots | numeral | dice | no | 3 |
+| 7 | 6 | 4 | dots | numeral | dice | no | 3 |
+| 8 | 6 | 4 | dots | numeral | line | no | 3 |
+| 9 | 10 | 4 | dots | numeral | line | no | 3 |
 
 - **max** — numbers go from 1 to max (2–10)
 - **choices** — how many cones (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
-- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral ·
+- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral
+  (help says "Policz kropki!" and lights the dots one by one; the number is named only when the answer is shown) ·
   `name`: nothing shown, "Który pachołek ma cztery kropki?" (the signs show dots: she recognises the amount)
 - **sign** — what the cone signs show: `both` (numeral + dots), `numeral`, or `dots`
-- **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting)
-- **count** — `yes`: after a right answer the dots are counted aloud together · `no`: just the number ("Cztery!")
+- **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting;
+  above 6 always rows of five)
+- **count** — `yes`: after a right answer the sign's dots light up one by one as they are counted aloud, then
+  how many ("Jeden! Dwa! Trzy! Trzy kropki!"; needs dots on the sign) · `no`: just the number ("Cztery!")
 - **rounds** — how many cones block the road (1–8)
 
 ### 🪨 The River · `stones`
@@ -202,16 +212,22 @@ time, each row one hop nearer Chase: the next number and one or two others side 
 | Level | n | rounds | bubble | choices | foils |
 |---|---|---|---|---|---|
 | 1 | 3 | 2 | numeral | 2 | far |
-| 2 | 5 | 2 | numeral | 3 | far |
-| 3 | 4 | 2 | missing | — | — |
-| 4 | 7 | 1 | next | 2 | near |
+| 2 | 5 | 2 | numeral | 2 | far |
+| 3 | 5 | 2 | numeral | 3 | far |
+| 4 | 5 | 2 | missing | — | near |
+| 5 | 5 | 2 | next | 2 | far |
+| 6 | 7 | 1 | next | 2 | far |
+| 7 | 7 | 1 | next | 2 | near |
 
 - **n** — how many stones on the path (2–7; `missing` 3–9) · **rounds** — how many rivers to cross (1–6)
-- **choices** — stones in each row (2–3) · **foils** — the other numbers in a row: `far` ones are easy to tell
-  apart (1 next to 3), `near` ones are the neighbours (3 next to 4)
+- **choices** — stones in each row (2–3) · **foils** — the other numbers: `far` ones are easy to tell
+  apart (1 next to 3), `near` ones are the neighbours (3 next to 4). With `missing`, `near` is a neighbour of
+  the gap that is already on the path (2 or 4 for "1 2 ? 4": only the order says no), `far` is past the end (5)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
   (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
   stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)
+- After a rough run the next one is gentler: 2 stones a row, far foils, one stone shorter, the number in the
+  bubble (`missing` keeps its gap, with a far foil). After the last river Zosia stays with Chase for the badge.
 
 ### 🦴 Treat House · `counting`
 
@@ -293,15 +309,19 @@ A picnic with Chase: more, less, the same — by looking, before numbers.
 |---|---|---|---|---|---|
 | 1 | 5 | more | no | no | 3 |
 | 2 | 5 | more, less | no | no | 3 |
-| 3 | 6 | more, less, same | yes | no | 3 |
-| 4 | 9 | more, less | yes | yes | 3 |
+| 3 | 5 | more, less, same | no | no | 3 |
+| 4 | 5 | more, less, same | no | yes | 3 |
+| 5 | 5 | more, less, same | yes | yes | 3 |
+| 6 | 10 | more, less, same | yes | yes | 3 |
 
 - **max** — the biggest amount (3–10)
-- **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?") · `less` · `same`
-  (Chase has a plate: "Gdzie jest tyle samo, co u Czejsa?")
+- **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?", hungry Chase eats them) ·
+  `less` (a kitten with a small tummy: "Kotek ma mały brzuszek! Gdzie jest mniej smakołyków?") · `same`
+  (Chase has his own treats on a plate: "Gdzie jest tyle samo, co u Czejsa?")
 - **close** — `no`: the amounts are far apart (2+ difference) · `yes`: they differ by one
 - **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
-  (no < > signs). The clue lines both groups up in rows, side by side: the longer row has more.
+  (no < > signs). The clue lines each group up on its own blanket, one row each from the middle outwards: the
+  longer row has more. With numerals the clue puts the dots under each numeral.
 
 ### 🔧 The Garage · `garage`
 

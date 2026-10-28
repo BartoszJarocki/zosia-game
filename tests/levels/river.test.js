@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { riverRows, foilsFor, START, LAND, SIDEWAYS } from '../../src/levels/river.js';
+import { riverRows, foilsFor, missingFoil, gentler, KEEP_CLEAR, START, LAND, SIDEWAYS } from '../../src/levels/river.js';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
 
@@ -11,13 +11,44 @@ const seeded = (seed) => () => { // mulberry32
   return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32;
 };
 const LEVELS = parseGame(readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8'), { childName: 'Zosia' }).levels;
-const rowLevels = LEVELS.stones.filter((l) => l.bubble !== 'missing');
+// every level that lays out rows, and every gentler run (the same river after a rough one)
+const rowLevels = [...LEVELS.stones, ...LEVELS.stones.map(gentler)].filter((l) => l.bubble !== 'missing')
+  .filter((l, i, all) => all.findIndex((o) => o.n === l.n && o.choices === l.choices && o.foils === l.foils) === i);
 const many = (L, count = 400) => Array.from({ length: count }, (_, i) => riverRows({ n: L.n, choices: L.choices, foils: L.foils, rng: seeded(i + 1) }));
 const path = ({ rows }) => [START, ...rows.map((r) => r.stones.find((s) => s.right)), LAND];
 
-test('the GAME.md River levels that use rows', () => {
-  assert.deepEqual(rowLevels.map((l) => [l.n, l.choices, l.foils]), [[3, 2, 'far'], [5, 3, 'far'], [7, 2, 'near']]);
+test('the GAME.md River levels that use rows, and their gentler runs', () => {
+  assert.deepEqual(rowLevels.map((l) => [l.n, l.choices, l.foils]), [
+    [3, 2, 'far'], [5, 2, 'far'], [5, 3, 'far'], [7, 2, 'far'], [7, 2, 'near'], // GAME.md
+    [2, 2, 'far'], [4, 2, 'far'], [6, 2, 'far'], // gentler
+  ]);
 });
+
+test('the gentler run: 2 stones a row, far foils, one stone shorter, the number shown; "missing" keeps its gap', () => {
+  assert.deepEqual(gentler({ n: 3, rounds: 2, bubble: 'numeral', choices: 2, foils: 'far' }), { n: 2, rounds: 2, bubble: 'numeral', choices: 2, foils: 'far' });
+  assert.deepEqual(gentler({ n: 7, rounds: 1, bubble: 'next', choices: 2, foils: 'near' }), { n: 6, rounds: 1, bubble: 'numeral', choices: 2, foils: 'far' });
+  assert.deepEqual(gentler({ n: 5, rounds: 2, bubble: 'missing', choices: 2, foils: 'near' }), { n: 5, rounds: 2, bubble: 'missing', choices: 2, foils: 'far' });
+});
+
+test('missing stone: a near foil is a neighbour of the gap, so "pick the smaller" wins only about half the time', () => {
+  const foils = Array.from({ length: 200 }, (_, i) => missingFoil(3, 4, 'near', seeded(i + 1)));
+  assert.deepEqual([...new Set(foils)].sort(), [2, 4]);
+  const smallerRight = foils.filter((f) => f > 3).length / foils.length;
+  assert.ok(smallerRight > 0.35 && smallerRight < 0.65, `smaller stone right in ${Math.round(smallerRight * 100)}% of rivers`);
+  assert.deepEqual([...new Set(Array.from({ length: 200 }, (_, i) => missingFoil(5, 5, 'near', seeded(i + 1))))].sort(), [4, 6]);
+  assert.deepEqual([...new Set(Array.from({ length: 200 }, (_, i) => missingFoil(3, 4, 'far', seeded(i + 1))))].sort(), [5, 6]);
+});
+
+for (const L of rowLevels) {
+  test(`n=${L.n}, ${L.choices} choices, ${L.foils} foils: the first and last rows stay clear of the reeds`, () => {
+    for (const river of many(L)) {
+      const r = 0.95 * river.scale;
+      for (const [bank, row] of [['near', river.rows[0]], ['far', river.rows.at(-1)]]) {
+        for (const s of row.stones) assert.ok(s.x - r >= KEEP_CLEAR[bank][0] && s.x + r <= KEEP_CLEAR[bank][1], `${bank} row stone at x ${s.x} (radius ${r.toFixed(2)})`);
+      }
+    }
+  });
+}
 
 for (const L of rowLevels) {
   test(`n=${L.n}, ${L.choices} choices, ${L.foils} foils: row k holds k+1 and ${L.choices - 1} other numbers`, () => {
