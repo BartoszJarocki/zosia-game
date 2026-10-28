@@ -143,7 +143,7 @@ Mission.ask() → prompt finished │ idle repeat → timeout │ bubble tap →
 | Cone Road | `numeral`; `quantity` when the bubble shows only dots | number |
 | River (`stones`) | `numeral`; `sequence` for "what comes next" steps | number |
 | Treat House (`counting`) | `counting` (give N); `quantity` (how many?) | number |
-| Lookout | `numeral`; `sequence` for "one floor up/down" | floor |
+| Lookout | `numeral`; `sequence` for "one floor up/down" and for counting on from the die | floor |
 
 ## Unified help (Phase 4)
 
@@ -184,7 +184,7 @@ this.wrong(chosen, T.thatsLetter(chosen));   // the base says it, then the next 
 | Cone Road | bubble shows numeral + dots, "Trzy kropki!" | a wrong cone leaves | sign pulses |
 | River | number shown (in "what's next?" mode) or "Trzy kropki!" | number shown | stone pulses |
 | Treat House | give: the N spots light up · how many: count together | how many: a wrong block leaves + count together | box pulses / block pulses |
-| Lookout | number + dots in the bubble, "Trzy kropki!" | number shown | button pulses |
+| Lookout | number + dots in the bubble, "Trzy kropki!" (find: the sign beside the kitten lights up; dice: the floors light up one by one, "Policz piętra!") | number shown | button pulses |
 
 Tests: `tests/learning/assist.test.js` (state machine). `window.__sayLog = []` collects every spoken line, for browser tests.
 
@@ -261,8 +261,8 @@ Hub.enter() ─▶ addWorld(hub, world, takeUnseen())                          s
 director says it is due (the hub's alarm called her there; playing the Lookout earlier is the normal mission).
 
 Finale: alarm on (red beacon on the tower, the car's light flashes red, siren, Chase barks) → "Alarm w Bazie! Szybko,
-wsiadamy do windy!" → **one easy press** (floors 1–3, numeral + dots, a number she knows: `EASY_MIX`) → floors counted
-aloud → the very top (siren, all signs light up, the beacon flashes faster) → the slide → big celebration
+wsiadamy do windy!" → **one easy kitten** (floors 1–3, numeral + dots, a number she knows: `EASY_MIX`) → floors counted
+along → the kitten hops in → the very top (siren, all signs light up, the beacon flashes faster) → the slide → big celebration
 ("Hura! Psi Patrol uratował dzień!"). About 30 s. It doesn't count towards the Lookout's level (`countsForLevel = false`).
 
 ## Micro-play rewards (Phase 10)

@@ -27,7 +27,7 @@ const SEATS = [[-0.48, 0.34], [0, 0.38], [0.48, 0.34]]; // kittens ride at the f
 const GLOW = new THREE.Color('#fde047').multiplyScalar(2.2); // a lit sign's halo (bright enough to bloom)
 // Camera: the whole tower (every floor, the car anywhere on it) fills the band of the screen the HUD leaves free.
 // Portrait: the speech bubble sits over the car's column, so the band starts lower; the lift panel takes the right.
-const FRAME = { land: { x: 0.3, top: 0.13, bottom: 0.96, minWidth: 6.6 }, port: { x: 1.3, top: 0.27, bottom: 0.95, minWidth: 6.6 } };
+const FRAME = { land: { x: 0.3, top: 0.13, bottom: 0.96, minWidth: 6.6 }, port: { x: 1.15, top: 0.27, bottom: 0.95, minWidth: 6.6 } };
 
 // "Baza" (the Lookout): ride the glass elevator. Press the floor button; the car stops at every floor on the way,
 // its sign lights and its number is said after a beat (count along). Every ride rescues a kitten, and at the end
@@ -96,11 +96,11 @@ export class LookoutMission extends Mission {
       const y = this.floorY(f), map = discTexture(String(f), TILE_COLORS[(f - 1) % TILE_COLORS.length]);
       const s = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.08, 32), [mat('#e5e7eb'), new THREE.MeshStandardMaterial({ map, roughness: 0.5 }), mat('#e5e7eb')]);
       s.rotation.set(Math.PI / 2, Math.PI / 2, 0); // face the camera, numeral upright
-      s.position.set(SIGN_X, y + mid, CAR_Z + 0.1);
+      s.position.set(SIGN_X, y + mid, CAR_Z + 0.12);
       const halo = new THREE.Mesh(new THREE.CircleGeometry(r * 1.32, 40), new THREE.MeshBasicMaterial({ color: GLOW, toneMapped: false, transparent: true, opacity: 0 }));
-      halo.position.set(SIGN_X, y + mid, CAR_Z + 0.04);
+      halo.position.set(SIGN_X, y + mid, CAR_Z + 0.065); // (between the sign and the balcony's front edge)
       halo.userData.dynamic = true;
-      Object.assign(s.userData, { halo, radius: r });
+      Object.assign(s.userData, { halo, radius: r, base: 1 });
       this.scene.add(s, halo);
       this.scene.add(mesh(rbox(x1 - x0, 0.1, 0.7, 0.04), blue, { x: (x0 + x1) / 2, y: y - 0.05, z: CAR_Z - 0.3 }));
       return s;
@@ -218,15 +218,22 @@ export class LookoutMission extends Mission {
     this.panel?.show(this.floor, 0);
   }
 
-  /** The sign of the floor the car is at lights up: a bright halo round it, its colours untouched; 0 = none. */
+  /**
+   * The sign of the floor the car is at lights up: a bright halo round it, its colours untouched, and it grows a
+   * little (at 9 floors a lit sign still clears its neighbours); 0 = none.
+   */
   here(f) { this.signs.forEach((s, i) => this.glow(i + 1, i + 1 === f)); }
   glow(f, on) {
     const s = this.signs[f - 1];
-    if (s) s.userData.halo.material.opacity = on ? 1 : 0;
+    if (!s) return;
+    s.userData.halo.material.opacity = on ? 1 : 0;
+    s.userData.base = on ? 1.15 : 1;
+    this.grow(s, 0);
   }
+  grow(s, k) { const v = s.userData.base * (1 + k); s.scale.setScalar(v); s.userData.halo.scale.setScalar(v); }
   pulse(f) {
     const s = this.signs[f - 1];
-    if (s) animate(400, (t) => s.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.3), ease.linear);
+    if (s) animate(400, (t) => this.grow(s, Math.sin(t * Math.PI) * 0.3), ease.linear);
   }
 
   /** A lost kitten pops up on floor f's balcony, beside the sign. */
@@ -260,7 +267,7 @@ export class LookoutMission extends Mission {
     sfx.boing();
   }
 
-  // ---------- the die (dice rides): it floats beside the car; a tap rolls it ----------
+  // ---------- the die (dice rides): it rides on a tray beside the car; a tap rolls it ----------
   /** A big dot die whose faces go round lo…hi (a 1–2 die shows 1, 2, 1, 2…). */
   makeDie([lo, hi]) {
     const die = new THREE.Group();
@@ -287,11 +294,13 @@ export class LookoutMission extends Mission {
     const die = this.die;
     ui.bubble({ pic: '🎲', onTap: () => this.say(T.diceTap()) });
     this.say(first ? [...T.kittensStart(), ...T.diceTap()] : T.diceTap());
+    const turning = this.onUpdate((dt) => { die.rotation.y += dt * 1.2; }); // (no old number showing: it's waiting to be rolled)
     return new Promise((resolve) => {
       let done = false, quiet = 0;
       const roll = async (byChase) => {
         if (done || !this.alive) return;
         done = true;
+        turning();
         clearInterval(nudge);
         this.untap(die);
         if (byChase) { sfx.bark(); hop(this.pup, 0.3); }
@@ -369,7 +378,6 @@ export class LookoutMission extends Mission {
     const { target } = ride;
     this.visited.push(target);
     this.last = target;
-    this.item('N:' + target);
     if (ride.kitten === 'waits') this.waiting = this.kittenOn(target);
     ride.show();
     let busy = false, revealed = false;
