@@ -501,13 +501,15 @@ export class Hub extends Stage {
       this.pup.userData.parts.head.getWorldPosition(head);
       const z = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTexture(), transparent: true, depthTest: false }));
       z.renderOrder = 6;
-      this.scene.add(z);
       const x0 = head.x + 0.4, y0 = head.y + 0.9, z0 = head.z;
-      animate(2600, (k) => {
+      const place = (k) => {
         z.position.set(x0 + Math.sin(k * 6) * 0.3 + k * 0.8, y0 + k * 2.6, z0);
         z.scale.setScalar(0.8 + k * 0.9);
         z.material.opacity = Math.min(1, k * 5) * (1 - k);
-      }, ease.out).then(() => z.removeFromParent());
+      };
+      place(0); // (in place before its first frame, not at the middle of the island)
+      this.scene.add(z);
+      animate(2600, place, ease.out).then(() => z.removeFromParent());
     });
   }
 
