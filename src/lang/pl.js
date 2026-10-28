@@ -66,6 +66,7 @@ export const T = {
   picnicStart: () => [`Piknik! ${pup} jest głodny!`],
   askMore: () => ['Gdzie jest więcej smakołyków?'],
   askLess: () => ['Gdzie jest mniej smakołyków?'],
+  kittenTummy: () => ['Kotek ma mały brzuszek!'], // (before askLess: why the smaller pile)
   askSame: () => [`Gdzie jest tyle samo, co u ${pupGen}?`],
   yesMore: () => ['Tak! Tu jest więcej!'],
   yesLess: () => ['Tak! Tu jest mniej!'],
@@ -227,7 +228,7 @@ export function allSegments(levels, allLetters) {
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
-    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
+    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.kittenTummy, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...RIVER_ON].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots());
   return [...new Set(out)];

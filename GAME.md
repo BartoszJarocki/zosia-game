@@ -252,15 +252,19 @@ A picnic with Chase: more, less, the same — by looking, before numbers.
 |---|---|---|---|---|---|
 | 1 | 5 | more | no | no | 3 |
 | 2 | 5 | more, less | no | no | 3 |
-| 3 | 6 | more, less, same | yes | no | 3 |
-| 4 | 9 | more, less | yes | yes | 3 |
+| 3 | 5 | more, less, same | no | no | 3 |
+| 4 | 5 | more, less, same | no | yes | 3 |
+| 5 | 5 | more, less, same | yes | yes | 3 |
+| 6 | 10 | more, less, same | yes | yes | 3 |
 
 - **max** — the biggest amount (3–10)
-- **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?") · `less` · `same`
-  (Chase has a plate: "Gdzie jest tyle samo, co u Czejsa?")
+- **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?", hungry Chase eats them) ·
+  `less` (a kitten with a small tummy: "Kotek ma mały brzuszek! Gdzie jest mniej smakołyków?") · `same`
+  (Chase has his own treats on a plate: "Gdzie jest tyle samo, co u Czejsa?")
 - **close** — `no`: the amounts are far apart (2+ difference) · `yes`: they differ by one
 - **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
-  (no < > signs). The clue lines both groups up in rows, side by side: the longer row has more.
+  (no < > signs). The clue lines each group up on its own blanket, one row each from the middle outwards: the
+  longer row has more. With numerals the clue puts the dots under each numeral.
 
 ---
 
