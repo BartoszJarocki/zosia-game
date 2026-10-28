@@ -131,3 +131,15 @@ test('cancel drops the question', () => {
   assert.equal(q.correct(), null);
   assert.equal(bus.recent().length, 0);
 });
+
+test('scored: false and options travel with every event of the question', () => {
+  const { q } = setup();
+  q.open({ mission: 'counting', skill: 'counting', item: 3, scored: false, options: 2 });
+  const w = q.wrong({ chosen: 2 });
+  const c = q.correct();
+  assert.deepEqual([w.scored, w.options, c.scored, c.options], [false, 2, false, 2]);
+  ask(q);
+  const plain = q.correct();
+  assert.equal(plain.scored, true);
+  assert.equal('options' in plain, false);
+});

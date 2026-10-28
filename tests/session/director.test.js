@@ -44,14 +44,24 @@ test('callFinale only when it is due', () => {
   assert.equal(s.finaleTriggered, false);
 });
 
-test('suggestions: never the Lookout before the finale, fresh places, letters ↔ numbers', () => {
+test('the Lookout is one of the places, but never the mission right before the finale', () => {
+  const s = createSession(0); // 2 missions, then the finale
+  const firsts = KINDS.map((_, i) => suggestNext(s, KINDS, () => (i + 0.5) / KINDS.length));
+  assert.deepEqual(firsts, KINDS, 'first mission: every place equally, the Lookout too');
+  completeMission(s, 'letters', 1);
+  const seconds = new Set(Array.from({ length: 200 }, () => suggestNext(s, KINDS, Math.random)));
+  assert.deepEqual([...seconds].sort(), ['cones', 'counting', 'stones'], 'a number game, but not the Lookout: the finale is next');
+  completeMission(s, 'lookout', 2);
+  assert.equal(s.missionsCompleted, 2, 'played as the 2nd mission anyway, it still counts as a mission');
+  assert.equal(suggestNext(s, KINDS), 'lookout', 'then the finale');
+});
+
+test('suggestions: fresh places, letters ↔ numbers', () => {
   const s = createSession(0, { targetMissions: 10 });
-  for (let i = 0; i < 50; i++) assert.notEqual(suggestNext(s, KINDS, Math.random), 'lookout');
   completeMission(s, 'letters', 1);
   for (let i = 0; i < 50; i++) {
     const k = suggestNext(s, KINDS, Math.random);
     assert.equal(DOMAIN[k], 'numbers', 'after a letter game: a number game');
-    assert.notEqual(k, 'lookout');
   }
   completeMission(s, 'cones', 2);
   for (let i = 0; i < 50; i++) {
@@ -65,11 +75,7 @@ test('suggestions: when everything was played, anything but the last one', () =>
   const s = createSession(0, { targetMissions: 99 });
   for (const k of KINDS) completeMission(s, k, 1);
   completeMission(s, 'balloons', 2);
-  for (let i = 0; i < 50; i++) {
-    const k = suggestNext(s, KINDS, Math.random);
-    assert.notEqual(k, 'balloons');
-    assert.notEqual(k, 'lookout');
-  }
+  for (let i = 0; i < 50; i++) assert.notEqual(suggestNext(s, KINDS, Math.random), 'balloons');
 });
 
 test('suggestions: only one place available', () => {
