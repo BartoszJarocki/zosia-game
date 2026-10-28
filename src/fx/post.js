@@ -1,12 +1,13 @@
 // Post-processing: bloom (glowy stars, sirens, sparkles), tilt-shift (toy-diorama look),
 // soft ambient occlusion on strong devices, and a final colour grade + vignette.
-// Quality adapts to the device: it watches the frame rate and steps down if needed.
+// Quality adapts to the device: it watches the frame rate and steps down if needed (fx/quality.js).
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { createWatch, judgeFrame } from './quality.js';
 
 const TiltShader = {
   uniforms: { tDiffuse: { value: null }, delta: { value: new THREE.Vector2() }, focus: { value: 0.5 }, band: { value: 0.18 }, amount: { value: 0 } },
@@ -46,7 +47,8 @@ const GradeShader = {
 };
 
 const TIERS = ['low', 'medium', 'high'];
-const QKEY = 'pup-patrol-quality';
+// (-v2: the first watcher took the calm 30 fps for a slow device, so what it stored, its lock included, is dropped)
+const QKEY = 'pup-patrol-quality-v2';
 
 export class Post {
   constructor(renderer, camera, preferred = 'auto') {
@@ -60,7 +62,7 @@ export class Post {
     this.tier = this.auto ? (stored || 'medium') : preferred;
     this.locked = !this.auto || stored === 'medium-locked';
     if (this.tier === 'medium-locked') this.tier = 'medium';
-    this.frames = 0; this.acc = 0; this.goodWindows = 0;
+    this.watcher = createWatch();
     this.build();
   }
 
@@ -118,29 +120,25 @@ export class Post {
     this.tiltV.uniforms.delta.value.set(0, px / h);
   }
 
-  render(dt) {
+  /** full: this frame and the one before were rendered at full rate (not the calm 30 fps). */
+  render(dt, full) {
     if (!this.scene) return;
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
-    this.watch(dt);
+    this.watch(dt, full);
   }
 
   // adapt quality to the device (only in 'auto')
-  watch(dt) {
+  watch(dt, full) {
     if (!this.auto || this.locked) return;
-    this.frames++; this.acc += dt;
-    if (this.acc < 3) return;
-    const fps = this.frames / this.acc;
-    this.frames = 0; this.acc = 0;
+    const verdict = judgeFrame(this.watcher, dt, full);
     const i = TIERS.indexOf(this.tier);
-    if (fps < 42 && i > 0) {
+    if (verdict === 'slow' && i > 0) {
       this.tier = TIERS[i - 1];
       this.locked = this.tier !== 'low' ? true : this.locked; // don't bounce back up
       this.store(this.locked && this.tier === 'medium' ? 'medium-locked' : this.tier);
       this.build();
-    } else if (fps > 57 && i < 2) {
-      if (++this.goodWindows >= 2) { this.goodWindows = 0; this.tier = TIERS[i + 1]; this.store(this.tier); this.build(); }
-    } else this.goodWindows = 0;
+    } else if (verdict === 'fast' && i < 2) { this.tier = TIERS[i + 1]; this.store(this.tier); this.build(); }
   }
   store(v) { try { localStorage.setItem(QKEY, v); } catch {} }
 }

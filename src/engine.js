@@ -78,6 +78,8 @@ export class Stage {
       if (o.userData.sway && !this.sways.includes(o)) this.sways.push(o);
     });
   }
+  /** The page was hidden for ms (iPad locked, another app): time she was away, not time spent playing. */
+  resumed() {}
   update(dt, t) {
     for (const o of this.ticks) o.userData.tick(dt, t);
     for (const o of this.sways) {
@@ -134,6 +136,16 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+// No frames run while the page is hidden; on the way back the stage hears how long she was away.
+let hiddenAt = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = performance.now(); return; }
+  if (hiddenAt === null) return;
+  const away = performance.now() - hiddenAt;
+  hiddenAt = null;
+  current?.resumed(away);
+});
+
 // ---------- taps (forgiving for little fingers) ----------
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
@@ -176,11 +188,14 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
 // Most of the time she is listening or thinking, so this roughly halves the steady CPU/GPU cost.
 let last = performance.now();
 let lastActive = 0;
+let wasActive = false;
 window.addEventListener('pointerdown', () => (lastActive = performance.now()), true);
 export const wakeUp = () => (lastActive = performance.now());
 renderer.setAnimationLoop((now) => {
   const active = tweens.size > 0 || now - lastActive < 2500 || current?.smooth;
   if (!active && now - last < 30) return;
+  const full = active && wasActive; // this frame and the one before at full rate: only these show how fast the device is
+  wasActive = active;
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   clock = now;
@@ -197,7 +212,7 @@ renderer.setAnimationLoop((now) => {
     frameCamera(t);
     const b = performance.now();
     if (PERF) renderer.info.reset();
-    post.render(dt);
+    post.render(dt, full);
     if (PERF) {
       const c = performance.now(), k = 0.05;
       PERF.update += ((b - a) - PERF.update) * k;

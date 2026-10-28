@@ -128,6 +128,7 @@ export const T = {
   no: () => [NO[Math.floor(Math.random() * NO.length)]],
   noLookalike: (l) => [`Nie, to ${L(l)}.`],
   yesStep: () => [YES_STEP[Math.floor(Math.random() * YES_STEP.length)]],
+  here: () => ['Tutaj!'], // the answer is pulsing (the last step of help)
   whereLetter: (l) => [`Gdzie jest ${L(l)}?`],
   findLetter: (l) => [`Znajdź ${L(l)}!`],
   whereNumber: (n) => [`Gdzie jest numer ${NUM[n]}?`],
@@ -251,7 +252,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
-    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
+    T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully, T.here].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false));

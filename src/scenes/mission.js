@@ -23,6 +23,7 @@ export const EASY_MIX = { familiar: 1, learning: 0.15 };
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
+import { isBounce } from '../input/bounce.js';
 
 /** How much grass the device can take. */
 export const detail = () => ({ low: 0.3, medium: 0.6, high: 1 }[post.tier] ?? 0.6);
@@ -177,6 +178,9 @@ export class Mission extends Stage {
    * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
    */
   wrong(chosen, { obj = null, said = null, feedback = true } = {}) {
+    const at = performance.now();
+    if (isBounce(this.lastWrong, chosen, at)) return; // the same finger landing twice: no sound, no count, no help
+    this.lastWrong = { chosen, at };
     this.miss();
     this.learn.wrong({ chosen });
     sfx.no();
@@ -208,6 +212,11 @@ export class Mission extends Stage {
     if (action === 'hint') this.learn.timeout(); // a long hesitation (for fatigue / mastery)
     this.runAssist(action);
   }
+  /** Back from a locked iPad / another app: the help clock and her answer time skip the time away. */
+  resumed(ms) {
+    if (this.aid) this.aid.quietFrom = Math.min(this.aid.quietFrom + ms, performance.now());
+    this.learn.paused(ms);
+  }
   /**
    * Do one help action: visuals via the scene's hooks, plus a short spoken line (said first).
    * A hook may return segments to say instead of the short prompt, or a promise when it speaks itself.
@@ -221,7 +230,8 @@ export class Mission extends Stage {
     if (action !== 'retry') this.helped(aid.state.level);
     const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[action]?.(said);
     if (out && typeof out.then === 'function') return;
-    this.say([...said, ...(Array.isArray(out) ? out : short)]);
+    const plain = action === 'reveal' && h.reveal ? T.here() : short; // the answer pulses: point, don't ask again
+    this.say([...said, ...(Array.isArray(out) ? out : plain)]);
   }
   /** Say something (no help fires while speaking). A newer line cuts this one short. */
   say(segments) {
