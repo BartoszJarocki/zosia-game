@@ -153,9 +153,11 @@ export class LettersMission extends Mission {
             this.success(new THREE.Vector3(b.position.x, 1.6, b.position.z), { big: true });
             this.lookAt(kitten);
             blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 500));
-            // the first time: "Znalazłaś kotka! Es jak ser!"; then shorter, so she gets the next one sooner
-            const said = r === 0 ? T.kittyFound(target) : ask === 'sound' ? [] : T.letterLike(target);
-            await Promise.all([say([this.praise(), ...(ask === 'sound' ? T.soundIs(target) : []), ...said]), this.toSeat(kitten)]);
+            // the first time "Znalazłaś kotka! Es jak ser!" (that is the praise); then shorter, "Brawo! Es jak ser!",
+            // so she gets the next one sooner
+            const sound = ask === 'sound' ? T.soundIs(target) : [];
+            const lines = r === 0 ? [...sound, ...T.kittyFound(target)] : [this.praise(), ...(ask === 'sound' ? sound : T.letterLike(target))];
+            await Promise.all([say(lines), this.toSeat(kitten)]);
             if (!this.alive) return;
             offKitten();
             b.removeFromParent();
