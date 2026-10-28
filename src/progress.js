@@ -1,5 +1,5 @@
 // Tracks how Zosia is doing.
-//  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs.
+//  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs (progress/levelup.js).
 //  - A rough run turns on "assist" next time, without ever taking stars away.
 //  - Skill mastery (precise): every learning event updates skills[skill][item] (see learning/mastery.js).
 // The saved shape and its upgrades live in progress/migrations.js.
@@ -8,6 +8,7 @@ import { badges } from './ui.js';
 import { maxLevel, LEVELS } from './levels/data.js';
 import { meetsNeeds } from './levels/gate.js';
 import { migrate } from './progress/migrations.js';
+import { applyRun } from './progress/levelup.js';
 import { applyEvent, emptyStat } from './learning/mastery.js';
 import { emptyWorld } from './adventure/world.js';
 import { learning } from './learning/events.js';
@@ -46,29 +47,13 @@ export function assistFor(kind) {
   return !CONFIG.level && mission(kind).lastAcc < 0.45;
 }
 
-/** Call at the end of a mission. Returns { level, levelUp }. */
-export function recordMission(kind, firstTry, rounds) {
+/** Call at the end of a mission with its { scored, clean } questions (progress/levelup.js). Returns { level, levelUp, acc }. */
+export function recordMission(kind, tally) {
   const m = mission(kind);
-  const acc = rounds ? firstTry / rounds : 1;
-  m.lastAcc = acc;
-  let levelUp = false;
-  if (acc >= 0.65) { // two thirds right first time (2 of 3, 3 of 4, 4 of 5…)
-    m.good++;
-    // the next level may also need a skill to be known well enough (GAME.md "needs"), not just good runs
-    if (m.good >= CONFIG.goodRunsPerLevel && m.level < maxLevel(kind) && meetsNeeds(state.skills, kind, LEVELS[kind]?.[m.level])) {
-      m.level++; m.good = 0; levelUp = true;
-    }
-  }
+  // the next level may also need a skill to be known well enough (GAME.md "needs"), not just good runs
+  const { levelUp, acc } = applyRun(m, tally, { goodRuns: CONFIG.goodRunsPerLevel, top: maxLevel(kind), opens: () => meetsNeeds(state.skills, kind, LEVELS[kind]?.[m.level]) });
   save();
   return { level: levelFor(kind), levelUp, acc };
-}
-
-/** Remember whether a letter/number was got right first time. */
-export function recordItem(id, firstTry) {
-  const it = (state.items[id] ||= { n: 0, ok: 0 });
-  it.n++;
-  if (firstTry) it.ok++;
-  save();
 }
 
 // recently asked items per skill (this session), so the scheduler can avoid repeats across missions too
