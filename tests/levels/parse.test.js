@@ -72,15 +72,39 @@ test('needs: a broken gate is explained', () => {
   assert.match(errors[0], /needs/);
 });
 
-test('Name Train: four modes; older ghost/bubble tables still work; gaps checked', () => {
+test('Name Train: whose comes early, family names later, every word has syllables', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
-  assert.deepEqual(levels.name.map((l) => l.mode), ['ghost', 'word', 'missing', 'highlight']);
-  assert.equal(levels.name[2].gaps, 1);
-  const name = (head, row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`name\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
-  assert.equal(only(parseGame(name('words | ghost | bubble | extras', 'MAMA | no | word | 1'), {})).levels.name[0].mode, 'highlight');
-  const { errors } = only(parseGame(name('words | mode | gaps | extras', 'KOT, DOM | missing | 3 | 1'), {}));
+  assert.deepEqual(levels.name.map((l) => l.mode), ['ghost', 'ghost', 'whose', 'highlight', 'word', 'word', 'missing', 'missing', 'whose']);
+  assert.equal(levels.name[6].gaps, 2);
+  assert.deepEqual(levels.name[5].syllables.BERNADKA, ['BER', 'NAD', 'KA']);
+  assert.deepEqual(levels.name[0].syllables, { ZOSIA: ['ZO', 'SIA'] });
+  assert.deepEqual(levels.name[2].whose, { ZOSIA: 'Zosi', MAMA: 'mamy', TATA: 'taty' });
+  assert.equal(levels.name[8].whose.RYSIEK, 'Ryśka');
+  assert.equal(levels.name[8].whose.KOT, undefined, 'things are never asked whose they are');
+});
+
+const nameFile = (head, row, words = '| MAMA | MA-MA | mamy |\n| TATA | TA-TA | taty |\n| KOT | KOT | — |\n| DOM | DOM | — |\n| RYSIEK | RY-SIEK | Ryśka |') =>
+  `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | ABCDEFGHIJKLMNOPRSTUWZ |\n\n### Test · \`name\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n\n#### Name Train words\n\n| Word | syllables | whose |\n|---|---|---|\n${words}\n`;
+
+test('Name Train: older ghost/bubble tables still work; gaps checked', () => {
+  assert.equal(only(parseGame(nameFile('words | ghost | bubble | extras', 'MAMA | no | word | 1'), {})).levels.name[0].mode, 'highlight');
+  const { errors } = only(parseGame(nameFile('words | mode | gaps | extras', 'KOT, DOM | missing | 3 | 1'), {}));
   assert.equal(errors.length, 1);
   assert.match(errors[0], /more letters/);
+});
+
+test('Name Train: up to 8 letters, Y only in names, every word in the words table', () => {
+  assert.deepEqual(only(parseGame(nameFile('words | mode | extras', 'RYSIEK | ghost | 1'), {})).errors, []);
+  assert.match(only(parseGame(nameFile('words | mode | extras', 'BERNADKAS | ghost | 1'), {})).errors[0], /2–8 letters/);
+  assert.match(only(parseGame(nameFile('words | mode | extras', 'QUIZ | ghost | 1'), {})).errors[0], /not in the ALL set \(or Y\): Q/);
+  assert.match(only(parseGame(nameFile('words | mode | extras', 'MAMA, KASIA | ghost | 1'), {})).errors[0], /add KASIA to the "Name Train words" table/);
+  const typo = parseGame(nameFile('words | mode | extras', 'MAMA | ghost | 1', '| MAMA | MA-NA | mamy |'), {});
+  assert.match(typo.errors.find((e) => e.includes('Name Train words')), /"MA-NA" must spell MAMA/);
+});
+
+test('Name Train: whose needs three words it can ask about', () => {
+  assert.match(only(parseGame(nameFile('words | mode', 'MAMA, TATA, KOT | whose'), {})).errors[0], /at least 3 words with a "whose" form \(got MAMA, TATA\)/);
+  assert.deepEqual(only(parseGame(nameFile('words | mode', 'MAMA, TATA, RYSIEK, KOT | whose'), {})).errors, []);
 });
 
 test('Cone Road: dice, counting aloud only early, "which cone has N dots?" needs dots on the signs', () => {
