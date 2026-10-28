@@ -4,7 +4,7 @@ import { makeKitten, rbox } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { makeFence, makeBench, makeLamp } from '../world/props.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
-import { WORDS, showLetter } from '../config.js';
+import { letterWord, showLetter } from '../config.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
@@ -59,7 +59,7 @@ export class LettersMission extends Mission {
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...distractors(target, pool, n - 1, this.L.similar)]);
       const colors = shuffle(TILE_COLORS);
-      const emoji = (WORDS[target] || [])[1] || '';
+      const emoji = letterWord(target)[1];
       const gap = n > 3 ? 2.55 : 2.8;
       const blocks = [];
       let solved = false, lastWrong = null;

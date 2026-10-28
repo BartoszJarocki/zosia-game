@@ -60,7 +60,9 @@ A set can use `{name}` (the child's name), other sets, and plain capital letters
 | SOUNDS | MSAOZLUEI |
 
 `ALL` is every letter the game may use (Q, V, X, Y are left out: they are rare in Polish and hard
-to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g. B → banan 🍌.
+to picture). Every letter needs a picture word in `src/config.js` (`WORDS`), e.g. B → banan 🍌, balon 🎈: the
+first is the letter's word ("Be jak banan!"), her name for her own letter ("Zet jak Zosia!"). A picture word starts
+with its letter's sound and then a vowel (not "słoń", "gruszka") and is what she would call the picture.
 
 ---
 
@@ -223,7 +225,7 @@ The post office: Chase delivers parcels. First sounds: which word starts with wh
 | 3 | START | 3 | soundLetter | 4 |
 | 4 | MORE | 3 | soundLetter | 4 |
 
-- **pool** — which letters (their picture words come from `WORDS`: K → kot 🐱)
+- **pool** — which letters (their picture words come from `WORDS`, taking turns: K → kot 🐱, then kaczka 🦆)
 - **choices** — how many parcels / mailboxes (2–4)
 - **mode** — `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat ·
   `soundLetter`: letter mailboxes and one parcel with a picture, "Do której skrzynki pójdzie kot?" →

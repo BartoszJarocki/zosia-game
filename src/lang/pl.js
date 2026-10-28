@@ -1,7 +1,7 @@
 // Everything the game says, in Polish.
 // Each phrase returns a list of short segments; every segment is one pre-recorded clip.
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
-import { CONFIG, WORDS, letterName, sayWord } from '../config.js';
+import { CONFIG, WORDS, letterWord, letterName, sayWord } from '../config.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -13,7 +13,7 @@ const ph = (l) => PHON[l.toUpperCase()] || l;
 /** "jedną kropkę", "dwie kropki", "pięć kropek" (accusative: "ma … ") */
 const dotsAcc = (n) => (n === 1 ? 'jedną kropkę' : n <= 4 ? `${NUM_F[n]} kropki` : `${NUM[n]} kropek`);
 const L = (l) => cap(letterName(l));
-const word = (l) => (WORDS[l] || [''])[0];
+const word = (l) => letterWord(l)[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
 const treats = (n) => (n === 1 ? 'smakołyk' : n >= 2 && n <= 4 ? 'smakołyki' : 'smakołyków');
 
@@ -59,7 +59,7 @@ export const T = {
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
   startsWith: (l) => [`Co zaczyna się na ${L(l)}?`],
-  whichBox: (l) => [`Do której skrzynki pójdzie ${word(l).toLowerCase() === kid.toLowerCase() ? kid : word(l)}?`],
+  whichBox: (w) => [`Do której skrzynki pójdzie ${w}?`], // w: one of the letter's picture words
   // Pup Picnic: more, less, the same
   picnicStart: () => [`Piknik! ${pup} jest głodny!`],
   askMore: () => ['Gdzie jest więcej smakołyków?'],
@@ -128,7 +128,7 @@ export const T = {
   whichMissing: () => ['Której literki brakuje?'],
 
   yes: () => ['Tak!'],
-  letterLike: (l) => [`${L(l)} jak ${word(l)}!`],
+  letterLike: (l, w = word(l)) => [`${L(l)} jak ${w}!`],
   howManyShort: () => ['Ile smakołyków?'],
   tapTheBox: () => ['Dotknij pudełka!'],
   countTogether: () => ['Policzmy razem!'],
@@ -209,7 +209,7 @@ export function allSegments(levels, allLetters) {
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   // Pup Delivery: every letter its levels can ask
-  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.letterLike(l)); });
+  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); (WORDS[l] || []).forEach(([w]) => { add(T.whichBox(w)); add(T.letterLike(l, w)); }); });
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); add(T.wordPicture(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));

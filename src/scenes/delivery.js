@@ -15,7 +15,7 @@ import { Mission } from './mission.js';
 //   pictureSound  parcels with pictures: "Co zaczyna się na Ka?" → tap the cat           (letterSound)
 //   soundLetter   letter mailboxes + one parcel with a picture: "Do której skrzynki pójdzie kot?"
 //                 → drag the parcel into K (or tap the mailbox)                          (letterSound)
-// The picture words are the game's letter words (config WORDS: K → kot 🐱, B → banan 🍌…).
+// The pictures are the letters' picture words (config WORDS: K → kot 🐱, kaczka 🦆…), taking turns.
 
 /** Letters that sound alike at the start of a word (kept apart unless GAME.md "similar" says otherwise). */
 const SOUNDALIKE = { B: 'P', P: 'B', D: 'T', T: 'D', G: 'K', K: 'G', S: 'Z', Z: 'S', W: 'F', F: 'W', M: 'N', N: 'M' };
@@ -91,6 +91,15 @@ export class DeliveryMission extends Mission {
     for (const x of [-7, 7]) { const l = makeLamp(); l.position.set(x, 0, -3); this.scene.add(l); }
   }
 
+  /** One of a letter's picture words, [word, picture], taking turns: the same letter comes back with another word. */
+  wordFor(l) {
+    const words = WORDS[l];
+    this.turns ??= {};
+    const i = (this.turns[l] ??= Math.floor(Math.random() * words.length));
+    this.turns[l] = i + 1;
+    return words[i % words.length];
+  }
+
   /** Letters to choose between (no sound-alikes unless the level wants them). */
   others(target, pool, n) {
     const alike = this.L.similar ? '' : SOUNDALIKE[target] || '';
@@ -110,11 +119,13 @@ export class DeliveryMission extends Mission {
       this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = shuffle([target, ...this.others(target, pool, n - 1)]);
+      const pics = Object.fromEntries(opts.map((l) => [l, this.wordFor(l)]));
+      const said = pics[target][0];
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.2 : 3.8;
       let solved = false, lastWrong = null;
       const parcels = opts.map((l, i) => {
-        const p = makeParcel(WORDS[l][1], colors[i]);
+        const p = makeParcel(pics[l][1], colors[i]);
         p.position.x = (i - (n - 1) / 2) * gap;
         p.rotation.y = (Math.random() - 0.5) * 0.2;
         p.userData.letter = l;
@@ -134,7 +145,7 @@ export class DeliveryMission extends Mission {
             sfx.good();
             this.success(p.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
             parcels.filter((x) => x !== p && x.parent).forEach((x) => this.shrinkAway(x, 400));
-            await say([this.praise(), ...T.letterLike(l)]); // "Ka jak kot!"
+            await say([this.praise(), ...T.letterLike(l, said)]); // "Ka jak kot!"
             if (!this.alive) return;
             await this.deliver(p);
             resolve();
@@ -149,7 +160,7 @@ export class DeliveryMission extends Mission {
       ui.bubble({ big: showLetter(target), pic: '📦', onTap: () => this.replay() });
       this.question('letterSound', target, {
         short: T.startsWith(target),
-        hint: () => T.letterLike(target), // "Ka jak kot!"
+        hint: () => T.letterLike(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : parcels.find((p) => p !== right && p.parent)),
         reveal: () => this.hint(right, () => solved),
       });
@@ -166,6 +177,7 @@ export class DeliveryMission extends Mission {
       this.item('S:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const letters = shuffle([target, ...this.others(target, pool, n - 1)]);
+      const [said, pic] = this.wordFor(target);
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.4 : 4;
       let solved = false, lastWrong = null;
@@ -180,7 +192,7 @@ export class DeliveryMission extends Mission {
         this.tappable(b, () => choose(b)); // tapping a mailbox = putting the parcel in it
         return b;
       });
-      const parcel = makeParcel(WORDS[target][1], '#fde68a');
+      const parcel = makeParcel(pic, '#fde68a');
       parcel.scale.setScalar(0.8);
       parcel.position.set(0, 0, 3);
       this.scene.add(parcel);
@@ -226,7 +238,7 @@ export class DeliveryMission extends Mission {
           sfx.ding();
           hop(b, 0.35);
           this.success(to.clone().add(new THREE.Vector3(0, 0.6, 0)), { big: true });
-          await say([this.praise(), ...T.letterLike(target)]);
+          await say([this.praise(), ...T.letterLike(target, said)]);
           if (!this.alive) return;
           await Promise.all(boxes.map((x) => this.shrinkAway(x, 350)));
           resolve();
@@ -239,14 +251,14 @@ export class DeliveryMission extends Mission {
       };
 
       const right = boxes.find((b) => b.userData.letter === target);
-      ui.bubble({ big: '', pic: WORDS[target][1], onTap: () => this.replay() });
+      ui.bubble({ big: '', pic, onTap: () => this.replay() });
       this.question('letterSound', target, {
-        short: T.whichBox(target),
-        hint: () => T.letterLike(target), // "Ka jak kot!"
+        short: T.whichBox(said),
+        hint: () => T.letterLike(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : boxes.find((b) => b !== right && b.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      wait(700 + n * 140).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.whichBox(target)] : T.whichBox(target)); });
+      wait(700 + n * 140).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.whichBox(said)] : T.whichBox(said)); });
     });
   }
 
