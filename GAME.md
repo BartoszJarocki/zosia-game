@@ -80,7 +80,7 @@ block makes it fly away and the kitten appears.
 | 3 | MORE | 3 | audio | no | 4 | — |
 | 4 | MORE | 3 | name | yes | 4 | — |
 | 5 | ALL | 3 | word | no | 4 | — |
-| 6 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.6 |
+| 6 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.4 |
 
 - **pool** — which letters can be asked (a letter set, letters, or both with `+`)
 - **choices** — how many blocks (2–4)
@@ -92,7 +92,9 @@ block makes it fly away and the kitten appears.
   `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold — the `SOUNDS` set)
 - **similar** — `yes` puts lookalike letters (B/P/R, E/F, M/W, O/C…) among the wrong answers on purpose
 - **needs** — optional: the level opens only once that skill is known well enough over the level's letters
-  (average mastery, 0–1), not just after enough good runs. `letterAudio 0.6` = she knows the names of those letters
+  (average mastery, 0–1, over the ones she has been asked, once that is at least half of them), not just after
+  enough good runs. Mastery takes guessing out (tapping at random scores about 0.1), so `letterAudio 0.4` = she
+  knows the names of those letters clearly better than a guess
 - **rounds** — how many kittens to find (1–8)
 
 ### 🎈 Balloon Hill · `balloons`

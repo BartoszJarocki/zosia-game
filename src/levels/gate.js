@@ -1,6 +1,7 @@
 // Level gates: some levels open on skill, not on the number of runs (GAME.md "needs" column).
-// e.g. Kitty Park level 6 (letter sounds) has `needs: letterAudio 0.6` — it opens only once the average
-// letterAudio mastery over that level's letters is at least 0.6. Pure, so it is testable.
+// e.g. Kitty Park level 6 (letter sounds) has `needs: letterAudio 0.4` — it opens once the average
+// letterAudio mastery over that level's letters she has been asked is at least 0.4, and she has been asked
+// at least half of them. (A letter she never met says nothing about her.) Pure, so it is testable.
 import { averageMastery } from '../learning/mastery.js';
 import { SKILLS } from '../learning/events.js';
 
@@ -31,5 +32,8 @@ export function gateItems(kind, row) {
 /** May she move up to this level row? (No gate = yes.) */
 export function meetsNeeds(skills, kind, row) {
   if (!row?.needs) return true;
-  return averageMastery(skills, row.needs.skill, gateItems(kind, row)) >= row.needs.min;
+  const { skill, min } = row.needs;
+  const items = gateItems(kind, row);
+  const asked = items.filter((it) => skills?.[skill]?.[it]?.attempts > 0);
+  return asked.length > 0 && asked.length * 2 >= items.length && averageMastery(skills, skill, asked) >= min;
 }
