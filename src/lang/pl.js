@@ -2,6 +2,7 @@
 // Each phrase returns a list of short segments; every segment is one pre-recorded clip.
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
 import { CONFIG, WORDS, letterName, sayWord } from '../config.js';
+import { gapCount } from '../levels/train.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -153,14 +154,20 @@ export const T = {
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
   spellWord: (w) => [`${sayWord(w)}!`],
-  // what a finished word turns into (Name Train): her name, or one of these
-  wordPicture: (w) => ({ KOT: ['Kot mówi: miau!'], DOM: ['Dom! Tu mieszkamy!'], MAMA: ['Buziaczek dla mamy!'], TATA: ['Buziaczek dla taty!'] })[w]
-    || (w === CONFIG.childName.toUpperCase() ? [`To ty, ${voc}! Twoje imię!`] : []),
+  syllable: (s) => [`${cap(s.toLowerCase())}!`], // the finale claps the word: "Zo!" "Sia!" then "Zosia!"
+  // what a finished word turns into (Name Train): her name, a thing, or a kiss for whoever it is (whose: "mamy")
+  wordPicture: (w, whose) => ({ KOT: ['Kot mówi: miau!'], DOM: ['Dom! Tu mieszkamy!'] })[w]
+    || (w === CONFIG.childName.toUpperCase() ? [`To ty, ${voc}! Twoje imię!`] : whose ? [`Buziaczek dla ${whose}!`] : []),
   // Name Train V2
   wordStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Pierwsza literka!`],
-  nextLetter: () => ['Następna literka!'],
-  missingAsk: (w) => [`Pociąg wiezie słowo ${sayWord(w)}. Której literki brakuje?`],
+  whichNow: () => ['Która teraz?'], // (word mode: the next wagon glows)
+  lookAtWord: () => ['Popatrz na słowo!'],
+  missingAsk: (w, gaps) => [`Pociąg wiezie słowo ${sayWord(w)}. ${gaps > 1 ? 'Których literek' : 'Której literki'} brakuje?`],
   whichMissing: () => ['Której literki brakuje?'],
+  // Name Train "whose": find the train with her name (whose: the name as in "pociąg Zosi")
+  trainsCame: () => ['Przyjechały pociągi!'],
+  whoseAsk: (whose) => [`Który pociąg jest ${whose}?`],
+  whoseIs: (whose) => [`To pociąg ${whose}!`],
 
   yes: () => ['Tak!'],
   letterLike: (l) => [`${L(l)} jak ${word(l)}!`],
@@ -229,7 +236,7 @@ export const T = {
  */
 export function allSegments(levels, allLetters) {
   const words = [...new Set(levels.name.flatMap((l) => l.words))];
-  const letters = new Set([...allLetters, ...words.join('')].filter((c) => /[A-Z]/.test(c)));
+  const letters = new Set(allLetters);
   const nums = Array.from({ length: 10 }, (_, i) => i + 1);
   const floors = Math.max(...levels.lookout.map((l) => l.max));
   const maxLevels = Math.max(...Object.values(levels).map((l) => l.length));
@@ -245,13 +252,21 @@ export function allSegments(levels, allLetters) {
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
   // Pup Delivery: every letter its levels can ask
   new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); add(T.whichBox(l)); add(T.letterLike(l)); });
-  words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); add(T.wordPicture(w)); });
+  // Name Train: each row's words, their syllables, and whose they are; letters only names use (Y) get the train's lines
+  new Set(words.join('')).forEach((l) => { if (!letters.has(l)) { add(T.letter(l)); add(T.findLetter(l)); add(T.spellNext(l)); } });
+  levels.name.forEach((row) => row.words.forEach((w) => {
+    if (row.mode === 'whose') { if (row.whose[w]) { add(T.whoseAsk(row.whose[w])); add(T.whoseIs(row.whose[w])); } return; }
+    if (row.mode === 'missing') add(T.missingAsk(w, gapCount(w, row.gaps)));
+    else add([...T.spellStart(w), ...(row.mode === 'word' ? T.wordStart(w) : [])]); // (a gentler run of the others is ghost)
+    add(T.spellWord(w)); add(T.wordPicture(w, row.whose[w]));
+    row.syllables[w].forEach((s) => add(T.syllable(s)));
+  }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
   [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully, T.here].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
