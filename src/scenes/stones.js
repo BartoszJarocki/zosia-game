@@ -197,7 +197,6 @@ export class StonesMission extends Mission {
       const n = this.L.n;
       const missing = this.pick('sequence', Array.from({ length: n - 1 }, (_, i) => i + 2)); // any but the first
       this.last = missing;
-      this.item('N:' + missing);
       const colors = shuffle(TILE_COLORS);
       // the path: in order from this bank to the far one, gently zigzagging
       const at = (i) => START.clone().lerp(FAR, (i + 1) / (n + 1)).add(new THREE.Vector3(i % 2 ? 0.7 : -0.7, 0.18, 0));

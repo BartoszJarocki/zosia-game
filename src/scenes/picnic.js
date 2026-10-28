@@ -118,7 +118,6 @@ export class PicnicMission extends Mission {
       const mode = this.L.modes[r % this.L.modes.length];
       const numerals = this.L.numerals;
       const item = mode + (numerals ? '#' : '');
-      this.item('C:' + item);
       let counts, ref = 0;
       if (mode === 'same') {
         // Chase's plate (up to 5) and two blankets: one the same, one a bit different

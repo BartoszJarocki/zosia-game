@@ -124,7 +124,6 @@ export class ConesMission extends Mission {
       const layout = this.L.dots || 'line';
       const target = this.pick(skill, pool);
       this.last = target;
-      this.item('N:' + target);
       const n = Math.min(this.L.choices, pool.length);
       const opts = numberChoices(target, this.L.max, n, this.level >= 2);
       const colors = shuffle(TILE_COLORS);
