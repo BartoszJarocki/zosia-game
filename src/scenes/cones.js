@@ -113,7 +113,7 @@ export class ConesMission extends Mission {
     seatRiders(this.truck, this.girl, this.pup);
     this.speed = 0;
     this.onUpdate((dt, t) => this.truck.userData.update(t, this.speed));
-    // where the road goes: a kitten waits past the last cones, a little nearer after each one
+    // where the road goes: a kitten waits past the last cones (behind the bubble until the cruiser gets there)
     const kitten = (this.kitten = makeKitten('#9ca3af'));
     kitten.scale.setScalar(1.5);
     kitten.position.set(0, 0, -STEP * this.rounds);
