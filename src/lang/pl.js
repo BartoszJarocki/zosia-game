@@ -109,6 +109,7 @@ export const T = {
   whichSound: (l) => [`Która literka robi: ${ph(l)}?`],
   soundLike: (l) => [`${cap(ph(l))}… jak ${word(l)}!`],
   soundIs: (l) => [`${cap(ph(l))}… to ${L(l)}!`],
+  kittensPlay: () => [`Uratowałaś wszystkie kotki, ${voc}! Teraz bawią się razem!`], // (the end: they play in a ring)
 
   // Balloon Hill
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
@@ -217,7 +218,7 @@ export function allSegments(levels, allLetters) {
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
-    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
+    T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.kittensPlay, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
   [...NO, ...YES_STEP].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false));
