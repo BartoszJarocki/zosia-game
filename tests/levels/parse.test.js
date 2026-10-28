@@ -83,14 +83,13 @@ test('Name Train: four modes; older ghost/bubble tables still work; gaps checked
   assert.match(errors[0], /more letters/);
 });
 
-test('Cone Road: dice, counting aloud only early, "which cone has N dots?" needs dots on the signs', () => {
-  const { levels } = parseGame(md, { childName: 'Zosia' });
-  assert.ok(levels.cones.every((l) => l.dots === 'dice'));
-  assert.deepEqual(levels.cones.map((l) => l.count), [true, true, false, false]);
-  assert.equal(levels.cones[2].bubble, 'name');
-  const cones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`cones\`\n\n| Level | max | choices | bubble | sign |\n|---|---|---|---|---|\n| 1 | ${row} |\n`;
-  assert.match(only(parseGame(cones('5 | 3 | name | numeral'), {})).errors[0], /signs need dots/);
+test('Cone Road: "which cone has N dots?" and counting aloud need dots on the signs; dice only up to 6', () => {
+  const cones = (row, head = 'max | choices | bubble | sign') => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`cones\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
+  assert.match(only(parseGame(cones('5 | 3 | name | numeral | no', 'max | choices | bubble | sign | count'), {})).errors[0], /signs need dots/);
   assert.match(only(parseGame(cones('5 | 3 | dots | dots'), {})).errors[0], /signs need numerals/);
+  assert.match(only(parseGame(cones('5 | 3 | numeral | numeral'), {})).errors[0], /count "yes" lights the sign's dots/);
+  assert.deepEqual(only(parseGame(cones('5 | 3 | numeral | numeral | no', 'max | choices | bubble | sign | count'), {})).errors, []);
+  assert.match(only(parseGame(cones('10 | 4 | dots | numeral | dice | no', 'max | choices | bubble | sign | dots | count'), {})).errors[0], /dice patterns go up to 6/);
   assert.equal(only(parseGame(cones('5 | 3 | both | both'), {})).levels.cones[0].count, true, 'defaults: count aloud, line dots');
 });
 

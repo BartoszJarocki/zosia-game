@@ -138,17 +138,25 @@ Numbered cones block the road. Tap the right one and the cruiser drives on (earl
 | Level | max | choices | bubble | sign | dots | count | rounds |
 |---|---|---|---|---|---|---|---|
 | 1 | 3 | 3 | both | both | dice | yes | 3 |
-| 2 | 5 | 3 | numeral | both | dice | yes | 3 |
-| 3 | 5 | 3 | name | dots | dice | no | 3 |
-| 4 | 6 | 4 | dots | numeral | dice | no | 3 |
+| 2 | 5 | 3 | both | both | dice | yes | 3 |
+| 3 | 5 | 3 | numeral | both | dice | yes | 3 |
+| 4 | 5 | 3 | name | dots | dice | yes | 3 |
+| 5 | 5 | 3 | dots | numeral | dice | no | 3 |
+| 6 | 6 | 3 | dots | numeral | dice | no | 3 |
+| 7 | 6 | 4 | dots | numeral | dice | no | 3 |
+| 8 | 6 | 4 | dots | numeral | line | no | 3 |
+| 9 | 10 | 4 | dots | numeral | line | no | 3 |
 
 - **max** — numbers go from 1 to max (2–10)
 - **choices** — how many cones (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
-- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral ·
+- **bubble** — `both`: numeral + dots · `numeral` · `dots`: only dots, she counts and finds the numeral
+  (help says "Policz kropki!" and lights the dots one by one; the number is named only when the answer is shown) ·
   `name`: nothing shown, "Który pachołek ma cztery kropki?" (the signs show dots: she recognises the amount)
 - **sign** — what the cone signs show: `both` (numeral + dots), `numeral`, or `dots`
-- **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting)
-- **count** — `yes`: after a right answer the dots are counted aloud together · `no`: just the number ("Cztery!")
+- **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting;
+  above 6 always rows of five)
+- **count** — `yes`: after a right answer the sign's dots light up one by one as they are counted aloud, then
+  how many ("Jeden! Dwa! Trzy! Trzy kropki!"; needs dots on the sign) · `no`: just the number ("Cztery!")
 - **rounds** — how many cones block the road (1–8)
 
 ### 🪨 The River · `stones`

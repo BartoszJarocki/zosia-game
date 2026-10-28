@@ -5,7 +5,7 @@ import { makeGirl, makePup } from '../characters.js';
 import { makeTree, makeBush } from '../world/nature.js';
 import { makeHouse, makeLamp, makeHydrant } from '../world/props.js';
 import { dust } from '../fx/particles.js';
-import { glyphTexture, TILE_COLORS } from '../textures.js';
+import { glyphTexture, DICE, TILE_COLORS } from '../textures.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
@@ -14,10 +14,48 @@ import { numberChoices } from '../levels.js';
 import { Mission } from './mission.js';
 
 const STEP = 14; // how far the cruiser drives after each round
+const LIT = '#fde047'; // a dot being counted
 
-// "Cone Road": numbered cones block the road; tap the right number to clear the way.
-//  L1 1–3, numeral + dots everywhere (match) · L2 1–5, bubble shows numeral only
-//  L3 1–6, bubble shows only dots (count them!), signs show only numerals, neighbours as wrong answers.
+/**
+ * Where glyphTexture (textures.js) draws a sign's dots, [x, y, r] on its 512 px canvas, in counting order
+ * (dice pips read like a book). Keep in step with glyphTexture.
+ */
+function dotCenters(dots, layout, withText) {
+  const S = 512;
+  if (layout === 'dice' && DICE[dots]) {
+    const big = !withText, cell = big ? 120 : 62, r = big ? 44 : 24, cy = big ? S / 2 : S * 0.8 - 4;
+    return DICE[dots].map((k) => [S / 2 + ((k % 3) - 1) * cell * (big ? 1 : 1.25), cy + (Math.floor(k / 3) - 1) * cell * (big ? 1 : 0.55), r]);
+  }
+  const rows = Math.ceil(dots / 5);
+  return Array.from({ length: dots }, (_, i) => {
+    const row = Math.floor(i / 5), col = i % 5, inRow = row === rows - 1 ? dots - row * 5 : Math.min(dots, 5);
+    return withText
+      ? [S / 2 + (col - (inRow - 1) / 2) * 70, S * 0.8 + (row - (rows - 1) / 2) * 62, 26]
+      : [S / 2 + (col - (inRow - 1) / 2) * 86, S / 2 + (row - (rows - 1) / 2) * 96, 34];
+  });
+}
+
+/** A cone's sign with its first `lit` dots glowing yellow (counting them one by one). */
+function litSign(text, { bg, dots, layout, lit }) {
+  const base = glyphTexture(text, { bg, dots, layout });
+  if (!lit) return base;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 512;
+  const c = cv.getContext('2d');
+  c.drawImage(base.image, 0, 0);
+  for (const [x, y, r] of dotCenters(dots, layout, !!text).slice(0, lit)) {
+    c.beginPath(); c.arc(x, y, r + 7, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
+    c.beginPath(); c.arc(x, y, r + 3, 0, Math.PI * 2); c.fillStyle = LIT; c.fill();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.userData.lit = true;
+  return tex;
+}
+
+// "Cone Road": numbered cones block the road; tap the right number to clear the way. GAME.md has the levels:
+// first numeral + dots everywhere (match), then only the numeral in the bubble, then "which cone has four dots?",
+// then only dots in the bubble (count them, find the numeral), up to 10 in rows of five.
 export class ConesMission extends Mission {
   constructor(game) {
     super(game, 'cones');
@@ -99,7 +137,13 @@ export class ConesMission extends Mission {
         const c = new THREE.Group();
         c.add(makeCone());
         c.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8), mat('#94a3b8', { metalness: 0.5, roughness: 0.3 }), { y: 1.7 }));
-        const face = new THREE.MeshStandardMaterial({ map: glyphTexture(numOnSign ? String(num) : '', { bg: colors[i], dots: dotsOnSign ? num : 0, layout }), roughness: 0.45 });
+        const look = { bg: colors[i], dots: dotsOnSign ? num : 0, layout };
+        const face = new THREE.MeshStandardMaterial({ map: litSign(numOnSign ? String(num) : '', { ...look, lit: 0 }), roughness: 0.45 });
+        const light = (lit) => {
+          const old = face.map;
+          face.map = litSign(numOnSign ? String(num) : '', { ...look, lit });
+          if (old.userData.lit) old.dispose(); // (the plain sign is glyphTexture's, shared and cached)
+        };
         const white = mat('#ffffff');
         const sign = new THREE.Mesh(rbox(1.5, 1.5, 0.14, 0.06), [white, white, white, white, face, white]);
         sign.position.y = 2.7;
@@ -125,14 +169,18 @@ export class ConesMission extends Mission {
             cones.forEach((x) => this.untap(x));
             sfx.good();
             this.success(sign.getWorldPosition(new THREE.Vector3()));
-            await say([this.praise(), ...(ask === 'dots' ? T.dots(num) : T.number(num))]); // ("Cztery!")
-            // count the dots together (early levels; later she just knows: no counting aloud every time)
-            for (let k = 1; this.L.count !== false && k <= num; k++) {
+            if (this.L.count) {
+              // count the dots together, each one lighting up as it is said, then how many ("Trzy kropki!")
+              await say([this.praise()]);
+              for (let k = 1; k <= num; k++) {
+                if (!this.alive) return;
+                light(k);
+                sfx.pop();
+                await say(T.number(k));
+              }
               if (!this.alive) return;
-              animate(300, (t) => sign.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.18), ease.linear);
-              sfx.pop();
-              await say(T.number(k));
-            }
+              await say(T.dots(num));
+            } else await say([this.praise(), ...(ask === 'dots' ? T.dots(num) : T.number(num))]); // (later she just knows: "Cztery!")
             if (!this.alive) return;
             // cones jump off the road
             sfx.whoosh();
@@ -159,12 +207,29 @@ export class ConesMission extends Mission {
       const shown = { both: [String(target), target], numeral: [String(target), 0], dots: ['', target], name: ['', 0] }[ask];
       bubble(...shown);
       const rc = cones.find((x) => x.userData.num === target);
-      this.question(skill, target, {
+      // the bubble's dots light up one at a time, a pop each, so she can count along (no number said)
+      const pointAtDots = async () => {
+        for (const dot of document.querySelectorAll('.bubble .dots i')) {
+          if (!this.alive || solved) return;
+          Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' });
+          sfx.pop();
+          await wait(650);
+        }
+      };
+      const simplify = () => this.removeOption(lastWrong?.parent ? lastWrong : cones.find((x) => x !== rc && x.parent));
+      // "dots": she counts and finds the numeral, so no help names the number before the reveal
+      const hooks = ask === 'dots' ? {
+        short: T.conesDots(false),
+        hint: (said = []) => this.say([...said, ...T.countDots()]).then(pointAtDots),
+        simplify,
+        reveal: () => { this.hint(rc, () => solved, rc.userData.sign); return T.dots(target); },
+      } : {
         short: ask === 'name' ? T.conesWhich(target, false) : T.whereNumber(target),
         hint: () => { bubble(ask === 'name' ? '' : String(target), target); return T.dots(target); }, // the dots (and numeral) appear
-        simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : cones.find((x) => x !== rc && x.parent)),
+        simplify,
         reveal: () => this.hint(rc, () => solved, rc.userData.sign),
-      });
+      };
+      this.question(skill, target, hooks, { options: n });
       wait(600).then(() => {
         if (!this.alive) return;
         if (ask === 'dots') this.ask(T.conesDots(r === 0));
