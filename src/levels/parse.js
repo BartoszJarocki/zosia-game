@@ -81,8 +81,9 @@ export const SCHEMA = {
   lookout: {
     max: { type: 'int', min: 2, max: 9 },
     bubble: { type: 'enum', values: ['both', 'numeral'] },
-    mode: { type: 'enum', values: ['go', 'pickup', 'find', 'relative'] },
-    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 1 }, // elevator trips
+    mode: { type: 'enum', values: ['go', 'pickup', 'find', 'relative', 'dice'] },
+    rounds: { type: 'int', min: 1, max: 3, optional: true, default: 1 }, // elevator trips, a kitten each (the car seats 3)
+    dice: { type: 'range', min: 1, max: 6, optional: true }, // (mode dice) how many floors up the die can say
   },
 };
 
@@ -251,8 +252,9 @@ function crossCheck(kind, s, where, errors) {
   }
   if (kind === 'lookout' && s.mode === 'relative' && s.max < 3) errors.push(`${where}: "relative" needs at least 3 floors`);
   if (kind === 'lookout' && s.mode === 'relative' && s.rounds < 2) errors.push(`${where}: "relative" needs at least 2 rounds (the first trip is a normal one)`);
-  if (kind === 'lookout' && (s.mode === 'pickup' || s.mode === 'find') && s.rounds > 3) errors.push(`${where}: "${s.mode}" has at most 3 rides (the car seats 3 kittens)`);
   if (kind === 'lookout' && (s.mode === 'pickup' || s.mode === 'find') && s.rounds >= s.max) errors.push(`${where}: "${s.mode}" needs more floors than rounds (a kitten waits on a different floor each time)`);
+  if (kind === 'lookout' && s.mode === 'dice' && !s.dice) errors.push(`${where}: "dice" needs a dice range, like 1–2 (how many floors up the die can say)`);
+  if (kind === 'lookout' && s.mode === 'dice' && s.dice && s.max < s.rounds * s.dice[0]) errors.push(`${where}: "dice" rides only go up: ${s.rounds} rides of at least ${s.dice[0]} floor(s) need ${s.rounds * s.dice[0]}+ floors`);
   if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
   if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
   if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);

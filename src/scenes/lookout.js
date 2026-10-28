@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { animate, ease, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop, camera } from '../engine.js';
 import { mat, mesh, rbox, cyl, sphere, makeKitten } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { makeLookout } from '../world/props.js';
 import { sparkle, dust } from '../fx/particles.js';
-import { discTexture, TILE_COLORS } from '../textures.js';
+import { discTexture, TILE_COLORS, DICE } from '../textures.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { T } from '../lang/pl.js';
@@ -12,24 +12,34 @@ import { pick } from '../util.js';
 import { Mission, EASY_MIX } from './mission.js';
 import { getSession } from '../session/session.js';
 import { nextStep } from '../session/director.js';
+import { kittenFloors, nextDoor, diceFloors } from '../levels/lookout.js';
 
 const LZ = -2;              // where the Lookout stands
 const CAR_Z = LZ + 1.75;    // the glass elevator rides up its front
 const Y0 = 3.0, YTOP = 7.45; // car floor at the ground floor / top floor (just under the pod)
 const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
-const LEDGE_X = 2.2;        // each floor's little balcony, right of the shaft, where a kitten waits
+const SIGN_X = 1.3;         // the floor signs: one column right of the shaft, a number line to ride along
+const KITTEN_H = 1.13;      // the kitten model's height (paws to ears) at scale 1
+const BEAT = 650;           // count along: at each floor its sign lights, a pause for her to say it, then the voice does
+const DIE_Y = 0.46;         // the die rides on a little tray beside the car
 const FUR = ['#fb923c', '#9ca3af', '#f5f5f4', '#57534e'];
 const SEATS = [[-0.48, 0.34], [0, 0.38], [0.48, 0.34]]; // kittens ride at the front of the car
+const GLOW = new THREE.Color('#fde047').multiplyScalar(2.2); // a lit sign's halo (bright enough to bloom)
+// Camera: the whole tower (every floor, the car anywhere on it) fills the band of the screen the HUD leaves free.
+// Portrait: the speech bubble sits over the car's column, so the band starts lower; the lift panel takes the right.
+const FRAME = { land: { x: 0.3, top: 0.13, bottom: 0.96, minWidth: 6.6 }, port: { x: 1.3, top: 0.27, bottom: 0.95, minWidth: 6.6 } };
 
-// "Baza" (the Lookout): ride the glass elevator. Press the floor button; the floors are counted
-// aloud on the way. At the end: to the very top, and down the slide!
-//  pickup: a lost kitten waits on a floor ("Kotek czeka na piętrze dwa!"); the elevator goes there from wherever
-//          it is and the kitten hops in · find: the same, but only the kitten is in the bubble: she reads the
-//          number next to it · relative: "we're on 3 — one floor up/down!" · go: up and back down (the finale)
+// "Baza" (the Lookout): ride the glass elevator. Press the floor button; the car stops at every floor on the way,
+// its sign lights and its number is said after a beat (count along). Every ride rescues a kitten, and at the end
+// everyone goes to the very top and down the slide!
+//  pickup: a kitten waits on a floor ("Kotek czeka na piętrze dwa!") · find: only the kitten in the bubble, she reads
+//  the sign beside it · relative: after a pickup, "one floor up/down" from where we are · dice: she taps a big die,
+//  it says how many floors up, she presses where that lands (counting on); the kitten is a surprise there ·
+//  go: one easy kitten, floors 1–3 with numeral + dots (the finale, and the gentler run after a rough one)
 //
-// Session finale mode (when the session director says the finale is due — the hub's alarm called her here):
-// the alarm is on, ONE easy ride (floors 1–3, numeral + dots, a number she knows), floors counted aloud,
-// up to the top with the siren and lights, down the slide, a big celebration. Not another quiz (~30–45 s).
+// Session finale (when the session director says the finale is due — the hub's alarm called her here):
+// the alarm is on, ONE easy kitten ride, floors counted, up to the top with the siren and lights, down the slide,
+// a big celebration. Not another quiz (~30–45 s).
 export class LookoutMission extends Mission {
   constructor(game) {
     super(game, 'lookout');
@@ -43,7 +53,8 @@ export class LookoutMission extends Mission {
       this.doneLine = T.finaleDone;
     }
     this.N = this.L.max;
-    this.view = { pos: new THREE.Vector3(1.6, 5.4, 13), look: new THREE.Vector3(1.6, 4.2, CAR_Z), minWidth: 11.5 };
+    this.view = { pos: new THREE.Vector3(1.6, 5.4, 13), look: new THREE.Vector3(1.6, 4.2, CAR_Z), minWidth: 6.6 };
+    this.dist = 0;
     this.bubbleAt = 'left'; // the middle of the view is the balconies, where the kittens wait
     this.post = { tilt: 0.3, focus: 0.5, band: 0.36 };
     this.drift = 0.06;
@@ -57,6 +68,17 @@ export class LookoutMission extends Mission {
 
   floorY(f) { return Y0 + (YTOP - Y0) * (f / this.N); }
 
+  /**
+   * A floor's landing, sized to the floor height: its sign and a waiting kitten sit level with each other on the
+   * same balcony, so a kitten is always right beside its own number. More floors: smaller, never touching.
+   */
+  get landing() {
+    const gap = (YTOP - Y0) / this.N;
+    const r = Math.min(0.42, gap * 0.46);
+    const ks = Math.min(0.62, (gap - 0.12) / KITTEN_H); // the kitten fits under the balcony above
+    return { r, ks, mid: (KITTEN_H / 2) * ks, kx: SIGN_X + r + 0.28 * ks + 0.02 };
+  }
+
   build() {
     this.meadow({ clear: [[0, LZ, 7]] });
     const lk = (this.lookout = makeLookout({ slide: 'mission' }));
@@ -66,24 +88,27 @@ export class LookoutMission extends Mission {
     const metal = mat('#94a3b8', { metalness: 0.6, roughness: 0.3 });
     for (const x of [-0.85, 0.85]) this.scene.add(mesh(cyl(0.05, 0.05, 6.1, 8), metal, { x, y: 5.9, z: CAR_Z - 0.5 }));
     this.scene.add(mesh(rbox(1.9, 0.22, 0.5, 0.06), mat('#1f55c9'), { y: 8.95, z: CAR_Z - 0.4 }));
-    // a numbered sign on every floor; it lights up when the elevator gets there
-    const colors = TILE_COLORS;
+    // every floor: a balcony with its numbered sign at the front; the sign lights while the car is there
+    const { r, mid, kx } = this.landing;
+    const blue = mat('#1f55c9', { roughness: 0.4 });
+    const x0 = SIGN_X - r - 0.08, x1 = kx + 0.42;
     this.signs = range(1, this.N).map((f) => {
-      const top = new THREE.MeshStandardMaterial({ map: discTexture(String(f), colors[(f - 1) % colors.length]), roughness: 0.5, emissive: '#000000' });
-      const s = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 32), [mat('#e5e7eb'), top, mat('#e5e7eb')]);
+      const y = this.floorY(f), map = discTexture(String(f), TILE_COLORS[(f - 1) % TILE_COLORS.length]);
+      const s = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.08, 32), [mat('#e5e7eb'), new THREE.MeshStandardMaterial({ map, roughness: 0.5 }), mat('#e5e7eb')]);
       s.rotation.set(Math.PI / 2, Math.PI / 2, 0); // face the camera, numeral upright
-      s.position.set(1.42, this.floorY(f) + 0.72, CAR_Z - 0.35);
-      s.userData.top = top;
-      this.scene.add(s);
-      this.scene.add(mesh(rbox(0.5, 0.06, 0.06, 0.02), metal, { x: 1.1, y: this.floorY(f) + 0.72, z: CAR_Z - 0.4 }));
-      this.scene.add(mesh(rbox(1.0, 0.12, 0.8, 0.04), mat('#1f55c9', { roughness: 0.4 }), { x: LEDGE_X, y: this.floorY(f) - 0.06, z: CAR_Z - 0.25 })); // a balcony
+      s.position.set(SIGN_X, y + mid, CAR_Z + 0.1);
+      const halo = new THREE.Mesh(new THREE.CircleGeometry(r * 1.32, 40), new THREE.MeshBasicMaterial({ color: GLOW, toneMapped: false, transparent: true, opacity: 0 }));
+      halo.position.set(SIGN_X, y + mid, CAR_Z + 0.04);
+      halo.userData.dynamic = true;
+      Object.assign(s.userData, { halo, radius: r });
+      this.scene.add(s, halo);
+      this.scene.add(mesh(rbox(x1 - x0, 0.1, 0.7, 0.04), blue, { x: (x0 + x1) / 2, y: y - 0.05, z: CAR_Z - 0.3 }));
       return s;
     });
 
     // the glass elevator car, with Zosia and Chase inside
     const car = (this.car = new THREE.Group());
     car.userData.dynamic = true;
-    const blue = mat('#1f55c9', { roughness: 0.35 });
     const glass = new THREE.MeshPhysicalMaterial({ color: '#cfeaff', transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1 });
     car.add(mesh(rbox(1.5, 0.14, 1.05, 0.05), blue, { y: 0.07 }));
     car.add(mesh(rbox(1.5, 0.14, 1.05, 0.05), blue, { y: 1.38 }));
@@ -111,6 +136,7 @@ export class LookoutMission extends Mission {
     this.tappable(this.girl, () => { sfx.pop(); this.cheer(); });
     this.doorsOpen = true;
     this.setDoors(1);
+    if (this.L.mode === 'dice') this.die = this.makeDie(this.L.dice);
 
     // finale: the Lookout's alarm is on (a red beacon on top), Chase is ready for action
     if (this.finale) {
@@ -124,24 +150,41 @@ export class LookoutMission extends Mission {
       setTimeout(() => { if (!this.alive) return; sfx.siren(2); sfx.bark(); hop(this.pup, 0.3); this.pup.userData.setHappy(3); }, 500);
     }
 
-    // camera follows the car (or the riders, on the slide)
-    const p = new THREE.Vector3();
     this.onUpdate((dt, t) => {
-      (this.follow === 'riders' ? this.girl : this.car).getWorldPosition(p);
-      if (this.waiting && this.follow === 'car') p.y = (p.y + this.waiting.position.y) / 2; // the car and the kitten both in view
-      const ty = Math.max(3.4, p.y + (this.follow === 'riders' ? 0.6 : 1.1));
-      const k = Math.min(1, dt * 3);
-      this.view.look.y += (ty - this.view.look.y) * k;
-      if (this.follow === 'riders') {
-        this.view.look.x += (p.x + 1.2 - this.view.look.x) * k;
-        this.view.look.z += (p.z - this.view.look.z) * k;
-      }
-      this.view.pos.set(this.view.look.x, this.view.look.y + 1.3, this.view.look.z + 11.2);
+      this.frame(dt);
       this.roofLight.material.emissiveIntensity = this.moving || this.finale ? (Math.floor(t * 6) % 2 ? 3 : 0.4) : 0.4;
     });
   }
 
-  setDoors(k) { for (const d of this.doors) d.position.x = d.userData.side * (0.36 + 0.62 * k); }
+  /** Camera: holds the whole tower while she rides (a calm number line), then follows the riders down the slide. */
+  frame(dt) {
+    const k = this.dist ? Math.min(1, dt * 3) : 1;
+    const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const look = this.view.look;
+    let ty, dist;
+    if (this.follow === 'riders') {
+      // once on the grass, the heroes and kittens stand between the badge and the buttons of the celebration
+      const p = this.girl.getWorldPosition(new THREE.Vector3()), minWidth = 9;
+      dist = Math.max(11.2, minWidth / (2 * tan * camera.aspect));
+      ty = this.landed ? p.y + 0.15 * 2 * tan * dist : Math.max(3.4, p.y + 0.6);
+      look.x += (p.x + (camera.aspect < 1 ? 0.6 : 1.2) - look.x) * k;
+      look.z += (p.z - look.z) * k;
+      this.view.minWidth = minWidth;
+    } else {
+      const f = camera.aspect < 1 ? FRAME.port : FRAME.land;
+      const lo = Y0 - 0.15, hi = YTOP + 1.6; // the car's floor at the bottom, its roof at the top
+      dist = Math.max((hi - lo) / (2 * tan * (f.bottom - f.top)), f.minWidth / (2 * tan * camera.aspect));
+      ty = (lo + hi) / 2 + ((f.top + f.bottom) / 2 - 0.5) * 2 * tan * dist; // the tower sits in the free band
+      look.x += (f.x - look.x) * k;
+      this.view.minWidth = f.minWidth;
+    }
+    look.y += (ty - look.y) * k;
+    this.dist += (dist - this.dist) * k;
+    this.view.pos.set(look.x, look.y + this.dist * 0.116, look.z + this.dist);
+  }
+
+  /** Glass doors, 0 shut … 1 open. They fold up inside the car's frame (sliding out, they covered the floor's sign). */
+  setDoors(k) { for (const d of this.doors) { d.position.x = d.userData.side * (0.36 + 0.26 * k); d.scale.x = 1 - 0.75 * k; } }
   async doorsTo(open) {
     if (this.doorsOpen === open) return;
     this.doorsOpen = open;
@@ -149,11 +192,12 @@ export class LookoutMission extends Mission {
     await animate(380, (t) => this.setDoors(open ? t : 1 - t), ease.inOut);
   }
 
-  /** Ride to a floor. Counting aloud on the way (unless count:false). */
+  /** Ride to a floor. Counting along on the way (unless count:false): each floor's sign lights, a beat, its number. */
   async ride(to, { count = true } = {}) {
     const dir = Math.sign(to - this.floor);
     if (!dir) return;
     this.moving = true;
+    this.here(0);
     sfx.hum();
     while (this.floor !== to && this.alive) {
       const next = this.floor + dir;
@@ -162,7 +206,11 @@ export class LookoutMission extends Mission {
       this.floor = next;
       this.panel?.show(next, dir);
       if (count && next > 0) {
+        this.here(next);
+        this.pulse(next);
         sfx.pop();
+        await wait(BEAT);
+        if (!this.alive) return;
         await say(T.number(next));
       }
     }
@@ -170,20 +218,25 @@ export class LookoutMission extends Mission {
     this.panel?.show(this.floor, 0);
   }
 
-  lightSign(f) {
+  /** The sign of the floor the car is at lights up: a bright halo round it, its colours untouched; 0 = none. */
+  here(f) { this.signs.forEach((s, i) => this.glow(i + 1, i + 1 === f)); }
+  glow(f, on) {
     const s = this.signs[f - 1];
-    if (!s) return;
-    s.userData.top.emissive.set('#fde047');
-    s.userData.top.emissiveIntensity = 0.4;
-    animate(400, (t) => s.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.3), ease.linear);
+    if (s) s.userData.halo.material.opacity = on ? 1 : 0;
+  }
+  pulse(f) {
+    const s = this.signs[f - 1];
+    if (s) animate(400, (t) => s.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.3), ease.linear);
   }
 
-  /** A lost kitten pops up on floor f's balcony. */
+  /** A lost kitten pops up on floor f's balcony, beside the sign. */
   kittenOn(f) {
+    const { ks, kx } = this.landing;
     const k = makeKitten(FUR[this.kittens.length % FUR.length]);
-    k.scale.setScalar(0.62);
-    k.position.set(LEDGE_X, this.floorY(f), CAR_Z - 0.2);
+    k.scale.setScalar(ks);
+    k.position.set(kx, this.floorY(f), CAR_Z - 0.04); // (nearly in the sign's plane: seen from above, it stays level with it)
     k.rotation.y = -0.35;
+    Object.assign(k.userData, { kitten: true, floor: f });
     this.scene.add(k);
     this.onUpdate((dt, t) => k.userData.idle(t));
     this.dropIn(k, this.floorY(f), 0, 600).then(() => {
@@ -207,103 +260,128 @@ export class LookoutMission extends Mission {
     sfx.boing();
   }
 
-  round(r) {
-    if (!this.panel) this.panel = ui.liftPanel({ floors: this.N, onPress: (f) => this.onPress?.(f) });
-    if (this.L.mode === 'pickup' || this.L.mode === 'find') return this.kittenRound(r);
-    const relative = this.L.mode === 'relative' && r > 0;
+  // ---------- the die (dice rides): it floats beside the car; a tap rolls it ----------
+  /** A big dot die whose faces go round lo…hi (a 1–2 die shows 1, 2, 1, 2…). */
+  makeDie([lo, hi]) {
+    const die = new THREE.Group();
+    die.userData.dynamic = true;
+    die.add(mesh(rbox(0.72, 0.72, 0.72, 0.12), mat('#ffffff', { roughness: 0.35 })));
+    const pip = mat('#1e4fbf', { roughness: 0.4 });
+    // each face: its value, and the die's turn [x, y] that brings it to the front (the camera looks along -z)
+    const turns = [[0, 0], [Math.PI / 2, 0], [0, -Math.PI / 2], [0, Math.PI / 2], [-Math.PI / 2, 0], [0, Math.PI]];
+    die.userData.faces = turns.map(([rx, ry], i) => {
+      const v = lo + (i % (hi - lo + 1));
+      const face = new THREE.Group();
+      for (const c of DICE[v]) face.add(mesh(sphere(0.075, 12), pip, { x: ((c % 3) - 1) * 0.2, y: (1 - Math.floor(c / 3)) * 0.2, z: 0.355, s: [1, 1, 0.45] }));
+      face.rotation.set(-rx, -ry, 0, 'XYZ'); // the inverse of the turn: that turn brings this face round to the front
+      die.add(face);
+      return { v, turn: [rx, ry] };
+    });
+    die.position.set(-1.3, DIE_Y, 0.3);
+    this.car.add(die, mesh(rbox(0.95, 0.1, 0.9, 0.04), mat('#1f55c9', { roughness: 0.4 }), { x: -1.3, y: 0.05, z: 0.3 }));
+    return die;
+  }
+
+  /** "Dotknij kostki!": wait for her tap (after a while Chase rolls it), tumble, land showing `value` in front. */
+  rollDie(value, first) {
+    const die = this.die;
+    ui.bubble({ pic: '🎲', onTap: () => this.say(T.diceTap()) });
+    this.say(first ? [...T.kittensStart(), ...T.diceTap()] : T.diceTap());
     return new Promise((resolve) => {
-      let target, up = true;
-      if (relative) {
-        up = this.floor <= 1 ? true : this.floor >= this.N ? false : Math.random() < 0.6;
-        target = this.floor + (up ? 1 : -1);
-      } else {
-        const pool = this.finale ? range(1, Math.min(3, this.N)) : this.L.mode === 'relative' ? range(2, this.N - 1) : range(1, this.N);
-        target = this.pick('numeral', pool);
-      }
-      this.last = target;
-      this.item('N:' + target);
-      let busy = false, revealed = false;
-
-      const showTarget = (dots = this.L.bubble === 'both') => ui.bubble({ big: String(target), dots: dots ? target : 0, pic: '🛗', onTap: () => this.replay() });
-      if (relative) ui.bubble({ seq: [this.floor, up ? '⬆' : '⬇'], onTap: () => this.replay() });
-      else showTarget();
-      const from = this.floor;
-      const showNumber = () => { revealed = true; showTarget(true); this.prompt = T.liftPress(target); }; // number + dots
-      this.question(relative ? 'sequence' : 'numeral', target, { // "one floor up/down" = one more / one less
-        short: () => (relative && !revealed ? T.liftRel(from, up) : T.liftPress(target)),
-        hint: () => { showNumber(); return T.dots(target); }, // the dots appear: "Trzy kropki!"
-        simplify: () => showNumber(),
-        reveal: () => this.panel.hint(target),
-      });
-
-      this.onPress = async (f) => {
-        if (busy) return;
-        this.poke();
-        this.lookAt(this.signs[f - 1] || this.car);
-        if (f === target) {
-          busy = true;
-          this.correct(f);
-          this.stopIdle();
-          this.panel.light(f);
-          this.panel.lock(true);
-          sfx.pop();
-          await this.doorsTo(false);
-          await this.ride(target);
-          if (!this.alive) return;
-          sfx.ding();
-          this.lightSign(target);
-          await this.doorsTo(true);
-          this.success(this.car.position.clone().add(new THREE.Vector3(0, 1.7, 0.6)));
-          await say([this.praise(), ...T.liftArrived(target)]);
-          if (!this.alive) return;
-          this.panel.clear();
-          if (this.L.mode !== 'relative' && r < this.rounds - 1) {
-            // back down for the next ride (not after the last one: the finale goes up to the top from here)
-            await this.doorsTo(false);
-            await this.ride(0, { count: false });
-            await this.doorsTo(true);
-          }
-          this.panel.lock(false);
-          resolve();
-        } else {
-          this.wrong(f);
-          this.panel.nope(f);
-        }
-      };
-
-      wait(r === 0 ? 700 : 300).then(() => {
+      let done = false, quiet = 0;
+      const roll = async (byChase) => {
+        if (done || !this.alive) return;
+        done = true;
+        clearInterval(nudge);
+        this.untap(die);
+        if (byChase) { sfx.bark(); hop(this.pup, 0.3); }
+        sfx.whoosh();
+        const [rx, ry] = die.userData.faces.find((fc) => fc.v === value).turn, spin = 4 * Math.PI;
+        await animate(900, (t) => {
+          die.position.y = DIE_Y + Math.sin(t * Math.PI) * 0.9;
+          die.rotation.set(rx + spin * (1 - t), ry + spin * 0.75 * (1 - t), 0, 'YXZ');
+        }, ease.out);
         if (!this.alive) return;
-        if (relative) this.ask(T.liftRel(this.floor, up));
-        else if (this.finale) this.ask([...T.finaleStart(), ...T.liftPress(target)]);
-        else this.ask(r === 0 ? [...T.liftStart(), ...T.liftGo(target)] : T.liftGo(target));
-      });
+        sfx.boing();
+        sparkle(this, die.getWorldPosition(new THREE.Vector3()), { count: 12, size: 0.12 });
+        await say(T.number(value));
+        resolve();
+      };
+      this.tappable(die, () => roll(false));
+      const nudge = setInterval(() => { // a hop now and then; after the third, Chase rolls it himself
+        if (!this.alive || done) return clearInterval(nudge);
+        if (++quiet >= 3) return roll(true);
+        hop(die, 0.25, 400);
+        if (quiet === 2) this.say(T.diceTap());
+      }, 5000);
     });
   }
 
-  // ---------- lost kittens: one waits on a floor each ride ----------
-  kittenRound(r) {
-    const find = this.L.mode === 'find';
-    return new Promise((resolve) => {
-      const target = this.pick('numeral', range(1, this.N).filter((f) => f !== this.floor && !this.visited.includes(f)));
-      this.visited.push(target);
-      this.last = target;
-      this.item('N:' + target);
-      const k = (this.waiting = this.kittenOn(target));
-      let busy = false, revealed = false;
-      const showNumber = () => { revealed = true; ui.bubble({ big: String(target), dots: target, pic: '🐱', onTap: () => this.replay() }); this.prompt = T.liftPress(target); };
-      if (find) ui.bubble({ big: '?', pic: '🐱', onTap: () => this.replay() });
-      else ui.bubble({ big: String(target), dots: this.L.bubble === 'both' ? target : 0, pic: '🐱', onTap: () => this.replay() });
-      this.question('numeral', target, {
-        short: () => (find && !revealed ? T.kittenWhere() : T.liftPress(target)),
-        hint: () => { // find: the sign next to the kitten pulses; otherwise the dots appear
-          if (!find) { showNumber(); return T.dots(target); }
-          this.lightSign(target);
-          return T.kittenLook();
-        },
-        simplify: () => showNumber(),
-        reveal: () => this.panel.hint(target),
-      });
+  // ---------- one ride ----------
+  /**
+   * What ride r asks, by mode: { skill, target, kitten ('waits' on its balcony, or a 'surprise' there on arrival),
+   * show() (the bubble), ask, short, hint() (optional; by default the number and its dots appear) }.
+   * A dice ride waits for the die to be rolled first.
+   */
+  async plan(r) {
+    const mode = this.L.mode;
+    if (mode === 'dice') {
+      const target = this.pick('sequence', diceFloors(this.floor, this.N, this.rounds - r - 1, this.L.dice)), d = target - this.floor;
+      await this.rollDie(d, r === 0);
+      return { skill: 'sequence', target, kitten: 'surprise', show: () => ui.bubble({ dots: d, dice: true, pic: '⬆️', onTap: () => this.replay() }),
+        ask: T.diceUp(d), short: T.whichFloor(), hint: () => { this.countFloors(this.floor, d); return T.diceCount(); } };
+    }
+    if (mode === 'relative' && r > 0) {
+      const from = this.floor, target = this.pick('sequence', nextDoor(from, this.N)), up = target > from;
+      return { skill: 'sequence', target, kitten: 'waits', show: () => ui.bubble({ seq: [from, up ? '⬆' : '⬇'], pic: '🐱', onTap: () => this.replay() }),
+        ask: [...T.liftHere(from), ...T.kittenNext(up)], short: T.oneFloor(up) };
+    }
+    const pool = mode === 'go' ? range(1, Math.min(3, this.N)) : range(1, this.N);
+    const target = this.pick('numeral', kittenFloors(pool, this.floor, this.visited));
+    if (mode === 'find') {
+      return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: '?', pic: '🐱', onTap: () => this.replay() }),
+        ask: [...(r === 0 ? T.kittensStart() : []), ...T.kittenWhere()], short: T.whichFloor(),
+        hint: () => { this.here(target); this.pulse(target); return T.kittenLook(); } }; // only the sign beside the kitten is lit
+    }
+    // pickup, go, and the first ride of relative
+    const dots = this.L.bubble === 'both' ? target : 0;
+    return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: String(target), dots, pic: '🐱', onTap: () => this.replay() }),
+      ask: [...(this.finale ? T.finaleStart() : r === 0 ? T.kittensStart() : []), ...T.kittenAt(target)], short: T.liftPress(target) };
+  }
 
+  /** The clue on a dice ride: the floors above the car light up one by one, as many as the die says. */
+  async countFloors(from, d) {
+    for (let f = from + 1; f <= from + d && this.alive; f++) {
+      this.glow(f, true);
+      this.pulse(f);
+      sfx.pop();
+      await wait(550);
+      this.glow(f, false);
+    }
+  }
+
+  async round(r) {
+    if (!this.panel) this.panel = ui.liftPanel({ floors: this.N, onPress: (f) => this.onPress?.(f) });
+    this.panel.lock(true);
+    const ride = await this.plan(r);
+    if (!this.alive) return;
+    this.panel.lock(false);
+    const { target } = ride;
+    this.visited.push(target);
+    this.last = target;
+    this.item('N:' + target);
+    if (ride.kitten === 'waits') this.waiting = this.kittenOn(target);
+    ride.show();
+    let busy = false, revealed = false;
+    const showNumber = () => { revealed = true; ui.bubble({ big: String(target), dots: target, pic: '🐱', onTap: () => this.replay() }); this.prompt = T.liftPress(target); };
+    this.question(ride.skill, target, {
+      short: () => (revealed ? T.liftPress(target) : ride.short),
+      hint: () => (ride.hint ? ride.hint() : (showNumber(), T.dots(target))), // "Trzy kropki!"
+      simplify: () => showNumber(),
+      reveal: () => this.panel.hint(target),
+    }, { options: this.N });
+
+    return new Promise((resolve) => {
       this.onPress = async (f) => {
         if (busy) return;
         this.poke();
@@ -319,9 +397,10 @@ export class LookoutMission extends Mission {
         await this.ride(target);
         if (!this.alive) return;
         sfx.ding();
-        this.lightSign(target);
+        this.here(target);
         await this.doorsTo(true);
         this.success(this.car.position.clone().add(new THREE.Vector3(0, 1.7, 0.6)));
+        const k = ride.kitten === 'waits' ? this.waiting : this.kittenOn(target); // (dice: a kitten was waiting here all along!)
         await say([this.praise(), ...T.liftArrived(target)]);
         if (!this.alive) return;
         await this.kittenHopsIn(k);
@@ -331,12 +410,7 @@ export class LookoutMission extends Mission {
         this.panel.lock(false);
         resolve();
       };
-
-      wait(r === 0 ? 900 : 400).then(() => {
-        if (!this.alive) return;
-        const ask = find ? T.kittenWhere() : T.kittenAt(target);
-        this.ask(r === 0 ? [...T.kittensStart(), ...ask] : ask);
-      });
+      wait(r === 0 ? 900 : 400).then(() => { if (this.alive) this.ask(ride.ask); });
     });
   }
 
@@ -344,13 +418,16 @@ export class LookoutMission extends Mission {
     ui.hideBubble();
     this.panel?.lock(true);
     await this.doorsTo(false);
-    await Promise.all([say(this.kittens.length ? T.kittensAll() : T.liftTop()), this.ride(this.N, { count: false })]); // (all of it said before the slide line)
+    const atTop = this.floor === this.N, all = this.kittens.length > 1;
+    const line = atTop ? (all ? T.kittensAllTop() : T.liftAtTop()) : (all ? T.kittensAll() : T.liftTop());
+    await Promise.all([say(line), this.ride(this.N, { count: false })]); // (all of it said before the slide line)
     if (!this.alive) return;
     sfx.siren(2);
     sfx.ding();
     this.atTop = true; // (finale: the beacon flashes faster)
-    this.signs.forEach((s, i) => setTimeout(() => this.lightSign(i + 1), i * 90));
+    this.signs.forEach((s, i) => setTimeout(() => { if (this.alive) { this.glow(i + 1, true); this.pulse(i + 1); } }, i * 90));
     if (this.finale) { this.cheer(2); this.pup.userData.setHappy(3); hop(this.pup, 0.3); }
+    if (this.die) this.shrinkAway(this.die, 400);
     await wait(1800);
     if (!this.alive) return;
     // poof: up into the pod, onto the slide
@@ -382,6 +459,7 @@ export class LookoutMission extends Mission {
     const land = at(1).add(new THREE.Vector3(-0.9, 0, 0.6));
     land.y = 0;
     sfx.boing();
+    this.landed = true;
     await Promise.all([this.jumpTo(this.girl, land, { height: 0.8, ms: 420 }), this.jumpTo(this.pup, land.clone().add(new THREE.Vector3(1.1, 0, 0.2)), { height: 0.7, ms: 480 }),
       ...this.kittens.map((c, i) => { c.rotation.y = 0; sfx.meow(); return this.jumpTo(c, land.clone().add(new THREE.Vector3(-0.8 + i * 0.75, 0, 1.2)), { height: 0.6, ms: 420 + i * 90 }); })]);
     dust(this, land, { count: 6 });
