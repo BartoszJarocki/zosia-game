@@ -203,7 +203,6 @@ class LetterTrain extends Mission {
     return new Promise((resolve) => {
       const idx = this.open()[0];
       const target = this.word[idx];
-      this.item('L:' + target);
       let solved = false;
       this.last = target;
       const right = () => this.blocks.find((x) => x.userData.letter === target);
@@ -213,8 +212,12 @@ class LetterTrain extends Mission {
         const off = this.onUpdate((dt, t) => { if (!g.parent) off(); else g.userData.tick(dt, t); }); // made after the scene was collected
         sfx.pop();
       };
+      const next = { word: T.whichNow(), missing: T.whichMissing() }[this.mode] || T.spellNext(target);
+      // the re-asks take turns ("Popatrz na słowo!" / "Która teraz?"), so no line comes three times in a row
+      const reask = [{ word: T.lookAtWord(), missing: T.lookAtWord() }[this.mode] || T.findLetter(target), next];
+      let asked = 0;
       const hooks = {
-        short: { word: T.lookAtWord(), missing: T.lookAtWord() }[this.mode] || T.findLetter(target),
+        short: () => reask[asked++ % 2],
         hint: () => {
           if (this.mode !== 'ghost') this.bubbleFor(idx, { lit: true }); // the letter lights up in the word
           if (this.mode === 'word') return T.spellNext(target);
@@ -243,7 +246,7 @@ class LetterTrain extends Mission {
         if (into === undefined) { this.wrong(b.userData.letter, { obj: b, said: this.lookalikeNo(target, b.userData.letter) }); return; }
         solved = true;
         const letter = b.userData.letter;
-        if (into !== idx) { this.item('L:' + letter); this.question('letterVisual', letter, hooks, { options: options() }); }
+        if (into !== idx) { const missed = this.missed; this.question('letterVisual', letter, hooks, { options: options() }); this.missed = missed; } // (a wrong tap before still counts)
         this.correct(letter);
         this.stopIdle();
         this.untap(b);
@@ -273,7 +276,6 @@ class LetterTrain extends Mission {
       wait(r === 0 ? 1200 : 200).then(() => {
         if (!this.alive) return;
         const first = { word: T.wordStart(this.word), missing: T.missingAsk(this.word, this.fill.length) }[this.mode] || T.spellStart(this.word);
-        const next = { word: T.whichNow(), missing: T.whichMissing() }[this.mode] || T.spellNext(target);
         this.ask(r === 0 ? first : next);
       });
     });
@@ -500,7 +502,6 @@ class WhoseTrain extends Mission {
       const asked = this.order[r];
       const whose = this.L.whose[asked];
       this.last = asked;
-      this.item('W:' + asked);
       ui.bubble({ big: '?', pic: '🚂', onTap: () => this.replay() });
       this.arrive(whoseTrains(this.L.words, asked, this.count - 1)).then(() => {
         if (!this.alive) return;
@@ -508,7 +509,7 @@ class WhoseTrain extends Mission {
         const right = () => this.trains.find((t) => t.userData.word === asked);
         this.question('letterVisual', asked, {
           short: T.whoseAsk(whose),
-          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); this.honk(right()); return []; }, // the name in the bubble: now she can match it
+          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); this.honk(right()); return Promise.resolve(); }, // the name in the bubble (now she can match it) and a toot, no words
           simplify: () => { const t = this.trains.find((x) => x.userData.word !== asked && x.parent && x.userData.onTap); if (t && this.trains.filter((x) => x.userData.onTap).length > 2) this.leave([t]); },
           reveal: () => { this.hint(right(), () => solved, right().userData.board); return T.whoseIs(whose); },
         }, { options: this.trains.length });
