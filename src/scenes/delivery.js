@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { animate, ease, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop, camera } from '../engine.js';
+import { dragging } from '../input/drag.js';
 import { rbox, mat, mesh } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { makeHouse, makeFence, makeLamp } from '../world/props.js';
@@ -200,16 +201,37 @@ export class DeliveryMission extends Mission {
       this.dropIn(parcel, 0, n * 140 + 200).then(() => sfx.pop());
       parcel.userData.tapHeight = 0.6;
       const home = new THREE.Vector3(0, 0, 3);
+      // Dragged along the ground, the parcel would slide behind the fence under her finger. Past the mailboxes'
+      // front it moves back along her line of sight instead (the same spot on screen), so it climbs their fronts.
+      const FRONT = 0.1;
+      const inFront = (p) => (p.z >= FRONT ? p : camera.position.clone().lerp(p, (camera.position.z - FRONT) / (camera.position.z - p.z)));
+      // the mailbox the top of the parcel is over on screen (the box with the letter: the posts' feet are a nudge away)
+      const under = () => {
+        const c = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.9, 0)).project(camera);
+        return boxes.find((b) => {
+          if (!b.parent || b.userData.gone) return false;
+          const q = [[-0.85, 1.1], [0.85, 1.1], [-0.85, 2.7], [0.85, 2.7]].map(([dx, y]) => new THREE.Vector3(b.position.x + dx, y, b.position.z + 0.55).project(camera));
+          return c.x > Math.min(...q.map((v) => v.x)) && c.x < Math.max(...q.map((v) => v.x)) && c.y > Math.min(...q.map((v) => v.y)) && c.y < Math.max(...q.map((v) => v.y));
+        });
+      };
+      let placed = null, over = null;
+      const offDrag = this.onUpdate(() => {
+        if (dragging() !== parcel) { placed = over = null; return; }
+        if (!placed || !parcel.position.equals(placed)) parcel.position.copy((placed = inFront(parcel.position.clone()))); // (drag.js moved it)
+        const b = under();
+        if (b && b !== over) hop(b, 0.15, 260); // the mailbox it would go into
+        over = b;
+      });
       this.draggable(parcel, {
         height: 0,
         lift: 0.6,
         onPick: () => { this.poke(); sfx.pop(); },
-        // forgiving: moved up towards the mailboxes → into the one nearest left-to-right
-        onDrop: (p, at) => {
-          if (at.z > home.z - 1.2) return false; // not moved towards them
-          const near = boxes.filter((b) => b.parent).sort((a, b) => Math.abs(a.position.x - at.x) - Math.abs(b.position.x - at.x))[0];
-          if (!near || Math.abs(near.position.x - at.x) > gap * 0.75) return false;
-          choose(near);
+        // only a drop on a mailbox posts it; anywhere else it floats back
+        onDrop: () => {
+          parcel.position.copy(inFront(parcel.position.clone()));
+          const b = under();
+          if (!b) return false;
+          choose(b);
           return true;
         },
         onTap: () => { this.poke(); hop(parcel, 0.3); }, // (a tap on the parcel: it just wiggles; tap a mailbox instead)
@@ -241,6 +263,7 @@ export class DeliveryMission extends Mission {
           await say([this.praise(), ...T.letterLike(target, said)]);
           if (!this.alive) return;
           await Promise.all(boxes.map((x) => this.shrinkAway(x, 350)));
+          offDrag();
           resolve();
         } else {
           lastWrong = b;
