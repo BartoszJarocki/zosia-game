@@ -154,8 +154,9 @@ export class Mission extends Stage {
    *   simplify() make it easier (e.g. one wrong option leaves)
    *   reveal()  show the answer (e.g. this.hint(obj) pulses it); she still taps it herself
    * opts:
-   *   scored: false  it can't really be got wrong (an automatic give): it doesn't count for levelling
-   *   options: n     how many things she can pick from (default: the level's "choices" column, when it has one)
+   *   scored: false  it can't really be got wrong (an automatic give): it doesn't count for levelling or mastery
+   *   options: n     how many things she can pick from, so mastery can tell knowing from guessing
+   *                  (default: the level's "choices" column, when it has one; mastery assumes 3 otherwise)
    */
   question(skill, item, hooks = {}, { scored = true, options = this.L.choices } = {}) {
     const q = this.learn.current;
