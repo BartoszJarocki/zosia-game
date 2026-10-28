@@ -55,10 +55,12 @@ export const SCHEMA = {
     foils: { type: 'enum', values: ['far', 'near'], optional: true, default: 'far' }, // the other numbers in a row (missing: the wrong stone)
   },
   counting: {
-    types: { type: 'list', values: ['give', 'howMany', 'share'] },
+    types: { type: 'list', values: ['give', 'howMany', 'share', 'hidden', 'flash'] },
     give: { type: 'range', min: 1, max: 10 },
     howMany: { type: 'range', min: 1, max: 9, optional: true },
     share: { type: 'range', min: 2, max: 4, optional: true }, // friends at the table: Chase and kittens
+    hidden: { type: 'range', min: 2, max: 4, optional: true }, // treats under the bowl in the end: some, then one more
+    flash: { type: 'range', min: 1, max: 4, optional: true }, // treats seen for a moment (a die's patterns)
     auto: { type: 'bool' },
     slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
@@ -284,7 +286,12 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
   if (kind === 'lookout' && s.mode === 'dice' && s.dice && s.max < s.rounds * s.dice[0]) errors.push(`${where}: "dice" rides only go up: ${s.rounds} rides of at least ${s.dice[0]} floor(s) need ${s.rounds * s.dice[0]}+ floors`);
   if (kind === 'stones' && s.bubble === 'missing' && (s.n < 3 || s.n > 9)) errors.push(`${where}: "missing" needs 3–9 stones (got ${s.n})`);
   if (kind === 'stones' && s.bubble !== 'missing' && s.n > 7) errors.push(`${where}: a river of rows fits at most 7 stones (got ${s.n})`);
-  if (kind === 'counting' && s.types?.includes('howMany') && !s.howMany) errors.push(`${where}: types includes howMany, so set a howMany range`);
-  if (kind === 'counting' && s.types?.includes('share') && !s.share) errors.push(`${where}: types includes share, so set a share range`);
+  if (kind === 'counting') {
+    for (const t of ['howMany', 'share', 'hidden', 'flash']) if (s.types?.includes(t) && !s[t]) errors.push(`${where}: types includes ${t}, so set a ${t} range`);
+    const unseen = (s.types || []).filter((t) => t === 'hidden' || t === 'flash');
+    if (unseen.length && s.auto) errors.push(`${where}: ${unseen.join(' and ')} need auto "no" (she decides when Chase has the same, then taps him)`);
+    if (s.types && !s.types.some((t) => ['howMany', 'flash', 'hidden'].includes(t))) errors.push(`${where}: needs a howMany, flash or hidden round (give with auto and share don't count towards levelling, and a gentler run turns auto on)`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
   if (kind === 'garage') for (const m of s.modes || []) if (!s[m]) errors.push(`${where}: modes includes ${m}, so set the ${m} column`);
 }
