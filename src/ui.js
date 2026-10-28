@@ -1,4 +1,5 @@
-import { sfx } from './audio.js';
+import { sfx, say } from './audio.js';
+import { T } from './lang/pl.js';
 import { CONFIG } from './config.js';
 import { DICE } from './textures.js';
 
@@ -69,6 +70,25 @@ function el(html) {
   return t.content.firstElementChild;
 }
 const press = (node, fn) => node.addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.pop(); fn(); });
+const later = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** The home ring: a circle round the button that fills while it is held. */
+const RING = '<svg class="hold-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg>';
+/**
+ * Hold to leave: the ring fills in ms, then fn runs. Letting go (or sliding off) earlier does nothing, so a
+ * stray tap near the speech bubble never ends the mission.
+ */
+function holdToLeave(btn, fn, ms = 800) {
+  let t = null;
+  const stop = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    stop();
+    btn.classList.add('holding');
+    t = setTimeout(() => { stop(); sfx.pop(); fn(); }, ms);
+  });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, stop);
+}
 
 export function clear() { ui.innerHTML = ''; }
 
@@ -113,11 +133,11 @@ export function setParentOpener(fn) { onParent = fn; }
 export function missionHud({ rounds, level = 1, total = 3, bubbleAt = 'middle', onHome }) {
   clear();
   const top = el(`<div class="topbar">
-      <button class="round-btn home" aria-label="Home">${ICON.home}</button>
+      <button class="round-btn home hold" aria-label="Home (hold)">${ICON.home}${RING}</button>
       <div class="paws">${Array.from({ length: rounds }, () => `<span class="paw">${ICON.paw()}</span>`).join('')}</div>
       <span class="spacer">${starsHTML(level, 'small', total)}</span>
     </div>`);
-  press(top.querySelector('.home'), onHome);
+  holdToLeave(top.querySelector('.home'), onHome);
   ui.append(top);
   ui.append(el(`<button class="bubble hidden ${bubbleAt}" aria-label="Say again"></button>`));
 }
@@ -172,7 +192,15 @@ export function nudgeBubble() {
 
 export function hideBubble() { ui.querySelector('.bubble')?.classList.add('hidden'); }
 
-export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome, onAgain }) {
+/** No tap for this long after "Jeszcze raz czy na wyspę?": back to the island by itself. */
+export const CELEBRATION_IDLE_MS = 10000;
+
+/**
+ * The badge, the stars, and two big buttons (again / the island) under them, clear of the heroes below.
+ * talk: resolves when the badge line has been said (until a mission passes it, a guess at its length);
+ * then Chase asks "Jeszcze raz czy na wyspę?", and with no tap for a while it is the island.
+ */
+export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome, onAgain, talk = null }) {
   const c = el(`<div class="celebrate">
       <div class="rays"></div>
       <div class="big-badge"><div class="flip">${badgeSVG(kind)}</div>${starsHTML(level, levelUp ? 'levelup' : '', total)}</div>
@@ -181,10 +209,18 @@ export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome,
         <button class="round-btn huge home" aria-label="Home">${ICON.home}</button>
       </div>
     </div>`);
-  press(c.querySelector('.again'), onAgain);
-  press(c.querySelector('.home'), onHome);
+  let timer = null, done = false;
+  const live = () => !done && c.isConnected; // (a new scene clears the HUD)
+  const leave = (fn) => { if (!live()) return; done = true; clearTimeout(timer); window.removeEventListener('pointerdown', rearm, true); fn(); };
+  const arm = () => { clearTimeout(timer); timer = setTimeout(() => leave(onHome), CELEBRATION_IDLE_MS); };
+  function rearm() { if (live()) arm(); else window.removeEventListener('pointerdown', rearm, true); } // any tap: she is still here
+  press(c.querySelector('.again'), () => leave(onAgain));
+  press(c.querySelector('.home'), () => leave(onHome));
   ui.append(c);
   confetti();
+  (talk || later(levelUp ? 8500 : 5500))
+    .then(() => { if (!live()) return; c.classList.add('asking'); return say(T.againOrIsland()); })
+    .then(() => { if (!live()) return; arm(); window.addEventListener('pointerdown', rearm, true); });
 }
 
 export function confetti(n = 110) {

@@ -112,7 +112,7 @@ svg { display: block; }
   border: 14px solid transparent; border-top: 18px solid #f1f6ff; border-bottom: 0;
 }
 .bubble.hidden { display: none; }
-.bubble.left { left: max(18px, env(safe-area-inset-left)); translate: none; transform-origin: 25% 0; } /* the River: Chase's bank stays in view */
+.bubble.left { left: calc(max(16px, env(safe-area-inset-left)) + var(--btn) + 24px); translate: none; transform-origin: 25% 0; } /* the River: Chase's bank stays in view (and the bubble stays clear of the home button) */
 .bubble.passthrough { pointer-events: none; }  /* taps go to the game behind it… */
 .bubble.passthrough .spk { pointer-events: auto; } /* …except the speaker */
 .bubble.pop { animation: bubbleIn .5s cubic-bezier(.3,1.6,.5,1); }
@@ -137,7 +137,7 @@ svg { display: block; }
 /* ---------- celebration ---------- */
 .celebrate {
   position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2.5vh; /* the buttons sit under the badge: the heroes below stay in view */
   padding: max(3vh, env(safe-area-inset-top)) 16px max(4vh, env(safe-area-inset-bottom));
   pointer-events: none;
 }
@@ -153,6 +153,17 @@ svg { display: block; }
 .big-badge .flip { animation: flipIn 1.2s cubic-bezier(.3,1.4,.5,1) both; filter: drop-shadow(0 10px 14px rgba(0,0,0,.35)); }
 .big-badge .flip svg { width: 100%; }
 .actions { display: flex; gap: min(8vw, 60px); animation: popIn .5s 1s both; }
+/* "Jeszcze raz… czy na wyspę?": each button bounces as it is named */
+.celebrate.asking .again { animation: askPop .7s .15s; }
+.celebrate.asking .home { animation: askPop .7s 1.15s; }
+@keyframes askPop { 40% { transform: scale(1.18); } }
+
+/* hold to leave: a ring fills round the home button while it is held */
+.round-btn.hold { position: relative; }
+.round-btn .hold-ring { position: absolute; inset: -9px; width: calc(100% + 18px); height: calc(100% + 18px); transform: rotate(-90deg); pointer-events: none; }
+.hold-ring circle { fill: none; stroke: #f59e0b; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 290; stroke-dashoffset: 290; opacity: 0; transition: stroke-dashoffset .2s, opacity .2s; }
+.round-btn.holding .hold-ring circle { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset .8s linear, opacity .1s; }
+.round-btn.holding { transform: scale(.94); }
 
 /* ---------- level stars ---------- */
 .stars { display: flex; justify-content: center; gap: .1em; font-size: min(7vw, 6vh, 56px); line-height: 1; margin-top: .2em; }
