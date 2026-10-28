@@ -73,6 +73,15 @@ export class QuestionTracker {
   /** Drop the question without an event (scene left, round abandoned). */
   cancel() { this.q = null; }
 
+  /** The page was hidden for ms (iPad locked, another app): time away is not time spent thinking. */
+  paused(ms) {
+    const q = this.q;
+    if (!q) return;
+    const skip = (t) => Math.min(t + ms, this.now()); // (a stamp made while hidden moves to now)
+    q.openedAt = skip(q.openedAt);
+    if (q.promptEndAt !== null) q.promptEndAt = skip(q.promptEndAt);
+  }
+
   // ---- internals ----
   /** Note a tap; true when this tap is part of a rapid burst. */
   tap() {
