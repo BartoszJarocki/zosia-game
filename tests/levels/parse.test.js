@@ -101,3 +101,18 @@ test('River: the missing stone needs 3–9 stones', () => {
   const stones = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`stones\`\n\n| Level | n | bubble |\n|---|---|---|\n| 1 | ${row} |\n`;
   assert.match(only(parseGame(stones('2 | missing'), {})).errors[0], /3–9 stones/);
 });
+
+// what a level can change, grouped the way a child feels it (targets and total together are "more balloons")
+const STEPS = {
+  balloons: { letters: (l) => l.pool, balloons: (l) => `${l.targets}/${l.total}`, speed: (l) => l.speed.join('–'), lookalikes: (l) => l.similar },
+  delivery: { letters: (l) => l.pool, choices: (l) => l.choices, mode: (l) => l.mode, soundalikes: (l) => l.similar },
+};
+const changes = (kind, a, b) => Object.entries(STEPS[kind]).filter(([, f]) => f(a) !== f(b)).map(([k]) => k);
+
+test('Balloon Hill and Pup Delivery: each level changes exactly one thing', () => {
+  const { levels } = parseGame(md, { childName: 'Zosia' });
+  for (const kind of Object.keys(STEPS)) {
+    levels[kind].slice(1).forEach((row, i) => assert.equal(changes(kind, levels[kind][i], row).length, 1, `${kind} level ${i + 1} → ${i + 2} changes ${changes(kind, levels[kind][i], row).join(', ') || 'nothing'}`));
+  }
+  assert.deepEqual(changes('balloons', { pool: 'AB', targets: 2, total: 5, speed: [0.3, 0.45], similar: false }, { pool: 'ABC', targets: 3, total: 7, speed: [0.3, 0.45], similar: false }), ['letters', 'balloons']);
+});

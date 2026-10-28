@@ -118,11 +118,19 @@ Balloons with letters float up. Pop every balloon with the asked letter, countin
 | Level | pool | targets | total | speed | similar | rounds |
 |---|---|---|---|---|---|---|
 | 1 | START | 2 | 5 | 0.3–0.45 | no | 3 |
-| 2 | MORE | 3 | 7 | 0.45–0.65 | no | 2 |
-| 3 | ALL | 3 | 8 | 0.6–0.85 | yes | 2 |
+| 2 | MORE | 2 | 5 | 0.3–0.45 | no | 3 |
+| 3 | MORE | 3 | 7 | 0.3–0.45 | no | 2 |
+| 4 | MORE | 3 | 7 | 0.45–0.65 | no | 2 |
+| 5 | ALL | 3 | 7 | 0.45–0.65 | no | 2 |
+| 6 | ALL | 3 | 7 | 0.45–0.65 | yes | 2 |
+| 7 | ALL | 4 | 9 | 0.45–0.65 | yes | 2 |
+
+Each level changes one thing: the letters (2, 5), how many balloons (3, 7), how fast (4) or lookalikes (6).
 
 - **targets** — how many balloons have the right letter (1–4) · **total** — balloons in the air (3–9)
-- **speed** — how fast they rise, a range (each balloon picks a speed inside it)
+- **speed** — how fast they rise, a range (each lane of balloons picks a speed inside it). They rise in five
+  lanes that never touch, up to just under the speech bubble (top left) and the top bar, then float away and
+  come back up from the bottom
 - **similar** — as in Kitty Park · **rounds** — how many letters to pop (aim for 30–45 seconds in all)
 
 ### 🚂 Name Train · `name`
