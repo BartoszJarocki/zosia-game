@@ -27,8 +27,6 @@ export function evidence(ev) {
   if (n < 2) return null;
   return isClean(ev) ? 1 : -1 / (n - 1);
 }
-/** Kept for session.js, which works a session's starting mastery back from it; masteryBefore() does that exactly. */
-export const resultScore = evidence;
 
 /** The weight of the next answer after `answered` of them: a plain average at first (with PRIOR), then RATE. */
 export const rateAfter = (answered) => Math.max(RATE, 1 / (answered + 1 + PRIOR));

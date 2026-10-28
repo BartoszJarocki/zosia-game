@@ -119,15 +119,17 @@ export class Mission extends Stage {
     this.cheer(6);
     this.pup?.userData.setHappy(8);
     fireworks(this, this.view.look, { bursts: levelUp || this.bigFinish ? 9 : 6 });
+    const talk = say([...(this.doneLine?.() || T.done()), ...(levelUp ? T.levelUp(level) : [])]);
     ui.celebrate({
       kind: this.kind,
       level,
       total: maxLevel(this.kind),
       levelUp,
+      talk, // "Jeszcze raz czy na wyspę?" comes right after the badge line
       onHome: () => { hush(); this.game.hub(); },
       onAgain: () => { hush(); this.game.startMission(this.kind); },
     });
-    await say([...(this.doneLine?.() || T.done()), ...(levelUp ? T.levelUp(level) : [])]);
+    await talk;
     while (this.alive) {
       if (this.pup) await hop(this.pup, 0.6, 500);
       if (!this.alive) return;

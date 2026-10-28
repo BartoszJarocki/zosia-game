@@ -1,5 +1,5 @@
 // Level gates: some levels open on skill, not on the number of runs (GAME.md "needs" column).
-// e.g. Kitty Park level 6 (letter sounds) has `needs: letterAudio 0.4` — it opens once the average
+// e.g. Kitty Park level 8 (letter sounds) has `needs: letterAudio 0.4` — it opens once the average
 // letterAudio mastery over that level's letters she has been asked is at least 0.4, and she has been asked
 // at least half of them. (A letter she never met says nothing about her.) Pure, so it is testable.
 import { averageMastery } from '../learning/mastery.js';

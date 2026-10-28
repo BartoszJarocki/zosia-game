@@ -42,7 +42,7 @@ const ASSIST = {
   letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),
   balloons: (s) => ({ ...s, total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }),
   name: (s) => ({ ...s, mode: ['missing', 'whose'].includes(s.mode) ? s.mode : 'ghost', extras: s.mode === 'missing' ? 1 : 0, similar: false }), // (whose: two trains)
-  cones: (s) => ({ ...s, choices: 3, bubble: 'both', sign: 'both' }),
+  cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }), // one cone fewer: easier even where a level already shows both
   stones: gentlerRiver,
   counting: (s) => ({ ...s, auto: true }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
