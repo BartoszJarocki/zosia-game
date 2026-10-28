@@ -222,7 +222,8 @@ export class Mission extends Stage {
     if (action !== 'retry') this.helped(aid.state.level);
     const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[action]?.(said);
     if (out && typeof out.then === 'function') return;
-    this.say([...said, ...(Array.isArray(out) ? out : short)]);
+    const plain = action === 'reveal' && h.reveal ? T.here() : short; // the answer pulses: point, don't ask again
+    this.say([...said, ...(Array.isArray(out) ? out : plain)]);
   }
   /** Say something (no help fires while speaking). A newer line cuts this one short. */
   say(segments) {
