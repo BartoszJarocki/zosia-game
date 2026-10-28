@@ -88,6 +88,24 @@ export function windDown(s) {
   return s;
 }
 
+/**
+ * How the session ends on the island (asked on every visit; a new session starts fresh):
+ *   'thanks'     the finale is done: thank her once (and a "Misja w domu"), then free play
+ *   'goodnight'  wound down early: a goodnight at the Lookout, once
+ *   'asleep'     after the goodnight: the island sleeps (a tap gets "Czejs śpi… Do jutra!")
+ *   null         no ending yet, or free play after the thanks
+ */
+export function ending(s) {
+  if (s.endedEarly) return s.goodbyeSaid ? 'asleep' : 'goodnight';
+  return s.finaleDone && !s.goodbyeSaid ? 'thanks' : null;
+}
+
+/** The hub has said its thanks or goodnight. */
+export function sayGoodbye(s) {
+  s.goodbyeSaid = true;
+  return s;
+}
+
 /** Where the session is: 'mission' | 'finale' | 'free'. */
 export function nextStep(s) {
   if (s.finaleDone || s.endedEarly) return 'free';

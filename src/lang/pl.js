@@ -59,6 +59,20 @@ export const WORLD_LINES = {
   bunting: 'Zobacz! Kolorowe chorągiewki przy garażu!',
 };
 
+/** "Misja w domu": one small real-world task at the end of a session, by the mission it follows (session/home-task.js). */
+export const HOME_TASKS = {
+  letters: `Poszukaj w książeczce literki ${L(kid[0])}, jak ${kid}!`,
+  balloons: 'Poszukaj z mamą literek na pudełkach!',
+  name: 'Napisz z mamą swoje imię!',
+  cones: 'Pokaż mamie trzy paluszki!',
+  stones: 'Policz z mamą kroki do drzwi!',
+  counting: 'Policz łyżki przy obiedzie!',
+  lookout: 'Pokaż mamie na paluszkach, ile kotków uratowałaś!',
+  delivery: 'Znajdź w domu coś na Em, jak mama!',
+  picnic: 'Kto ma więcej na talerzu, ty czy mama?',
+  garage: 'Znajdź w domu coś okrągłego!',
+};
+
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
 export const T = {
@@ -67,11 +81,18 @@ export const T = {
 
   // hub
   greet: () => [`Cześć, ${voc}! ${pup} gotowy do akcji! Dokąd jedziemy?`],
-  hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'],
-  hubIdle: () => ['Dotknij miejsca, żeby zacząć misję!'],
+  hubAgain: () => ['Dokąd teraz jedziemy?', 'Wybierz nową misję!', 'Brawo! Gdzie teraz?'], // (after a finished mission)
+  hubBack: () => ['Dokąd teraz jedziemy?'], // (back without finishing: no "Brawo!")
   suggest: (kind) => [`Może ${PLACE_TO[kind]}?`],
+  tapStar: () => ['Dotknij gwiazdki!'],
   finaleCall: () => ['Teraz wielka misja w Bazie! Dotknij Bazy!'],
-  sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`, 'Możesz dalej się bawić!'],
+  sessionDone: () => [`Wspaniała przygoda, ${voc}! Psi Patrol dziękuje!`],
+  playOn: () => ['Możesz dalej się bawić!'],
+  homeTask: (kind) => (HOME_TASKS[kind] ? ['Misja w domu!', HOME_TASKS[kind]] : []),
+  goodnight: () => [`Dobranoc, ${voc}! Do jutra!`],
+  asleep: () => [`${pup} śpi… Do jutra!`],
+  // the celebration, after the badge line ("again" or the island?)
+  againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -226,12 +247,13 @@ export function allSegments(levels, allLetters) {
   words.forEach((w) => { add(T.spellStart(w)); add(T.spellWord(w)); add(T.wordStart(w)); add(T.missingAsk(w)); add(T.wordPicture(w)); });
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
-  [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
+  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
   [...NO, ...YES_STEP, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
+  Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }
