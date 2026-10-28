@@ -78,6 +78,8 @@ export class Stage {
       if (o.userData.sway && !this.sways.includes(o)) this.sways.push(o);
     });
   }
+  /** The page was hidden for ms (iPad locked, another app): time she was away, not time spent playing. */
+  resumed() {}
   update(dt, t) {
     for (const o of this.ticks) o.userData.tick(dt, t);
     for (const o of this.sways) {
@@ -133,6 +135,16 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+
+// No frames run while the page is hidden; on the way back the stage hears how long she was away.
+let hiddenAt = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = performance.now(); return; }
+  if (hiddenAt === null) return;
+  const away = performance.now() - hiddenAt;
+  hiddenAt = null;
+  current?.resumed(away);
+});
 
 // ---------- taps (forgiving for little fingers) ----------
 const ray = new THREE.Raycaster();

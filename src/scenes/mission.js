@@ -200,6 +200,11 @@ export class Mission extends Stage {
     if (action === 'hint') this.learn.timeout(); // a long hesitation (for fatigue / mastery)
     this.runAssist(action);
   }
+  /** Back from a locked iPad / another app: the help clock and her answer time skip the time away. */
+  resumed(ms) {
+    if (this.aid) this.aid.quietFrom = Math.min(this.aid.quietFrom + ms, performance.now());
+    this.learn.paused(ms);
+  }
   /**
    * Do one help action: visuals via the scene's hooks, plus a short spoken line (said first).
    * A hook may return segments to say instead of the short prompt, or a promise when it speaks itself.
