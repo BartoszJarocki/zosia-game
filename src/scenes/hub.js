@@ -40,7 +40,7 @@ const PLACES = {
   // behind, either side of the Lookout (roads curve back to them)
   delivery: { at: [-9.5, -8.5], via: [[-2.6, -1.8], [-5, -4.6]] },
   picnic: { at: [9.5, -8.5], via: [[2.6, -1.8], [5, -4.6]] },
-  garage: { at: [0, 13] }, // shapes and patterns: in front, between the letter and the number games
+  garage: { at: [0, 12.4] }, // shapes and patterns: in front, between the letter and the number games
   lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };

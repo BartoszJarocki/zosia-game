@@ -167,7 +167,7 @@ export function makeBasket(colour, size = 'big') {
 
 /** A toy block (klocek): big, small, or (size null, when only its colour matters) in between. */
 export function makeBlock(colour, size) {
-  const s = { big: 0.95, small: 0.52 }[size] ?? 0.72;
+  const s = { big: 0.95, small: 0.6 }[size] ?? 0.75;
   const b = mesh(rbox(s, s, s, s * 0.12), mat(COLOUR_HEX[colour], { roughness: 0.4 }));
   b.userData.half = s / 2;
   return b;
@@ -204,18 +204,18 @@ export function makeGarageCruiser() {
   return t;
 }
 
-/** Small garage for the island: a rolled-up door and the circle-square-triangle sign on the roof. */
+/** Small garage for the island: a rolled-up door with a circle, a square and a triangle over it. Kept low, so the
+ *  place's level stars float clear of it. */
 export function makeGarageLandmark() {
   const g = new THREE.Group();
-  g.add(mesh(cyl(3.2, 3.2, 0.12, 48), mat('#e2e8f0', { roughness: 0.9 }), { y: 0.06 }));
-  const wall = mat('#f8fafc', { roughness: 0.8 });
-  g.add(mesh(rbox(3, 1.9, 2.2, 0.1), wall, { y: 0.95, z: -0.6 }));
-  g.add(mesh(rbox(3.3, 0.2, 2.5, 0.08), mat('#1e4fbf', { roughness: 0.45 }), { y: 2, z: -0.6 }));
-  g.add(mesh(rbox(1.9, 1.4, 0.08, 0.04), mat('#334155', { roughness: 0.95 }), { y: 0.72, z: 0.5 }));
-  for (let i = 0; i < 3; i++) g.add(mesh(rbox(1.95, 0.12, 0.1, 0.04), mat('#94a3b8', { metalness: 0.3, roughness: 0.5 }), { y: 1.38 - i * 0.14, z: 0.55 }));
-  g.add(mesh(cyl(0.34, 0.34, 0.14, 24), mat(COLOUR_HEX.red), { x: -0.9, y: 2.48, z: -0.4, rx: Math.PI / 2 }));
-  g.add(mesh(rbox(0.6, 0.6, 0.14, 0.04), mat(COLOUR_HEX.blue), { y: 2.42, z: -0.4 }));
-  g.add(mesh(new THREE.ExtrudeGeometry(trace(new THREE.Shape(), 'triangle', null, { s: 0.62 }), { depth: 0.14, bevelEnabled: false }), mat(COLOUR_HEX.yellow), { x: 0.9, y: 2.43, z: -0.47 }));
-  for (let i = 0; i < 2; i++) g.add(mesh(new THREE.TorusGeometry(0.3, 0.14, 8, 18), mat('#1f2937', { roughness: 0.8 }), { x: 1.85, y: 0.14 + i * 0.28, z: 0.3, rx: Math.PI / 2 }));
+  g.add(mesh(cyl(2.7, 2.7, 0.12, 48), mat('#cbd5e1', { roughness: 0.95 }), { y: 0.06 }));
+  g.add(mesh(rbox(2.8, 1.75, 1.9, 0.1), mat('#f8fafc', { roughness: 0.8 }), { y: 0.88, z: -0.5 }));
+  g.add(mesh(rbox(3.1, 0.2, 2.2, 0.08), mat('#1e4fbf', { roughness: 0.45 }), { y: 1.82, z: -0.5 }));
+  g.add(mesh(rbox(1.7, 1.0, 0.08, 0.04), mat('#334155', { roughness: 0.95 }), { y: 0.52, z: 0.46 }));
+  for (let i = 0; i < 3; i++) g.add(mesh(rbox(1.75, 0.1, 0.1, 0.04), mat('#94a3b8', { metalness: 0.3, roughness: 0.5 }), { y: 0.98 - i * 0.12, z: 0.5 }));
+  g.add(mesh(cyl(0.2, 0.2, 0.1, 24), mat(COLOUR_HEX.red), { x: -0.62, y: 1.38, z: 0.48, rx: Math.PI / 2 }));
+  g.add(mesh(rbox(0.36, 0.36, 0.1, 0.03), mat(COLOUR_HEX.blue), { y: 1.38, z: 0.48 }));
+  g.add(mesh(new THREE.ExtrudeGeometry(trace(new THREE.Shape(), 'triangle', null, { s: 0.38 }), { depth: 0.1, bevelEnabled: false }), mat(COLOUR_HEX.yellow), { x: 0.62, y: 1.38, z: 0.43 }));
+  for (let i = 0; i < 2; i++) g.add(mesh(new THREE.TorusGeometry(0.26, 0.12, 8, 18), mat('#1f2937', { roughness: 0.8 }), { x: 1.75, y: 0.12 + i * 0.24, z: 0.6, rx: Math.PI / 2 }));
   return g;
 }

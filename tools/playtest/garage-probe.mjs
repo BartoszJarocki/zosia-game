@@ -30,8 +30,8 @@ await page.waitForSelector('.play', { timeout: 30000 });
 await page.waitForTimeout(1200);
 const pb = await page.locator('.play').boundingBox();
 await page.mouse.click(pb.x + pb.width / 2, pb.y + pb.height / 2);
-await page.waitForFunction(() => window.__pup.getStage()?.markers, null, { timeout: 30000 });
-await page.waitForTimeout(3500);
+await page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.markers && !s.silent && !s.busy; }, null, { timeout: 60000 }); // the swoop is over
+await page.waitForTimeout(2500);
 await snapIsland();
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== 'garage'; i++) { await st(() => window.__pup.game.startMission('garage')); await page.waitForTimeout(700); }
 

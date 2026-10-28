@@ -287,7 +287,8 @@ export class GarageMission extends Mission {
       ui.bubble({ big: patternSVG(p.row, p.gap), pic: '', onTap: () => this.replay() });
       this.question('pattern', p.item, {
         short,
-        hint: () => this.chant(p.row, hung, p.gap).then(() => this.alive && !solved && this.say(short)), // say the row aloud: the rhythm is the clue
+        // say the row aloud: the rhythm is the clue ("…Zielona! Czerwona! A teraz? Co jest dalej?")
+        hint: () => this.chant(p.row, hung, p.gap).then(() => this.alive && !solved && this.say(p.item === 'gap' ? short : T.riverWhatNext())),
         simplify: () => this.removeOption(lastWrong?.parent && lastWrong !== right ? lastWrong : foil),
         reveal: () => this.hint(right, () => solved, right.userData.flag),
       }, { options: stands.length });
