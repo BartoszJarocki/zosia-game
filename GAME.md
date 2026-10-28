@@ -218,7 +218,7 @@ picks one up, and at the end everyone goes to the very top and down the slide to
   goes there from wherever it is, counting up or down · `find`: a kitten waits on a floor, "Na którym piętrze
   czeka kotek?" (only the kitten in the bubble: she reads the sign beside it) · `relative`: the first ride is a
   `pickup`, then "Jesteśmy na piętrze trzy. Kotek czeka jedno piętro wyżej!" (one more / one less; needs 3+
-  floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!"; it says how many floors up
+  floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
   ("Dwa piętra w górę! Na które piętro?") and she presses the floor they land on, counting on from where the
   car is; the kitten is a surprise on that floor (age 4+) · `go`: one easy kitten on floors 1–3, numeral and
   dots (the session finale, and the gentler run after a rough one)
