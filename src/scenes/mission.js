@@ -12,6 +12,7 @@ import { settingsFor, isLookalike } from '../levels.js';
 import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
+import { isBounce } from '../input/bounce.js';
 import { levelFor, recordMission, recordItem, pickItem } from '../progress.js';
 import { missionDone, replayed, checkAttention } from '../session/session.js';
 import { onMissionComplete } from '../adventure/rewards.js';
@@ -169,6 +170,9 @@ export class Mission extends Stage {
    * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
    */
   wrong(chosen, { obj = null, said = null, feedback = true } = {}) {
+    const at = performance.now();
+    if (isBounce(this.lastWrong, chosen, at)) return; // the same finger landing twice: no sound, no count, no help
+    this.lastWrong = { chosen, at };
     this.miss();
     this.learn.wrong({ chosen });
     sfx.no();
