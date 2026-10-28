@@ -14,13 +14,21 @@ test('rounds: read from the table, short missions as in the brief', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
   assert.ok(levels.letters.every((l) => l.rounds >= 3 && l.rounds <= 5));
   assert.ok(levels.stones.every((l) => l.rounds <= 2));
-  assert.deepEqual(levels.lookout.map((l) => [l.mode, l.rounds]), [['pickup', 2], ['pickup', 3], ['find', 3], ['relative', 2]]); // her favourite: a few more rides
+  assert.deepEqual(levels.lookout.map((l) => [l.mode, l.rounds]), [['pickup', 2], ['pickup', 3], ['find', 3], ['relative', 3], ['relative', 3], ['pickup', 3], ['dice', 3], ['dice', 3]]); // her favourite: a few more rides
 });
 
 test('Lookout kittens: each ride a different floor, so there must be more floors than rides', () => {
   assert.match(only(parseGame(table('max | bubble | mode | rounds', '3 | both | pickup | 3'), {})).errors[0], /more floors than rounds/);
   assert.deepEqual(only(parseGame(table('max | bubble | mode | rounds', '4 | numeral | find | 3'), {})).errors, []);
-  assert.match(only(parseGame(table('max | bubble | mode | rounds', '5 | numeral | pickup | 4'), {})).errors[0], /at most 3 rides/);
+  assert.match(only(parseGame(table('max | bubble | mode | rounds', '5 | numeral | pickup | 4'), {})).errors[0], /rounds must be 1–3/);
+});
+
+test('Lookout dice: needs a dice range, and enough floors for every ride to go up', () => {
+  assert.match(only(parseGame(table('max | bubble | mode | rounds', '9 | numeral | dice | 3'), {})).errors[0], /needs a dice range/);
+  assert.match(only(parseGame(table('max | bubble | mode | rounds | dice', '5 | numeral | dice | 3 | 2–3'), {})).errors[0], /need 6\+ floors/);
+  const { levels, errors } = only(parseGame(table('max | bubble | mode | rounds | dice', '9 | numeral | dice | 3 | 1–3'), {}));
+  assert.deepEqual(errors, []);
+  assert.deepEqual(levels.lookout[0].dice, [1, 3]);
 });
 
 // a one-mission file: only look at that mission's errors (the rest of GAME.md is missing on purpose)

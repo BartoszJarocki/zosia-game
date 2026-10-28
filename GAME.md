@@ -234,26 +234,38 @@ Counting for real, at Chase's pup house.
 
 ### 🗼 The Lookout · `lookout`
 
-Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; floors are
-counted aloud on the way. Lost kittens wait on the floors: each ride picks one up, and at the end
-everyone goes to the very top and down the slide together!
+Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
+stops at each floor, its sign lights up and there is a short beat before the number is said, so she (or her
+parent) can count along first. Lost kittens wait on the floors, each right beside its floor's sign: each ride
+picks one up, and at the end everyone goes to the very top and down the slide together!
 
-| Level | max | bubble | mode | rounds |
-|---|---|---|---|---|
-| 1 | 3 | both | pickup | 2 |
-| 2 | 5 | numeral | pickup | 3 |
-| 3 | 5 | numeral | find | 3 |
-| 4 | 7 | numeral | relative | 2 |
+| Level | max | bubble | mode | rounds | dice |
+|---|---|---|---|---|---|
+| 1 | 3 | both | pickup | 2 | — |
+| 2 | 5 | numeral | pickup | 3 | — |
+| 3 | 5 | numeral | find | 3 | — |
+| 4 | 3 | numeral | relative | 3 | — |
+| 5 | 7 | numeral | relative | 3 | — |
+| 6 | 9 | numeral | pickup | 3 | — |
+| 7 | 9 | numeral | dice | 3 | 1–2 |
+| 8 | 9 | numeral | dice | 3 | 1–3 |
 
-- **max** — number of floors (2–9)
+- **max** — number of floors (2–9; the signs and kittens shrink to fit, 9 is the most that stays readable)
 - **bubble** — `both`: numeral + dots · `numeral`
-- **mode** — `pickup`: a kitten waits on a floor, "Kotek czeka na piętrze dwa!" (the number in the bubble);
-  the elevator goes there from wherever it is, counting up or down · `find`: a kitten waits on a floor, "Na
-  którym piętrze czeka kotek?" (only the kitten in the bubble: she reads the floor's sign) ·
-  `go`: "Jedziemy na piętro trzy" and back down each time (the session finale) ·
-  `relative`: "We're on floor 3 — go one floor up/down" (one more / one less; needs 3+ floors and 2+ rounds)
-- **rounds** — how many elevator trips (1–8); `pickup` and `find` need more floors than trips (each kitten waits
-  on a floor of its own) and have at most 3 trips (the car seats 3 kittens). After the last trip everyone goes to the top and down the slide, kittens too.
+- **mode** — every mode rescues a kitten on each ride:
+  `pickup`: a kitten waits on a floor, "Kotek czeka na piętrze dwa!" (the number in the bubble); the elevator
+  goes there from wherever it is, counting up or down · `find`: a kitten waits on a floor, "Na którym piętrze
+  czeka kotek?" (only the kitten in the bubble: she reads the sign beside it) · `relative`: the first ride is a
+  `pickup`, then "Jesteśmy na piętrze trzy. Kotek czeka jedno piętro wyżej!" (one more / one less; needs 3+
+  floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
+  ("Dwa piętra w górę! Na które piętro?") and she presses the floor they land on, counting on from where the
+  car is; the kitten is a surprise on that floor (age 4+) · `go`: one easy kitten on floors 1–3, numeral and
+  dots (the session finale, and the gentler run after a rough one)
+- **rounds** — how many elevator trips (1–3: the car seats 3 kittens); `pickup` and `find` need more floors than
+  trips (each kitten waits on a floor of its own). After the last trip everyone goes to the top and down the
+  slide, kittens too.
+- **dice** — (`dice` only) how many floors the die can say, like `1–2`; the die never says more than fits, and
+  every ride goes up, so the floors must cover `rounds` × the smallest number
 
 ### 📦 Pup Delivery · `delivery`
 
