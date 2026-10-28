@@ -42,6 +42,23 @@ const PLACE_TO = {
   delivery: 'na pocztę',
   picnic: 'na piknik',
 };
+/** What the hub says when something new appears on the island, by reward type (adventure/world.js REWARDS). */
+export const WORLD_LINES = {
+  kitten: 'Zobacz! Uratowany kotek bawi się teraz koło parku!',
+  bridge: 'Zobacz! Nad rzeką stoi nowy most!',
+  train: 'Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!',
+  balloon: 'Nowy balonik przy Bazie!',
+  'lookout-lights': 'Baza świeci kolorowymi światełkami!',
+  treat: `Mniam! Nowy smakołyk w misce ${pupGen}!`,
+  'traffic-light': 'Zobacz! Przy drodze stoją nowe światła!',
+  cone: 'Zobacz! Nowy pachołek przy drodze!',
+  parcel: 'Zobacz! Paczka czeka przy domku!',
+  guest: 'Zobacz! Nowy gość na pikniku!',
+  'lookout-kitten': 'Zobacz! Kotek macha do nas z Bazy!',
+  'garage-car': 'Zobacz! Naprawione autko błyszczy!',
+  bunting: 'Zobacz! Kolorowe chorągiewki przy garażu!',
+};
+
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
 export const T = {
@@ -71,12 +88,8 @@ export const T = {
   noMore: () => ['Nie, tu jest więcej.'],
   noLess: () => ['Nie, tu jest mniej.'],
   lookCarefully: () => ['Popatrz uważnie!'],
-  // Adventure Bay changes (said the first time the hub shows them)
-  worldKitten: () => ['Zobacz! Uratowany kotek bawi się teraz koło parku!'],
-  worldBridge: () => ['Zobacz! Nad rzeką stoi nowy most!'],
-  worldTrain: () => ['Ciuch, ciuch! Pociąg jeździ teraz dookoła wyspy!'],
-  worldBalloon: () => ['Nowy balonik przy Bazie!'],
-  worldLights: () => ['Baza świeci kolorowymi światełkami!'],
+  // Adventure Bay changes (said the first time the hub shows them), by reward type (adventure/world.js REWARDS)
+  worldNew: (type) => (WORLD_LINES[type] ? [WORLD_LINES[type]] : []),
   // hub events: little stories that point at a place
   eventKitten: () => ['Ojej! Kotek potrzebuje pomocy! Dotknij kotka!'],
   eventBalloons: () => ['Ojej! Baloniki uciekają! Dotknij balonika!'],
@@ -216,10 +229,9 @@ export function allSegments(levels, allLetters) {
   [T.greet, T.hubAgain, T.hubIdle, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.tooMany, T.tooFew, T.liftStart, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
-    T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
-  [...NO, ...YES_STEP].forEach((line) => add([line]));
+  [...NO, ...YES_STEP, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

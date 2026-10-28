@@ -1,9 +1,10 @@
-// What Adventure Bay remembers (adventure/world.js), drawn on the island:
-// rescued kittens near Kitty Park, a bridge over the River, a train touring the island,
-// balloons tied to the Lookout and the Lookout's party lights. New ones pop in with sparkles.
+// What Adventure Bay remembers (adventure/world.js), drawn on the island: every mission leaves something.
+// Rescued kittens on the lawn, a bridge over the River, a train touring the island, balloons, lights and
+// waving kittens at the Lookout, treats in Chase's bowl, traffic lights and cones by Cone Road, parcels at the
+// houses, guests at the picnic, a shiny car and bunting at the Garage. New ones pop in with sparkles.
 import * as THREE from 'three';
 import { animate, ease, hop } from '../engine.js';
-import { makeKitten, makeTrain, makeBalloon, mat, mesh, rbox } from '../models.js';
+import { makeKitten, makeTrain, makeBalloon, makeBone, makeCone, mat, mesh, rbox } from '../models.js';
 import { makeTree } from '../world/nature.js';
 import { glyphTexture, labelTexture } from '../textures.js';
 import { sparkle } from '../fx/particles.js';
@@ -13,27 +14,34 @@ import { CONFIG } from '../config.js';
 import { rewardType } from '../adventure/world.js';
 import { T } from '../lang/pl.js';
 
-// spots around Kitty Park (-15, -3): off its pad and road, clear of trees and houses,
-// and not straight behind Balloon Hill (-13.5, 8) as seen from the camera
-const KITTEN_SPOTS = [[-18.6, -0.6], [-12.2, 0.1], [-20.2, -1.6], [-19.2, -4.2], [-16.4, -7.4], [-11.6, -5.8]];
+// the lawn between Kitty Park (-15, -3), Balloon Hill (-13.5, 8) and the cruiser: off the roads, in plain view
+const KITTEN_SPOTS = [[-8.7, 2.7], [-10.6, 2.0], [-9.4, 4.2], [-12.0, 3.4], [-7.6, 4.3], [-11.0, 5.0]];
 const LOOKOUT = new THREE.Vector3(0, 0, -10.5);
 const BALLOON_ANGLES = [0.75, -0.8, 1.45, -1.5, 2.1];
 const BALLOON_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899'];
 const TRACK_R = 25.2;
+// the Lookout's kittens: on the roof of the base (either side of the tower) and on the top deck (Lookout-local)
+const LOOKOUT_KITTENS = [[-0.75, 2.4, 2.95], [0.75, 2.4, 2.95], [-0.5, 2.85, 9.9], [0.5, 2.85, 9.9]]; // [angle, r, y]
+const GUESTS = [ // around the picnic blanket (place-local): [x, z, facing, fur]
+  [-2.05, 0.15, Math.PI / 2, '#f8fafc'], [2.05, 0.35, -Math.PI / 2, '#9ca3af'],
+  [-0.7, -1.6, 0, '#374151'], [0.85, -1.6, 0, '#fbbf24'],
+];
+const TREAT_BONES = [[-1.95, 1.55], [-1.45, 1.95], [-2.4, 2.0], [-1.9, 2.4], [-1.0, 2.35]]; // by Chase's door
+const ROAD_CONES = [[-2.9, 0.4], [2.9, 0.4], [-3.8, -0.4], [3.8, -0.4]]; // either side of Cone Road's three
 
 /**
  * Add everything the world state says is there. unseen: reward ids to reveal now.
- * Returns the lines to say about what's new (empty when nothing is).
+ * places: the place groups ({ stones, counting, … }); houses: the island's houses.
+ * Returns the lines to say about what's new (empty when nothing is) and objects the micro rewards use.
  */
-export function addWorld(hub, world, unseen = [], { places }) {
+export function addWorld(hub, world, unseen = [], { places, houses = [] }) {
   const objs = { kittens: [], train: null }; // for micro rewards
   const s = hub.scene;
-  const newTypes = new Set(unseen.map(rewardType));
-  const reveal = []; // [object, delay]
-  const newKittens = unseen.filter((id) => rewardType(id) === 'kitten').length;
-  const newBalloons = unseen.filter((id) => rewardType(id) === 'balloon').length;
+  const fresh = (type) => unseen.filter((id) => rewardType(id) === type).length;
+  const reveal = []; // objects to pop in, in order
+  const revealIfNew = (type, i, count, obj) => { if (i >= count - fresh(type)) reveal.push(obj); };
 
-  // --- rescued kittens: pottering about near the park, they meow when tapped ---
+  // --- rescued kittens: pottering about on the lawn, they meow when tapped ---
   const kittens = (objs.kittens = world.rescuedKittens ? makeKittens(s, world.rescuedKittens) : []);
   kittens.forEach((k, i) => {
     const [x, z] = KITTEN_SPOTS[i % KITTEN_SPOTS.length];
@@ -60,14 +68,14 @@ export function addWorld(hub, world, unseen = [], { places }) {
       if (walk > 0.05) k.rotation.y = -a; // facing the way it goes (roughly)
     };
     hub.tappable(k, () => { sfx.meow(); hop(k, 0.6); hub.micro?.active() && hub.micro.onKitten?.(k); });
-    if (i >= world.rescuedKittens - newKittens) reveal.push([k, 0]);
+    revealIfNew('kitten', i, world.rescuedKittens, k);
   });
 
   // --- the bridge over the River (part of the River's place, so it faces the camera with it) ---
   if (world.bridgeBuilt && places.stones) {
     const b = makeBridge();
     places.stones.add(b);
-    if (newTypes.has('bridge')) { b.userData.dynamic = true; reveal.push([b, 0]); }
+    if (fresh('bridge')) { b.userData.dynamic = true; reveal.push(b); }
   }
 
   // --- the island train: rails round the beach, a little train with her name on it ---
@@ -98,7 +106,7 @@ export function addWorld(hub, world, unseen = [], { places }) {
     s.add(train);
     objs.train = train;
     hub.tappable(train, () => { if (!(hub.micro?.active() && hub.micro.onTrain?.())) sfx.toot(); hop(train, 0.4); });
-    if (newTypes.has('train')) { reveal.push([train, 0]); setTimeout(() => sfx.toot(), 900); }
+    if (fresh('train')) { reveal.push(train); setTimeout(() => sfx.toot(), 900); }
   }
 
   // --- balloons tied to the Lookout ---
@@ -116,21 +124,109 @@ export function addWorld(hub, world, unseen = [], { places }) {
       bl.rotation.z = Math.sin(t * 0.9 + i * 2) * 0.08;
     };
     s.add(bl);
-    if (i >= world.balloonsAtLookout - newBalloons) reveal.push([bl, 0]);
+    revealIfNew('balloon', i, world.balloonsAtLookout, bl);
+  }
+
+  // --- kittens waving from the Lookout's balconies (rescued there) ---
+  for (let i = 0; i < world.lookoutKittens; i++) {
+    const [a, r, y] = LOOKOUT_KITTENS[i];
+    const k = makeKitten(['#fb923c', '#f8fafc', '#9ca3af', '#fbbf24'][i]);
+    k.scale.setScalar(1.15);
+    k.position.copy(LOOKOUT).add(new THREE.Vector3(Math.sin(a) * r * 0.95, y * 0.95, Math.cos(a) * r * 0.95));
+    k.rotation.y = a * 0.4; // facing out, towards the island
+    k.userData.tapHeight = 0.6;
+    k.userData.tick = (dt, t) => { k.userData.idle(t); k.rotation.z = Math.sin(t * 4 + i) * 0.12 * Math.max(0, Math.sin(t * 0.8 + i * 1.3)); }; // a wave now and then
+    s.add(k);
+    hub.tappable(k, () => { sfx.meow(); hop(k, 0.5); });
+    revealIfNew('lookout-kitten', i, world.lookoutKittens, k);
   }
 
   // --- party lights round the Lookout's decks ---
   if (world.lookoutLights) {
-    const isNew = newTypes.has('lookout-lights');
-    const lights = makeLookoutLights({ darkFor: isNew ? 1.6 + reveal.length * 0.65 : 0 }); // new: they switch on
+    const isNew = fresh('lookout-lights') > 0;
+    const darkFor = isNew ? 1.6 + reveal.length * 0.65 : 0; // new: they switch on after the others have popped in
+    const lights = makeLookoutLights({ darkFor });
     lights.position.copy(LOOKOUT);
     s.add(lights);
-    if (isNew) setTimeout(() => hub.alive && sfx.ding(), (1.6 + reveal.length * 0.65) * 1000);
+    objs.lookoutLights = lights;
+    if (isNew) setTimeout(() => hub.alive && sfx.ding(), darkFor * 1000);
+  }
+
+  // --- Treat House: Chase's bowl fills up, and bones pile up by his door ---
+  if (world.treatsAtHouse && places.counting) {
+    const heap = mesh(new THREE.SphereGeometry(0.5, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat('#f5e6c8', { roughness: 0.6 }), { x: 1.9, y: 0.3, z: 1.6 });
+    heap.scale.y = 0.15 + 0.85 * (world.treatsAtHouse / 5);
+    places.counting.add(heap);
+    for (let i = 0; i < world.treatsAtHouse; i++) {
+      const [x, z] = TREAT_BONES[i];
+      const b = makeBone(1.5);
+      b.position.set(x, 0.18, z);
+      b.rotation.y = i * 1.3;
+      b.userData.dynamic = true;
+      places.counting.add(b);
+      revealIfNew('treat', i, world.treatsAtHouse, b);
+    }
+  }
+
+  // --- Cone Road: traffic lights first, then more cones along the road ---
+  if (world.trafficLight && places.cones) {
+    const tl = makeTrafficLight();
+    tl.position.set(-3.1, 0, -1.2);
+    places.cones.add(tl);
+    hub.tappable(tl, () => { tl.userData.next(); sfx.ding(); });
+    if (fresh('traffic-light')) reveal.push(tl);
+  }
+  if (places.cones) for (let i = 0; i < world.roadCones; i++) {
+    const c = makeCone();
+    const [x, z] = ROAD_CONES[i];
+    c.position.set(x, 0, z);
+    c.scale.setScalar(0.8);
+    c.userData.dynamic = true;
+    places.cones.add(c);
+    revealIfNew('cone', i, world.roadCones, c);
+  }
+
+  // --- Pup Delivery: a parcel waiting at each house ---
+  for (let i = 0; i < Math.min(world.parcels, houses.length); i++) {
+    const p = makeParcel();
+    p.position.set(0.85, 0, 1.45); // by the front door
+    houses[i].add(p);
+    revealIfNew('parcel', i, world.parcels, p);
+  }
+
+  // --- Pup Picnic: guests round the blanket ---
+  if (places.picnic) for (let i = 0; i < world.picnicGuests; i++) {
+    const [x, z, ry, fur] = GUESTS[i];
+    const k = makeKitten(fur);
+    k.position.set(x, 0.12, z);
+    k.rotation.y = ry;
+    k.userData.tapHeight = 0.6;
+    k.userData.tick = (dt, t) => k.userData.idle(t + i);
+    places.picnic.add(k);
+    hub.tappable(k, () => { sfx.meow(); hop(k, 0.4); });
+    revealIfNew('guest', i, world.picnicGuests, k);
+  }
+
+  // --- the Garage: a shiny repaired car, then red-blue bunting ---
+  if (world.garageCar && places.garage) {
+    const car = makeShinyCar();
+    car.position.set(2.7, 0, 1.3);
+    car.rotation.y = -0.5;
+    places.garage.add(car);
+    hub.tappable(car, () => { sfx.honk(); hop(car, 0.25, 380); });
+    if (fresh('garage-car')) reveal.push(car);
+  }
+  if (world.bunting && places.garage) {
+    const b = makeBunting(5.2);
+    b.position.set(0, 3.3, 1.7);
+    places.garage.add(b);
+    if (fresh('bunting')) reveal.push(b);
   }
 
   // new things pop in, one after another, with sparkles
-  reveal.forEach(([obj], i) => {
+  reveal.forEach((obj, i) => {
     const s0 = obj.scale.clone();
+    obj.userData.dynamic = true;
     obj.scale.setScalar(0.001);
     setTimeout(() => {
       if (!hub.alive) return;
@@ -140,13 +236,81 @@ export function addWorld(hub, world, unseen = [], { places }) {
     }, 900 + i * 650);
   });
 
-  const lines = [];
-  if (newKittens) lines.push(...T.worldKitten());
-  if (newTypes.has('bridge')) lines.push(...T.worldBridge());
-  if (newTypes.has('train')) lines.push(...T.worldTrain());
-  if (newBalloons) lines.push(...T.worldBalloon());
-  if (newTypes.has('lookout-lights')) lines.push(...T.worldLights());
+  // "Zobacz! …" once per kind of new thing, in the order she earned them
+  const lines = [...new Set(unseen.map(rewardType))].flatMap((type) => T.worldNew(type));
   return { lines, objs };
+}
+
+/** A traffic light on a post; it changes by itself (green, yellow, red…) and when tapped. */
+function makeTrafficLight() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.1, 0.12, 2.6, 10), mat('#374151', { metalness: 0.4, roughness: 0.4 }), { y: 1.3 }));
+  g.add(mesh(rbox(0.75, 1.9, 0.5, 0.12), mat('#1f2937', { roughness: 0.5 }), { y: 3.35 }));
+  const cols = ['#ef4444', '#facc15', '#22c55e'];
+  const lamps = cols.map((c, i) => {
+    const m = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.1, roughness: 0.3 });
+    g.add(mesh(new THREE.SphereGeometry(0.22, 14, 10), m, { y: 3.95 - i * 0.6, z: 0.24, shadow: false }));
+    return m;
+  });
+  let on = 2, since = 0;
+  const show = () => lamps.forEach((m, i) => (m.emissiveIntensity = i === on ? 2.6 : 0.08));
+  g.userData.next = () => { on = (on + 2) % 3; since = 0; show(); }; // green → yellow → red → green
+  g.userData.tapHeight = 3.3;
+  g.userData.tick = (dt) => { if ((since += dt) > 2.5) g.userData.next(); };
+  show();
+  return g;
+}
+
+/** A brown parcel with a red ribbon. */
+function makeParcel() {
+  const g = new THREE.Group();
+  g.add(mesh(rbox(0.6, 0.5, 0.5, 0.05), mat('#c08a4a', { roughness: 0.85 }), { y: 0.25 }));
+  const red = mat('#dc2626', { roughness: 0.5 });
+  g.add(mesh(rbox(0.62, 0.52, 0.1, 0.02), red, { y: 0.25 }));
+  g.add(mesh(rbox(0.1, 0.52, 0.52, 0.02), red, { y: 0.25 }));
+  for (const s of [-1, 1]) g.add(mesh(new THREE.TorusGeometry(0.09, 0.03, 6, 12), red, { x: s * 0.08, y: 0.54, ry: s * 0.6, shadow: false }));
+  g.userData.dynamic = true;
+  return g;
+}
+
+/** A small red car, freshly mended and polished (it glints now and then). */
+function makeShinyCar() {
+  const g = new THREE.Group();
+  const paint = new THREE.MeshStandardMaterial({ color: '#e11d48', metalness: 0.55, roughness: 0.18 });
+  g.add(mesh(rbox(1.9, 0.55, 1.0, 0.2), paint, { y: 0.55 }));
+  g.add(mesh(rbox(1.0, 0.5, 0.9, 0.18), paint, { x: -0.1, y: 1.0 }));
+  g.add(mesh(rbox(1.04, 0.32, 0.92, 0.1), mat('#bfe6ff', { roughness: 0.1, metalness: 0.3 }), { x: -0.1, y: 1.02 }));
+  for (const x of [-0.6, 0.6]) for (const z of [-0.5, 0.5]) g.add(mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.16, 16), mat('#1f2937'), { x, y: 0.26, z, rx: Math.PI / 2 }));
+  g.userData.tapHeight = 0.8;
+  let next = 2;
+  g.userData.tick = (dt, t) => {
+    if (t < next || !g.parent) return;
+    next = t + 3.5;
+    paint.emissive.set('#ffffff');
+    animate(600, (k) => { paint.emissiveIntensity = Math.sin(k * Math.PI) * 0.35; }, ease.linear);
+  };
+  return g;
+}
+
+/** A string of triangle flags, red-blue-red-blue (a pattern, like in the Garage), sagging a little. */
+function makeBunting(length) {
+  const g = new THREE.Group();
+  const n = 9;
+  const sag = (x) => -0.35 * (1 - (2 * x / length) ** 2);
+  const pts = Array.from({ length: 12 }, (_, i) => { const x = -length / 2 + (i / 11) * length; return new THREE.Vector3(x, sag(x), 0); });
+  g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.025, 5), mat('#f8fafc'), { shadow: false }));
+  const tri = new THREE.Shape(); tri.moveTo(-0.22, 0); tri.lineTo(0.22, 0); tri.lineTo(0, -0.45); tri.lineTo(-0.22, 0);
+  const geo = new THREE.ShapeGeometry(tri);
+  const mats = [mat('#ef4444', { side: THREE.DoubleSide }), mat('#2563eb', { side: THREE.DoubleSide })];
+  const flags = [];
+  for (let i = 0; i < n; i++) {
+    const x = -length / 2 + ((i + 0.5) / n) * length;
+    const f = mesh(geo, mats[i % 2], { x, y: sag(x), shadow: false });
+    flags.push(f);
+    g.add(f);
+  }
+  g.userData.tick = (dt, t) => flags.forEach((f, i) => (f.rotation.x = Math.sin(t * 2.2 + i * 0.7) * 0.25));
+  return g;
 }
 
 // ---------- hub events (adventure/events.js): a story at a place, tap it to go there ----------

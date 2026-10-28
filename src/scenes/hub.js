@@ -43,6 +43,9 @@ const PLACES = {
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
 
+// the island's houses: [x, z, wall, roof] (Pup Delivery's parcels end up at their doors)
+const HOUSES = [[-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
+
 export class Hub extends Stage {
   constructor(game, { greet = false, silent = false } = {}) {
     super();
@@ -130,8 +133,16 @@ export class Hub extends Stage {
     const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic };
     this.placeGroups = {};
     for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
+    const houses = HOUSES.map(([x, z, w, r]) => {
+      const h = makeHouse(w, r);
+      h.position.set(x, 0, z);
+      h.scale.setScalar(1.15);
+      h.lookAt(new THREE.Vector3(x * 0.4, 0, 40));
+      s.add(h);
+      return h;
+    });
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
-    ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups }));
+    ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
     // trees, bushes, houses, grass — kept off the roads and places
     const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
@@ -145,14 +156,6 @@ export class Hub extends Stage {
       const t = makeTree({ scale: 0.95 + Math.random() * 0.6, seed: seed++ });
       t.position.set(x, 0, z);
       s.add(t);
-    }
-    const houses = [[-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
-    for (const [x, z, w, r] of houses) {
-      const h = makeHouse(w, r);
-      h.position.set(x, 0, z);
-      h.scale.setScalar(1.15);
-      h.lookAt(new THREE.Vector3(x * 0.4, 0, 40));
-      s.add(h);
     }
     const k = detail();
     s.add(makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 }));
