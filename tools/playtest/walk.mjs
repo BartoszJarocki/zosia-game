@@ -89,7 +89,7 @@ const options = () => st((kind) => {
   return out;
 }, kind);
 
-const waitAsked = (ms = 40000) => page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.learn?.isOpen && s.learn.current.promptEndAt !== null && !s.speaking; }, null, { timeout: ms }).then(() => true, () => false);
+const waitAsked = (ms = 40000) => page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.learn?.isOpen && !s.speaking && (s.learn.current.promptEndAt !== null || performance.now() - s.learn.current.openedAt > 1500); }, null, { timeout: ms }).then(() => true, () => false);
 const question = () => st(() => { const s = window.__pup.getStage(); return s.learn?.current ? { skill: s.learn.current.skill, item: s.learn.current.item, round: s.roundIndex, rounds: s.rounds, bubble: document.querySelector('.bubble')?.innerText.replace(/\s+/g, ' ').trim() } : null; });
 const tap = async (o, why) => { await mark(`TAP ${o.label} (${why})`); await page.mouse.click(o.x, o.y); };
 // the object under a screen point, its pose now and its biggest change over the next 600 ms
@@ -118,7 +118,7 @@ await snap('island');
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await mark(`starting ${kind}`); await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
 await mark(`mission ${kind} started`);
 const plan = ['right', 'wrong-then-right', 'hesitate', 'double-wrong', 'right', 'right', 'right', 'right'];
-for (let r = 0; r < 12; r++) { // (rounds past the plan: right answers, so long missions finish)
+for (let r = 0; r < 16; r++) { // (rounds past the plan: right answers, so long missions finish)
   if (!(await waitAsked())) { await mark('no open question (mission over?)'); break; }
   const q = await question();
   await mark(`QUESTION r${q.round + 1}/${q.rounds} ${q.skill}:${q.item} bubble="${q.bubble}"`);

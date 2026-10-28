@@ -1,0 +1,6 @@
+ts	phase	decision	why	evidence	result
+2026-10-28T20:32:49Z	frame	start: implement every unit of docs/POLISH-PLAN.md sections 1-6 on branch polish-pass	the parent said implement it all after reading the plan	docs/POLISH-PLAN.md	open
+2026-10-28T20:32:49Z	frame	keep letter names (Be) in every question, Delivery included	the parent says her preschool uses Be	docs/POLISH-PLAN.md decisions	decided
+2026-10-28T20:32:49Z	harness	walker waits for a question even when no prompt is spoken, and plays up to 16 rounds	it stalled after the first balloon pop, so Balloon Hill could not be replayed	tools/playtest/walk.mjs, audit literacy walk-balloons.mjs	applied
+2026-10-28T20:32:49Z	harness	baseline is the six audit runs on e4e8af4	every fix is checked as old screenshot or transcript vs new	tools/playtest/after-audit-{literacy,numbers,session}/	captured
+2026-10-28T20:32:49Z	deploy	add tools/playtest to .vercelignore	the last deploy uploaded 942 MB of old screenshots	.vercelignore	applied
