@@ -13,6 +13,7 @@ import { learning } from '../learning/events.js';
 import { QuestionTracker } from '../learning/question.js';
 import { createAssist, onIdle, onWrong, onActivity, TIMING } from '../learning/assist.js';
 import { levelFor, recordMission, pickItem } from '../progress.js';
+import { scoreRun } from '../progress/levelup.js';
 import { missionDone, replayed, checkAttention } from '../session/session.js';
 import { onMissionComplete } from '../adventure/rewards.js';
 
@@ -28,8 +29,8 @@ export const detail = () => ({ low: 0.3, medium: 0.6, high: 1 }[post.tier] ?? 0.
 
 /**
  * Shared flow: N rounds → progress paws → optional outro → celebration + badge (+ level up).
- * Subclasses call this.miss() on a wrong tap and this.item('L:A') to name what the round was about;
- * the base class works out first-try accuracy for levelling and per-letter/number stats.
+ * Each question a round asks (this.question → this.correct / this.wrong) is scored for levelling
+ * (progress/levelup.js), and its learning events update the per-letter/number mastery.
  */
 export class Mission extends Stage {
   constructor(game, kind) {
@@ -43,7 +44,7 @@ export class Mission extends Stage {
     this.cheerUntil = 0;
     this.walking = false;
     this.prompt = '';
-    this.firstTry = 0;
+    this.answers = []; // learning events of the questions she solved: the run is scored on these
     this.learn = new QuestionTracker(learning); // turns this mission's taps into learning events
     this.roundIndex = 0;
     this.bubbleAt = 'middle'; // 'left' keeps the top middle of the scene in view
@@ -70,12 +71,10 @@ export class Mission extends Stage {
     await wait(500);
     for (let r = 0; r < this.rounds; r++) {
       if (!this.alive) return;
-      this.missed = false;
       this.roundIndex = r;
       await this.round(r);
       this.learn.cancel(); // anything left open in this round is dropped
       if (!this.alive) return;
-      if (!this.missed) this.firstTry++;
       this.stopIdle();
       ui.setProgress(r + 1);
       sfx.pop();
@@ -111,7 +110,7 @@ export class Mission extends Stage {
     ui.hideBubble();
     const got = ui.badges.add(this.kind);
     // (a deliberately easy run, like the session finale, doesn't count towards the mission's level)
-    const { level, levelUp } = this.countsForLevel === false ? { level: this.level, levelUp: false } : recordMission(this.kind, this.firstTry, this.rounds);
+    const { level, levelUp } = this.countsForLevel === false ? { level: this.level, levelUp: false } : recordMission(this.kind, scoreRun(this.answers));
     const { finale } = missionDone(this.kind); // the session director counts it (the hub suggests what's next)
     onMissionComplete(this.kind, { completions: got[this.kind], finale }); // Adventure Bay changes (shown in the hub)
     sfx.fanfare();
@@ -136,6 +135,7 @@ export class Mission extends Stage {
   }
 
   // ----- helpers for subclasses -----
+  /** The open question doesn't count as right first time (this.wrong() does this already). */
   miss() { this.missed = true; }
   /** Names what the round was about ('L:B'). Nothing reads it any more (learning events carry skill + item). */
   item() {}
@@ -153,15 +153,23 @@ export class Mission extends Stage {
    *   hint()    show a clue; may return segments to say ("Be jak banan!")
    *   simplify() make it easier (e.g. one wrong option leaves)
    *   reveal()  show the answer (e.g. this.hint(obj) pulses it); she still taps it herself
+   * opts:
+   *   scored: false  it can't really be got wrong (an automatic give): it doesn't count for levelling
+   *   options: n     how many things she can pick from (default: the level's "choices" column, when it has one)
    */
-  question(skill, item, hooks = {}) {
+  question(skill, item, hooks = {}, { scored = true, options = this.L.choices } = {}) {
     const q = this.learn.current;
     if (q && q.skill === skill && q.item === String(item)) { Object.assign(this.aid?.hooks || {}, hooks); return; } // same question: keep timers
-    this.learn.open({ mission: this.kind, skill, item, level: this.level, round: this.roundIndex });
+    this.missed = false;
+    this.learn.open({ mission: this.kind, skill, item, level: this.level, round: this.roundIndex, scored, options });
     this.aid = { hooks: { ...hooks }, state: createAssist(), quietFrom: performance.now() };
   }
   /** She got it. */
-  correct(chosen) { this.learn.correct({ chosen }); this.aid = null; }
+  correct(chosen) {
+    const ev = this.learn.correct({ chosen });
+    if (ev) this.answers.push(this.missed ? { ...ev, firstTry: false } : ev);
+    this.aid = null;
+  }
   /**
    * She picked something else. A clear, kind "no" (a falling tone, the thing she tapped shakes its head and so
    * does Chase, "Nie, to nie ten."), then the question again or the next step of help.

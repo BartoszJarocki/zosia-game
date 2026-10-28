@@ -5,6 +5,9 @@
 /** How much one answer moves mastery (newMastery = old * (1 - RATE) + score * RATE). */
 export const RATE = 0.2;
 
+/** A solved question that shows she knows it: first try, without the clue or the reveal (a repeat is fine). */
+export const isClean = (ev) => ev.correct && ev.firstTry && ev.assistLevel < 2;
+
 /** Score for a solved question. Unsolved questions don't produce a score (she may simply have left). */
 export function resultScore(ev) {
   if (!ev.correct) return null;

@@ -38,7 +38,9 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 - Every mission goes from **match what you see → recognise what you hear → think for yourself**.
   Each level changes one thing, so it feels natural but a little bit challenging.
 - **Levelling up follows skill, not time:** a mission's next level unlocks after
-  `goodRunsPerLevel` (2) runs where at least two thirds of answers were right first time.
+  `goodRunsPerLevel` (2) runs where at least two thirds of the questions were answered right first time,
+  without the clue or the answer being shown (hearing the question again is fine). Every question counts:
+  each River stone, each balloon.
 - **A rough run (under 45%)** makes the next run gentler ("assist": fewer choices, answer shown).
   Stars are never taken away.
 - **Letters and numbers she misses come up more often**; ones she knows come up less.
