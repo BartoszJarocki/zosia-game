@@ -159,16 +159,22 @@ time, each row one hop nearer Chase: the next number and one or two others side 
 | Level | n | rounds | bubble | choices | foils |
 |---|---|---|---|---|---|
 | 1 | 3 | 2 | numeral | 2 | far |
-| 2 | 5 | 2 | numeral | 3 | far |
-| 3 | 4 | 2 | missing | — | — |
-| 4 | 7 | 1 | next | 2 | near |
+| 2 | 5 | 2 | numeral | 2 | far |
+| 3 | 5 | 2 | numeral | 3 | far |
+| 4 | 5 | 2 | missing | — | near |
+| 5 | 5 | 2 | next | 2 | far |
+| 6 | 7 | 1 | next | 2 | far |
+| 7 | 7 | 1 | next | 2 | near |
 
 - **n** — how many stones on the path (2–7; `missing` 3–9) · **rounds** — how many rivers to cross (1–6)
-- **choices** — stones in each row (2–3) · **foils** — the other numbers in a row: `far` ones are easy to tell
-  apart (1 next to 3), `near` ones are the neighbours (3 next to 4)
+- **choices** — stones in each row (2–3) · **foils** — the other numbers: `far` ones are easy to tell
+  apart (1 next to 3), `near` ones are the neighbours (3 next to 4). With `missing`, `near` is a neighbour of
+  the gap that is already on the path (2 or 4 for "1 2 ? 4": only the order says no), `far` is past the end (5)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
   (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
   stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)
+- After a rough run the next one is gentler: 2 stones a row, far foils, one stone shorter, the number in the
+  bubble (`missing` keeps its gap, with a far foil). After the last river Zosia stays with Chase for the badge.
 
 ### 🦴 Treat House · `counting`
 

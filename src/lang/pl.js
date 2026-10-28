@@ -29,6 +29,8 @@ export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 
 export const NO = ['Nie, to nie ten.', 'Nie, nie ten.'];
 /** A step done right, before what it was ("Tak! Dwa!"). */
 export const YES_STEP = ['Tak!', 'Brawo!', 'Super!'];
+/** The River, "what comes next?" again after "Tak! Trzy!" */
+const RIVER_ON = ['A dalej?', 'A teraz?'];
 
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
 const PLACE_TO = {
@@ -145,7 +147,10 @@ export const T = {
   riverAgain: () => ['Nowa rzeka! Zacznij od numeru jeden!'],
   riverNext: (n) => [`Teraz numer ${NUM[n]}!`],
   riverDone: (n) => [`Udało się! Policzyłaś do ${NUM_GEN[n]}!`],
+  riverCounted: (n) => [`Policzyłaś do ${NUM_GEN[n]}!`], // (the last river: the badge says "Udało się!")
   riverWhatNext: () => ['A teraz? Co jest dalej?'],
+  riverOn: (n) => [RIVER_ON[n % RIVER_ON.length]], // after the first "what comes next?" of a river
+  riverAfter: (n) => [`${cap(NUM[n])}… i co dalej?`],
   riverMissing: () => ['Ojej! Brakuje jednego kamienia! Który numer pasuje?'],
   whichFits: () => ['Który numer pasuje?'],
   riverFirstNext: () => [`Pomóż ${dat} przejść przez rzekę! Zacznij od jedynki, a potem po kolei!`],
@@ -203,6 +208,9 @@ export function allSegments(levels, allLetters) {
   nums.slice(0, floors).forEach((n) => { add(T.liftGo(n)); add(T.liftPress(n)); add(T.liftArrived(n)); add(T.kittenAt(n)); if (n < floors) add(T.liftRel(n, true)); if (n > 1) add(T.liftRel(n, false)); });
   nums.forEach((n) => { add(T.dots(n)); add(T.giveThenTap(n)); add(T.number(n)); add(T.whereNumber(n)); add(T.conesFirst(n)); add(T.conesMore(n)); add(T.conesWhich(n, true)); add(T.conesWhich(n, false)); add(T.riverNext(n)); add(T.riverDone(n)); add(T.treatsGive(n)); add(T.treatsDone(n)); });
   [2, 3, 4].forEach((n) => add(T.shareStart(n)));
+  // the River: "Policzyłaś do pięciu!" for every river length, "Trzy… i co dalej?" for every stone but the last
+  const riverN = Math.max(...levels.stones.map((l) => l.n));
+  nums.slice(1, riverN).forEach((n) => { add(T.riverCounted(n)); add(T.riverAfter(n - 1)); });
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.letterLike(l)); add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -219,7 +227,7 @@ export function allSegments(levels, allLetters) {
     T.worldKitten, T.worldBridge, T.worldTrain, T.worldBalloon, T.worldLights,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.nextLetter, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
     T.deliveryStart, T.picnicStart, T.askMore, T.askLess, T.askSame, T.yesMore, T.yesLess, T.yesSame, T.noMore, T.noLess, T.lookCarefully].forEach((f) => add(f()));
-  [...NO, ...YES_STEP].forEach((line) => add([line]));
+  [...NO, ...YES_STEP, ...RIVER_ON].forEach((line) => add([line]));
   add(T.conesDots(true)); add(T.conesDots(false));
   return [...new Set(out)];
 }

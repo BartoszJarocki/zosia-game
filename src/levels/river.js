@@ -14,6 +14,25 @@ const UNDER_BUBBLE = { z: -1.9, x: -3.9 };
 
 const shuffle = (a, rng) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
+// Where row stones can reach in the first and the last row (x, edges included), so the reeds on each bank stay
+// clear of them (river.test.js checks every level and its gentler run against these).
+export const KEEP_CLEAR = { near: [-2.6, 4.5], far: [-4, 8.7] };
+
+/**
+ * The wrong stone of a "missing" river ("1 2 ? 4"): `near` is a neighbour of the gap (2 or 4: it could fit, only
+ * the order says no, and the smaller one is right only half the time); `far` is past the end (5 or 6: never fits).
+ */
+export function missingFoil(missing, n, foils, rng = Math.random) {
+  if (foils === 'near') return rng() < 0.5 ? missing - 1 : missing + 1;
+  return n + 1 + Math.floor(rng() * 2);
+}
+
+/** The gentler run after a rough one: the same kind of river with less to tell apart. */
+export function gentler(s) {
+  if (s.bubble === 'missing') return { ...s, foils: 'far' };
+  return { ...s, bubble: 'numeral', n: Math.max(2, s.n - 1), choices: 2, foils: 'far' };
+}
+
 /** The other numbers in a row: "far" ones are easy to tell apart (2+ away), "near" ones are the neighbours. */
 export function foilsFor(t, count, foils, n, rng = Math.random) {
   const top = Math.max(n + 1, 4);
