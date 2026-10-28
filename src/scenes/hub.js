@@ -20,13 +20,14 @@ import { nextStep, suggestNext, callFinale, ending, sayGoodbye } from '../sessio
 import { homeTaskKind } from '../session/home-task.js';
 import { confetti } from '../ui.js';
 import { takeUnseen } from '../adventure/rewards.js';
-import { addWorld, addEvent } from './hub-world.js';
+import { addWorld, addEvent, KITTEN_LAWN } from './hub-world.js';
 import { runMicroReward } from './hub-micro.js';
 import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
+const portrait = () => innerHeight > innerWidth;
 
 // Letter games on the left, number games on the right.
 const PLACES = {
@@ -53,7 +54,8 @@ export class Hub extends Stage {
     this.game = game;
     this.greet = greet;
     this.silent = silent; // behind the start screen: slow orbit, no talking
-    this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), minWidth: 40 };
+    // portrait: frame closer (the sides of the beach go, every place stays in view)
+    this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), get minWidth() { return portrait() ? 36.5 : 40; } };
     this.post = { tilt: 0.75, focus: 0.4, band: 0.34 }; // sharp where the places are, dreamy sea on top
     this.drift = 0.25;
   }
@@ -146,16 +148,17 @@ export class Hub extends Stage {
     // what she has done shows on the island (new things are revealed, but not behind the start screen)
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
-    // trees, bushes, houses, grass — kept off the roads and places
-    const keepOut = [[0, -10.5, 5], [0, 0, 4], ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
+    // trees, bushes, grass — kept off the roads, places, houses and the kittens' lawn; the same every visit
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
     const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
+    const rnd = seeded(20261028);
     let seed = 1;
     for (let i = 0; i < 140; i++) {
-      const a = Math.random() * Math.PI * 2, r = 5 + Math.sqrt(Math.random()) * 18;
+      const a = rnd() * Math.PI * 2, r = 5 + Math.sqrt(rnd()) * 18;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (!clear(x, z, 1.2) || (z > 9 && Math.abs(x) < 17) || (z > 4 && Math.abs(x) > 17)) continue;
-      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + Math.random() * 0.4 }); b.position.set(x, 0, z); s.add(b); continue; }
-      const t = makeTree({ scale: 0.95 + Math.random() * 0.6, seed: seed++ });
+      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); s.add(b); continue; }
+      const t = makeTree({ scale: 0.95 + rnd() * 0.6, seed: seed++ });
       t.position.set(x, 0, z);
       s.add(t);
     }
@@ -164,8 +167,8 @@ export class Hub extends Stage {
     for (let i = 0; i < 4; i++) s.add(makeButterfly({ center: [(i - 1.5) * 8, 4 + (i % 2) * 6], radius: 4, height: 1.4, color: ['#f472b6', '#fbbf24', '#60a5fa', '#a78bfa'][i] }));
     for (let i = 0; i < 4; i++) s.add(makeBird({ radius: 34 + i * 5, height: 20 + i * 2, speed: 0.08 + i * 0.01, seed: i * 1.7 }));
     for (let i = 0; i < 8; i++) {
-      const c = makeCloud({ scale: 2.4 + Math.random() * 1.8, seed: i * 13 });
-      c.position.set(-90 + i * 26, 26 + Math.random() * 10, -70 - Math.random() * 30);
+      const c = makeCloud({ scale: 2.4 + rnd() * 1.8, seed: i * 13 });
+      c.position.set(-90 + i * 26, 26 + rnd() * 10, -70 - rnd() * 30);
       c.userData.tick = (dt) => { c.position.x += dt * 0.6; if (c.position.x > 110) c.position.x = -110; };
       c.userData.mergeOK = true;
       s.add(c);
@@ -330,6 +333,7 @@ export class Hub extends Stage {
         big.rotation.y = Math.sin(t * 2 + p.pos.x) * 0.6;
         marker.position.y = my + Math.sin(t * 3 + p.pos.x) * 0.3;
       }
+      marker.scale.setScalar(portrait() ? 1.35 : 1);
       marker.lookAt(this.cameraPosition.x, marker.position.y, this.cameraPosition.z);
     });
     // invisible tap zone, so the landmark itself stays plain scenery (and can be merged into a few meshes)
@@ -527,6 +531,16 @@ export class Hub extends Stage {
     hush();
     this.game.startMission(kind);
   }
+}
+
+/** The same island every visit: a small seeded random (mulberry32). */
+function seeded(a) {
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 let haloTex = null;

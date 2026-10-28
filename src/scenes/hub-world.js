@@ -16,6 +16,8 @@ import { T } from '../lang/pl.js';
 
 // the lawn between Kitty Park (-15, -3), Balloon Hill (-13.5, 8) and the cruiser: off the roads, in plain view
 const KITTEN_SPOTS = [[-8.7, 2.7], [-10.6, 2.0], [-9.4, 4.2], [-12.0, 3.4], [-7.6, 4.3], [-11.0, 5.0]];
+/** [x, z, r] where the kittens play: the hub grows no trees there. */
+export const KITTEN_LAWN = [-9.8, 3.5, 2.6];
 const LOOKOUT = new THREE.Vector3(0, 0, -10.5);
 const BALLOON_ANGLES = [0.75, -0.8, 1.45, -1.5, 2.1];
 const BALLOON_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899'];

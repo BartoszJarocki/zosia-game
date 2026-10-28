@@ -120,6 +120,10 @@ export function hubHud() {
     if (!n) continue;
     shelf.append(el(`<div class="shelf-item">${badgeSVG(kind)}${n > 1 ? `<span>${n}</span>` : ''}</div>`));
   }
+  // a full shelf overlaps its badges a little instead of growing over the Lookout (each count stays on top)
+  const items = [...shelf.children];
+  shelf.style.setProperty('--n', items.length);
+  items.forEach((it, i) => { it.style.zIndex = items.length - i; });
   ui.append(shelf);
   // grown-ups: press and hold the shelf for 3 seconds to open their page (a child's tap does nothing)
   let t = null;

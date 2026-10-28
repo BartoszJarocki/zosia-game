@@ -61,7 +61,10 @@ svg { display: block; }
   background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 .shelf:empty { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; min-width: 84px; min-height: 84px; } /* invisible, still pressable */
-.shelf-item { position: relative; width: min(8vw, 8vh, 64px); }
+.shelf { --item: min(8vw, 8vh, 64px); --room: min(40vw, 460px); max-width: var(--room); }
+@media (orientation: portrait) { .shelf { --room: min(84vw, 680px); } } /* (the Lookout sits lower in portrait) */
+.shelf-item { position: relative; width: var(--item); flex: 0 0 auto; }
+.shelf-item + .shelf-item { margin-left: clamp(calc(var(--item) * -0.6), calc((var(--room) - 24px - var(--n) * var(--item)) / (var(--n) - 1) - 10px), 0px); }
 .shelf-item svg { width: 100%; filter: drop-shadow(0 4px 4px rgba(0,0,0,.25)); }
 .shelf-item span {
   position: absolute; right: -8px; bottom: -6px;
