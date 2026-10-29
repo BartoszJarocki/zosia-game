@@ -7,7 +7,7 @@ for (const p of [0.6, 0.9]) {
   for (let i = 0; i < 60; i++) {
     const c = simulateChild(p, 5000 + i);
     const la = c.skills.letterAudio || {};
-    const sounds = [...LEVELS.letters[5].pool];
+    const sounds = [...LEVELS.letters[7].pool];
     rows.push({ L2: c.levelAt?.letters2, L3: c.levelAt?.letters3, L4: c.levelAt?.letters4, L5: c.levelAt?.letters5, L6: c.levelAt?.letters6,
       soundsAvgAtEnd: averageMastery(c.skills, 'letterAudio', sounds).toFixed(2),
       perLetter: sounds.map((l) => `${l}:${(la[l]?.attempts || 0)}/${(la[l]?.mastery || 0).toFixed(2)}`).join(' ') });

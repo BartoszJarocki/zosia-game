@@ -17,6 +17,7 @@ import { meetsNeeds } from '../../src/levels/gate.js';
 import { scoreRun, applyRun } from '../../src/progress/levelup.js';
 import { CONFIG } from '../../src/config.js';
 import * as D from '../../src/session/director.js';
+import { gentler as gentlerRiver } from '../../src/levels/river.js';
 
 const MD = fs.readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8');
 const { levels: LEVELS, errors } = parseGame(MD, { childName: 'Zosia' });
@@ -31,13 +32,13 @@ const DAY = 86_400_000;
 
 function mulberry(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-// copied from src/levels.js (ASSIST) — a gentler run after lastAcc < 0.45
+// copied from src/levels.js (ASSIST), except the River's, which is imported: a gentler run after lastAcc < 0.45
 const ASSIST = {
   letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),
   balloons: (s) => ({ ...s, total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }),
   name: (s) => ({ ...s, mode: s.mode === 'missing' ? 'missing' : 'ghost', extras: s.mode === 'missing' ? 1 : 0, similar: false }),
-  cones: (s) => ({ ...s, choices: 3, bubble: 'both', sign: 'both' }),
-  stones: (s) => ({ ...s, bubble: 'numeral' }),
+  cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }),
+  stones: gentlerRiver, // the real one (src/levels/river.js has no DOM code)
   counting: (s) => ({ ...s, auto: true }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
