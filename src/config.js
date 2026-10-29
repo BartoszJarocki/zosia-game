@@ -59,7 +59,7 @@ export const WORDS = {
   B: [['banan', '🍌'], ['balon', '🎈']],
   C: [['cytryna', '🍋'], ['cukierek', '🍬']],
   D: [['dom', '🏠'], ['dinozaur', '🦕']],
-  E: [['Everest', '🏔️'], ['ekran', '📺']],
+  E: [['ekran', '📺']], // (Everest 🏔️ was tried: she would say "góra" to the picture, a wrong answer in Pup Delivery)
   F: [['foka', '🦭'], ['fala', '🌊']],
   G: [['gitara', '🎸'], ['góra', '⛰️']],
   H: [['hipopotam', '🦛'], ['helikopter', '🚁']],
