@@ -508,7 +508,7 @@ class WhoseTrain extends Mission {
         if (!this.alive) return;
         let solved = false;
         const right = () => this.trains.find((t) => t.userData.word === asked);
-        this.question('letterVisual', asked, {
+        this.question('wordVisual', asked, {
           short: T.whoseAsk(whose),
           hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); this.honk(right()); return Promise.resolve(); }, // the name in the bubble (now she can match it) and a toot, no words
           simplify: () => { const t = this.trains.find((x) => x.userData.word !== asked && x.parent && x.userData.onTap); if (t && this.trains.filter((x) => x.userData.onTap).length > 2) this.leave([t]); },
@@ -519,7 +519,7 @@ class WhoseTrain extends Mission {
           if (solved) return;
           this.poke();
           this.lookAt(t.userData.board);
-          if (t.userData.word !== asked) { this.wrong(t.userData.word, { feedback: false }); this.honk(right()); return; }
+          if (t.userData.word !== asked) { this.wrong(t.userData.word, { feedback: false, quiet: true }); this.honk(right()); return; } // (no "no" near her name: just the right train toots)
           solved = true;
           this.correct(asked);
           this.stopIdle();

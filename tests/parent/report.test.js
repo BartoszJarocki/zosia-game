@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize, itemReports, overview, maxNumber, LETTER_SKILLS, FEW } from '../../src/parent/report.js';
+import { summarize, itemReports, overview, maxNumber, LETTER_SKILLS, WORD_SKILLS, GARAGE_SKILLS, metItems, FEW } from '../../src/parent/report.js';
 import { emptyStat } from '../../src/learning/mastery.js';
 
 const stat = (o) => ({ ...emptyStat(), ...o });
@@ -139,4 +139,9 @@ test('missionStatus: good runs to the next star, the last run, gentler or not', 
   assert.equal(top.next, 'top level');
   assert.equal(top.gentle, true);
   assert.equal(missionStatus({ level: 1, max: 4, lastAcc: 1, runs: 0 }).last, 'not played yet');
+});
+
+test('names and Garage items are listed as she meets them', () => {
+  const skills = { wordVisual: { ZOSIA: stat({ attempts: 2 }), MAMA: stat({ attempts: 1 }) }, shape: { circle: stat({ attempts: 1 }) }, sorting: { red: stat({ attempts: 3 }) } };
+  assert.deepEqual([metItems(skills, WORD_SKILLS), metItems(skills, GARAGE_SKILLS), metItems({}, WORD_SKILLS)], [['ZOSIA', 'MAMA'], ['circle', 'red'], []]);
 });

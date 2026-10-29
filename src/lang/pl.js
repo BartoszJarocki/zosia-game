@@ -1,7 +1,7 @@
 // Everything the game says, in Polish.
 // Each phrase returns a list of short segments; every segment is one pre-recorded clip.
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
-import { CONFIG, WORDS, letterWord, letterName, sayWord } from '../config.js';
+import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
@@ -151,20 +151,19 @@ export const T = {
   letter: (l) => [`${L(l)}!`],
 
   // Kitty Park
-  kittyAsk: (l) => [`Kotek schował się za literą ${L(l)}! Znajdź ${L(l)}! ${L(l)} jak ${word(l)}!`],
-  kittyFound: (l) => [`Znalazłaś kotka! ${L(l)} jak ${word(l)}!`],
+  kittyFound: (l, w = word(l)) => [`Znalazłaś kotka! ${L(l)} jak ${w}!`],
   // Kitty Park V2: how each level asks
   kittyHid: () => ['Kotek się schował!'],
   kittyMatch: () => ['Kotek schował się za taką literką! Znajdź taką samą!'],
   findSame: () => ['Znajdź taką samą literkę!'],
   whichSound: (l) => [`Która literka robi: ${ph(l)}?`],
-  soundLike: (l) => [`${cap(ph(l))}… jak ${word(l)}!`],
+  soundLike: (l, w = word(l)) => [`${cap(ph(l))}… jak ${w}!`],
   soundIs: (l) => [`${cap(ph(l))}… to ${L(l)}!`],
   kittensPlay: () => [`Uratowałaś wszystkie kotki, ${voc}! Teraz bawią się razem!`], // (the end: they play in a ring)
 
   // Balloon Hill
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
-  balloonDone: (l) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${word(l)}!`],
+  balloonDone: (l, w = word(l)) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${w}!`],
 
   // Name Train
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
@@ -318,10 +317,12 @@ export function allSegments(levels, allLetters) {
   nums.slice(1, riverN).forEach((n) => { add(T.riverCounted(n)); add(T.riverAfter(n - 1)); });
   [1, 2, 3].forEach((k) => add(T.tooManyBack(k))); // (Treat House: at most three extra treats from the pile)
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.letterLike(l)); add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.kittyFound(l)); add(T.balloonAsk(l)); add(T.balloonDone(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.spellNext(l)); });
+  // every word a grown-up can pick for a letter (#parent) is recorded, so the voice never changes
+  letters.forEach((l) => wordChoices(l).forEach(([w]) => { add(T.letterLike(l, w)); add(T.kittyFound(l, w)); add(T.balloonDone(l, w)); }));
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
-  sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundLike(l)); add(T.soundIs(l)); });
+  sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundIs(l)); wordChoices(l).forEach(([w]) => add(T.soundLike(l, w))); });
   // Pup Delivery: every letter its levels can ask
   new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); (WORDS[l] || []).forEach(([w]) => { add(T.whichBox(w)); add(T.letterLike(l, w)); }); });
   // Name Train: each row's words, their syllables, and whose they are; letters only names use (Y) get the train's lines

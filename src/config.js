@@ -83,7 +83,21 @@ export const WORDS = {
  * A letter's own word, [word, picture]. Her letter's is her name: "Zet jak Zosia!" (said, never a picture to
  * name, so Pup Delivery keeps to WORDS). No such word for the pup: in Polish "Chase" starts with "cz", not C.
  */
-export const letterWord = (l) => (CONFIG.childName && l === CONFIG.childName[0].toUpperCase() ? [CONFIG.childName, '👧'] : WORDS[l]?.[0] || ['', '']);
+export const letterWord = (l) => {
+  const all = wordChoices(l);
+  return all.find(([w]) => w === chosenWords()[l]) || all[0] || ['', ''];
+};
+
+/** The words a letter can go with (her name first for her letter); a grown-up picks one on #parent. All are recorded. */
+export const wordChoices = (l) => [...(CONFIG.childName && l === CONFIG.childName[0].toUpperCase() ? [[CONFIG.childName, '👧']] : []), ...(WORDS[l] || [])];
+const WORDS_KEY = 'pup-patrol-words';
+/** { B: 'balon' }: the parent's picks (kept apart from her progress; missing or broken = the first word). */
+export function chosenWords() {
+  try { return JSON.parse(globalThis.localStorage?.getItem(WORDS_KEY) || '{}') || {}; } catch { return {}; }
+}
+export function chooseWord(l, word) {
+  try { globalThis.localStorage?.setItem(WORDS_KEY, JSON.stringify({ ...chosenWords(), [l]: word })); } catch {}
+}
 
 export const letterName = (l) => LETTER_NAMES[l.toUpperCase()] || l;
 export const showLetter = (l) => (CONFIG.lowercase ? l.toLowerCase() : l);

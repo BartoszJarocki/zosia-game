@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
-import { WORDS, LETTER_NAMES } from '../../src/config.js';
+import { WORDS, LETTER_NAMES, letterWord, chooseWord } from '../../src/config.js';
 import { T, allSegments } from '../../src/lang/pl.js';
 
 const { levels, letterSets } = parseGame(readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8'), { childName: 'Zosia' });
@@ -41,4 +41,23 @@ test('voice lines: Delivery needs every picture word of its letters, and never h
   assert.ok(lines.includes('Do której skrzynki pójdzie zamek?'));
   assert.ok(lines.includes('Zet jak zamek!'));
   assert.ok(!lines.includes('Do której skrzynki pójdzie Zosia?'));
+});
+
+test('a picture word picked on #parent is the one a letter goes with; an unknown pick falls back to the first', () => {
+  const store = {};
+  globalThis.localStorage = { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } };
+  try {
+    assert.deepEqual(letterWord('B'), ['banan', '🍌']);
+    chooseWord('B', 'balon');
+    assert.deepEqual([letterWord('B'), T.letterLike('B')], [['balon', '🎈'], ['Be jak balon!']]);
+    chooseWord('B', 'rower');
+    assert.deepEqual(letterWord('B'), ['banan', '🍌']);
+    assert.deepEqual(letterWord('Z'), ['Zosia', '👧'], 'her letter: her name, until a grown-up picks another');
+  } finally { delete globalThis.localStorage; }
+});
+
+test('every pickable picture word is recorded with the lines that say it', () => {
+  const { levels, letterSets } = parseGame(readFileSync('GAME.md', 'utf8'), { childName: 'Zosia' });
+  const lines = new Set(allSegments(levels, letterSets.ALL));
+  for (const line of ['Be jak balon!', 'Znalazłaś kotka! Be jak balon!', 'Wszystkie balony z literą Be! Be jak balon!']) assert.ok(lines.has(line), line);
 });

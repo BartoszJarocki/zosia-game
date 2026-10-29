@@ -17,8 +17,14 @@ export const NUMBER_SKILLS = [
 /** Pup Picnic: more / less / the same (items: the mode, '#' when the groups showed numerals). */
 export const COMPARE_SKILLS = [['comparison', 'compares']];
 export const COMPARE_ITEMS = ['more', 'less', 'same', 'more#', 'less#', 'same#'];
+/** Name Train "Który pociąg jest Zosi?": finding a whole name among others (items: the names). */
+export const WORD_SKILLS = [['wordVisual', 'finds it']];
+/** The Garage: shapes, what comes next in a row, sorting by colour or size (items: what was asked). */
+export const GARAGE_SKILLS = [['shape', 'shape'], ['pattern', 'pattern'], ['sorting', 'sorting']];
+/** The items a skill group has actually met (names and Garage items aren't a fixed list). */
+export const metItems = (skills, list) => [...new Set(list.flatMap(([skill]) => Object.keys(skills?.[skill] || {})))];
 const COMPARE_WORDS = { more: 'more', less: 'less', same: 'the same' };
-const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS]);
+const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS]);
 
 /** How an item reads for a grown-up: 4, B, "less (with numbers)". */
 export function itemLabel(skill, item) {
@@ -32,7 +38,7 @@ export function itemLabel(skill, item) {
  * three things to pick from for letters and numbers, two for order and more/less. Giving a number of treats
  * can't be guessed. (An estimate: the saved stats don't keep how many options each question had.)
  */
-export const GUESS = { letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2 };
+export const GUESS = { letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2, wordVisual: 1 / 3, shape: 1 / 3, pattern: 1 / 3, sorting: 1 / 2 };
 export const chancePct = (skill) => Math.round(100 * (GUESS[skill] ?? 1 / 3));
 
 /** Fewer answers than this: shown, but marked as "not much to go on yet". */

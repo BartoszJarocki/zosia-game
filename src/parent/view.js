@@ -4,9 +4,9 @@ import { getSkills, getSessions, levelFor, assistFor, dev as progressDev } from 
 import { SKILLS } from '../learning/events.js';
 import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
-import { CONFIG, showLetter } from '../config.js';
+import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
-import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
+import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
 
@@ -67,6 +67,17 @@ function sessionsList(recent) {
     const names = s.missions.map((k) => esc(MISSION_INFO[k]?.title || k)).join(' → ');
     return `<li><b>${esc(when)}</b> · about ${mins} min · ${names}${s.finale ? ' · finale ✓' : ''}${s.early ? ' · wound down early' : ''}</li>`;
   }).join('')}</ul>`;
+}
+
+/** Each letter's picture words; the lit one is what Kitty Park and Balloon Hill say ("Be jak banan"). */
+function pictureWords() {
+  const picked = chosenWords();
+  return [...ALL_LETTERS].map((l) => {
+    const all = wordChoices(l);
+    if (all.length < 2) return '';
+    const on = (all.find(([w]) => w === picked[l]) || all[0])[0];
+    return `<div class="pv-word"><b>${esc(label(l))}</b>${all.map(([w, pic]) => `<button class="pv-chip${w === on ? ' on' : ''}" data-letter="${l}" data-word="${esc(w)}">${pic} ${esc(w)}</button>`).join('')}</div>`;
+  }).join('');
 }
 
 const chips = (list) => (list.length
@@ -217,14 +228,25 @@ export function showParentView({ onClose }) {
 
     <section><h2>Letters</h2>${never.length ? `<p class="pv-never">Never asked yet: <b>${never.length} of ${ALL_LETTERS.length}</b> letters (${never.map((l) => esc(label(l))).join(' ')}). New letters come in as she levels up.</p>` : ''}
       ${grid(itemReports(skills, LETTER_SKILLS, [...ALL_LETTERS]))}</section>
+    <section><h2>Picture words <small class="pv-build">Kitty Park, Balloon Hill</small></h2>
+      <p class="pv-never">Tap the word she knows best for each letter. Every word is recorded, so the voice stays the same.</p>
+      <div class="pv-words">${pictureWords()}</div></section>
     <section><h2>Numbers</h2>${grid(itemReports(skills, NUMBER_SKILLS, nums))}</section>
     <section><h2>More, less, the same <small class="pv-build">Pup Picnic</small></h2>${grid(itemReports(skills, COMPARE_SKILLS, COMPARE_ITEMS), (r) => itemLabel('comparison', r.item))}</section>
+    ${metItems(skills, WORD_SKILLS).length ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${grid(itemReports(skills, WORD_SKILLS, metItems(skills, WORD_SKILLS)), (r) => r.item)}</section>` : ''}
+    ${metItems(skills, GARAGE_SKILLS).length ? `<section><h2>Shapes, patterns, sorting <small class="pv-build">Garage</small></h2>${grid(itemReports(skills, GARAGE_SKILLS, metItems(skills, GARAGE_SKILLS)), (r) => r.item)}</section>` : ''}
 
     <p class="pv-devlink"><button class="pv-link">Developer tools</button></p>
     ${devTools()}
   `;
   page.querySelector('.pv-close').addEventListener('click', onClose);
   page.querySelector('.pv-copy').addEventListener('click', (e) => copyProgress(e.currentTarget));
+  page.querySelector('.pv-words').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-word]');
+    if (!b) return;
+    chooseWord(b.dataset.letter, b.dataset.word);
+    b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+  });
   const tools = page.querySelector('.pv-dev');
   page.querySelector('.pv-link').addEventListener('click', () => { tools.hidden = !tools.hidden; if (!tools.hidden) tools.scrollIntoView({ behavior: 'smooth' }); });
   // after a developer action: redraw the page, keeping the tools open

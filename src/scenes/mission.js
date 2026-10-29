@@ -179,15 +179,17 @@ export class Mission extends Stage {
    * does Chase, "Nie, to nie ten."), then the question again or the next step of help.
    * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
    */
-  wrong(chosen, { obj = null, said = null, feedback = true } = {}) {
+  wrong(chosen, { obj = null, said = null, feedback = true, quiet = false } = {}) {
     const at = performance.now();
     if (isBounce(this.lastWrong, chosen, at)) return; // the same finger landing twice: no sound, no count, no help
     this.lastWrong = { chosen, at };
     this.miss();
     this.learn.wrong({ chosen });
-    sfx.no();
-    if (obj) shakeNo(obj);
-    if (this.pup) shakeNo(this.pup, { amp: 0.6 });
+    if (!quiet) { // quiet: it still counts, but the scene answers in its own gentle way (no tone, no head shakes)
+      sfx.no();
+      if (obj) shakeNo(obj);
+      if (this.pup) shakeNo(this.pup, { amp: 0.6 });
+    }
     if (!this.aid) return;
     const action = onWrong(this.aid.state);
     onActivity(this.aid.state);

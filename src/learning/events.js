@@ -13,6 +13,7 @@ export const SKILLS = Object.freeze([
   'sequence',     // order: what comes next / one more, one less
   'comparison',   // more / less / same
   'shape', 'pattern', 'sorting', // the Garage: find a shape · what comes next in a row · sort by colour or size
+  'wordVisual',   // find a whole word she can see (Name Train: "Który pociąg jest Zosi?")
 ]);
 
 /** Why an attempt didn't succeed. Only wrongChoice says something about knowledge. */
