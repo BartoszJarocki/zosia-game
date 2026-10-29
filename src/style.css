@@ -56,6 +56,8 @@ svg { display: block; }
   animation: breathe 1.6s ease-in-out infinite;
 }
 .play svg { width: 62%; filter: drop-shadow(0 4px 0 rgba(0,0,0,.2)); }
+.play.busy { filter: saturate(.4) brightness(1.1); }
+.play.busy svg { animation: spin 1.4s linear infinite; }
 
 /* ---------- hub badge shelf ---------- */
 .shelf {

@@ -37,12 +37,22 @@ async function openParentPage() {
 }
 import { registerSW } from 'virtual:pwa-register';
 
-// Offline + installable. A new version is switched in only while the start screen is showing,
-// never in the middle of a mission; otherwise it waits for the next launch.
-let started = false;
+// Offline + installable. A new version is switched in only while the start screen is showing, never in the
+// middle of a mission. She taps play at once, often before the browser has even looked for a new version, so
+// the app looks at launch and the paw waits while a new version downloads (once per update, at most 20 s).
+let started = false, waitForUpdate = null;
 const updateSW = registerSW({
   immediate: true,
-  onNeedRefresh() { if (!started) updateSW(true); },
+  onNeedRefresh() { if (!started) updateSW(true); }, // (reloads into it)
+  onRegisteredSW(_, r) {
+    if (!r || !navigator.serviceWorker.controller) return; // (the very first install never holds her up)
+    const check = r.update().then(() => {
+      const w = r.installing;
+      if (w) return new Promise((failed) => w.addEventListener('statechange', () => w.state === 'redundant' && failed()));
+    }).catch(() => {}); // (offline)
+    waitForUpdate = Promise.race([check, new Promise((giveUp) => setTimeout(giveUp, 20000))]);
+    check.then(() => { waitForUpdate = null; });
+  },
 });
 
 const MISSIONS = {
@@ -84,7 +94,8 @@ async function boot() {
 
   // The hub slowly orbits behind the start button; a tap unlocks sound + speech.
   setStage(new Hub(game, { silent: true }));
-  ui.showStart(() => {
+  ui.showStart(async () => {
+    if (waitForUpdate) { ui.startBusy(); await waitForUpdate; } // (a finished download reloads the page before this)
     started = true;
     startSession();
     applyDevNext();

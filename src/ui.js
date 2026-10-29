@@ -101,6 +101,9 @@ export function buildLabel() {
   return [b.sha, when].filter(Boolean).join(' · ');
 }
 
+/** The paw is busy: a new version is still downloading (the page switches to it in a moment). */
+export function startBusy() { document.querySelector('.start .play')?.classList.add('busy'); }
+
 export function showStart(onGo) {
   clear();
   const s = el(`<div class="start">
