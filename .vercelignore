@@ -2,3 +2,4 @@
 node_modules
 voice-samples
 tools/playtest
+.claude
