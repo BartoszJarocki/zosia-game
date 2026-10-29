@@ -95,11 +95,11 @@ async function boot() {
   // The hub slowly orbits behind the start button; a tap unlocks sound + speech.
   setStage(new Hub(game, { silent: true }));
   ui.showStart(async () => {
+    unlockAudio(); // (iOS allows sound only inside her tap, so before any waiting)
     if (waitForUpdate) { ui.startBusy(); await waitForUpdate; } // (a finished download reloads the page before this)
     started = true;
     startSession();
     applyDevNext();
-    unlockAudio();
     sfx.bark();
     game.hub({ greet: true });
   });
