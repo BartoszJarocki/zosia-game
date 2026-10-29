@@ -26,6 +26,10 @@ await page.addInitScript(([kind, level]) => {
   const log = (window.__timeline = []);
   const say = (window.__sayLog = []);
   say.push = (text) => { log.push({ t: T(), type: 'say', text }); return Array.prototype.push.call(say, text); };
+  // the celebration goes back to the island by itself now, so note the moment it shows rather than look for it later
+  document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => {
+    if (!window.__celebrated && document.querySelector('.celebrate')) { window.__celebrated = true; log.push({ t: T(), type: 'me', text: 'celebration' }); }
+  }).observe(document.body, { childList: true, subtree: true }));
   const AC = window.AudioContext || window.webkitAudioContext;
   const osc = AC.prototype.createOscillator;
   AC.prototype.createOscillator = function () {
@@ -161,7 +165,7 @@ for (let r = 0; r < 16; r++) { // (rounds past the plan: right answers, so long 
   await page.waitForTimeout(300); await snap(`r${r + 1}-tapped-right`);
   await page.waitForTimeout(1200);
 }
-await page.waitForSelector('.celebrate', { timeout: 60000 }).then(() => mark('celebration'), () => mark('no celebration within 60 s'));
+await page.waitForFunction(() => window.__celebrated, null, { timeout: 60000 }).catch(() => mark('no celebration within 60 s'));
 await page.waitForTimeout(2500);
 await snap('end');
 const timeline = await st(() => window.__timeline);

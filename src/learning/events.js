@@ -35,7 +35,7 @@ export const ERROR_TYPES = Object.freeze([
  * @property {0|1|2|3} assistLevel strongest help shown so far: 0 none · 1 question repeated · 2 clue · 3 answer revealed
  * @property {number} attempt      1-based attempt number within the question (miss taps and timeouts don't count)
  * @property {boolean} scored      false for a question that can't really be got wrong (it says nothing about her)
- * @property {number} [options]    how many things she could pick from (for telling knowing from guessing)
+ * @property {number} [options]    how many things she could pick from per right one (for telling knowing from guessing)
  * @property {string} [errorType]  one of ERROR_TYPES, only when correct is false
  * @property {string} [chosen]     what she picked instead (for confusions like B ↔ P)
  * @property {number} [level]      mission level
@@ -68,7 +68,7 @@ export function makeEvent(e) {
     scored: e.scored !== false,
     at: Number(e.at) || Date.now(),
   };
-  if (Number.isInteger(e.options) && e.options >= 1) out.options = e.options;
+  if (Number.isFinite(e.options) && e.options >= 1) out.options = Math.round(e.options * 100) / 100; // (7 balloons, 3 of them right: 2.33)
   if (e.errorType) out.errorType = e.errorType;
   if (e.chosen !== undefined && e.chosen !== null) out.chosen = String(e.chosen);
   if (Number.isInteger(e.level)) out.level = e.level;

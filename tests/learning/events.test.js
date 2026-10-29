@@ -69,9 +69,13 @@ test('bus never throws into gameplay: invalid events and failing listeners are r
   assert.equal(problems.length, 2);
 });
 
-test('scored and options: scored unless marked otherwise; options kept only when it is a count', () => {
+test('scored and options: scored unless marked otherwise; options kept only when it is a number of at least 1', () => {
   assert.equal(makeEvent(base).scored, true);
   assert.equal(makeEvent({ ...base, scored: false }).scored, false);
   assert.equal(makeEvent({ ...base, options: 3 }).options, 3);
-  for (const options of [0, 2.5, '3', null]) assert.equal('options' in makeEvent({ ...base, options }), false, String(options));
+  for (const options of [0, '3', null, NaN]) assert.equal('options' in makeEvent({ ...base, options }), false, String(options));
+});
+
+test('options per right answer may be a fraction (7 balloons, 3 of them right), and nonsense is dropped', () => {
+  assert.deepEqual([makeEvent({ ...base, options: 7 / 3 }).options, makeEvent({ ...base, options: 3 }).options, makeEvent({ ...base, options: 0 }).options, makeEvent({ ...base, options: 'x' }).options], [2.33, 3, undefined, undefined]);
 });
