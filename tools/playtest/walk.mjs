@@ -1,6 +1,6 @@
 // Plays one mission on the production build the way a parent would and writes a timeline:
 // every spoken line, every synth sound, every speech clip (and whether it was cut off), taps, learning events.
-// usage: node walk.mjs <mission> <level> [quality]
+// usage: [VIDEO=1] node walk.mjs <mission> <level> [quality]
 import { chromium } from 'playwright-core';
 import { mkdirSync as mkdirTmp } from 'node:fs';
 // Chromium's GPU process needs writable temp space; /tmp can be a full per-user tmpfs, which crashes WebGL
@@ -16,7 +16,8 @@ const BASE = process.env.BASE || 'https://pup-patrol-theta.vercel.app';
 const URL_ = `${BASE}/?q=${quality}`;
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
-const page = await browser.newPage({ viewport: { width: 1180, height: 820 } });
+// VIDEO=1 also films the run (a .webm in the run's folder), for a grown-up to watch
+const page = await browser.newPage({ viewport: { width: 1180, height: 820 }, ...(process.env.VIDEO ? { recordVideo: { dir: OUT, size: { width: 1180, height: 820 } } } : {}) });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
@@ -159,8 +160,12 @@ for (let r = 0; r < 16; r++) { // (rounds past the plan: right answers, so long 
     for (let i = 0; i < 5; i++) { const p = (await options()).find((o) => o.label === 'plate' && o.right); if (!p) break; await tap(p, `plate ${i + 1}`); await page.waitForTimeout(800); }
   } else if ((kind === 'moon' || kind === 'blackhole') && q.skill === 'counting') {
     // she makes N happen (jumps, pebbles), one at a time, then taps the flag or button if the round waits for her
+    // like her: keep going until there are N (footprints or lit beads), not a fixed number of taps
     const n = Number(q.item), label = kind === 'moon' ? 'Chase' : 'pebble';
-    for (let i = 0; i < n; i++) { const o = (await options()).find((x) => x.label === label); if (!o) break; await tap(o, `${label} ${i + 1}/${n}`); await page.waitForTimeout(kind === 'moon' ? 1800 : 1000); }
+    const count = () => st(() => { const s = window.__pup.getStage(); return (s.prints || s.beads || []).length; });
+    let taps = 0;
+    for (; taps < n * 3 && (await count()) < n; taps++) { const o = (await options()).find((x) => x.label === label); if (!o) break; await tap(o, `${label} (${await count()} of ${n} so far)`); await page.waitForTimeout(kind === 'moon' ? 1800 : 350); }
+    if (kind === 'blackhole' && taps > n) await mark(`EXTRA TAPS: ${taps} quick taps for ${n} pebbles (taps were lost)`);
     await page.waitForTimeout(1500);
     const done = (await options()).find((x) => x.label === 'done');
     const open = await st((item) => { const s = window.__pup.getStage(); return s.learn?.isOpen && s.learn.current.item === item; }, q.item);

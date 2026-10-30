@@ -88,6 +88,7 @@ export const HOME_TASKS = {
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
+  blackhole: 'Policz z mamą kamyki na spacerze!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
@@ -172,6 +173,17 @@ export const T = {
   moonWatch: () => ['Patrz, jak skacze!'],
   moonHowMany: () => ['Ile było skoków?'],
   moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
+  blackholeStart: () => ['Patrzymy przez okno rakiety. Czarna dziura jest bardzo daleko.'],
+  blackholeDrop: (n) => [`Wypuść ${NUM[n]} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
+  blackholeDropShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
+  blackholeHelp: () => ['Dotknij kamyka, to poleci!'],
+  blackholeGlow: () => ['Czarna dziura świeci jak lampka!'],
+  blackholeButton: () => ['Dotknij guzika, kiedy skończysz!'],
+  blackholeTooFew: () => ['Za mało! Wypuść jeszcze!'],
+  blackholeTooMany: () => ['Za dużo! Teraz dobrze? Dotknij guzika!'],
+  blackholeWatch: () => ['Patrz, jak lecą!'],
+  blackholeHowMany: () => ['Ile kamyków wpadło?'],
+  blackholeDone: () => ['Brawo! Czarna dziura świeci od twoich kamyków!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -420,5 +432,7 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
+  nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
+  [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
   return [...new Set(out)];
 }

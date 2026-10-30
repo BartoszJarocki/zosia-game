@@ -53,7 +53,7 @@ export const PLACES = {
   uranus: { area: 'space', game: false, domain: 'space' },
   neptune: { area: 'space', game: false, domain: 'space' },
   pluto: { area: 'space', game: false, domain: 'space' },
-  blackhole: { area: 'space', game: false, domain: 'space' },
+  blackhole: { area: 'space', game: true, domain: 'numbers', badge: { label: '✨', color: '#7c3aed' } },
   comet: { area: 'space', game: false, domain: 'space' },
   stars: { area: 'space', game: false, domain: 'space' },
 };

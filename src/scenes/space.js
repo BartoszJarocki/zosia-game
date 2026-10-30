@@ -164,7 +164,7 @@ function makePlanet(b, face, r) {
   return g;
 }
 
-function makeBlackHole(b, face, R) {
+export function makeBlackHole(face, R) {
   const g = new THREE.Group();
   g.add(mesh(new THREE.SphereGeometry(R, 40, 28), new THREE.MeshBasicMaterial({ color: '#150b2e' }), { shadow: false }));
   const front = new THREE.Group();
@@ -172,6 +172,7 @@ function makeBlackHole(b, face, R) {
   front.userData.dynamic = true;
   g.add(front);
   front.add(mesh(new THREE.TorusGeometry(R * 1.03, R * 0.07, 10, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd27a').multiplyScalar(1.3) }), { shadow: false }));
+  g.userData.ring = front.children[0];
   const tilt = new THREE.Group();
   tilt.rotation.set(-1.18, 0, 0.18);
   front.add(tilt);
@@ -551,7 +552,7 @@ export class Space extends Stage {
   addStop(kind) {
     const { r, at } = LAYOUT[kind];
     const b = { id: kind, glow: '#e0d7ff', ...RINGS[kind] };
-    const g = kind === 'sun' ? makeSun(r) : kind === 'blackhole' ? makeBlackHole(b, this.face, r)
+    const g = kind === 'sun' ? makeSun(r) : kind === 'blackhole' ? makeBlackHole(this.face, r)
       : kind === 'comet' ? makeComet(this.face, r) : kind === 'stars' ? makeStars(this.face, r) : makePlanet(b, this.face, r);
     g.position.set(at[0], r * 0.55, at[2]);
     g.userData.dynamic = true;

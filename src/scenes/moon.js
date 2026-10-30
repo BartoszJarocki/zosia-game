@@ -7,8 +7,8 @@ import { sparkle } from '../fx/particles.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { shuffle } from '../util.js';
-import { moonRounds, numbersIn, countVerdict, neighbours } from '../levels/moon.js';
+import { numberChoices } from '../levels.js';
+import { moonRounds, numbersIn, countVerdict } from '../levels/moon.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
@@ -289,7 +289,8 @@ export class MoonMission extends Mission {
       p.material.color.set(LIT);
       this.say(T.number(++tapped));
     }));
-    this.blocks = shuffle(neighbours(n)).map((num, i) => {
+    const max = Math.max(this.L.howMany[1] + 1, n + 1);
+    this.blocks = numberChoices(n, max, 3, true).map((num, i) => {
       const map = glyphTexture(String(num), { bg: TILE_COLORS[i], dots: this.L.slots ? num : 0 });
       this.maps.push(map);
       const b = mesh(rbox(1.35, 1.35, 1.35, 0.16), new THREE.MeshStandardMaterial({ map, roughness: 0.6 }), { x: (i - 1) * 2.15, y: 0.675, z: 3.7, shadow: false });

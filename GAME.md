@@ -322,6 +322,35 @@ jump leaves a pair of footprints in a row, so she can count the jumps afterwards
   but unscored, so every level includes howMany. Manual jumps practise producing a number (`counting`);
   howMany practises `quantity`.
 
+### 🕳️ The Black Hole · `blackhole`
+
+Through the rocket's golden window, she sends friendly space pebbles towards a small, distant black
+hole in a bright violet sky. Each pebble spirals gently into its glowing ring and lights one bead
+under the window, so she can still count what she sent. Chase stays in the rocket and cheers.
+
+| Level | types | drop | howMany | auto | slots | rounds |
+|---|---|---|---|---|---|---|
+| 1 | drop, howMany | 1–3 | 1–3 | yes | yes | 3 |
+| 2 | drop, howMany | 1–4 | 1–4 | yes | no | 3 |
+| 3 | drop, howMany | 2–6 | 2–5 | no | no | 4 |
+| 4 | drop, howMany | 3–8 | 3–7 | no | no | 4 |
+
+- **types**: the Moon's round order. Each kind appears, kinds alternate, and the last round is
+  always `drop` with auto on. `drop` asks "Wypuść trzy kamyki!": tap a pebble or drag it towards
+  the window. One floats away at a time, with each new bead counted aloud. `howMany` sends N
+  pebbles silently, then asks "Ile kamyków wpadło?" She can tap each bead to count before choosing
+  the numeral. Choices are one less and one more, using another positive number when N is 1.
+  The beads then glow one by one and are counted to her number.
+- **drop** / **howMany**: the number ranges, up to 9.
+- **auto**: `yes` finishes at N lit beads. With `no`, she taps the rocket's big button to check.
+  Too few: "Za mało! Wypuść jeszcze!" Too many: the extra beads go dark and she hears
+  "Za dużo! Teraz dobrze? Dotknij guzika!" She taps the button again herself.
+- **slots**: `yes` shows unlit bead outlines and dots under the numerals. With `no`, help can
+  reveal the outlines. A gentler run turns auto and slots on.
+- **rounds**: tasks per mission, 1 to 8, at least one per kind. Automatic drops are unscored,
+  so every level includes a scored `howMany` round. Manual drops practise `counting`;
+  choosing the numeral practises `quantity`.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { moonRounds, numbersIn, countVerdict, neighbours } from '../../src/levels/moon.js';
+import { moonRounds, numbersIn, countVerdict } from '../../src/levels/moon.js';
 import { parseGame } from '../../src/levels/parse.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
@@ -34,13 +34,10 @@ test('Moon rounds alternate when possible and always finish with automatic jumps
   assert.deepEqual(moonRounds({ types: ['jump'], rounds: 1, auto: false }), [{ type: 'jump', auto: true }]);
 });
 
-test('Moon ranges include both ends; neighbour choices include zero for one jump', () => {
+test('Moon ranges include both ends', () => {
   assert.deepEqual(numbersIn([1, 3]), [1, 2, 3]);
   assert.deepEqual(numbersIn([3, 7]), [3, 4, 5, 6, 7]);
   assert.deepEqual(numbersIn([9, 9]), [9]);
-  assert.deepEqual(neighbours(1), [0, 1, 2]);
-  assert.deepEqual(neighbours(6), [5, 6, 7]);
-  assert.deepEqual(neighbours(9), [8, 9, 10]);
 });
 
 test('manual counts need another flag tap after extras have faded', () => {
