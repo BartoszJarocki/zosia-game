@@ -87,6 +87,7 @@ export const HOME_TASKS = {
   delivery: 'Znajdź w domu coś na Em, jak mama!',
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
+  moon: 'Poszukaj z mamą Księżyca na niebie!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
@@ -113,9 +114,9 @@ export const SPACE_LINES = {
   inviteHome: ['Czas wracać do domu! Polecimy na Ziemię?'],
   far: ['Lecimy daleko, daleko!'],
   sunglasses: [`${pup} zakłada okulary przeciwsłoneczne!`],
-  ...Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, [`Może polecimy ${to}?`]])),
 };
 
+export const SPACE_INVITE = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, [`Może polecimy ${to}?`]]));
 export const SPACE_TO = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, `Lecimy ${to}!`]));
 
 export const SPACE_PASS = {
@@ -160,6 +161,17 @@ export const T = {
   asleep: () => [`${pup} śpi… Do jutra!`],
   // the celebration, after the badge line ("again" or the island?)
   againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
+  againOrSpace: () => ['Jeszcze raz czy lecimy dalej?'],
+  moonStart: () => ['Jesteśmy na Księżycu! Tu skacze się wysoko i powoli.'],
+  moonJump: (n) => [`Skocz ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
+  moonJumpShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'raz' : 'razy'}!`],
+  moonHelp: () => [`Dotknij ${pupGen}, to skoczy!`],
+  moonFlag: () => ['Dotknij flagi, kiedy skończysz!'],
+  moonTooFew: () => ['Za mało! Skacz dalej!'],
+  moonTooMany: () => ['Za dużo! Teraz dobrze? Dotknij flagi!'],
+  moonWatch: () => ['Patrz, jak skacze!'],
+  moonHowMany: () => ['Ile było skoków?'],
+  moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -402,8 +414,11 @@ export function allSegments(levels, allLetters) {
   Object.keys(SIZE).forEach((sz) => { add(T.block('size', sz)); add(T.into('size', sz)); add(T.noBasket('size', sz)); });
   [T.doorBroken, T.shapeFits, T.doorFixed, T.flagsStart, T.flagNext, T.flagGap, T.blocksStart, T.whichBasket, T.sortSwitch, T.tidied].forEach((f) => add(f()));
   add(Object.values(SPACE_LINES).flat());
+  add(Object.values(SPACE_INVITE).flat());
   add(Object.values(SPACE_TO));
   add(Object.values(SPACE_PASS));
   add(Object.values(SPACE_FACTS).flat());
+  nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
+  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
   return [...new Set(out)];
 }

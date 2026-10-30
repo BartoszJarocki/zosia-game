@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { placesIn } from '../src/places.js';
-import { allSegments, SPACE_LINES, SPACE_TO, SPACE_PASS, SPACE_FACTS, PLACE_LINES } from '../src/lang/pl.js';
+import { allSegments, SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS, PLACE_LINES } from '../src/lang/pl.js';
 import { parseGame } from '../src/levels/parse.js';
 import * as THREE from 'three';
 import { CONFIG } from '../src/config.js';
@@ -78,7 +78,7 @@ test('every launch, flight and fact line reaches the voice recorder as a sentenc
   const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
   const { levels, letterSets } = parseGame(md, { childName: CONFIG.childName });
   const segments = allSegments(levels, letterSets.ALL);
-  const lines = [...Object.values(SPACE_LINES).flat(), ...Object.values(SPACE_TO), ...Object.values(SPACE_PASS), ...Object.values(SPACE_FACTS).flat(), PLACE_LINES.rocket];
+  const lines = [...Object.values(SPACE_LINES).flat(), ...Object.values(SPACE_INVITE).flat(), ...Object.values(SPACE_TO), ...Object.values(SPACE_PASS), ...Object.values(SPACE_FACTS).flat(), PLACE_LINES.rocket];
   for (const line of lines) {
     assert.ok(segments.includes(line), line);
     assert.match(line, /[.!?]$/, line);
@@ -88,10 +88,30 @@ test('every launch, flight and fact line reaches the voice recorder as a sentenc
   assert.deepEqual(SPACE_LINES.countdown, ['Odliczamy! Pięć, cztery, trzy, dwa, jeden!']);
   assert.deepEqual(SPACE_LINES.goodnight, ['Robi się późno. Wracamy do domu!']);
   assert.deepEqual(SPACE_LINES.inviteHome, ['Czas wracać do domu! Polecimy na Ziemię?']);
-  assert.deepEqual(SPACE_LINES.mars, ['Może polecimy na Marsa?']);
+  assert.deepEqual(SPACE_INVITE.mars, ['Może polecimy na Marsa?']);
+  assert.equal(SPACE_LINES.mars, undefined);
+  assert.deepEqual(Object.keys(SPACE_INVITE), Object.keys(SPACE_TO));
   assert.equal(SPACE_TO.mars, 'Lecimy na Marsa!');
   assert.deepEqual(SPACE_FACTS.sun, ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.']);
   assert.deepEqual(Object.keys(SPACE_FACTS), placesIn('space'));
+});
+
+test('the far places sit to the right and visible planet spheres meet their landscape size targets', () => {
+  assert.deepEqual(['blackhole', 'comet', 'stars'].map((k) => LAYOUT[k].at), [[17, 0, -23], [30, 0, -19], [33, 0, -5]]);
+  const width = 1180, height = 820;
+  const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+  for (const here of ROAD_ORDER) for (const suggested of [null, ...ROAD_ORDER]) {
+    const view = mapView(width, height, here, suggested);
+    camera.position.copy(view.pos); camera.lookAt(view.look); camera.updateMatrixWorld(true);
+    for (const kind of ROAD_ORDER.slice(0, 11)) {
+      const { r, at } = LAYOUT[kind];
+      const vertices = new THREE.SphereGeometry(r, 64, 40).getAttribute('position');
+      const xs = Array.from({ length: vertices.count }, (_, i) => new THREE.Vector3().fromBufferAttribute(vertices, i)
+        .add(new THREE.Vector3(at[0], r * 0.55, at[2])).project(camera).x);
+      const pixels = (Math.max(...xs) - Math.min(...xs)) * width / 2;
+      assert.ok(pixels >= (kind === 'pluto' ? 62 : 70), `${here}, ${suggested}: ${kind} sphere ${pixels.toFixed(1)} px`);
+    }
+  }
 });
 
 

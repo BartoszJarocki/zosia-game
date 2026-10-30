@@ -68,10 +68,12 @@ report.suggested = await st(() => window.__pup.getStage().suggested ?? null);
 const seen = await st(() => {
   const { getStage, camera } = window.__pup;
   const g = getStage();
+  // every vertex, since box corners land wider than round pads under a tilted camera; see-through glows fade out
+  // past their edges on purpose, so only solid things count
   const box = (o) => {
     const Vec = o.position.constructor, pts = [];
     o.updateWorldMatrix(true, true);
-    o.traverse((m) => { if (!m.geometry || !m.visible || m.material?.visible === false || m.isSprite) return; m.geometry.computeBoundingBox(); const b = m.geometry.boundingBox; for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) pts.push(new Vec(x, y, z).applyMatrix4(m.matrixWorld)); });
+    o.traverse((m) => { if (!m.geometry || !m.visible || m.material?.visible === false || m.isSprite || m.isPoints || m.material?.transparent) return; const a = m.geometry.attributes.position; for (let i = 0; i < a.count; i++) pts.push(new Vec().fromBufferAttribute(a, i).applyMatrix4(m.matrixWorld)); });
     const s = pts.map((p) => p.project(camera)).map((p) => [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight]);
     return { l: Math.min(...s.map((p) => p[0])), r: Math.max(...s.map((p) => p[0])), t: Math.min(...s.map((p) => p[1])), b: Math.max(...s.map((p) => p[1])) };
   };
@@ -93,6 +95,20 @@ for (const { kind } of stops.filter((s) => s.kind !== 'earth')) {
   const s = (await st(() => window.__pup.getStage().stopsOnScreen())).find((x) => x.kind === kind);
   await page.mouse.click(s.x, s.y);
   const t = Date.now();
+  // a stop with a game flies there and starts it; she leaves with the hold-to-leave home button
+  if (!(await until((k) => { const g = window.__pup.getStage(); return g.kind === k || (g.state === 'visiting' && g.visiting === k && document.querySelector('.space-back')); }, kind, 60000))) { fail(`${kind}: never arrived`); continue; }
+  if (await st((k) => window.__pup.getStage().kind === k, kind)) {
+    report.stops[kind].flightMs = Date.now() - t;
+    report.stops[kind].game = true;
+    await page.waitForTimeout(2500);
+    await snap(`game-${kind}`);
+    const b = await page.locator('.home').first().boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await page.waitForTimeout(1500); await page.mouse.up();
+    if (!(await until((k) => { const g = window.__pup.getStage(); return g.kind === 'space-map' && g.state === 'waiting' && g.at === k; }, kind, 60000))) fail(`${kind}: leaving the game did not bring her back to the map at ${kind}`);
+    await page.waitForTimeout(1200);
+    await snap(`back-from-${kind}`);
+    continue;
+  }
   if (!(await until((k) => { const g = window.__pup.getStage(); return g.state === 'visiting' && g.visiting === k; }, kind, 60000))) { fail(`${kind}: never arrived`); continue; }
   report.stops[kind].flightMs = Date.now() - t;
   await page.waitForTimeout(1500);

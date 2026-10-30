@@ -6,7 +6,7 @@ import { makeCloud } from '../world/nature.js';
 import { makeRocket, makeLaunchPad } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { say, sfx, hush, unlockAudio } from '../audio.js';
-import { SPACE_LINES, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '../lang/pl.js';
+import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '../lang/pl.js';
 import { PLACES, placesIn } from '../places.js';
 import { getVisited, recordVisit } from '../progress.js';
 import { getSession, checkAttention } from '../session/session.js';
@@ -205,19 +205,19 @@ function makeBlackHole(b, face, R) {
 
 export const LAYOUT = {
   sun: { at: [-20, 0, 13], r: 2.7, disc: 3.8 },
-  mercury: { at: [-11.5, 0, 13], r: 1.6, disc: 2.9 },
-  venus: { at: [-3.5, 0, 13], r: 1.85, disc: 3 },
-  earth: { at: [4.5, 0, 13], r: 1.9, disc: 3 },
-  moon: { at: [12.5, 0, 13], r: 1.6, disc: 2.9 },
-  mars: { at: [20, 0, 6], r: 1.7, disc: 3 },
+  mercury: { at: [-11.5, 0, 13], r: 2.18, disc: 2.9 },
+  venus: { at: [-3.5, 0, 13], r: 2.18, disc: 3 },
+  earth: { at: [4.5, 0, 13], r: 2.18, disc: 3 },
+  moon: { at: [12.5, 0, 13], r: 2.18, disc: 2.9 },
+  mars: { at: [20, 0, 6], r: 2.28, disc: 3 },
   jupiter: { at: [10, 0, 0], r: 2.8, disc: 3.9 },
-  saturn: { at: [-3, 0, 0], r: 2.1, disc: 4.3 },
-  uranus: { at: [-18, 0, -4], r: 2, disc: 3.6 },
-  neptune: { at: [-11, 0, -15], r: 2, disc: 3.4 },
-  pluto: { at: [1, 0, -15], r: 1.65, disc: 3 },
-  blackhole: { at: [18, 0, -42], r: 1.6, disc: 4.2, far: true },
-  comet: { at: [2, 0, -44], r: 1.8, disc: 3.6, far: true },
-  stars: { at: [-15, 0, -42], r: 2.4, disc: 4, far: true },
+  saturn: { at: [-3, 0, 0], r: 2.43, disc: 4.3 },
+  uranus: { at: [-18, 0, -4], r: 2.43, disc: 3.6 },
+  neptune: { at: [-11, 0, -15], r: 2.65, disc: 3.4 },
+  pluto: { at: [1, 0, -15], r: 2.4, disc: 3 },
+  blackhole: { at: [17, 0, -23], r: 1.6, disc: 4.2, far: true },
+  comet: { at: [30, 0, -19], r: 1.8, disc: 3.6, far: true },
+  stars: { at: [33, 0, -5], r: 2.4, disc: 4, far: true },
 };
 export const ROAD_ORDER = Object.keys(LAYOUT);
 
@@ -416,8 +416,8 @@ function makeRoad(curve) {
   }
   g.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(dots, 3)),
     new THREE.PointsMaterial({ color: '#e4d8ff', size: 4, sizeAttenuation: false, map: halo(), transparent: true, opacity: 0.65, depthWrite: false })));
-  g.add(mesh(new THREE.PlaneGeometry(60, 26), new THREE.MeshBasicMaterial({ map: halo(), color: '#60419e', transparent: true, opacity: 0.9, depthWrite: false }),
-    { x: 1, y: -0.2, z: -43, rx: -Math.PI / 2, shadow: false }));
+  g.add(mesh(new THREE.PlaneGeometry(32, 34), new THREE.MeshBasicMaterial({ map: halo(), color: '#60419e', transparent: true, opacity: 0.9, depthWrite: false }),
+    { x: 27, y: -0.2, z: -16, rx: -Math.PI / 2, shadow: false }));
   for (const { at: [x, , z], disc } of Object.values(LAYOUT)) {
     g.add(mesh(new THREE.CircleGeometry(disc, 48), padMat, { x, y: -0.03, z, rx: -Math.PI / 2, shadow: false }));
     g.add(mesh(new THREE.RingGeometry(disc, disc + 0.18, 48), rimMat, { x, y: -0.02, z, rx: -Math.PI / 2, shadow: false }));
@@ -467,7 +467,9 @@ function crewPortrait(girl, pup, glasses, shaded) {
 }
 
 export class Space extends Stage {
-  constructor(game, { launch = false } = {}) {
+  get at() { return ROAD_ORDER[Math.round(this.routeIndex)]; }
+
+  constructor(game, { launch = false, at = 'earth' } = {}) {
     super();
     this.game = game;
     this.kind = 'space-map';
@@ -478,7 +480,8 @@ export class Space extends Stage {
     this.view = launch ? copyView(PAD_VIEW) : mapView(globalThis.innerWidth || 1180, globalThis.innerHeight || 820);
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
-    this.routeIndex = ROAD_ORDER.indexOf('earth');
+    this.routeIndex = ROAD_ORDER.indexOf(LAYOUT[at] ? at : 'earth');
+    this.returned = PLACES[at]?.game === true;
     this.bodies = {};
     this.idleAt = null;
     this.inviteAt = null;
@@ -538,7 +541,7 @@ export class Space extends Stage {
     } else {
       this.parkRocket();
       this.showHud();
-      this.direct(SPACE_LINES.map);
+      this.direct(this.returned ? SPACE_LINES.again : SPACE_LINES.map);
     }
     noShadows(this.scene);
     this.startLog();
@@ -707,10 +710,10 @@ export class Space extends Stage {
     this.updateSuggestion(0);
     this.resize();
     if (decision === 'home') { this.returnHome(SPACE_LINES.goodnight); return; }
-    this.nudgeLine = decision === 'invite' ? SPACE_LINES.inviteHome : SPACE_LINES[this.suggested];
+    this.nudgeLine = decision === 'invite' ? SPACE_LINES.inviteHome : SPACE_INVITE[this.suggested];
     this.nudges = 0;
     this.nudgeAt = this.nudgeLine ? performance.now() + 25000 : null;
-    say(this.nudgeLine || greeting);
+    say(greeting === SPACE_LINES.again ? [...greeting, ...(decision === 'invite' ? this.nudgeLine : [])] : this.nudgeLine || greeting);
   }
 
   updateSuggestion(t) {
@@ -791,6 +794,7 @@ export class Space extends Stage {
     session.lastActiveAt = Date.now();
     const visited = (session.visited ||= {});
     visited[kind] = (visited[kind] || 0) + 1;
+    if (PLACES[kind].game) return this.game.startMission(kind);
     const revision = this.revision;
     this.road.visible = false;
     Object.entries(this.bodies).forEach(([k, g]) => { g.visible = k === kind; });

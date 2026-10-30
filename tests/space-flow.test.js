@@ -144,7 +144,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     assert.equal(circles.length, 14);
     for (const c of circles) assert.ok(c.r >= 35 && c.x - c.r >= 0 && c.x + c.r <= w && c.y - c.r >= 0 && c.y + c.r <= h, JSON.stringify(c));
   }
-  for (const kind of ROAD_ORDER.filter((k) => k !== 'earth')) {
+  for (const kind of ROAD_ORDER.filter((k) => !['earth', 'moon'].includes(k))) {
     await s.tapStop(kind); frame(s);
     assert.equal(s.visiting, kind);
     assert.equal(s.state, 'visiting');
@@ -157,7 +157,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.backToMap(); frame(s);
     assert.equal(s.state, 'waiting'); assert.equal(s.visiting, null);
   }
-  await s.tapStop('moon');
+  await s.tapStop('mars');
   s.idleAt = performance.now() - 1; frame(s);
   await new Promise(setImmediate);
   assert.equal(s.state, 'waiting');
@@ -186,6 +186,26 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   assert.equal(launch.state, 'waiting');
   assert.ok(globalThis.__lines.includes('To nasza Ziemia!'));
   launch.exit();
+});
+
+test('a Moon arrival records its visit and starts the mission; returning parks there and asks what next', async () => {
+  const missions = [];
+  const before = getVisited().moon || 0;
+  const s = new Space({ startMission(kind) { missions.push(kind); } });
+  s.enter(); frame(s);
+  await s.tapStop('moon');
+  assert.deepEqual(missions, ['moon']);
+  assert.equal(getVisited().moon, before + 1);
+  assert.equal(getSession().visited.moon, 1);
+  assert.equal(s.routeIndex, 4);
+  assert.equal(s.road.visible, true);
+  s.exit();
+  const returned = new Space({}, { at: 'moon' });
+  returned.enter(); frame(returned);
+  assert.equal(returned.routeIndex, 4);
+  assert.equal(returned.state, 'waiting');
+  assert.equal(globalThis.__lines.at(-1), 'Lecimy dalej czy do domu?');
+  returned.exit();
 });
 
 test('map entries check attention once; idle invitations never force a finale flight', async () => {

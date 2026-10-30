@@ -6,7 +6,7 @@ import { PLACES, placesIn, GAMES, homeArea } from '../src/places.js';
 import { DOMAIN } from '../src/session/director.js';
 import { SCHEMA, parseGame } from '../src/levels/parse.js';
 import { EASIER } from '../src/levels/easier.js';
-import { PLACE_TO, HOME_TASKS } from '../src/lang/pl.js';
+import { PLACE_TO, SPACE_TO, HOME_TASKS } from '../src/lang/pl.js';
 import { MILESTONES, milestoneRewards } from '../src/adventure/world.js';
 
 const ISLAND_GAMES = [
@@ -17,8 +17,8 @@ const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
 const { levels, missions, errors } = parseGame(md, { childName: CONFIG.childName });
 
 test('the island has all ten games in badge order', () => {
-  assert.deepEqual(GAMES, ISLAND_GAMES);
-  assert.deepEqual([...GAMES].sort(), [...ISLAND_GAMES].sort());
+  assert.deepEqual(GAMES, [...ISLAND_GAMES, 'moon']);
+  assert.deepEqual(GAMES.filter((kind) => PLACES[kind].area === 'island'), ISLAND_GAMES);
   const games = placesIn('island').filter((kind) => PLACES[kind].game);
   assert.deepEqual(games.sort(), [...ISLAND_GAMES].sort());
 });
@@ -41,12 +41,12 @@ test('every place has an area, game flag and domain; games also require badges',
 });
 
 test('every game has a schema, easier settings, text and level rows', () => {
-  assert.equal(GAMES.length, 10);
+  assert.equal(GAMES.length, 11);
   assert.deepEqual(errors, []);
   for (const kind of GAMES) {
     assert.ok(Object.keys(SCHEMA[kind]).length > 0, `${kind}: schema`);
     assert.equal(typeof EASIER[kind], 'function', `${kind}: easier settings`);
-    assert.match(PLACE_TO[kind], /\S/, `${kind}: destination`);
+    assert.match((PLACES[kind].area === 'space' ? SPACE_TO : PLACE_TO)[kind], /\S/, `${kind}: destination`);
     assert.match(HOME_TASKS[kind], /\S/, `${kind}: home task`);
     assert.ok(Array.isArray(levels[kind]), `${kind}: level rows`);
     assert.ok(levels[kind].length > 0, `${kind}: level rows`);
@@ -64,18 +64,36 @@ test('every island game rewards its first finished run', () => {
 test('place tables have no missing or unknown kinds', () => {
   assert.deepEqual(Object.keys(PLACE_TO).sort(), [...ISLAND_GAMES, 'rocket'].sort());
   assert.deepEqual(Object.keys(DOMAIN).sort(), Object.keys(PLACES).sort());
-  const tables = { SCHEMA, EASIER, HOME_TASKS, MILESTONES, levels, missions };
+  assert.deepEqual(Object.keys(MILESTONES).sort(), [...ISLAND_GAMES].sort());
+  const tables = { SCHEMA, EASIER, HOME_TASKS, levels, missions };
   for (const [name, table] of Object.entries(tables)) {
-    assert.deepEqual(Object.keys(table).sort(), [...ISLAND_GAMES].sort(), name);
+    assert.deepEqual(Object.keys(table).sort(), [...GAMES].sort(), name);
   }
 });
 
 
-test('the rocket connects the island to fourteen look-only space places', () => {
+test('the rocket connects the island to thirteen look-only places and Moon Jumps', () => {
   assert.deepEqual(PLACES.rocket, { area: 'island', game: false, domain: 'space', leadsTo: 'space' });
   assert.deepEqual(placesIn('space'), ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'blackhole', 'comet', 'stars']);
-  for (const kind of placesIn('space')) assert.deepEqual(PLACES[kind], { area: 'space', game: false, domain: 'space' });
+  for (const kind of placesIn('space').filter((k) => k !== 'moon')) assert.deepEqual(PLACES[kind], { area: 'space', game: false, domain: 'space' });
+  assert.deepEqual(PLACES.moon, { area: 'space', game: true, domain: 'numbers', badge: { label: '🌙', color: '#6366f1' } });
   assert.deepEqual(placesIn('island'), [...ISLAND_GAMES, 'rocket']);
+});
+
+test('every game has a scene in the mission registry; only island places need island layouts', () => {
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const hub = readFileSync(new URL('../src/scenes/hub.js', import.meta.url), 'utf8');
+  const registry = main.match(/const MISSIONS = \{([\s\S]*?)\n\};/)[1];
+  const layout = hub.match(/const LAYOUT = \{([\s\S]*?)\n\};/)[1];
+  for (const kind of GAMES) {
+    const scene = registry.match(new RegExp(`\\b${kind}: (\\w+)`))?.[1];
+    assert.ok(scene, `${kind}: scene registration`);
+    assert.ok(main.includes(`import { ${scene} } from './scenes/${kind}.js'`), `${kind}: scene import`);
+    assert.match(readFileSync(new URL(`../src/scenes/${kind}.js`, import.meta.url), 'utf8'), new RegExp(`export (class|function) ${scene}\\b`));
+    if (PLACES[kind].area === 'island') assert.match(layout, new RegExp(`\\b${kind}:`));
+  }
+  assert.doesNotMatch(layout, /\bmoon:/);
+  assert.equal(MILESTONES.moon, undefined);
 });
 
 test('home remembers the current map or the mission origin', () => {

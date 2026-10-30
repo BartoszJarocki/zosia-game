@@ -65,6 +65,14 @@ export const SCHEMA = {
     slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
   },
+  moon: {
+    types: { type: 'list', values: ['jump', 'howMany'] },
+    jump: { type: 'range', min: 1, max: 9 },
+    howMany: { type: 'range', min: 1, max: 9, optional: true },
+    auto: { type: 'bool' },
+    slots: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   delivery: {
     pool: { type: 'letters' },
     choices: { type: 'int', min: 2, max: 4 },
@@ -294,4 +302,10 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
   }
   if (kind === 'garage') for (const m of s.modes || []) if (!s[m]) errors.push(`${where}: modes includes ${m}, so set the ${m} column`);
+  if (kind === 'moon') {
+    for (const t of s.types || []) if (!s[t]) errors.push(`${where}: types includes ${t}, so set a ${t} range`);
+    if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic jumps do not count towards levelling)`);
+    if (s.types && !s.types.includes('jump')) errors.push(`${where}: types needs jump for the easy last round`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
 }

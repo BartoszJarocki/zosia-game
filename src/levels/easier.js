@@ -9,6 +9,7 @@ export const EASIER = {
   cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }), // one cone fewer: easier even where a level already shows both
   stones: gentlerRiver,
   counting: (s) => ({ ...s, auto: true }),
+  moon: (s) => ({ ...s, auto: true, slots: true }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
   picnic: (s) => ({ ...s, close: false, numerals: false }),

@@ -294,6 +294,34 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
 - Rounds that can't really be got wrong (`give` with auto, `share`) are played but don't count towards the next
   level, so every level has a `howMany`, `flash` or `hidden` round (a gentler run after a rough one turns `auto` on).
 
+### 🌙 Moon Jumps · `moon`
+
+Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each slow, floaty
+jump leaves a pair of footprints in a row, so she can count the jumps afterwards.
+
+| Level | types | jump | howMany | auto | slots | rounds |
+|---|---|---|---|---|---|---|
+| 1 | jump, howMany | 1–3 | 1–3 | yes | yes | 3 |
+| 2 | jump, howMany | 1–4 | 1–4 | yes | no | 3 |
+| 3 | jump, howMany | 2–5 | 2–5 | no | no | 4 |
+| 4 | jump, howMany | 3–7 | 3–6 | no | no | 4 |
+
+- **types**: each kind comes up at least once, with extra rounds repeating one. Kinds alternate when
+  there are two, and the last round is always `jump` with auto on, including levels 3 and 4.
+  `jump` asks "Skocz trzy razy!": she taps Chase once per jump, and each landing is counted aloud.
+  Taps while he is in the air are ignored. `howMany` asks her to watch him jump silently, then
+  "Ile było skoków?": she can tap each footprint pair to count it and choose the numeral. The other
+  choices are one less and one more. The footprints then light up and are counted to her number.
+- **jump** / **howMany**: the number ranges, up to 9; `—` when howMany is unused.
+- **auto**: `yes` finishes a jump round when the requested number of footprints is there. With `no`,
+  she taps the rocket flag when she is done. Too few: "Za mało! Skacz dalej!" Too many: the extra
+  footprints fade and she hears "Za dużo! Teraz dobrze? Dotknij flagi!" She taps the flag again herself.
+- **slots**: `yes` shows ghost footprint outlines and dots under the numeral choices. With `no`,
+  neither is shown; help reveals the outlines. A gentler run turns both auto and slots on.
+- **rounds**: tasks per mission, 1 to 8, with at least one per kind. Automatic jump rounds are played
+  but unscored, so every level includes howMany. Manual jumps practise producing a number (`counting`);
+  howMany practises `quantity`.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
