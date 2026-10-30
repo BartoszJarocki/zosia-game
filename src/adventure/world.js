@@ -26,7 +26,7 @@ export const MAX_KITTENS = REWARDS.kitten.max;
 export const MAX_BALLOONS = REWARDS.balloon.max;
 
 /** What the c-th finished run of each mission earns (ids over a type's max earn nothing). */
-const MILESTONES = {
+export const MILESTONES = {
   letters: (c) => `kitten-${c}`,
   balloons: (c) => `balloon-${c}`,
   stones: () => 'bridge',

@@ -1,22 +1,14 @@
 import { sfx, say } from './audio.js';
 import { T } from './lang/pl.js';
 import { CONFIG } from './config.js';
+import { PLACES } from './places.js';
 import { DICE } from './textures.js';
 
 const ui = document.getElementById('ui');
 
-export const MISSIONS = {
-  letters: { label: 'ABC', color: '#ef4444' },
-  balloons: { label: '🎈', color: '#db2777' },
-  name: { label: (CONFIG.childName || 'A')[0].toUpperCase(), color: '#9333ea' },
-  cones: { label: '123', color: '#2563eb' },
-  stones: { label: '1·2·3', color: '#0891b2' },
-  counting: { label: '🦴', color: '#f59e0b' },
-  lookout: { label: '🐾', color: '#e23b3b' },
-  delivery: { label: '📦', color: '#b45309' },
-  picnic: { label: '🧺', color: '#16a34a' },
-  garage: { label: '🔧', color: '#ea580c' },
-};
+export const MISSIONS = Object.fromEntries(
+  Object.entries(PLACES).map(([kind, place]) => [kind, place.badge]),
+);
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 
 // ---------- icons (crisp SVG instead of emoji) ----------

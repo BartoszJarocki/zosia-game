@@ -45,7 +45,7 @@ export const YES_STEP = ['Tak!', 'Brawo!', 'Super!'];
 const RIVER_ON = ['A dalej?', 'A teraz?'];
 
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
-const PLACE_TO = {
+export const PLACE_TO = {
   letters: 'do Kociego Parku',
   balloons: 'na Balonową Łąkę',
   name: 'do Literkowego Pociągu',

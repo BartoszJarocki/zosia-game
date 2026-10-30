@@ -20,6 +20,7 @@ import { LEVELS, ALL_LETTERS } from './levels/data.js';
 import { learning } from './learning/events.js';
 import { startSession, getSession, dev } from './session/session.js';
 import { takeDevNext } from './parent/next.js';
+import { GAMES } from './places.js';
 
 /** Developer tools asked for something on the next trip to the island. */
 function applyDevNext() {
@@ -60,6 +61,9 @@ const MISSIONS = {
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission,
 };
+for (const kind of GAMES) {
+  if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
+}
 
 const game = {
   hub({ greet = false } = {}) {
