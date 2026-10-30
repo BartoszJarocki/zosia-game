@@ -26,7 +26,8 @@ import { addToys } from './hub-toys.js';
 import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 import { makeGarageLandmark } from '../world/garage-props.js';
-import { placesIn } from '../places.js';
+import { makeLaunchPad } from '../world/rocket.js';
+import { PLACES, placesIn } from '../places.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
@@ -34,6 +35,7 @@ const portrait = () => innerHeight > innerWidth;
 
 // Letter games on the left, number games on the right.
 const LAYOUT = {
+  rocket: { at: [-6, -19], via: [[-2.6, -1.8], [-5, -4.6], [-6.6, -10]], marker: [-6, 7, -19], starSize: 2, hit: [3.2, 5.5] },
   letters: { at: [-15, -3] },
   balloons: { at: [-13.5, 8] },
   name: { at: [-5.5, 14.5] },
@@ -59,6 +61,7 @@ export class Hub extends Stage {
   constructor(game, { greet = false, silent = false } = {}) {
     super();
     this.game = game;
+    this.area = 'island';
     this.greet = greet;
     this.silent = silent; // behind the start screen: slow orbit, no talking
     // portrait: frame closer (the sides of the beach go, every place stays in view)
@@ -138,11 +141,13 @@ export class Hub extends Stage {
       p.curve = new THREE.CatmullRomCurve3([START.clone(), p1, mid, park]);
       s.add(makeRoad(p.curve));
     }
-    const roadPts = placesIn('island').flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
+    const roadPts = placesIn('island').filter((kind) => PLACES[kind].game).flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+    const rocketRoad = LAYOUT.rocket.curve.getSpacedPoints(24);
+    const nearRocket = (x, z) => Math.hypot(x + 6, z + 19) < 4 || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
-    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
+    const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
     this.placeGroups = {};
     for (const kind of placesIn('island')) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     const houses = HOUSES.map(([x, z, w, r]) => {
@@ -158,7 +163,7 @@ export class Hub extends Stage {
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
     // trees, bushes, grass — kept off the roads, places, houses and the kittens' lawn; the same every visit
-    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').map((kind) => [...LAYOUT[kind].at, 4])];
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4])];
     const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
     const rnd = seeded(20261028);
     let seed = 1;
@@ -166,13 +171,25 @@ export class Hub extends Stage {
       const a = rnd() * Math.PI * 2, r = 5 + Math.sqrt(rnd()) * 18;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (!clear(x, z, 1.2) || (z > 9 && Math.abs(x) < 17) || (z > 4 && Math.abs(x) > 17)) continue;
-      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); s.add(b); continue; }
+      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); if (!nearRocket(x, z)) s.add(b); continue; }
       const t = makeTree({ scale: 0.95 + rnd() * 0.6, seed: seed++ });
       t.position.set(x, 0, z);
-      s.add(t);
+      if (!nearRocket(x, z)) s.add(t);
     }
     const k = detail();
-    s.add(makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 }));
+    const meadow = makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 });
+    // Clear only the new pad and road without changing the seeded scenery elsewhere.
+    const instance = new THREE.Matrix4(), at = new THREE.Vector3();
+    meadow.traverse((o) => {
+      if (!o.isInstancedMesh) return;
+      for (let i = 0; i < o.count; i++) {
+        o.getMatrixAt(i, instance);
+        at.setFromMatrixPosition(instance);
+        if (nearRocket(at.x, at.z)) o.setMatrixAt(i, instance.scale(new THREE.Vector3(0, 0, 0)));
+      }
+      o.instanceMatrix.needsUpdate = true;
+    });
+    s.add(meadow);
     for (let i = 0; i < 4; i++) s.add(makeButterfly({ center: [(i - 1.5) * 8, 4 + (i % 2) * 6], radius: 4, height: 1.4, color: ['#f472b6', '#fbbf24', '#60a5fa', '#a78bfa'][i] }));
     for (let i = 0; i < 4; i++) s.add(makeBird({ radius: 34 + i * 5, height: 20 + i * 2, speed: 0.08 + i * 0.01, seed: i * 1.7 }));
     for (let i = 0; i < 8; i++) {
@@ -226,7 +243,7 @@ export class Hub extends Stage {
       const from = new THREE.Vector3(-30, 48, 60), to = HOME_VIEW.pos.clone();
       this.view.pos.copy(from);
       this.busy = true;
-      animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; });
+      this.arriving = animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; this.arriving = null; });
     }
     // session director: gently suggest where to go next (every place can still be tapped)
     const session = (this.session = getSession());
@@ -239,7 +256,8 @@ export class Hub extends Stage {
     session.rewardedUpTo = session.completed.length;
     const forced = step === 'mission' && (dev.suggestOnce || dev.suggest);
     dev.suggestOnce = null;
-    this.suggested = forced || suggestNext(session, placesIn('island'));
+    const games = placesIn('island').filter((kind) => PLACES[kind].game);
+    this.suggested = (games.includes(forced) && forced) || suggestNext(session, games);
     if (this.suggested) this.highlight(this.suggested);
     // …told as a little story when there is one ("Ojej! Kotek potrzebuje pomocy!")
     const event = pickEvent({ step, suggested: this.suggested });
@@ -323,13 +341,13 @@ export class Hub extends Stage {
     // bouncing glowing star says "tap me!", with this mission's level stars under it
     const marker = new THREE.Group();
     marker.position.set(mx, my, mz);
-    const big = star('#fde047', 0.95, 0.28);
+    const big = star('#fde047', p.starSize || 0.95, 0.28);
     big.material = (this.starMat ||= new THREE.MeshStandardMaterial({ color: '#ffe066', emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 }));
     big.userData.dynamic = true; // grows when the place is suggested
     marker.add(big);
     (this.markers ||= {})[kind] = { marker, big };
-    const level = levelFor(kind);
-    const total = maxLevel(kind);
+    const level = PLACES[kind].game ? levelFor(kind) : 0;
+    const total = PLACES[kind].game ? maxLevel(kind) : 0;
     for (let i = 0; i < total; i++) {
       const lit = i < level;
       const st = star(lit ? '#fde047' : '#cbd5e1', 0.32, 0.1);
@@ -387,7 +405,8 @@ export class Hub extends Stage {
   }
 
   async go(kind) {
-    if (this.busy) return;
+    if (this.arriving) await this.arriving;
+    if (!this.alive || this.busy) return;
     this.busy = true;
     const p = LAYOUT[kind];
     hush();
@@ -400,7 +419,10 @@ export class Hub extends Stage {
     say(T.go(kind));
     await this.drive(p);
     await wait(200);
-    if (this.alive) this.game.startMission(kind);
+    if (this.alive) {
+      if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+      else this.game.startMission(kind);
+    }
   }
 
   /** The cruiser drives a place's road; the camera follows and leans in (lift: look that much higher at the end). */
@@ -545,7 +567,8 @@ export class Hub extends Stage {
   wake(kind) {
     startSession();
     hush();
-    this.game.startMission(kind);
+    if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+    else this.game.startMission(kind);
   }
 }
 

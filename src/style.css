@@ -330,3 +330,14 @@ svg { display: block; }
 .pv-gentle { color: #b45309; font-weight: 700; }
 .pv-devlink { margin-top: 30px; text-align: center; }
 .pv-link { color: #8a93a8; text-decoration: underline; font-size: 14px; }
+
+.space-hud, .launch-hud { position: absolute; inset: 0; pointer-events: none; }
+.space-hud button, .launch-hud button { pointer-events: auto; }
+.space-parent { opacity: .7; color: #6552a5; }
+.space-back { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); font-size: 52px; width: 100px; height: 100px; }
+.rocket-countdown { position: absolute; top: 7%; left: 0; right: 0; text-align: center; font-size: min(24vh, 180px); font-weight: 700; color: #fff5a4; text-shadow: 0 5px 0 #c97029, 0 0 30px #ffcf65; }
+.rocket-countdown.lit { animation: countIn .4s ease-out; }
+.rocket-start { position: absolute; left: 50%; bottom: 9%; width: min(64vw, 340px); min-height: 130px; border: 8px solid white; border-radius: 70px; background: #eb3f52; color: white; font-size: 62px; font-weight: 700; box-shadow: 0 10px 0 #a22a45, 0 15px 30px #653b6e66; animation: rocketPulse 1.3s ease-in-out infinite; }
+@keyframes rocketPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
+@keyframes countIn { from { transform: scale(.7); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rocket-start, .rocket-countdown.lit { animation: none; } .rocket-start { transform: translateX(-50%); } }

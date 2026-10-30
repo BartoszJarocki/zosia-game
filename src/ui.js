@@ -7,7 +7,7 @@ import { DICE } from './textures.js';
 const ui = document.getElementById('ui');
 
 export const MISSIONS = Object.fromEntries(
-  Object.entries(PLACES).map(([kind, place]) => [kind, place.badge]),
+  Object.entries(PLACES).filter(([, place]) => place.game).map(([kind, place]) => [kind, place.badge]),
 );
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 
@@ -125,6 +125,45 @@ export function hubHud() {
   let t = null;
   shelf.addEventListener('pointerdown', () => { clearTimeout(t); t = setTimeout(() => onParent?.(), 3000); });
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) shelf.addEventListener(ev, () => clearTimeout(t));
+}
+
+export function spaceHud({ onHome, onBack, visiting = false }) {
+  clear();
+  const hud = el(`<div class="space-hud">
+    <div class="topbar"><button class="round-btn space-home" aria-label="Do domu">${ICON.home}</button>
+    <button class="round-btn space-parent" aria-label="Dla rodzica, przytrzymaj">${ICON.paw()}</button></div>
+    ${visiting ? '<button class="round-btn space-back" aria-label="Wróć do mapy">🚀</button>' : ''}
+  </div>`);
+  press(hud.querySelector('.space-home'), onHome);
+  holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), 3000);
+  if (visiting) press(hud.querySelector('.space-back'), onBack);
+  ui.append(hud);
+}
+
+export function launchHud() {
+  clear();
+  const hud = el('<div class="launch-hud"><div class="rocket-countdown" aria-live="off"></div></div>');
+  ui.append(hud);
+  return {
+    number(n) {
+      const count = hud.querySelector('.rocket-countdown');
+      count.textContent = n;
+      count.classList.remove('lit');
+      void count.offsetWidth;
+      count.classList.add('lit');
+    },
+    start(onStart) {
+      hud.querySelector('.rocket-countdown').textContent = '';
+      const button = el('<button class="rocket-start">START</button>');
+      button.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        button.remove();
+        onStart();
+      }, { once: true });
+      hud.append(button);
+    },
+    remove() { hud.remove(); },
+  };
 }
 let onParent = null;
 /** What a long press on the badge shelf opens (main.js). */

@@ -46,6 +46,7 @@ const RIVER_ON = ['A dalej?', 'A teraz?'];
 
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
 export const PLACE_TO = {
+  rocket: 'do rakiety',
   letters: 'do Kociego Parku',
   balloons: 'na Balonową Łąkę',
   name: 'do Literkowego Pociągu',
@@ -89,6 +90,53 @@ export const HOME_TASKS = {
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
+
+export const SPACE_LINES = {
+  helmets: ['Zakładamy kaski!'],
+  board: ['Wsiadamy do rakiety!'],
+  countdown: ['Odliczamy! Pięć, cztery, trzy, dwa, jeden!'],
+  start: ['Naciśnij START!'],
+  startAgain: ['Naciśnij wielki guzik START!'],
+  lift: ['Start! Lecimy!'],
+  earth: ['To nasza Ziemia!'],
+  map: ['Dokąd lecimy?'],
+  again: ['Lecimy dalej czy do domu?'],
+  home: ['Wracamy do domu!'],
+  far: ['Lecimy daleko, daleko!'],
+  sunglasses: [`${pup} zakłada okulary przeciwsłoneczne!`],
+};
+
+export const SPACE_TO = {
+  sun: 'Lecimy w stronę Słońca!', mercury: 'Lecimy na Merkurego!', venus: 'Lecimy na Wenus!',
+  moon: 'Lecimy na Księżyc!', mars: 'Lecimy na Marsa!', jupiter: 'Lecimy do Jowisza!',
+  saturn: 'Lecimy do Saturna!', uranus: 'Lecimy do Urana!', neptune: 'Lecimy do Neptuna!',
+  pluto: 'Lecimy na Plutona!', blackhole: 'Lecimy zobaczyć czarną dziurę!',
+  comet: 'Lecimy do komety!', stars: 'Lecimy do gwiazd!',
+};
+
+export const SPACE_PASS = {
+  sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',
+  earth: 'Mijamy Ziemię!', moon: 'Mijamy Księżyc!', mars: 'Mijamy Marsa!',
+  jupiter: 'Mijamy Jowisza!', saturn: 'Mijamy Saturna!', uranus: 'Mijamy Urana!',
+  neptune: 'Mijamy Neptuna!', pluto: 'Mijamy Plutona!',
+};
+
+export const SPACE_FACTS = {
+  sun: ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.'],
+  mercury: ['To jest Merkury.', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
+  venus: ['To jest Wenus.', 'Wenus to najgorętsza planeta.'],
+  earth: ['To nasza Ziemia.', 'Na Ziemi jest dużo wody.'],
+  moon: ['To jest Księżyc.', 'Księżyc świeci światłem Słońca.', 'Księżyc widać też w dzień.'],
+  mars: ['To jest Mars.', 'Mars jest czerwony jak rdza.', 'Mars ma dwa małe księżyce.'],
+  jupiter: ['To jest Jowisz.', 'Jowisz to największa planeta.', 'Czerwona plama to wielka burza.'],
+  saturn: ['To jest Saturn.', 'Saturn ma wielkie pierścienie.', 'Są z lodu i skał.'],
+  uranus: ['To jest Uran.', 'Uran toczy się jak piłka.'],
+  neptune: ['To jest Neptun.', 'Neptun jest najdalej od Słońca.', 'Tu wieją najmocniejsze wiatry.'],
+  pluto: ['To jest Pluton.', 'Pluton to planeta karłowata.', 'Pluton ma jasne serduszko.'],
+  blackhole: ['To jest czarna dziura.', 'Czarna dziura mocno przyciąga.', 'Jest bardzo, bardzo daleko.'],
+  comet: ['To jest kometa.', 'Kometa to kula lodu i pyłu.', 'Ogon rośnie blisko Słońca.'],
+  stars: ['To są gwiazdy.', 'Wielki Wóz to siedem gwiazd.'],
+};
 
 export const T = {
   number: (n) => [`${cap(NUM[n])}!`],
@@ -349,5 +397,9 @@ export function allSegments(levels, allLetters) {
   Object.keys(COLOUR).forEach((c) => { add(T.flag(c)); add(T.noFlag(c)); add(T.block('colour', c)); add(T.into('colour', c)); add(T.noBasket('colour', c)); });
   Object.keys(SIZE).forEach((sz) => { add(T.block('size', sz)); add(T.into('size', sz)); add(T.noBasket('size', sz)); });
   [T.doorBroken, T.shapeFits, T.doorFixed, T.flagsStart, T.flagNext, T.flagGap, T.blocksStart, T.whichBasket, T.sortSwitch, T.tidied].forEach((f) => add(f()));
+  add(Object.values(SPACE_LINES).flat());
+  add(Object.values(SPACE_TO));
+  add(Object.values(SPACE_PASS));
+  add(Object.values(SPACE_FACTS).flat());
   return [...new Set(out)];
 }

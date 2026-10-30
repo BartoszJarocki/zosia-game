@@ -23,6 +23,7 @@ export const EASY_MIX = { familiar: 1, learning: 0.15 };
 import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
+import { PLACES } from '../places.js';
 import { isBounce } from '../input/bounce.js';
 
 /** How much grass the device can take. */
@@ -39,6 +40,7 @@ export class Mission extends Stage {
     this.post = { tilt: 0.35, focus: 0.45, band: 0.3 };
     this.game = game;
     this.kind = kind;
+    this.area = PLACES[kind].area;
     this.level = levelFor(kind);
     this.L = settingsFor(kind);
     this.rounds = this.L.rounds ?? 3; // GAME.md "rounds" column (Name Train: the word's letters)
@@ -53,7 +55,7 @@ export class Mission extends Stage {
 
   enter() {
     this.build();
-    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => { hush(); this.game.hub(); } });
+    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => { hush(); this.game.home(); } });
     this.onUpdate(() => this.tickAssist());
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
@@ -126,7 +128,7 @@ export class Mission extends Stage {
       total: maxLevel(this.kind),
       levelUp,
       talk, // "Jeszcze raz czy na wyspę?" comes right after the badge line
-      onHome: () => { hush(); this.game.hub(); },
+      onHome: () => { hush(); this.game.home(); },
       onAgain: () => { hush(); this.game.startMission(this.kind); },
     });
     await talk;

@@ -41,7 +41,24 @@ export const PLACES = {
     area: 'island', game: true, domain: 'shapes',
     badge: { label: '🔧', color: '#ea580c' },
   },
+  rocket: { area: 'island', game: false, domain: 'space', leadsTo: 'space' },
+  sun: { area: 'space', game: false, domain: 'space' },
+  mercury: { area: 'space', game: false, domain: 'space' },
+  venus: { area: 'space', game: false, domain: 'space' },
+  earth: { area: 'space', game: false, domain: 'space' },
+  moon: { area: 'space', game: false, domain: 'space' },
+  mars: { area: 'space', game: false, domain: 'space' },
+  jupiter: { area: 'space', game: false, domain: 'space' },
+  saturn: { area: 'space', game: false, domain: 'space' },
+  uranus: { area: 'space', game: false, domain: 'space' },
+  neptune: { area: 'space', game: false, domain: 'space' },
+  pluto: { area: 'space', game: false, domain: 'space' },
+  blackhole: { area: 'space', game: false, domain: 'space' },
+  comet: { area: 'space', game: false, domain: 'space' },
+  stars: { area: 'space', game: false, domain: 'space' },
 };
 
 export const placesIn = (area) => Object.keys(PLACES).filter((k) => PLACES[k].area === area);
 export const GAMES = Object.keys(PLACES).filter((k) => PLACES[k].game);
+
+export const homeArea = (stage) => stage?.area === 'space' ? 'space' : 'island';
