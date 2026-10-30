@@ -91,6 +91,13 @@ export const HOME_TASKS = {
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
+const SPACE_DESTINATIONS = {
+  sun: 'w stronę Słońca', mercury: 'na Merkurego', venus: 'na Wenus',
+  moon: 'na Księżyc', mars: 'na Marsa', jupiter: 'do Jowisza',
+  saturn: 'do Saturna', uranus: 'do Urana', neptune: 'do Neptuna',
+  pluto: 'na Plutona', blackhole: 'zobaczyć czarną dziurę', comet: 'do komety', stars: 'do gwiazd',
+};
+
 export const SPACE_LINES = {
   helmets: ['Zakładamy kaski!'],
   board: ['Wsiadamy do rakiety!'],
@@ -102,17 +109,14 @@ export const SPACE_LINES = {
   map: ['Dokąd lecimy?'],
   again: ['Lecimy dalej czy do domu?'],
   home: ['Wracamy do domu!'],
+  goodnight: ['Robi się późno. Wracamy do domu!'],
+  inviteHome: ['Czas wracać do domu! Polecimy na Ziemię?'],
   far: ['Lecimy daleko, daleko!'],
   sunglasses: [`${pup} zakłada okulary przeciwsłoneczne!`],
+  ...Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, [`Może polecimy ${to}?`]])),
 };
 
-export const SPACE_TO = {
-  sun: 'Lecimy w stronę Słońca!', mercury: 'Lecimy na Merkurego!', venus: 'Lecimy na Wenus!',
-  moon: 'Lecimy na Księżyc!', mars: 'Lecimy na Marsa!', jupiter: 'Lecimy do Jowisza!',
-  saturn: 'Lecimy do Saturna!', uranus: 'Lecimy do Urana!', neptune: 'Lecimy do Neptuna!',
-  pluto: 'Lecimy na Plutona!', blackhole: 'Lecimy zobaczyć czarną dziurę!',
-  comet: 'Lecimy do komety!', stars: 'Lecimy do gwiazd!',
-};
+export const SPACE_TO = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, `Lecimy ${to}!`]));
 
 export const SPACE_PASS = {
   sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',

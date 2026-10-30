@@ -144,7 +144,8 @@ export class Hub extends Stage {
     const roadPts = placesIn('island').filter((kind) => PLACES[kind].game).flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
     const rocketRoad = LAYOUT.rocket.curve.getSpacedPoints(24);
-    const nearRocket = (x, z) => Math.hypot(x + 6, z + 19) < 4 || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+    const [rocketX, rocketZ] = LAYOUT.rocket.at;
+    const nearRocket = (x, z) => Math.hypot(x - rocketX, z - rocketZ) < 4 || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
     const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };

@@ -31,7 +31,7 @@ await page.waitForSelector('.start .play', { timeout: 30000 });
 await page.waitForTimeout(1500);
 await press('.start .play');
 if (!(await until(() => { const s = window.__pup?.getStage(); return s?.area === 'island' && s.markers?.rocket && !s.silent; }))) fail('the island never showed the rocket');
-await page.waitForTimeout(1500);
+await page.waitForTimeout(3500);
 await snap('island');
 
 // the rocket's star, as a box on screen
@@ -63,6 +63,24 @@ report.toMapMs = Date.now() - t0;
 await page.waitForTimeout(1500);
 await snap('map');
 report.drawCalls = logs.filter((l) => /calls/i.test(l));
+report.suggested = await st(() => window.__pup.getStage().suggested ?? null);
+// what she sees, not just what she can tap: each stop's whole visible body and the parked rocket inside the screen
+const seen = await st(() => {
+  const { getStage, camera } = window.__pup;
+  const g = getStage();
+  const box = (o) => {
+    const Vec = o.position.constructor, pts = [];
+    o.updateWorldMatrix(true, true);
+    o.traverse((m) => { if (!m.geometry || !m.visible || m.material?.visible === false || m.isSprite) return; m.geometry.computeBoundingBox(); const b = m.geometry.boundingBox; for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) pts.push(new Vec(x, y, z).applyMatrix4(m.matrixWorld)); });
+    const s = pts.map((p) => p.project(camera)).map((p) => [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight]);
+    return { l: Math.min(...s.map((p) => p[0])), r: Math.max(...s.map((p) => p[0])), t: Math.min(...s.map((p) => p[1])), b: Math.max(...s.map((p) => p[1])) };
+  };
+  // (the road and its stop pads are merged into one mesh, so the road's box stands for every pad)
+  return { rocket: box(g.rocket), bodies: Object.fromEntries([...Object.entries(g.bodies).map(([k, b]) => [k, box(b)]), ['the road and its stop pads', box(g.road)]]) };
+});
+const inside = (b) => b.l >= 0 && b.t >= 0 && b.r <= +w && b.b <= +h;
+if (!inside(seen.rocket)) fail(`the parked rocket is not fully on screen (${Math.round(seen.rocket.l)},${Math.round(seen.rocket.t)} to ${Math.round(seen.rocket.r)},${Math.round(seen.rocket.b)})`);
+for (const [k, b] of Object.entries(seen.bodies)) if (!inside(b)) fail(`${k} is cut off at the screen edge`);
 
 const stops = await st(() => window.__pup.getStage().stopsOnScreen());
 for (const s of stops) report.stops[s.kind] = { d: Math.round(s.r * 2), x: Math.round(s.x), y: Math.round(s.y), onScreen: s.x - s.r >= 0 && s.y - s.r >= 0 && s.x + s.r <= +w && s.y + s.r <= +h };
@@ -96,6 +114,6 @@ else {
 }
 
 writeFileSync(`${OUT}report.json`, JSON.stringify(report, null, 1));
-console.log(JSON.stringify({ viewport: report.viewport, rocket: report.rocket, startButton: report.startButton, drawCalls: report.drawCalls, toMapMs: report.toMapMs, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px${s.flightMs ? ` ${s.flightMs}ms` : ''}`])), errors, failures: report.failures }, null, 1));
+console.log(JSON.stringify({ viewport: report.viewport, rocket: report.rocket, suggested: report.suggested, startButton: report.startButton, drawCalls: report.drawCalls, toMapMs: report.toMapMs, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px${s.flightMs ? ` ${s.flightMs}ms` : ''}`])), errors, failures: report.failures }, null, 1));
 await browser.close();
 process.exit(report.failures.length || errors.length ? 1 : 0);

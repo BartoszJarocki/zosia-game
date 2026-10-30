@@ -16,12 +16,13 @@ const boundary = registerHooks({
       '/src/audio.js': 'export const say = () => Promise.resolve(); export const sfx = {}; export const hush = () => {}; export const unlockAudio = () => {};',
       '/src/ui.js': 'export const spaceHud = () => {}; export const launchHud = () => {};',
       '/src/session/session.js': 'export const getSession = () => ({}); export const checkAttention = () => "ok";',
+      '/src/progress.js': 'export const getVisited = () => ({}); export const recordVisit = () => {};',
     };
     const key = Object.keys(sources).find((suffix) => url.endsWith(suffix));
     return key ? { format: 'module', source: sources[key], shortCircuit: true } : next(url, context);
   },
 });
-const { Space, LAYOUT, ROAD_ORDER, MOVES, checkLayout, nextState, flightStops } = await import('../src/scenes/space.js');
+const { Space, LAYOUT, ROAD_ORDER, MOVES, checkLayout, nextState, flightStops, mapView, mapPoints } = await import('../src/scenes/space.js');
 boundary.deregister();
 
 test('the road puts the Moon next to Earth and distant stops after Pluto', () => {
@@ -60,6 +61,7 @@ test('the stage exposes its area, state and current visit through the whole trip
   assert.equal(s.area, 'space');
   assert.equal(s.state, 'launch');
   assert.equal(s.visiting, null);
+  assert.equal(s.suggested, null);
   s.changeState('waiting');
   s.changeState('flying');
   s.changeState('visiting', 'saturn');
@@ -84,16 +86,19 @@ test('every launch, flight and fact line reaches the voice recorder as a sentenc
   }
   assert.equal(PLACE_LINES.rocket, 'Jedziemy do rakiety!');
   assert.deepEqual(SPACE_LINES.countdown, ['Odliczamy! Pięć, cztery, trzy, dwa, jeden!']);
+  assert.deepEqual(SPACE_LINES.goodnight, ['Robi się późno. Wracamy do domu!']);
+  assert.deepEqual(SPACE_LINES.inviteHome, ['Czas wracać do domu! Polecimy na Ziemię?']);
+  assert.deepEqual(SPACE_LINES.mars, ['Może polecimy na Marsa?']);
+  assert.equal(SPACE_TO.mars, 'Lecimy na Marsa!');
   assert.deepEqual(SPACE_FACTS.sun, ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.']);
   assert.deepEqual(Object.keys(SPACE_FACTS), placesIn('space'));
 });
 
 
 test('all stops fit the requested iPads with separate targets at least 70 pixels across', () => {
-  const stage = new Space({});
   for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
-    const { pos, look, minWidth } = stage.view;
+    const { pos, look, minWidth } = mapView(width, height);
     const direction = pos.clone().sub(look);
     const need = minWidth / (2 * Math.tan(THREE.MathUtils.degToRad(21)) * camera.aspect);
     direction.setLength(Math.max(direction.length(), need));
@@ -115,6 +120,24 @@ test('all stops fit the requested iPads with separate targets at least 70 pixels
         if (other === c) continue;
         assert.ok(Math.hypot(c.x - other.x, c.y - other.y) > c.r + other.r, `${width}x${height} ${c.kind} overlaps ${other.kind}`);
       }
+    }
+  }
+});
+
+test('content, parking and the full suggestion bounce have six percent margins at every stop', () => {
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    for (const here of ROAD_ORDER) for (const suggested of [null, ...ROAD_ORDER]) {
+      const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+      const view = mapView(width, height, here, suggested);
+      camera.position.copy(view.pos);
+      camera.lookAt(view.look);
+      camera.updateMatrixWorld(true);
+      for (const point of mapPoints(here, suggested)) {
+        point.project(camera);
+        assert.ok(Math.abs(point.x) <= 0.880001 && Math.abs(point.y) <= 0.880001, `${width}x${height}: ${here}, ${suggested}`);
+      }
+      const tilt = view.pos.clone().sub(view.look).normalize();
+      assert.ok(Math.abs(tilt.y / tilt.z - 54 / 38) < 1e-10);
     }
   }
 });

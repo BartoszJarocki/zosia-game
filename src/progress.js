@@ -36,6 +36,13 @@ export const getWorld = () => state.world;
 
 /** All skill stats: { [skill]: { [item]: SkillStat } } (read-only use please). */
 export const getSkills = () => state.skills;
+export const getVisited = () => state.visited;
+
+export function recordVisit(kind) {
+  state.visited[kind] = (state.visited[kind] || 0) + 1;
+  save();
+}
+
 const mission = (kind) => (state.missions[kind] ||= { level: 1, good: 0, lastAcc: 1 });
 
 export function levelFor(kind) {

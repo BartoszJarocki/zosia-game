@@ -7,9 +7,10 @@ import { makeRocket, makeLaunchPad } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { say, sfx, hush, unlockAudio } from '../audio.js';
 import { SPACE_LINES, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '../lang/pl.js';
-import { placesIn } from '../places.js';
+import { PLACES, placesIn } from '../places.js';
+import { getVisited, recordVisit } from '../progress.js';
 import { getSession, checkAttention } from '../session/session.js';
-import { nextStep, suggestNext } from '../session/director.js';
+import { spaceDecision, suggestSpace } from '../session/space.js';
 import { spaceHud, launchHud } from '../ui.js';
 
 const rand = (seed) => () => {
@@ -214,9 +215,9 @@ export const LAYOUT = {
   uranus: { at: [-18, 0, -4], r: 2, disc: 3.6 },
   neptune: { at: [-11, 0, -15], r: 2, disc: 3.4 },
   pluto: { at: [1, 0, -15], r: 1.65, disc: 3 },
-  blackhole: { at: [18, 0, -32], r: 1.6, disc: 4.2, far: true },
-  comet: { at: [2, 0, -34], r: 1.8, disc: 3.6, far: true },
-  stars: { at: [-15, 0, -32], r: 2.4, disc: 4, far: true },
+  blackhole: { at: [18, 0, -42], r: 1.6, disc: 4.2, far: true },
+  comet: { at: [2, 0, -44], r: 1.8, disc: 3.6, far: true },
+  stars: { at: [-15, 0, -42], r: 2.4, disc: 4, far: true },
 };
 export const ROAD_ORDER = Object.keys(LAYOUT);
 
@@ -249,7 +250,6 @@ export function flightStops(from, to) {
   return out;
 }
 
-const MAP_VIEW = { pos: new THREE.Vector3(0, 54, 30), look: new THREE.Vector3(0, 0, -8), minWidth: 55 };
 const PAD_VIEW = { pos: new THREE.Vector3(0, 7, 16), look: new THREE.Vector3(-0.7, 2.5, 0), minWidth: 12 };
 const RINGS = {
   saturn: { tilt: [0.5, 0, -0.32], ring: { inner: 1.3, outer: 2.1, stops: [[0.62, 0.72, '#c9a25e'], [0.72, 0.84, '#f4dc9c'], [0.87, 0.96, '#e3bf78'], [0.96, 1, '#f6e7bf']] } },
@@ -258,6 +258,67 @@ const RINGS = {
 const noShadows = (root) => root.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
 const copyView = (view) => ({ pos: view.pos.clone(), look: view.look.clone(), minWidth: view.minWidth });
 const forward = (q) => new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+const mapAim = new THREE.PerspectiveCamera();
+mapAim.position.set(0, 54, 38);
+mapAim.lookAt(0, 0, 0);
+const MAP_FACE = mapAim.quaternion.clone();
+const MAP_RIGHT = new THREE.Vector3(1, 0, 0).applyQuaternion(MAP_FACE);
+const MAP_UP = new THREE.Vector3(0, 1, 0).applyQuaternion(MAP_FACE);
+const MAP_FORWARD = forward(MAP_FACE);
+const bodyPosition = (kind) => new THREE.Vector3(LAYOUT[kind].at[0], LAYOUT[kind].r * 0.55, LAYOUT[kind].at[2]);
+const footprint = (kind) => LAYOUT[kind].r * (RINGS[kind]?.ring.outer ?? ({ blackhole: 2.4, comet: 2, stars: 1.3 }[kind] || 1));
+const starPosition = (kind) => bodyPosition(kind).addScaledVector(MAP_UP, footprint(kind) + 1.4);
+
+function corners(min, max) {
+  const points = [];
+  for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) points.push(new THREE.Vector3(x, y, z));
+  return points;
+}
+
+function faceBox(center, x, y, z = 0) {
+  return corners(new THREE.Vector3(-x, -y, -z), new THREE.Vector3(x, y, z)).map((p) => p.applyQuaternion(MAP_FACE).add(center));
+}
+
+function discPoints(kind) {
+  const { at, disc } = LAYOUT[kind], r = disc + 0.18;
+  return corners(new THREE.Vector3(at[0] - r, -0.06, at[2] - r), new THREE.Vector3(at[0] + r, 0, at[2] + r));
+}
+
+export function parkedPosition(kind) {
+  const center = bodyPosition(kind);
+  const obstacles = ROAD_ORDER.flatMap((k) => [discPoints(k), faceBox(bodyPosition(k), footprint(k), footprint(k)), faceBox(starPosition(k), 1.1, 1.3)]).map((points) => {
+    const xs = points.map((p) => p.dot(MAP_RIGHT)), ys = points.map((p) => p.dot(MAP_UP));
+    return { left: Math.min(...xs), right: Math.max(...xs), bottom: Math.min(...ys), top: Math.max(...ys) };
+  });
+  for (let radius = LAYOUT[kind].disc + 1.8; ; radius += 0.5) {
+    for (const angle of [0, Math.PI, Math.PI / 4, 3 * Math.PI / 4, -Math.PI / 4, -3 * Math.PI / 4]) {
+      const p = center.clone().addScaledVector(MAP_RIGHT, Math.cos(angle) * radius).addScaledVector(MAP_UP, Math.sin(angle) * radius);
+      const x = p.dot(MAP_RIGHT), y = p.dot(MAP_UP);
+      if (obstacles.every((b) => x + 1.8 < b.left || x - 1.8 > b.right || y + 2.2 < b.bottom || y - 2.2 > b.top)) return p;
+    }
+  }
+}
+
+export function mapPoints(here = 'earth', suggested = null) {
+  const points = ROAD_ORDER.flatMap((kind) => {
+    const r = Math.max(footprint(kind), LAYOUT[kind].r * (kind === 'sun' ? 2.5 : kind === 'comet' ? 3 : 1.45));
+    return [...discPoints(kind), ...faceBox(bodyPosition(kind), r, r, LAYOUT[kind].r)];
+  });
+  points.push(...faceBox(parkedPosition(here), 1.2, 1.6, 0.8));
+  if (suggested) points.push(...faceBox(starPosition(suggested), 0.9, 1.1, 0.2));
+  return points;
+}
+
+export function mapView(width, height, here = 'earth', suggested = null, fov = 42) {
+  const points = mapPoints(here, suggested).map((p) => p.applyQuaternion(MAP_FACE.clone().invert()));
+  const sy = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 0.88, sx = sy * width / height;
+  const bounds = (axis, slope) => [Math.min(...points.map((p) => p[axis] - slope * p.z)), Math.max(...points.map((p) => p[axis] + slope * p.z))];
+  const [left, right] = bounds('x', sx), [bottom, top] = bounds('y', sy);
+  // These perspective bounds include depth, so the nearer bottom row gets the same screen margin.
+  const distance = Math.max((right - left) / (2 * sx), (top - bottom) / (2 * sy));
+  const look = new THREE.Vector3((left + right) / 2, (bottom + top) / 2, 0).applyQuaternion(MAP_FACE);
+  return { look, pos: look.clone().addScaledVector(MAP_FORWARD, distance), minWidth: 0 };
+}
 
 function makeSun(r) {
   const g = new THREE.Group();
@@ -330,7 +391,9 @@ function makeRoad(curve) {
     const side = new THREE.Vector3(-t.z, 0, t.x).normalize().multiplyScalar(0.95);
     const p = points[i];
     pos.push(p.x + side.x, -0.06, p.z + side.z, p.x - side.x, -0.06, p.z - side.z);
-    if (i < n) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    if (i < n && curve.getUtoTmapping((i + 1) / n) <= ROAD_ORDER.indexOf('pluto') / (ROAD_ORDER.length - 1)) {
+      idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    }
   }
   const lane = new THREE.BufferGeometry();
   lane.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -341,12 +404,20 @@ function makeRoad(curve) {
   const starMat = new THREE.MeshBasicMaterial({ color: '#fff4a3', side: THREE.DoubleSide });
   const padMat = new THREE.MeshBasicMaterial({ color: '#7461ba' });
   const rimMat = new THREE.MeshBasicMaterial({ color: '#ddcbff' });
-  const len = curve.getLength();
+  const len = curve.getLength(), dots = [];
   for (let d = 0.5; d < len; d += 1.15) {
     const p = curve.getPointAt(d / len);
     if (Object.values(LAYOUT).some((s) => p.distanceTo(new THREE.Vector3(...s.at)) < s.disc)) continue;
+    if (curve.getUtoTmapping(d / len) > ROAD_ORDER.indexOf('pluto') / (ROAD_ORDER.length - 1)) {
+      dots.push(p.x, 0.02, p.z);
+      continue;
+    }
     g.add(mesh(starGeo, starMat, { x: p.x, y: 0.02, z: p.z, rx: -Math.PI / 2, rz: d * 0.3, shadow: false }));
   }
+  g.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(dots, 3)),
+    new THREE.PointsMaterial({ color: '#e4d8ff', size: 4, sizeAttenuation: false, map: halo(), transparent: true, opacity: 0.65, depthWrite: false })));
+  g.add(mesh(new THREE.PlaneGeometry(60, 26), new THREE.MeshBasicMaterial({ map: halo(), color: '#60419e', transparent: true, opacity: 0.9, depthWrite: false }),
+    { x: 1, y: -0.2, z: -43, rx: -Math.PI / 2, shadow: false }));
   for (const { at: [x, , z], disc } of Object.values(LAYOUT)) {
     g.add(mesh(new THREE.CircleGeometry(disc, 48), padMat, { x, y: -0.03, z, rx: -Math.PI / 2, shadow: false }));
     g.add(mesh(new THREE.RingGeometry(disc, disc + 0.18, 48), rimMat, { x, y: -0.02, z, rx: -Math.PI / 2, shadow: false }));
@@ -404,14 +475,16 @@ export class Space extends Stage {
     this.state = launch ? 'launch' : 'waiting';
     this.visiting = null;
     this.revision = 0;
-    this.view = copyView(launch ? PAD_VIEW : MAP_VIEW);
+    this.view = launch ? copyView(PAD_VIEW) : mapView(globalThis.innerWidth || 1180, globalThis.innerHeight || 820);
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.routeIndex = ROAD_ORDER.indexOf('earth');
     this.bodies = {};
     this.idleAt = null;
     this.inviteAt = null;
-    this.sessionAt = 0;
+    this.suggested = null;
+    this.nudgeAt = null;
+    this.nudges = 0;
   }
 
   changeState(next, visiting = null) {
@@ -419,17 +492,15 @@ export class Space extends Stage {
     this.visiting = next === 'visiting' ? visiting : null;
     this.revision++;
     this.idleAt = null;
+    this.nudgeAt = null;
     if (next === 'waiting' && this.logAt) this.logAt = performance.now() + 1500;
   }
 
   enter() {
     addSpace(this.scene);
-    const aim = new THREE.PerspectiveCamera();
-    aim.position.copy(MAP_VIEW.pos);
-    aim.lookAt(MAP_VIEW.look);
-    this.face = aim.quaternion.clone();
-    this.right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.face);
-    this.up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.face);
+    this.face = MAP_FACE.clone();
+    this.right = MAP_RIGHT.clone();
+    this.up = MAP_UP.clone();
     this.map = new THREE.Group();
     this.map.userData.dynamic = true;
     this.scene.add(this.map);
@@ -450,8 +521,16 @@ export class Space extends Stage {
     this.rocket.userData.window.material.map = this.portraits[0].texture;
     this.rocket.userData.window.material.color.set('#ffffff');
     this.rocket.userData.window.material.needsUpdate = true;
-    this.activity = () => { if (this.state === 'visiting') this.idleAt = performance.now() + 20000; };
+    this.activity = () => {
+      if (this.state === 'visiting') this.idleAt = performance.now() + 20000;
+      if (this.nudgeAt) this.nudgeAt = performance.now() + 25000;
+    };
     window.addEventListener('pointerdown', this.activity, true);
+    this.resize = () => {
+      this.mapView = mapView(innerWidth, innerHeight, ROAD_ORDER[Math.round(this.routeIndex)], this.suggested, camera.fov);
+      if (['waiting', 'flying'].includes(this.state) && !this.cameraMove) this.view = copyView(this.mapView);
+    };
+    window.addEventListener('resize', this.resize);
     if (this.state === 'launch') {
       this.map.visible = false;
       this.buildPad();
@@ -459,8 +538,7 @@ export class Space extends Stage {
     } else {
       this.parkRocket();
       this.showHud();
-      this.suggest();
-      say(SPACE_LINES.map);
+      this.direct(SPACE_LINES.map);
     }
     noShadows(this.scene);
     this.startLog();
@@ -597,20 +675,18 @@ export class Space extends Stage {
       if (!this.alive) return;
       this.launchRoot.visible = false;
       this.map.visible = true;
-      this.view = copyView(MAP_VIEW);
       this.parkRocket();
       this.changeState('waiting');
       this.showHud();
-      this.suggest();
+      this.direct(SPACE_LINES.map);
     });
-    if (this.alive) say(SPACE_LINES.map);
   }
 
   parkRocket() {
     this.rocket.quaternion.copy(this.face);
     this.rocket.scale.setScalar(1.05);
     this.rocket.userData.flame.visible = false;
-    this.positionRocket(this.routeIndex);
+    this.rocket.position.copy(parkedPosition(ROAD_ORDER[Math.round(this.routeIndex)]));
   }
 
   positionRocket(index) {
@@ -621,10 +697,27 @@ export class Space extends Stage {
     this.rocket.position.z += 4.5;
   }
 
-  suggest() {
-    const kinds = ROAD_ORDER.filter((k) => k !== 'earth');
-    this.suggested = suggestNext(getSession(), kinds);
+  direct(greeting) {
+    const session = getSession();
+    const decision = spaceDecision(session, checkAttention());
+    const games = placesIn('space').filter((kind) => PLACES[kind].game);
+    this.suggested = decision === 'invite' ? 'earth' : decision === 'suggest'
+      ? suggestSpace(session, ROAD_ORDER, ROAD_ORDER[Math.round(this.routeIndex)], getVisited(), games) : null;
     this.suggestion.visible = !!this.suggested;
+    this.updateSuggestion(0);
+    this.resize();
+    if (decision === 'home') { this.returnHome(SPACE_LINES.goodnight); return; }
+    this.nudgeLine = decision === 'invite' ? SPACE_LINES.inviteHome : SPACE_LINES[this.suggested];
+    this.nudges = 0;
+    this.nudgeAt = this.nudgeLine ? performance.now() + 25000 : null;
+    say(this.nudgeLine || greeting);
+  }
+
+  updateSuggestion(t) {
+    if (!this.suggested) return;
+    this.suggestion.position.copy(starPosition(this.suggested)).addScaledVector(this.up, Math.sin(t * 3) * 0.2);
+    this.suggestion.quaternion.copy(this.face);
+    this.suggestion.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
   }
 
   showHud() {
@@ -693,6 +786,11 @@ export class Space extends Stage {
 
   async visit(kind) {
     this.changeState('visiting', kind);
+    recordVisit(kind);
+    const session = getSession();
+    session.lastActiveAt = Date.now();
+    const visited = (session.visited ||= {});
+    visited[kind] = (visited[kind] || 0) + 1;
     const revision = this.revision;
     this.road.visible = false;
     Object.entries(this.bodies).forEach(([k, g]) => { g.visible = k === kind; });
@@ -749,6 +847,7 @@ export class Space extends Stage {
     this.rocket.visible = true;
     this.rocket.userData.window.material.map = this.portraits[0].texture;
     this.parkRocket();
+    this.resize();
   }
 
   async backToMap() {
@@ -756,22 +855,21 @@ export class Space extends Stage {
     const revision = this.revision;
     this.idleAt = null;
     this.showMap();
-    await this.moveView(MAP_VIEW);
+    await this.moveView(this.mapView);
     if (!this.alive || revision !== this.revision) return;
     this.changeState('waiting');
     this.showHud();
-    this.suggest();
-    say(SPACE_LINES.again);
+    this.direct(SPACE_LINES.again);
   }
 
-  async returnHome() {
+  async returnHome(line = SPACE_LINES.home) {
     if (!this.alive || !MOVES[this.state].includes('returning')) return;
     this.changeState('returning');
     this.suggestion.visible = false;
     this.showMap();
     hush();
-    const talk = say(SPACE_LINES.home);
-    await this.moveView(MAP_VIEW, 800);
+    const talk = say(line);
+    await this.moveView(this.mapView, 800);
     if (!this.alive) return;
     await talk;
     await this.flyTo('earth', []);
@@ -818,30 +916,27 @@ export class Space extends Stage {
       const perUnit = Math.abs(edge.x - c.x) * width / 2;
       g.userData.hit.scale.setScalar(Math.max(g.userData.foot, 38 / Math.max(perUnit, 0.01)));
     }
-    if (this.suggested && this.state === 'waiting') {
-      const g = this.bodies[this.suggested];
-      this.suggestion.position.copy(g.position).addScaledVector(this.up, g.userData.foot + 1.4 + Math.sin(t * 3) * 0.2);
-      this.suggestion.quaternion.copy(this.face);
-      this.suggestion.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
-    }
+    if (this.state === 'waiting') this.updateSuggestion(t);
     this.rocket.userData.flame.scale.y = 1 + Math.sin(t * 24) * 0.15;
     this.wind.visible = this.visiting === 'neptune' && now < (this.windUntil || 0);
     if (this.wind.visible) this.wind.position.copy(this.right).multiplyScalar(Math.sin(t * 7) * 0.8);
     if (this.inviteAt && now >= this.inviteAt) { this.inviteAt = null; say(SPACE_LINES.startAgain); }
     if (this.idleAt && now >= this.idleAt) this.backToMap();
-    if (now > this.sessionAt && ['waiting', 'visiting'].includes(this.state)) {
-      this.sessionAt = now + 1000;
-      if (nextStep(getSession()) === 'finale' || checkAttention() !== 'ok') this.returnHome();
+    if (this.nudgeAt && now >= this.nudgeAt && this.state === 'waiting') {
+      say(this.nudgeLine);
+      this.nudgeAt = ++this.nudges < 2 ? now + 25000 : null;
     }
   }
 
   resumed(ms) {
     if (this.idleAt) this.idleAt += ms;
     if (this.inviteAt) this.inviteAt += ms;
+    if (this.nudgeAt) this.nudgeAt += ms;
   }
 
   exit() {
     window.removeEventListener('pointerdown', this.activity, true);
+    window.removeEventListener('resize', this.resize);
     this.launchUi?.remove();
     this.portraits?.forEach((p) => p.dispose());
     const textures = new Set();
