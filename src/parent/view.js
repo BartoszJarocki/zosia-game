@@ -6,7 +6,7 @@ import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
-import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
+import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
 
@@ -29,7 +29,7 @@ function bar(row) {
     <span class="pv-skill">${esc(row.label)}</span>
     <span class="pv-bar"><i style="width:${Math.round(row.mastery * 100)}%"></i></span>
     <span class="pv-pct">${pct(row.mastery)}</span>
-    <span class="pv-meta">${row.attempts}× · ${row.firstTryPct}% first try${chance} · ${row.assistPct}% help · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(label(c))).join(', ')}` : ''}</span>
+    <span class="pv-meta">${row.attempts}× · ${row.firstTryPct}% first try${chance} · ${row.assistPct}% help · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(itemLabel(row.skill, c))).join(', ')}` : ''}</span>
   </div>`;
 }
 
@@ -164,7 +164,8 @@ function wireDevTools(page, rerender) {
   }));
   page.querySelector('[data-act="setMastery"]')?.addEventListener('click', () => {
     const skill = page.querySelector('.pv-skill-pick').value;
-    const item = page.querySelector('.pv-item-pick').value.trim().toUpperCase();
+    const raw = page.querySelector('.pv-item-pick').value.trim();
+    const item = skill === 'space' || raw.startsWith('space:') ? raw.toLowerCase() : raw.toUpperCase();
     const v = Math.max(0, Math.min(1, Number(page.querySelector('.pv-val-pick').value)));
     if (!item) return done('Type an item first (a letter or a number).');
     progressDev.setMastery(skill, item, v);
@@ -231,6 +232,7 @@ export function showParentView({ onClose }) {
     <section><h2>Picture words <small class="pv-build">Kitty Park, Balloon Hill</small></h2>
       <p class="pv-never">Tap the word she knows best for each letter. Every word is recorded, so the voice stays the same.</p>
       <div class="pv-words">${pictureWords()}</div></section>
+    ${metItems(skills, SPACE_SKILLS).length ? `<section><h2>Space</h2>${grid(itemReports(skills, SPACE_SKILLS, metItems(skills, SPACE_SKILLS)), (r) => itemLabel('space', r.item))}</section>` : ''}
     <section><h2>Numbers</h2>${grid(itemReports(skills, NUMBER_SKILLS, nums))}</section>
     <section><h2>More, less, the same <small class="pv-build">Pup Picnic</small></h2>${grid(itemReports(skills, COMPARE_SKILLS, COMPARE_ITEMS), (r) => itemLabel('comparison', r.item))}</section>
     ${metItems(skills, WORD_SKILLS).length ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${grid(itemReports(skills, WORD_SKILLS, metItems(skills, WORD_SKILLS)), (r) => r.item)}</section>` : ''}

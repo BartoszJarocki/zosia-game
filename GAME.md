@@ -351,6 +351,28 @@ under the window, so she can still count what she sent. Chase stays in the rocke
   so every level includes a scored `howMany` round. Manual drops practise `counting`;
   choosing the numeral practises `quantity`.
 
+### 🔭 The Telescope · `telescope`
+
+She looks through a round brass eyepiece and taps a floating place. First she matches a picture,
+then finds a place by name or by a feature. The place hops with sparkles: "Tak! To jest Saturn."
+The last level asks what comes next along the road from the Sun.
+
+| Level | pool | choices | ask | rounds |
+|---|---|---|---|---|
+| 1 | sun, earth, moon, saturn | 2 | match | 4 |
+| 2 | sun, earth, moon, saturn, mars, jupiter | 2 | name | 4 |
+| 3 | sun, earth, moon, saturn, mars, jupiter, comet, blackhole | 3 | name | 5 |
+| 4 | sun, earth, saturn, mars, jupiter, comet, pluto | 3 | feature | 5 |
+| 5 | mercury, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto | 3 | name | 5 |
+| 6 | mercury, venus, earth, mars, jupiter, saturn, uranus, neptune | 3 | order | 5 |
+
+- **pool**: place kinds from `PLACES`. Feature pools only include places with a feature question.
+- **choices**: how many places float below the picture (2 to 4), with one unambiguous answer.
+- **ask**: `match` shows the same place above; `name` asks its name; `feature` asks about rings,
+  redness, our home, the largest planet, a tail, a heart or light and warmth; `order` asks what
+  follows a planet along the road. Order records `sequence`; the others record `space`.
+- **rounds**: how many places to find.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

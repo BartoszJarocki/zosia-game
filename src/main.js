@@ -16,6 +16,7 @@ import { PicnicMission } from './scenes/picnic.js';
 import { GarageMission } from './scenes/garage.js';
 import { MoonMission } from './scenes/moon.js';
 import { BlackHoleMission } from './scenes/blackhole.js';
+import { TelescopeMission } from './scenes/telescope.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
@@ -62,7 +63,7 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission, moon: MoonMission,
-  blackhole: BlackHoleMission,
+  blackhole: BlackHoleMission, telescope: TelescopeMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
@@ -75,7 +76,7 @@ const game = {
   },
   home() {
     const stage = getStage();
-    return homeArea(stage) === 'space' ? game.space({ at: stage.kind === 'space-map' ? stage.at : stage.kind }) : game.hub();
+    return homeArea(stage) === 'space' ? game.space({ at: stage.at || stage.kind }) : game.hub();
   },
   async space({ launch = false, at = 'earth' } = {}) {
     const { Space } = await import('./scenes/space.js');
@@ -84,7 +85,12 @@ const game = {
   },
   startMission(kind) {
     hush();
-    return pawWipe(() => setStage(new MISSIONS[kind](game)));
+    const at = getStage()?.at || 'earth';
+    return pawWipe(() => {
+      const mission = new MISSIONS[kind](game);
+      if (kind === 'telescope') mission.at = at;
+      setStage(mission);
+    });
   },
 };
 

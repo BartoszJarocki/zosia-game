@@ -120,6 +120,24 @@ for (const { kind } of stops.filter((s) => s.kind !== 'earth')) {
   await page.waitForTimeout(600);
 }
 
+// the telescope button on the map opens its game; holding home brings her back to the map
+const scope = await page.locator('.space-telescope').first().boundingBox().catch(() => null);
+if (!scope) fail('no telescope button on the map');
+else {
+  report.telescopeButton = { w: Math.round(scope.width), h: Math.round(scope.height) };
+  if (Math.min(scope.width, scope.height) < 70) fail(`the telescope button is ${Math.round(scope.width)}x${Math.round(scope.height)} px, under 70`);
+  await page.mouse.click(scope.x + scope.width / 2, scope.y + scope.height / 2);
+  if (!(await until(() => window.__pup.getStage().kind === 'telescope', null, 60000))) fail('the telescope button did not open the telescope');
+  else {
+    await page.waitForTimeout(4000);
+    await snap('telescope');
+    const b = await page.locator('.home').first().boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await page.waitForTimeout(1500); await page.mouse.up();
+    if (!(await until(() => { const g = window.__pup.getStage(); return g.kind === 'space-map' && g.state === 'waiting'; }, null, 60000))) fail('leaving the telescope did not bring her back to the map');
+    await page.waitForTimeout(1200);
+  }
+}
+
 const earth = (await st(() => window.__pup.getStage().stopsOnScreen())).find((x) => x.kind === 'earth');
 if (!earth) fail('no Earth stop on the map');
 else {
@@ -130,6 +148,6 @@ else {
 }
 
 writeFileSync(`${OUT}report.json`, JSON.stringify(report, null, 1));
-console.log(JSON.stringify({ viewport: report.viewport, rocket: report.rocket, suggested: report.suggested, startButton: report.startButton, drawCalls: report.drawCalls, toMapMs: report.toMapMs, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px${s.flightMs ? ` ${s.flightMs}ms` : ''}`])), errors, failures: report.failures }, null, 1));
+console.log(JSON.stringify({ viewport: report.viewport, rocket: report.rocket, telescopeButton: report.telescopeButton, suggested: report.suggested, startButton: report.startButton, drawCalls: report.drawCalls, toMapMs: report.toMapMs, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px${s.flightMs ? ` ${s.flightMs}ms` : ''}`])), errors, failures: report.failures }, null, 1));
 await browser.close();
 process.exit(report.failures.length || errors.length ? 1 : 0);

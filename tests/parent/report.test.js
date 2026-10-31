@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize, itemReports, overview, maxNumber, LETTER_SKILLS, WORD_SKILLS, GARAGE_SKILLS, metItems, FEW } from '../../src/parent/report.js';
+import { summarize, itemReports, overview, maxNumber, LETTER_SKILLS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, metItems, FEW } from '../../src/parent/report.js';
 import { emptyStat } from '../../src/learning/mastery.js';
 
 const stat = (o) => ({ ...emptyStat(), ...o });
@@ -144,4 +144,21 @@ test('missionStatus: good runs to the next star, the last run, gentler or not', 
 test('names and Garage items are listed as she meets them', () => {
   const skills = { wordVisual: { ZOSIA: stat({ attempts: 2 }), MAMA: stat({ attempts: 1 }) }, shape: { circle: stat({ attempts: 1 }) }, sorting: { red: stat({ attempts: 3 }) } };
   assert.deepEqual([metItems(skills, WORD_SKILLS), metItems(skills, GARAGE_SKILLS), metItems({}, WORD_SKILLS)], [['ZOSIA', 'MAMA'], ['circle', 'red'], []]);
+});
+
+
+test('Space lists met places with the usual per-item lines and English names', () => {
+  const skills = { space: {
+    saturn: stat({ attempts: 4, correctFirstTry: 3, assisted: 1, avgLatencyMs: 2000, mastery: 0.6, confusions: { moon: 2 }, lastSeenAt: 20 }),
+    moon: stat({ wrong: 1 }),
+  }, sequence: { 'space:mars': stat({ attempts: 1, mastery: 0.2 }) } };
+  assert.deepEqual(metItems(skills, SPACE_SKILLS), ['saturn', 'moon']);
+  assert.deepEqual(itemReports(skills, SPACE_SKILLS, ['saturn'])[0], {
+    item: 'saturn', seen: true, rows: [{ skill: 'space', label: 'recognises it', chancePct: 33,
+      mastery: 0.6, attempts: 4, firstTryPct: 75, assistPct: 25, avgLatencyS: 2, wrong: 0,
+      confusions: ['moon'], few: false, lastSeenAt: 20 }],
+  });
+  assert.deepEqual(['saturn', 'moon', 'blackhole'].map((k) => itemLabel('space', k)), ['Saturn', 'the Moon', 'the black hole']);
+  assert.equal(itemLabel('sequence', 'space:mars'), 'after Mars');
+  assert.equal(overview(skills).recent[0].name, 'Saturn');
 });

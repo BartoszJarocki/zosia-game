@@ -6,6 +6,7 @@
 //   ### Name · `kind`     → a mission; the first table after it has one row per level.
 
 import { parseNeeds } from './gate.js';
+import { SPACE_PLACES, PLANETS, FEATURES, distractors, itemsFor } from './telescope.js';
 
 /** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
 export const SOUNDABLE = 'AEFHILMNORSUWZ';
@@ -71,6 +72,12 @@ export const SCHEMA = {
     howMany: { type: 'range', min: 1, max: 9, optional: true },
     auto: { type: 'bool' },
     slots: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  telescope: {
+    pool: { type: 'list', values: SPACE_PLACES },
+    choices: { type: 'int', min: 2, max: 4 },
+    ask: { type: 'enum', values: ['match', 'name', 'feature', 'order'] },
     rounds: { type: 'int', min: 1, max: 8 },
   },
   blackhole: {
@@ -270,6 +277,12 @@ export function resolveLetters(expr, sets, name) {
 }
 
 function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
+  if (kind === 'telescope' && s.pool) {
+    if (new Set(s.pool).size !== s.pool.length) errors.push(`${where}: pool must have distinct places`);
+    if (s.ask === 'feature' && s.pool.some((k) => !FEATURES.includes(k))) errors.push(`${where}: feature pool must only contain places with a feature question`);
+    if (s.ask === 'order' && (s.pool.some((k) => !PLANETS.includes(k)) || !itemsFor(s).length)) errors.push(`${where}: order needs neighbouring planets in road order`);
+    for (const target of s.pool) if (distractors(s, target).length < s.choices - 1) errors.push(`${where}: not enough unambiguous choices for ${target}`);
+  }
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
-import { placesIn } from '../src/places.js';
+import { PLACES, placesIn } from '../src/places.js';
 import { allSegments, SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS, PLACE_LINES } from '../src/lang/pl.js';
 import { parseGame } from '../src/levels/parse.js';
 import * as THREE from 'three';
@@ -29,7 +29,8 @@ test('the road puts the Moon next to Earth and distant stops after Pluto', () =>
   assert.deepEqual(ROAD_ORDER, ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'blackhole', 'comet', 'stars']);
   assert.deepEqual(ROAD_ORDER.filter((k) => LAYOUT[k].far), ['blackhole', 'comet', 'stars']);
   assert.doesNotThrow(() => checkLayout(placesIn('space')));
-  assert.throws(() => checkLayout(['moon', 'telescope']), { message: 'Missing space layout for telescope' });
+  assert.doesNotThrow(() => checkLayout(['telescope'], {})); // (the telescope is in the rocket, not on the road)
+  assert.throws(() => checkLayout(['moon', 'jupiter'], { moon: LAYOUT.moon }), { message: 'Missing space layout for jupiter' });
   assert.throws(() => checkLayout(['moon'], {}), { message: 'Missing space layout for moon' });
 });
 
@@ -93,7 +94,7 @@ test('every launch, flight and fact line reaches the voice recorder as a sentenc
   assert.deepEqual(Object.keys(SPACE_INVITE), Object.keys(SPACE_TO));
   assert.equal(SPACE_TO.mars, 'Lecimy na Marsa!');
   assert.deepEqual(SPACE_FACTS.sun, ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.']);
-  assert.deepEqual(Object.keys(SPACE_FACTS), placesIn('space'));
+  assert.deepEqual(Object.keys(SPACE_FACTS), placesIn('space').filter((k) => PLACES[k].stop !== false));
 });
 
 test('the far places sit to the right and visible planet spheres meet their landscape size targets', () => {

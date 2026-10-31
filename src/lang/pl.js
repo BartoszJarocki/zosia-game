@@ -89,6 +89,7 @@ export const HOME_TASKS = {
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
+  telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
@@ -120,6 +121,28 @@ export const SPACE_LINES = {
 export const SPACE_INVITE = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, [`Może polecimy ${to}?`]]));
 export const SPACE_TO = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, `Lecimy ${to}!`]));
 
+SPACE_INVITE.telescope = ['Może popatrzymy przez teleskop?'];
+SPACE_TO.telescope = 'Patrzymy przez teleskop!';
+
+export const TELESCOPE_NAMES = {
+  sun: 'Słońce', mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', moon: 'Księżyc',
+  mars: 'Mars', jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
+  pluto: 'Pluton', comet: 'kometa', blackhole: 'czarna dziura',
+};
+export const TELESCOPE_FEATURES = {
+  saturn: 'Która planeta ma wielkie pierścienie?',
+  mars: 'Która planeta jest czerwona?',
+  earth: 'Gdzie jest nasz dom?',
+  jupiter: 'Która planeta jest największa?',
+  comet: 'Co ma długi ogon?',
+  pluto: 'Co ma jasne serduszko?',
+  sun: 'Co świeci i grzeje?',
+};
+export const TELESCOPE_AFTER = {
+  mercury: 'Merkurym', venus: 'Wenus', earth: 'Ziemi', mars: 'Marsie',
+  jupiter: 'Jowiszu', saturn: 'Saturnie', uranus: 'Uranie', neptune: 'Neptunie',
+};
+
 export const SPACE_PASS = {
   sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',
   earth: 'Mijamy Ziemię!', moon: 'Mijamy Księżyc!', mars: 'Mijamy Marsa!',
@@ -145,6 +168,13 @@ export const SPACE_FACTS = {
 };
 
 export const T = {
+  telescopeStart: () => ['Patrzymy przez teleskop!'],
+  telescopeMatch: () => ['Znajdź taki sam!'],
+  telescopeName: (kind) => [`Gdzie jest ${TELESCOPE_NAMES[kind]}?`],
+  telescopeFeature: (kind) => [TELESCOPE_FEATURES[kind]],
+  telescopeOrder: (kind) => [`Co jest po ${TELESCOPE_AFTER[kind]}?`],
+  telescopeRight: (kind) => [`Tak! To jest ${TELESCOPE_NAMES[kind]}.`],
+  telescopeDone: () => ['Brawo! Znasz już kosmos!'],
   number: (n) => [`${cap(NUM[n])}!`],
   praise: (i) => [PRAISE[i]],
 
@@ -434,5 +464,9 @@ export function allSegments(levels, allLetters) {
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
+  [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
+  Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
+  Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
+  Object.keys(TELESCOPE_AFTER).forEach((kind) => add(T.telescopeOrder(kind)));
   return [...new Set(out)];
 }

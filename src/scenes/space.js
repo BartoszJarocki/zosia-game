@@ -140,6 +140,7 @@ const halo = () => (haloTex ||= paint(128, 128, (c) => {
 const glowSprite = (color, size, opacity) => {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo(), color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending }));
   s.scale.setScalar(size);
+  s.userData.decorative = true;
   s.raycast = () => {}; // (a glow must never take a tap meant for the planet in front of it)
   return s;
 };
@@ -224,6 +225,7 @@ export const ROAD_ORDER = Object.keys(LAYOUT);
 
 export function checkLayout(kinds = placesIn('space'), layout = LAYOUT) {
   for (const kind of kinds) {
+    if (PLACES[kind]?.stop === false) continue;
     if (!layout[kind]) throw new Error(`Missing space layout for ${kind}`);
   }
 }
@@ -306,7 +308,7 @@ export function mapPoints(here = 'earth', suggested = null) {
     return [...discPoints(kind), ...faceBox(bodyPosition(kind), r, r, LAYOUT[kind].r)];
   });
   points.push(...faceBox(parkedPosition(here), 1.2, 1.6, 0.8));
-  if (suggested) points.push(...faceBox(starPosition(suggested), 0.9, 1.1, 0.2));
+  if (suggested && PLACES[suggested]?.stop !== false) points.push(...faceBox(starPosition(suggested), 0.9, 1.1, 0.2));
   return points;
 }
 
@@ -349,6 +351,12 @@ function makeComet(face, r) {
   g.userData.spinner = body;
   g.userData.foot = r * 2;
   return g;
+}
+
+export function makeSpacePlace(kind, face, r) {
+  const b = { id: kind, glow: '#e0d7ff', ...RINGS[kind] };
+  return kind === 'sun' ? makeSun(r) : kind === 'blackhole' ? makeBlackHole(face, r)
+    : kind === 'comet' ? makeComet(face, r) : kind === 'stars' ? makeStars(face, r) : makePlanet(b, face, r);
 }
 
 function makeStars(face, r) {
@@ -551,9 +559,7 @@ export class Space extends Stage {
 
   addStop(kind) {
     const { r, at } = LAYOUT[kind];
-    const b = { id: kind, glow: '#e0d7ff', ...RINGS[kind] };
-    const g = kind === 'sun' ? makeSun(r) : kind === 'blackhole' ? makeBlackHole(this.face, r)
-      : kind === 'comet' ? makeComet(this.face, r) : kind === 'stars' ? makeStars(this.face, r) : makePlanet(b, this.face, r);
+    const g = makeSpacePlace(kind, this.face, r);
     g.position.set(at[0], r * 0.55, at[2]);
     g.userData.dynamic = true;
     g.userData.tapHeight = 0;
@@ -707,7 +713,8 @@ export class Space extends Stage {
     const games = placesIn('space').filter((kind) => PLACES[kind].game);
     this.suggested = decision === 'invite' ? 'earth' : decision === 'suggest'
       ? suggestSpace(session, ROAD_ORDER, ROAD_ORDER[Math.round(this.routeIndex)], getVisited(), games) : null;
-    this.suggestion.visible = !!this.suggested;
+    this.suggestion.visible = !!this.suggested && PLACES[this.suggested].stop !== false;
+    this.showHud();
     this.updateSuggestion(0);
     this.resize();
     if (decision === 'home') { this.returnHome(SPACE_LINES.goodnight); return; }
@@ -718,14 +725,21 @@ export class Space extends Stage {
   }
 
   updateSuggestion(t) {
-    if (!this.suggested) return;
+    if (!this.suggested || PLACES[this.suggested].stop === false) return;
     this.suggestion.position.copy(starPosition(this.suggested)).addScaledVector(this.up, Math.sin(t * 3) * 0.2);
     this.suggestion.quaternion.copy(this.face);
     this.suggestion.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
   }
 
   showHud() {
-    spaceHud({ visiting: this.state === 'visiting', onHome: () => this.returnHome(), onBack: () => this.backToMap() });
+    spaceHud({ visiting: this.state === 'visiting', suggested: this.suggested === 'telescope',
+      onHome: () => this.returnHome(), onBack: () => this.backToMap(), onTelescope: () => this.openTelescope() });
+  }
+
+  openTelescope() {
+    if (!this.alive || this.state !== 'waiting' || this.cameraMove) return;
+    hush();
+    this.game.startMission('telescope');
   }
 
   async tapStop(kind) {

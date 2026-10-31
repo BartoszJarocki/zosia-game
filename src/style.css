@@ -341,3 +341,12 @@ svg { display: block; }
 @keyframes rocketPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
 @keyframes countIn { from { transform: scale(.7); opacity: .3; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .rocket-start, .rocket-countdown.lit { animation: none; } .rocket-start { transform: translateX(-50%); } }
+
+.space-telescope {
+  position: absolute; right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom));
+  width: 100px; height: 100px; min-width: 100px; min-height: 100px;
+  background: #fff0c9; border: 5px solid #d6a653;
+}
+.space-telescope svg { width: 82px; height: 82px; }
+.space-telescope.suggested { animation: telescopeInvite 2s ease-in-out infinite; }
+@keyframes telescopeInvite { 50% { transform: scale(1.08); border-color: #fff7ad; } }

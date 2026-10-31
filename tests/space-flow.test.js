@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['moon', 'blackhole'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['moon', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });

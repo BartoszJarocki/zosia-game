@@ -17,6 +17,7 @@ export const ICON = {
   paw: (c = 'currentColor') => `<svg viewBox="0 0 100 100" fill="${c}">${PAW_PATH}</svg>`,
   home: '<svg viewBox="0 0 100 100"><path d="M50 14 L90 48 H78 V86 H22 V48 H10 Z" fill="#ef4444" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><rect x="40" y="58" width="20" height="28" rx="4" fill="#fff"/></svg>',
   again: '<svg viewBox="0 0 100 100"><path d="M78 50 A28 28 0 1 1 64 25.8" fill="none" stroke="#2563eb" stroke-width="12" stroke-linecap="round"/><path d="M58 8 L84 22 L60 40 Z" fill="#2563eb"/></svg>',
+  telescope: '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 52 L30 88 M50 52 L72 88 M50 52 V88" fill="none" stroke="#805228" stroke-width="6" stroke-linecap="round"/><g transform="rotate(-28 50 40)"><rect x="18" y="31" width="58" height="23" rx="5" fill="#d6a653" stroke="#85582d" stroke-width="3"/><path d="M28 34 H68" stroke="#ffe6a6" stroke-width="5" stroke-linecap="round"/><rect x="70" y="27" width="12" height="31" rx="4" fill="#f3d28b" stroke="#85582d" stroke-width="3"/><rect x="10" y="35" width="12" height="15" rx="3" fill="#8b643c"/><path d="M79 32 V52" stroke="#a8e5ee" stroke-width="4" stroke-linecap="round"/></g></svg>',
   speaker: '<svg viewBox="0 0 100 100"><path d="M18 38 H36 L58 20 V80 L36 62 H18 Z" fill="#1e4fbf"/><path d="M70 34 Q82 50 70 66 M78 24 Q98 50 78 76" fill="none" stroke="#1e4fbf" stroke-width="8" stroke-linecap="round"/></svg>',
 };
 
@@ -127,16 +128,17 @@ export function hubHud() {
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) shelf.addEventListener(ev, () => clearTimeout(t));
 }
 
-export function spaceHud({ onHome, onBack, visiting = false }) {
+export function spaceHud({ onHome, onBack, onTelescope, visiting = false, suggested = false }) {
   clear();
   const hud = el(`<div class="space-hud">
     <div class="topbar"><button class="round-btn space-home" aria-label="Do domu">${ICON.home}</button>
     <button class="round-btn space-parent" aria-label="Dla rodzica, przytrzymaj">${ICON.paw()}</button></div>
-    ${visiting ? '<button class="round-btn space-back" aria-label="Wróć do mapy">🚀</button>' : ''}
+    ${visiting ? '<button class="round-btn space-back" aria-label="Wróć do mapy">🚀</button>' : `<button class="round-btn space-telescope${suggested ? ' suggested' : ''}" aria-label="Teleskop">${ICON.telescope}</button>`}
   </div>`);
   press(hud.querySelector('.space-home'), onHome);
   holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), 3000);
   if (visiting) press(hud.querySelector('.space-back'), onBack);
+  else press(hud.querySelector('.space-telescope'), onTelescope);
   ui.append(hud);
 }
 
