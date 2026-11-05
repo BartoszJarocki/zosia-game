@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['moon', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['moon', 'mars', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -149,10 +149,10 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.tapStop(kind); frame(s);
     assert.equal(s.visiting, kind);
     assert.equal(s.state, 'visiting');
-    if (kind === 'blackhole') {
-      assert.deepEqual(started, ['blackhole']);
-      assert.equal(getVisited().blackhole, 1);
-      assert.equal(s.routeIndex, 11);
+    if (kind === 'blackhole' || kind === 'mars') {
+      assert.deepEqual(started, kind === 'mars' ? ['mars'] : ['mars', 'blackhole']);
+      assert.equal(getVisited()[kind], 1);
+      assert.equal(s.routeIndex, kind === 'blackhole' ? 11 : 5);
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
       continue;
@@ -166,7 +166,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.backToMap(); frame(s);
     assert.equal(s.state, 'waiting'); assert.equal(s.visiting, null);
   }
-  await s.tapStop('mars');
+  await s.tapStop('jupiter');
   s.idleAt = performance.now() - 1; frame(s);
   await new Promise(setImmediate);
   assert.equal(s.state, 'waiting');
@@ -244,8 +244,8 @@ test('map entries check attention once; idle invitations never force a finale fl
   for (let i = 0; i < 120; i++) s.tick(1, i);
   assert.equal(globalThis.__checks, 1);
   assert.equal(globalThis.__lines.length, lines);
-  await s.tapStop('mars');
-  assert.equal(s.visiting, 'mars');
+  await s.tapStop('jupiter');
+  assert.equal(s.visiting, 'jupiter');
   assert.equal(s.nudgeAt, null);
   assert.equal(globalThis.__checks, 1);
   await s.backToMap();

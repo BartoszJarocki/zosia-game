@@ -373,6 +373,28 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### 🚙 The Mars Rover · `mars`
+
+The rocket lands on Mars, under a pinkish-violet sky with two tiny moons. Chase sits in a six-wheeled rover
+with a dish on top. Big red rocks ahead show white numerals (and dots under them early on). Tap the rock the
+bubble asks for and the rover drives there, scans it and sparkles.
+
+| Level | max | choices | ask | rock | rounds |
+|---|---|---|---|---|---|
+| 1 | 3 | 3 | both | both | 3 |
+| 2 | 5 | 3 | both | numeral | 3 |
+| 3 | 5 | 3 | numeral | numeral | 3 |
+| 4 | 6 | 3 | dots | numeral | 3 |
+| 5 | 9 | 4 | name | numeral | 3 |
+
+- **max** — numbers go from 1 to max (2–9)
+- **choices** — how many rocks (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
+- **ask** — `both`: numeral + dots · `numeral` · `dots`: she counts the bubble's dots and finds the numeral
+  (help lights the dots one by one; the number is named only when the answer is shown) · `name`: nothing
+  shown, only spoken ("Jedziemy do kamienia z numerem trzy!")
+- **rock** — what the rocks show: `both` (numeral + dots) or `numeral`
+- **rounds** — how many rocks she visits (1–8)
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
