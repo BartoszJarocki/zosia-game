@@ -1,15 +1,7 @@
+import { shuffle } from '../util.js';
 import { distractors } from './lookalikes.js';
 
 export const COMET_LANES = 5;
-
-const shuffle = (a, random = Math.random) => {
-  a = [...a];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
 
 /** The letters in one round: the asked letter `targets` times, the rest wrong ones. */
 export function cometLetters({ targets, total, similar, alphabet }, target, pool, random = Math.random) {

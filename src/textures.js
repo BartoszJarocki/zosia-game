@@ -97,6 +97,15 @@ function toTex(cv, { repeat, srgb = true } = {}) {
   if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); }
   return t;
 }
+/** A square canvas painted by `draw`, as an sRGB texture. */
+export function texture(size, draw) {
+  const [cv, c] = canvas(size);
+  draw(c, size);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export function shade(hex, amt) {
   const c = new THREE.Color(hex);
   const target = amt > 0 ? new THREE.Color('#ffffff') : new THREE.Color('#000000');

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { animate, ease, wait, renderer } from '../engine.js';
+import { animate, ease, wait } from '../engine.js';
 import { mesh } from '../models.js';
-import { makePup } from '../characters.js';
 import { makeRocket } from '../world/rocket.js';
+import { portrait } from '../world/portrait.js';
 import { sparkle } from '../fx/particles.js';
+import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { saturnPieces } from '../levels/saturn.js';
@@ -17,38 +18,6 @@ const GAPS = { ice: 0.95, rock: 1.05 };
 const HOME = new THREE.Vector3(0, 2.5, 6.6);
 const SKY = '#9b77db';
 const mid = (ring) => (ring[0] + ring[1]) / 2;
-
-function texture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return map;
-}
-
-function portrait() {
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#657dcc');
-  scene.add(new THREE.HemisphereLight('#ffffff', '#cad9ff', 2.4));
-  const light = new THREE.DirectionalLight('#fff3dd', 2.5);
-  light.position.set(-3, 4, 6);
-  scene.add(light);
-  const chase = makePup();
-  chase.position.set(0, -1.4, 0);
-  chase.userData.setHappy(60);
-  scene.add(chase);
-  scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-  camera.position.set(0, 0, 5);
-  const target = new THREE.WebGLRenderTarget(256, 256);
-  const previous = renderer.getRenderTarget();
-  renderer.setRenderTarget(target);
-  renderer.render(scene, camera);
-  renderer.setRenderTarget(previous);
-  scene.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
-  return target;
-}
 
 export class SaturnMission extends Mission {
   constructor(game) {

@@ -1,5 +1,6 @@
 // Jupiter's rounds as data: the painted stripe row and the two balls to compare. Pure (rng passed in), so
 // tests/levels/jupiter.test.js checks them and scenes/jupiter.js only draws and animates what this decides.
+import { shuffle } from '../util.js';
 
 export const JUPITER_COLOURS = { white: 'biały', orange: 'pomarańczowy', brown: 'brązowy', red: 'czerwony' };
 export const EXTRA_POT = 'red';
@@ -25,14 +26,6 @@ export const STRIPE_ROWS = {
   ],
 };
 
-const shuffle = (a, rng) => {
-  a = [...a];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
 const one = (a, rng) => a[Math.floor(rng() * a.length)];
 
 /** Which kind of round comes when. Extra rounds repeat stripes, away from another stripe when there is room. */

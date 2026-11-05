@@ -3,7 +3,7 @@ import { animate, ease, wait } from '../engine.js';
 import { mat, mesh } from '../models.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
-import { labelTexture } from '../textures.js';
+import { labelTexture, texture } from '../textures.js';
 import { showLetter } from '../config.js';
 import { say, sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
@@ -18,15 +18,6 @@ const X0 = 3.8, X1 = -6.0;
 // Five lanes below the speech bubble, clear of the rocket below them. A comet is 1.16 tall,
 // so 1.55 apart never touches.
 const LANES = [1.65, 3.2, 4.75, 6.3, 7.85];
-
-function texture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return map;
-}
 
 function tailTexture() {
   const canvas = document.createElement('canvas');
@@ -61,7 +52,7 @@ function makeComet(letter, tailMap, haloMap) {
   }));
   halo.scale.setScalar(2.1);
   const label = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({
-    map: labelTexture(letter), transparent: true, depthWrite: false,
+    map: labelTexture(letter, { fg: '#1e4fbf' }), transparent: true, depthWrite: false,
   }));
   label.position.set(0, 0.04, 0.6);
   tail.renderOrder = 1;

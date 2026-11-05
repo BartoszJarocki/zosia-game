@@ -4,7 +4,7 @@ import { mat, mesh, rbox } from '../models.js';
 import { makePup } from '../characters.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle, dust } from '../fx/particles.js';
-import { glyphTexture } from '../textures.js';
+import { glyphTexture, texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
@@ -14,15 +14,6 @@ import { Mission } from './mission.js';
 
 const START_X = -4.8, ROCK_Z = -0.65, ROCK_BG = '#9f3022';
 const slotX = (i, n) => (i - (n - 1) / 2) * (n > 3 ? 1.9 : 2.35);
-
-function texture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return map;
-}
 
 // "The Mars Rover": numbered red rocks lie ahead; tap the one the bubble asks for and the rover drives
 // there, scans it and sparkles. GAME.md has the levels: numeral + dots at first, then dots to count,

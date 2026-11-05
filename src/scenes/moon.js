@@ -4,7 +4,7 @@ import { mat, mesh, rbox } from '../models.js';
 import { makePup } from '../characters.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
-import { glyphTexture, TILE_COLORS } from '../textures.js';
+import { glyphTexture, TILE_COLORS, texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
@@ -15,15 +15,6 @@ import { Mission } from './mission.js';
 const START = -4.9, GAP = 1.05, MAX = 10;
 const INK = '#79648e', LIT = '#b88012';
 const slot = (i) => new THREE.Vector3(START + (i + 1) * GAP, 0.025, 0.45);
-
-function texture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return map;
-}
 
 function footprints(outline) {
   return texture(128, (c) => {
