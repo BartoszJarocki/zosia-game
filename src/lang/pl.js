@@ -92,6 +92,7 @@ export const HOME_TASKS = {
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
+  mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
@@ -316,6 +317,16 @@ export const T = {
   countDots: () => ['Policz kropki!'], // (the clue: the dots light up one by one)
   conesGoal: () => ['Kotek czeka na końcu drogi!'],
   conesSaved: () => ['Droga wolna! Uratowałaś kotka!'],
+
+  // The Mars Rover
+  marsStart: () => ['Jesteśmy na Marsie! Mars jest czerwony jak rdza. Pojedziemy łazikiem!'],
+  marsAsk: (n) => [`Jedziemy do kamienia z numerem ${NUM[n]}!`],
+  marsDots: () => ['Policz kropki! Do którego kamienia jedziemy?'],
+  marsRepeat: (n) => [`Gdzie jest numer ${NUM[n]}?`],
+  marsRight: () => ['Brawo! Łazik dojechał!'],
+  marsWrong: (n) => [`To nie ten kamień. Szukamy numeru ${NUM[n]}.`],
+  marsDone: () => ['Brawo! Łazik zbadał wszystkie kamienie!'],
+  marsFact: () => ['Mars ma dwa małe księżyce.'],
   dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
 
   // River
@@ -462,6 +473,9 @@ export function allSegments(levels, allLetters) {
   [...NO, ...YES_STEP, ...RIVER_ON, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots()); add(T.conesGoal()); add(T.conesSaved());
+  const marsMax = Math.max(...levels.mars.map((l) => l.max));
+  nums.slice(0, marsMax).forEach((n) => { add(T.marsAsk(n)); add(T.marsRepeat(n)); add(T.marsWrong(n)); });
+  [T.marsStart, T.marsDots, T.marsRight, T.marsDone, T.marsFact].forEach((f) => add(f()));
   // the Garage
   Object.keys(SHAPE).forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
   Object.keys(COLOUR).forEach((c) => { add(T.flag(c)); add(T.noFlag(c)); add(T.block('colour', c)); add(T.into('colour', c)); add(T.noBasket('colour', c)); });

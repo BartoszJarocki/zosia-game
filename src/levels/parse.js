@@ -80,6 +80,13 @@ export const SCHEMA = {
     ask: { type: 'enum', values: ['match', 'name', 'feature', 'order'] },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  mars: {
+    max: { type: 'int', min: 2, max: 9 },
+    choices: { type: 'int', min: 2, max: 4 },
+    ask: { type: 'enum', values: ['both', 'numeral', 'dots', 'name'] },
+    rock: { type: 'enum', values: ['both', 'numeral'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   blackhole: {
     types: { type: 'list', values: ['drop', 'howMany'] },
     drop: { type: 'range', min: 1, max: 9 },
@@ -290,6 +297,7 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
   }
   if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
+  if (kind === 'mars' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
   if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
   if (kind === 'cones' && s.dots === 'dice' && s.max > 6) errors.push(`${where}: dice patterns go up to 6, so numbers up to ${s.max} need dots in rows of five (dots: line)`);

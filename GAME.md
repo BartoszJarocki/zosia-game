@@ -322,6 +322,49 @@ jump leaves a pair of footprints in a row, so she can count the jumps afterwards
   but unscored, so every level includes howMany. Manual jumps practise producing a number (`counting`);
   howMany practises `quantity`.
 
+### 🚙 The Mars Rover · `mars`
+
+The rocket lands on Mars, under a pinkish-violet sky with two tiny moons. Chase sits in a six-wheeled rover
+with a dish on top. Big red rocks ahead show white numerals (and dots under them early on). Tap the rock the
+bubble asks for and the rover drives there, scans it and sparkles.
+
+| Level | max | choices | ask | rock | rounds |
+|---|---|---|---|---|---|
+| 1 | 3 | 3 | both | both | 3 |
+| 2 | 5 | 3 | both | numeral | 3 |
+| 3 | 5 | 3 | numeral | numeral | 3 |
+| 4 | 6 | 3 | dots | numeral | 3 |
+| 5 | 9 | 4 | name | numeral | 3 |
+
+- **max**: numbers go from 1 to max (2–9)
+- **choices**: how many rocks (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
+- **ask**: `both` shows a numeral and dots; `numeral` shows only the numeral; `dots` shows dots in the
+  bubble, so she counts them and finds the numeral (help lights the dots one by one; the number is named
+  only when the answer is shown); `name` shows nothing, only speaks ("Jedziemy do kamienia z numerem trzy!")
+- **rock**: what the rocks show: `both` (numeral + dots) or `numeral`
+- **rounds**: how many rocks she visits (1–8)
+
+### 🪐 Saturn's Rings · `saturn`
+
+The rocket stops at Saturn, where the rings have broken apart. Chase names each piece as it floats in, or she
+works out by its look whether it is ice or rock, then drags it to the right ring (or taps the ring). Each piece
+mends a little more of the gap; when both rings are whole, Saturn turns slowly and Chase cheers.
+
+| Level | pieces | named | sizes |
+|---|---|---|---|
+| 1 | 4 | yes | same |
+| 2 | 6 | yes | same |
+| 3 | 6 | no | same |
+| 4 | 8 | no | mixed |
+
+- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question, so the
+  progress paws count pieces. Both kinds come in every mission, never three of the same kind in a row, and
+  their counts differ by at most one.
+- **named**: `yes` names each piece as it arrives and asks for its ring ("To jest lód. Gdzie jest lodowy
+  pierścień?"). `no` asks her to judge by its look ("Lód czy skała? Gdzie to pasuje?"); help names it first.
+- **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
+  getting its own big and small share, so size never tells her the answer.
+
 ### 🕳️ The Black Hole · `blackhole`
 
 Through the rocket's golden window, she sends friendly space pebbles towards a small, distant black
@@ -372,27 +415,6 @@ The last level asks what comes next along the road from the Sun.
   redness, our home, the largest planet, a tail, a heart or light and warmth; `order` asks what
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
-
-### 🪐 Saturn's Rings · `saturn`
-
-The rocket stops at Saturn, where the rings have broken apart. Chase names each piece as it floats in, or she
-works out by its look whether it is ice or rock, then drags it to the right ring (or taps the ring). Each piece
-mends a little more of the gap; when both rings are whole, Saturn turns slowly and Chase cheers.
-
-| Level | pieces | named | sizes |
-|---|---|---|---|
-| 1 | 4 | yes | same |
-| 2 | 6 | yes | same |
-| 3 | 6 | no | same |
-| 4 | 8 | no | mixed |
-
-- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question, so the
-  progress paws count pieces. Both kinds come in every mission, never three of the same kind in a row, and
-  their counts differ by at most one.
-- **named**: `yes` names each piece as it arrives and asks for its ring ("To jest lód. Gdzie jest lodowy
-  pierścień?"). `no` asks her to judge by its look ("Lód czy skała? Gdzie to pasuje?"); help names it first.
-- **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
-  getting its own big and small share, so size never tells her the answer.
 
 ### 🗼 The Lookout · `lookout`
 

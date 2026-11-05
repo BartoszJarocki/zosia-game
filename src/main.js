@@ -15,6 +15,7 @@ import { DeliveryMission } from './scenes/delivery.js';
 import { PicnicMission } from './scenes/picnic.js';
 import { GarageMission } from './scenes/garage.js';
 import { MoonMission } from './scenes/moon.js';
+import { MarsMission } from './scenes/mars.js';
 import { BlackHoleMission } from './scenes/blackhole.js';
 import { TelescopeMission } from './scenes/telescope.js';
 import { SaturnMission } from './scenes/saturn.js';
@@ -64,7 +65,7 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission, moon: MoonMission,
-  blackhole: BlackHoleMission, telescope: TelescopeMission, saturn: SaturnMission,
+  mars: MarsMission, saturn: SaturnMission, blackhole: BlackHoleMission, telescope: TelescopeMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
