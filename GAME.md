@@ -373,6 +373,29 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### 🌑 Mercury's Craters · `mercury`
+
+The rocket lands on Mercury under a bright violet sky. A patch of grey ground shows a few round craters
+laid out like the dots on a die, so she sees how many at once. Below it are the number tiles to choose from.
+
+| Level | craters | show | labels | choices | rounds |
+|---|---|---|---|---|---|
+| 1 | 1–3 | stay | both | 3 | 3 |
+| 2 | 1–4 | stay | both | 3 | 3 |
+| 3 | 1–4 | flash | both | 3 | 3 |
+| 4 | 2–5 | flash | numeral | 3 | 3 |
+| 5 | 3–6 | flash | numeral | 4 | 3 |
+
+- **craters** — the range of crater counts (1 to 6), laid out like a die so a small number is seen at a glance.
+- **show** — `stay` keeps the craters in view while she chooses. `flash` ("Szybkie oko!") shows them for two
+  seconds, then a soft light-pink dust cloud drifts over them and she chooses from memory.
+- **labels** — `both` puts the numeral and its dots on each tile. `numeral` shows only the numeral.
+- **choices** — how many tiles (2 to 4). From level 2 the wrong tiles are the neighbours (±1), as on Cone Road.
+- **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
+  and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
+  one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
+  tries again.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

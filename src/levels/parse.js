@@ -74,6 +74,13 @@ export const SCHEMA = {
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  mercury: {
+    craters: { type: 'range', min: 1, max: 6 },
+    show: { type: 'enum', values: ['stay', 'flash'] },
+    labels: { type: 'enum', values: ['both', 'numeral'] },
+    choices: { type: 'int', min: 2, max: 4 },
+    rounds: { type: 'int', min: 1, max: 6 },
+  },
   telescope: {
     pool: { type: 'list', values: SPACE_PLACES },
     choices: { type: 'int', min: 2, max: 4 },

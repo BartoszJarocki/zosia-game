@@ -6,6 +6,7 @@ import { shuffle } from './util.js';
 import { EASIER } from './levels/easier.js';
 
 export { LEVELS };
+export { numberChoices } from './levels/numbers.js';
 
 // Uppercase letters that are easy to confuse. Kept apart early, used on purpose later.
 const LOOKALIKE = {
@@ -26,14 +27,6 @@ export function distractors(target, pool, n, similar = false) {
   if (!similar) return others.slice(0, n);
   const tricky = shuffle(look.filter((l) => ALL_LETTERS.includes(l))).slice(0, Math.min(2, n));
   return shuffle([...tricky, ...others.slice(0, n - tricky.length)]);
-}
-
-/** Wrong number choices: neighbours (±1) are the natural challenge once she can count. */
-export function numberChoices(target, max, n, near = false) {
-  const all = Array.from({ length: max }, (_, i) => i + 1).filter((x) => x !== target);
-  const close = near ? shuffle(all.filter((x) => Math.abs(x - target) === 1)) : [];
-  const rest = shuffle(all.filter((x) => !close.includes(x)));
-  return shuffle([target, ...[...close, ...rest].slice(0, n - 1)]);
 }
 
 export function settingsFor(kind) {
