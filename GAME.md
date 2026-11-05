@@ -373,6 +373,24 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### ☁️ Venus's Clouds · `venus`
+
+Venus is a big, friendly ball under thick, soft, creamy clouds. A few clouds slide apart
+and show a big glowing shape: which one is it? Chase watches from his round window.
+In a `part` level only a corner or a curve peeks out until she answers.
+
+| Level | reveal | turned | choices | rounds |
+|---|---|---|---|---|
+| 1 | full | no | 2 | 3 |
+| 2 | full | no | 3 | 3 |
+| 3 | part | no | 3 | 3 |
+| 4 | part | yes | 3 | 3 |
+
+- **reveal**: `full` opens the clouds over the whole shape; `part` shows only part of it until she answers.
+- **turned**: `no`, the textbook shape; `yes`, turned and bigger or smaller (the square stands on a corner, the triangle is not the textbook one).
+- **choices**: how many tiles (2 or 3): the right shape and the others from koło, kwadrat, trójkąt.
+- **rounds**: shapes per mission (1–6), each kind before any repeats, never the same shape twice in a row. Each is one question, skill `shape`, item the shape, every question scored.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

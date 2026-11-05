@@ -89,6 +89,7 @@ export const HOME_TASKS = {
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
+  venus: 'Znajdź w domu coś kwadratowego!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
 };
 
@@ -214,6 +215,11 @@ export const T = {
   blackholeWatch: () => ['Patrz, jak lecą!'],
   blackholeHowMany: () => ['Ile kamyków wpadło?'],
   blackholeDone: () => ['Brawo! Czarna dziura świeci od twoich kamyków!'],
+  venusStart: () => ['Jesteśmy przy Wenus! Wenus to najgorętsza planeta. Jest cała w chmurach.'],
+  venusAsk: () => ['Chmury się rozsuwają. Jaki to kształt?'],
+  venusRight: (s) => [`To jest ${SHAPE[s]}!`],
+  venusWrong: (s) => [`Popatrz jeszcze raz. To jest ${SHAPE[s]}.`],
+  venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -464,6 +470,8 @@ export function allSegments(levels, allLetters) {
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
+  Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); add(T.venusWrong(sh)); });
+  [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));

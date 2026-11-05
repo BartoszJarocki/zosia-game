@@ -44,7 +44,7 @@ export const PLACES = {
   rocket: { area: 'island', game: false, domain: 'space', leadsTo: 'space' },
   sun: { area: 'space', game: false, domain: 'space' },
   mercury: { area: 'space', game: false, domain: 'space' },
-  venus: { area: 'space', game: false, domain: 'space' },
+  venus: { area: 'space', game: true, domain: 'shapes', badge: { label: '☁️', color: '#f59e0b' } },
   earth: { area: 'space', game: false, domain: 'space' },
   moon: { area: 'space', game: true, domain: 'numbers', badge: { label: '🌙', color: '#6366f1' } },
   mars: { area: 'space', game: false, domain: 'space' },
