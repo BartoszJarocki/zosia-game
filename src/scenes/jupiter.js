@@ -99,9 +99,9 @@ export class JupiterMission extends Mission {
     this.ballMaps = ballMaps();
     this.maps.push(...Object.values(this.ballMaps));
 
-    const planet = mesh(new THREE.SphereGeometry(3.3, 48, 32), new THREE.MeshStandardMaterial({ map: this.ballMaps.jupiter, roughness: 0.95 }), { x: -0.4, y: 4.8, z: -7.5, shadow: false });
-    planet.userData.dynamic = true;
-    this.scene.add(planet);
+    this.planet = mesh(new THREE.SphereGeometry(3.3, 48, 32), new THREE.MeshStandardMaterial({ map: this.ballMaps.jupiter, roughness: 0.95 }), { x: -0.4, y: 4.8, z: -7.5, shadow: false });
+    this.planet.userData.dynamic = true;
+    this.scene.add(this.planet);
 
     this.redSpot = mesh(new THREE.SphereGeometry(1, 32, 20), new THREE.MeshStandardMaterial({ color: '#c9472f', roughness: 0.8 }), { x: 0.9, y: 3.9, z: -4.25, shadow: false });
     this.redSpot.scale.set(0.001, 0.001, 0.001);
@@ -210,8 +210,10 @@ export class JupiterMission extends Mission {
 
   async sizeRound() {
     this.clearRound();
+    this.planet.visible = false;
+    this.redSpot.visible = false;
     const p = biggerRound(this.L.bigger, this.random);
-    const balls = [p.left, p.right].map((kind, i) => this.makeBall(kind, across(2, 6.2)[i]));
+    const balls = [p.left, p.right].map((kind, i) => this.makeBall(kind, across(2, 3.4)[i]));
     const right = balls.find((ball) => ball.userData.choice === p.answer);
     let solved = false, lastWrong = null, resolveRound;
     const done = new Promise((resolve) => { resolveRound = resolve; });
@@ -307,7 +309,7 @@ export class JupiterMission extends Mission {
 
   makeBall(kind, x) {
     const r = BALL_R[kind];
-    const ball = mesh(new THREE.SphereGeometry(1, 40, 28), new THREE.MeshStandardMaterial({ map: this.ballMaps[kind], roughness: 0.9 }), { x, y: 2.6, z: 0.5, shadow: false });
+    const ball = mesh(new THREE.SphereGeometry(1, 40, 28), new THREE.MeshStandardMaterial({ map: this.ballMaps[kind], roughness: 0.9 }), { x, y: 1.3, z: 0.5, shadow: false });
     ball.scale.setScalar(r);
     ball.userData.choice = kind;
     ball.userData.tapHeight = 0;
@@ -376,6 +378,7 @@ export class JupiterMission extends Mission {
       obj.removeFromParent();
     }
     this.roundObjects = [];
+    this.planet.visible = true;
   }
 
   async outro() {

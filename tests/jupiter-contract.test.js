@@ -84,6 +84,21 @@ function cameraFor(s, width, height) {
   return camera;
 }
 
+/** Where a ball of world radius r lands on screen, as a disc: { x, y, r }. */
+function disc(obj, radius, camera, width, height) {
+  const centre = obj.getWorldPosition(new THREE.Vector3());
+  const projected = centre.clone().project(camera);
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  const distance = centre.clone().sub(camera.position).dot(forward);
+  const focal = (height / 2) / Math.tan(camera.fov * Math.PI / 360);
+  return {
+    x: (projected.x + 1) * width / 2,
+    y: (1 - projected.y) * height / 2,
+    r: focal * radius / Math.sqrt(Math.max(0.0001, distance * distance - radius * radius)),
+  };
+}
+
 test('paint pots are walker choices, at least 70 px, and this.last stays the answer', async () => {
   const s = await build();
   const round = s.stripesRound();
@@ -127,6 +142,35 @@ test('both balls are walker choices and Earth is about 90 px across at 1180x820'
   await round;
   assert.equal(s.answers[0].skill, 'comparison');
   assert.equal(s.answers[0].scored, true);
+  s.alive = false; s.exit();
+});
+
+test('a size round hides the background planet and keeps the big ball clear of Chase on every iPad', async () => {
+  const s = await build();
+  s.L = { ...s.L, bigger: 'big' };
+  s.random = () => 0.9;
+  const round = s.sizeRound();
+  await flush();
+  assert.equal(s.planet.visible, false);
+  assert.equal(s.redSpot.visible, false);
+  const balls = s.tappables.filter((o) => o.userData.choice && o.visible);
+  assert.equal(balls.length, 2);
+  const big = balls.find((o) => o.userData.choice === s.last);
+  assert.ok(big);
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = cameraFor(s, width, height);
+    const ball = disc(big, big.userData.radius, camera, width, height);
+    const chase = disc(s.chase, 1.14, camera, width, height);
+    assert.ok(ball.x - ball.r >= 0 && ball.x + ball.r <= width, `${width}x${height} big ball x`);
+    assert.ok(ball.y - ball.r >= 0 && ball.y + ball.r <= height, `${width}x${height} big ball y`);
+    const gap = Math.hypot(ball.x - chase.x, ball.y - chase.y) - ball.r - chase.r;
+    assert.ok(gap > 0, `${width}x${height}: ${gap.toFixed(1)} px between the big ball and Chase`);
+  }
+  await big.userData.onTap();
+  await round;
+  assert.equal(s.planet.visible, false);
+  s.clearRound();
+  assert.equal(s.planet.visible, true);
   s.alive = false; s.exit();
 });
 
