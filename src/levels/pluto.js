@@ -16,7 +16,7 @@ export function plutoRound({ choices, turned }, rng = Math.random) {
       piece.size = one([0.9, 1, 1.2], rng);
       if (shape === 'square') piece.turn = Math.PI / 4;
       if (shape === 'triangle') piece.turn = one([Math.PI, Math.PI / 2, -Math.PI / 2, 0.5], rng);
-      if (shape === 'heart') piece.turn = one([-0.35, 0.35, Math.PI], rng);
+      if (shape === 'heart') piece.turn = one([-0.35, 0.35], rng);
       return piece;
     }),
   };

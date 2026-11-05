@@ -38,7 +38,8 @@ test('turned pieces are bigger or smaller, and the square, triangle and heart tu
     assert.ok(pieces.every((p) => [0.9, 1, 1.2].includes(p.size)));
     for (const p of pieces) {
       if (p.shape === 'square') assert.equal(p.turn, Math.PI / 4);
-      if (p.shape === 'triangle' || p.shape === 'heart') assert.notEqual(p.turn, 0);
+      if (p.shape === 'triangle') assert.notEqual(p.turn, 0);
+      if (p.shape === 'heart') assert.ok(Math.abs(p.turn) <= 0.4, `heart turn ${p.turn}`);
     }
   }
   assert.equal(plutoRound({ choices: 2, turned: true }, () => 0).pieces.find((p) => p.shape === 'heart').size, 0.9);
