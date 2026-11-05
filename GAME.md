@@ -373,6 +373,31 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### 🟠 Jupiter's Stripes · `jupiter`
+
+The rocket arrives at Jupiter under a bright violet sky. Jupiter is a huge ball with wide horizontal
+stripes, and Chase watches from his round window. She paints the stripe row, then compares Jupiter
+and the Sun with Earth.
+
+| Level | types | pattern | bigger | rounds |
+|---|---|---|---|---|
+| 1 | stripes, bigger | AB | big | 3 |
+| 2 | stripes, bigger | ABB | big | 3 |
+| 3 | stripes, bigger | gap | both | 3 |
+| 4 | stripes, bigger | ABC | both | 4 |
+
+- **types**: each kind comes up once; extra rounds repeat `stripes`, and no kind comes twice in a
+  row unless there is no other room for it.
+- **pattern**: `AB` white, orange, white, orange, which next · `ABB` white, orange, orange (or
+  white, white, orange), which next · `gap` an AB or ABB row with one stripe missing in the middle
+  instead of at the end · `ABC` white, orange, brown, which next. At least two full repeats come
+  before the blank. The pots are the row's colours plus one extra, red.
+- **bigger**: `big` always asks for the bigger · `both` asks bigger or smaller at random. Earth is
+  small on purpose; the huge ball is Jupiter or the Sun.
+- **rounds**: tasks per mission, 1 to 8, with at least one per kind. `stripes` is scored as
+  `pattern` with the pattern name as its item; `bigger` is scored as `comparison` with `bigger` or
+  `smaller`. Every question counts.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['moon', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['moon', 'jupiter', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -149,8 +149,16 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.tapStop(kind); frame(s);
     assert.equal(s.visiting, kind);
     assert.equal(s.state, 'visiting');
+    if (kind === 'jupiter') {
+      assert.deepEqual(started, ['jupiter']);
+      assert.equal(getVisited().jupiter, 1);
+      assert.equal(s.routeIndex, 6);
+      await s.backToMap(); frame(s);
+      assert.equal(s.state, 'waiting');
+      continue;
+    }
     if (kind === 'blackhole') {
-      assert.deepEqual(started, ['blackhole']);
+      assert.deepEqual(started, ['jupiter', 'blackhole']);
       assert.equal(getVisited().blackhole, 1);
       assert.equal(s.routeIndex, 11);
       await s.backToMap(); frame(s);

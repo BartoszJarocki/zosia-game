@@ -88,6 +88,12 @@ export const SCHEMA = {
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  jupiter: {
+    types: { type: 'list', values: ['stripes', 'bigger'] },
+    pattern: { type: 'enum', values: ['AB', 'ABB', 'gap', 'ABC'] },
+    bigger: { type: 'enum', values: ['big', 'both'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   delivery: {
     pool: { type: 'letters' },
     choices: { type: 'int', min: 2, max: 4 },
@@ -323,6 +329,10 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
   }
   if (kind === 'garage') for (const m of s.modes || []) if (!s[m]) errors.push(`${where}: modes includes ${m}, so set the ${m} column`);
+  if (kind === 'jupiter') {
+    if (s.types && (!s.types.includes('stripes') || !s.types.includes('bigger'))) errors.push(`${where}: types needs both stripes and bigger (every question is scored)`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
   if (kind === 'moon' || kind === 'blackhole') {
     const action = kind === 'moon' ? 'jump' : 'drop';
     for (const t of s.types || []) if (!s[t]) errors.push(`${where}: types includes ${t}, so set a ${t} range`);
