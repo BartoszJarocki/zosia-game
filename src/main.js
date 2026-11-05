@@ -21,6 +21,7 @@ import { BlackHoleMission } from './scenes/blackhole.js';
 import { PlutoMission } from './scenes/pluto.js';
 import { StarsMission } from './scenes/stars.js';
 import { MercuryMission } from './scenes/mercury.js';
+import { VenusMission } from './scenes/venus.js';
 import { TelescopeMission } from './scenes/telescope.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
@@ -68,7 +69,7 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission, moon: MoonMission,
-  mars: MarsMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, stars: StarsMission, mercury: MercuryMission, telescope: TelescopeMission,
+  mars: MarsMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, stars: StarsMission, mercury: MercuryMission, venus: VenusMission, telescope: TelescopeMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
@@ -131,7 +132,7 @@ async function boot() {
     game.hub({ greet: true });
   });
 
-  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #mercury, #avatar (and #parent, #reset above)
+  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #mercury, #venus, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
   if (jump === 'space' || jump === 'launch') await game.space({ launch: jump === 'launch' });
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });

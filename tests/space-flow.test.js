@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['mercury', 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['mercury', 'venus', 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -151,11 +151,12 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     assert.equal(s.state, 'visiting');
     const gameStops = {
       mercury: { started: ['mercury'], routeIndex: 1 },
-      mars: { started: ['mercury', 'mars'], routeIndex: 5 },
-      saturn: { started: ['mercury', 'mars', 'saturn'], routeIndex: 7 },
-      pluto: { started: ['mercury', 'mars', 'saturn', 'pluto'], routeIndex: 10 },
-      blackhole: { started: ['mercury', 'mars', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
-      stars: { started: ['mercury', 'mars', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
+      venus: { started: ['mercury', 'venus'], routeIndex: 2 },
+      mars: { started: ['mercury', 'venus', 'mars'], routeIndex: 5 },
+      saturn: { started: ['mercury', 'venus', 'mars', 'saturn'], routeIndex: 7 },
+      pluto: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto'], routeIndex: 10 },
+      blackhole: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
+      stars: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
     };
     if (gameStops[kind]) {
       assert.deepEqual(started, gameStops[kind].started);

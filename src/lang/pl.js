@@ -100,6 +100,7 @@ export const HOME_TASKS = {
   pluto: 'Narysuj z mamą serduszko!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
   stars: 'Poszukajcie wieczorem gwiazd na niebie!',
+  venus: 'Znajdź w domu coś kwadratowego!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
 };
 
@@ -257,6 +258,11 @@ export const T = {
   mercuryRight: (n) => [`Tak! ${cap(NUM[n])} ${craterWord(n)}!`],
   mercuryWrong: () => ['Popatrz jeszcze raz.'],
   mercuryDone: () => ['Brawo! Policzyłaś kratery na Merkurym!'],
+  venusStart: () => ['Jesteśmy przy Wenus! Wenus to najgorętsza planeta. Jest cała w chmurach.'],
+  venusAsk: () => ['Chmury się rozsuwają. Jaki to kształt?'],
+  venusRight: (s) => [`To jest ${SHAPE[s]}!`],
+  venusWrong: (s) => [`Popatrz jeszcze raz. To jest ${SHAPE[s]}.`],
+  venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -531,6 +537,8 @@ export function allSegments(levels, allLetters) {
   [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
   [T.mercuryStart, T.mercuryStayAsk, T.mercuryFlashAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
+  Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); add(T.venusWrong(sh)); });
+  [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
