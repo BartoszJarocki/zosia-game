@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { animate, ease, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop, renderer } from '../engine.js';
 import { mat, mesh, rbox } from '../models.js';
+import { makePup } from '../characters.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
@@ -13,8 +14,9 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const TILE = 1.55, TILE_Z = 3.8, TILE_GAP = 2.2;
+const CRATER_AT = new THREE.Vector3(0.8, 3, 0);
+const CRATER_CELL = 1.9, CRATER_R = 0.8, PATCH_R = 2.7;
 const BOWL = '#6f6f78', RIM = '#b9b9c2', LIT = '#ffd166', LIT_RIM = '#fff1b8';
-const DUST_X = -4.5;
 
 function texture(size, draw) {
   const canvas = document.createElement('canvas');
@@ -25,22 +27,24 @@ function texture(size, draw) {
   return map;
 }
 
-function chaseWindow() {
-  return texture(256, (c) => {
-    c.fillStyle = '#6b4f9e';
-    c.beginPath(); c.arc(128, 128, 128, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#5b3216';
-    for (const x of [70, 186]) { c.beginPath(); c.ellipse(x, 84, 30, 42, x < 128 ? -0.5 : 0.5, 0, Math.PI * 2); c.fill(); }
-    c.fillStyle = '#cf8a45';
-    c.beginPath(); c.arc(128, 142, 78, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#5b3216';
-    c.beginPath(); c.arc(128, 112, 78, Math.PI, 0); c.fill();
-    c.fillStyle = '#f2cf9c';
-    c.beginPath(); c.ellipse(128, 170, 40, 28, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#3b2412';
-    for (const x of [100, 156]) { c.beginPath(); c.arc(x, 140, 9, 0, Math.PI * 2); c.fill(); }
-    c.beginPath(); c.ellipse(128, 158, 10, 7, 0, 0, Math.PI * 2); c.fill();
-  });
+function portrait() {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#657dcc');
+  scene.add(new THREE.HemisphereLight('#ffffff', '#cad9ff', 2.4));
+  const light = new THREE.DirectionalLight('#fff3dd', 2.5);
+  light.position.set(-3, 4, 6); scene.add(light);
+  const chase = makePup();
+  chase.position.set(0, -1.4, 0);
+  chase.userData.setHappy(60);
+  scene.add(chase);
+  scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  camera.position.set(0, 0, 5);
+  const target = new THREE.WebGLRenderTarget(256, 256);
+  const previous = renderer.getRenderTarget();
+  renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(previous);
+  scene.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
+  return target;
 }
 
 export class MercuryMission extends Mission {
@@ -55,6 +59,7 @@ export class MercuryMission extends Mission {
     this.maps = [];
     this.mats = [];
     this.roundMaps = [];
+    this.craterDots = [];
     this.lastWrong = null;
   }
 
@@ -74,9 +79,10 @@ export class MercuryMission extends Mission {
       }
     });
     this.maps.push(ground);
+    this.ground = ground;
     const groundMat = new THREE.MeshStandardMaterial({ map: ground, roughness: 1 });
     this.mats.push(groundMat);
-    this.scene.add(mesh(new THREE.CircleGeometry(5.2, 64), groundMat, { rx: -Math.PI / 2, shadow: false }));
+    this.scene.add(mesh(new THREE.CircleGeometry(7, 64), groundMat, { rx: -Math.PI / 2, shadow: false }));
 
     const sunMap = texture(256, (c) => {
       const g = c.createRadialGradient(128, 128, 10, 128, 128, 128);
@@ -87,8 +93,8 @@ export class MercuryMission extends Mission {
     const sunMat = new THREE.SpriteMaterial({ map: sunMap, color: '#fff3c4', transparent: true, depthWrite: false });
     this.mats.push(sunMat);
     this.sun = new THREE.Sprite(sunMat);
-    this.sun.position.set(-7.5, 7.2, -9);
-    this.sun.scale.setScalar(6);
+    this.sun.position.set(6.5, 4.8, -5);
+    this.sun.scale.setScalar(4.2);
     this.scene.add(this.sun);
 
     const stars = new THREE.BufferGeometry();
@@ -101,21 +107,25 @@ export class MercuryMission extends Mission {
     this.scene.add(new THREE.Points(stars, starMat));
 
     this.rocket = makeRocket();
-    this.rocket.position.set(-6.2, 7, -3.4);
+    this.rocket.position.set(-6.2, 7, 2);
+    this.rocket.scale.setScalar(0.8);
     this.rocket.userData.flame.visible = true;
     this.scene.add(this.rocket);
     this.landed = animate(1800, (t) => { this.rocket.position.y = 1.4 + (1 - t) * 5.6; }, ease.out).then(() => {
       this.rocket.userData.flame.visible = false;
     });
 
-    const windowMap = chaseWindow();
-    this.maps.push(windowMap);
-    const windowMat = new THREE.MeshBasicMaterial({ map: windowMap });
-    this.mats.push(windowMat);
-    this.chase = mesh(new THREE.CircleGeometry(1, 48), windowMat, { x: 6.2, y: 0.03, z: -3.8, rx: -Math.PI / 2, shadow: false });
-    this.chase.userData.dynamic = true;
+    this.portrait = portrait();
+    this.chase = new THREE.Group();
+    const discMat = new THREE.MeshBasicMaterial({ map: this.portrait.texture });
+    this.mats.push(discMat);
+    const disc = mesh(new THREE.CircleGeometry(1.4, 64), discMat, { shadow: false });
+    this.chase.userData.disc = disc;
+    this.chase.add(disc);
+    this.chase.add(mesh(new THREE.TorusGeometry(1.46, 0.12, 10, 64), mat('#f4cf87'), { shadow: false }));
+    this.chase.position.set(6.4, 1.2, -2.5);
+    this.chase.lookAt(this.view.pos);
     this.scene.add(this.chase);
-    this.scene.add(mesh(new THREE.TorusGeometry(1.04, 0.1, 8, 48), mat('#f4cf87'), { x: 6.2, y: 0.04, z: -3.8, rx: -Math.PI / 2, shadow: false }));
     this.onUpdate((dt, t) => this.chase.scale.setScalar(t < this.cheerUntil ? 1 + Math.sin(t * 5) * 0.035 : 1));
 
     const dustMap = texture(128, (c) => {
@@ -129,11 +139,13 @@ export class MercuryMission extends Mission {
       const m = new THREE.SpriteMaterial({ map: dustMap, color: '#f9c6d3', transparent: true, opacity: 0, depthWrite: false });
       this.mats.push(m);
       const s = new THREE.Sprite(m);
-      s.position.set((i - 2) * 0.9, 0.75 + (i % 2) * 0.25, (i % 3 - 1) * 0.35);
-      s.scale.setScalar(2 + (i % 3) * 0.3);
+      s.position.set((i - 2) * 1.05, i % 2 ? 0.35 : -0.35, 0);
+      s.scale.setScalar(2.3 + (i % 3) * 0.25);
       this.dust.add(s);
     }
-    this.dust.position.set(DUST_X, 0, 0.2);
+    const toCam = this.view.pos.clone().sub(CRATER_AT).normalize();
+    this.dustAt = CRATER_AT.clone().addScaledVector(toCam, 0.9);
+    this.dust.position.copy(this.dustAt);
     this.dust.visible = false;
     this.scene.add(this.dust);
 
@@ -142,25 +154,33 @@ export class MercuryMission extends Mission {
 
   makeCraters(n) {
     const group = new THREE.Group();
+    const patchMat = new THREE.MeshStandardMaterial({ map: this.ground, roughness: 1 });
+    const patch = mesh(new THREE.CircleGeometry(PATCH_R, 64), patchMat, { z: -0.04, shadow: false });
+    group.add(patch);
+    group.userData.patch = patch;
+    this.craterDots = [];
     for (const k of craterCells(n)) {
       const crater = new THREE.Group();
-      const bowl = mesh(new THREE.CircleGeometry(0.4, 28), new THREE.MeshStandardMaterial({ color: BOWL, roughness: 1 }), { rx: -Math.PI / 2, y: 0.02, shadow: false });
-      const rim = mesh(new THREE.TorusGeometry(0.42, 0.07, 8, 28), new THREE.MeshStandardMaterial({ color: RIM, roughness: 1 }), { rx: Math.PI / 2, y: 0.06, shadow: false });
+      const bowl = mesh(new THREE.CircleGeometry(CRATER_R * 0.88, 32), new THREE.MeshStandardMaterial({ color: BOWL, roughness: 1 }), { z: 0.01, shadow: false });
+      const rim = mesh(new THREE.RingGeometry(CRATER_R * 0.88, CRATER_R, 32), new THREE.MeshStandardMaterial({ color: RIM, roughness: 1 }), { z: 0.02, shadow: false });
       crater.add(bowl, rim);
-      crater.position.set(((k % 3) - 1) * 1.3, 0, (Math.floor(k / 3) - 1) * 1.3 + 0.2);
+      crater.position.set(((k % 3) - 1) * CRATER_CELL, (1 - Math.floor(k / 3)) * CRATER_CELL, 0);
       crater.userData.bowl = bowl;
       crater.userData.rim = rim;
       group.add(crater);
+      this.craterDots.push(crater);
     }
+    group.position.copy(CRATER_AT);
+    group.lookAt(this.view.pos);
     this.scene.add(group);
     this.craters = group;
     return group;
   }
 
-  makeTiles(n) {
+  async makeTiles(n) {
     const nums = craterChoices(n, this.L.craters, this.L.choices, nearFromLevel(this.level));
     const colors = shuffle(TILE_COLORS);
-    this.blocks = nums.map((num, i) => {
+    const blocks = nums.map((num, i) => {
       const map = glyphTexture(String(num), { bg: colors[i], dots: this.L.labels === 'both' ? num : 0 });
       this.roundMaps.push(map);
       const b = mesh(rbox(TILE, TILE, 0.32, 0.16), new THREE.MeshStandardMaterial({ map, roughness: 0.6 }), {
@@ -168,19 +188,23 @@ export class MercuryMission extends Mission {
       });
       b.userData.num = num;
       b.userData.tapHeight = 0;
+      b.scale.setScalar(0.001);
       this.scene.add(b);
-      this.dropIn(b, TILE / 2, i * 100).then(() => sfx.pop());
-      this.tappable(b, () => this.tapTile(b));
       return b;
     });
-    return this.blocks;
+    this.blocks = blocks;
+    await Promise.all(blocks.map((b, i) => wait(i * 70).then(() => animate(240, (t) => b.scale.setScalar(0.001 + t), ease.back)).then(() => sfx.pop())));
+    blocks.forEach((b) => this.tappable(b, () => this.tapTile(b)));
+    return blocks;
   }
 
   async hideCraters() {
+    const from = this.dustAt.clone(); from.x -= 4.5;
+    const to = this.dustAt.clone();
     this.dust.visible = true;
-    this.dust.position.x = DUST_X;
+    this.dust.position.copy(from);
     await animate(650, (t) => {
-      this.dust.position.x = DUST_X * (1 - t);
+      this.dust.position.lerpVectors(from, to, t);
       for (const s of this.dust.children) s.material.opacity = 0.94 * t;
     }, ease.out);
     this.craters.visible = false;
@@ -189,13 +213,14 @@ export class MercuryMission extends Mission {
   async revealCraters() {
     this.craters.visible = true;
     if (!this.dust?.visible) return;
-    const x0 = this.dust.position.x;
+    const from = this.dust.position.clone();
+    const to = this.dustAt.clone(); to.x += 5;
     await animate(550, (t) => {
-      this.dust.position.x = x0 + 5 * t;
+      this.dust.position.lerpVectors(from, to, t);
       for (const s of this.dust.children) s.material.opacity = 0.94 * (1 - t);
     }, ease.in);
     this.dust.visible = false;
-    this.dust.position.x = DUST_X;
+    this.dust.position.copy(this.dustAt);
   }
 
   lightCrater(crater, on) {
@@ -204,12 +229,12 @@ export class MercuryMission extends Mission {
   }
 
   async countCraters({ keep = false } = {}) {
-    const craters = this.craters?.children || [];
+    const craters = this.craterDots || [];
     for (let i = 0; i < craters.length; i++) {
       if (!this.alive) return;
       const crater = craters[i];
       this.lightCrater(crater, true);
-      sparkle(this, crater.position.clone().add(new THREE.Vector3(0, 0.25, 0)), { count: 5, size: 0.1, speed: 1.4 });
+      sparkle(this, crater.getWorldPosition(new THREE.Vector3()), { count: 5, size: 0.1, speed: 1.4 });
       await this.say(T.number(i + 1));
     }
     if (!keep) craters.forEach((crater) => this.lightCrater(crater, false));
@@ -268,7 +293,8 @@ export class MercuryMission extends Mission {
       if (!this.alive) return;
     }
     const done = new Promise((resolve) => { this.resolveRound = resolve; });
-    this.makeTiles(n);
+    await this.makeTiles(n);
+    if (!this.alive) return;
     const ask = flash ? T.mercuryFlashAsk() : T.mercuryStayAsk();
     const right = this.blocks.find((b) => b.userData.num === n);
     this.question('quantity', n, {
@@ -280,7 +306,7 @@ export class MercuryMission extends Mission {
       simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.blocks.find((b) => b !== right && b.parent)),
       reveal: () => this.hint(right, () => this.phase !== 'choosing'),
     }, { options: this.blocks.length });
-    ui.bubble({ big: '?', pic: '🌑', onTap: () => this.replay(), passthrough: true });
+    ui.bubble({ big: '?', pic: '🪨', onTap: () => this.replay(), passthrough: true });
     this.ask(ask);
     this.phase = 'choosing';
     await done;
@@ -289,7 +315,8 @@ export class MercuryMission extends Mission {
   }
 
   clearRound() {
-    const stuff = [...this.blocks, ...(this.craters?.children || [])];
+    const stuff = [...this.blocks];
+    if (this.craters) stuff.push(this.craters);
     for (const o of stuff) {
       this.untap(o);
       o.traverse((x) => {
@@ -302,6 +329,7 @@ export class MercuryMission extends Mission {
     this.roundMaps = [];
     this.blocks = [];
     this.craters = null;
+    this.craterDots = [];
     this.lastWrong = null;
     this.resolveRound = null;
   }
@@ -331,5 +359,6 @@ export class MercuryMission extends Mission {
     this.clearRound();
     this.maps.forEach((map) => map.dispose());
     this.mats.forEach((m) => m.dispose());
+    this.portrait?.dispose();
   }
 }

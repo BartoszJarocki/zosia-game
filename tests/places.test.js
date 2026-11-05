@@ -77,7 +77,7 @@ test('the rocket connects the island to eleven look-only places and four space g
   assert.deepEqual(placesIn('space'), ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'blackhole', 'comet', 'stars', 'telescope']);
   for (const kind of placesIn('space').filter((k) => !['mercury', 'moon', 'blackhole', 'telescope'].includes(k))) assert.deepEqual(PLACES[kind], { area: 'space', game: false, domain: 'space' });
   assert.deepEqual(PLACES.telescope, { area: 'space', game: true, domain: 'space', stop: false, badge: { label: '🔭', color: '#0d9488' } });
-  assert.deepEqual(PLACES.mercury, { area: 'space', game: true, domain: 'numbers', badge: { label: '🌑', color: '#9ca3af' } });
+  assert.deepEqual(PLACES.mercury, { area: 'space', game: true, domain: 'numbers', badge: { label: '🪨', color: '#9ca3af' } });
   assert.deepEqual(PLACES.moon, { area: 'space', game: true, domain: 'numbers', badge: { label: '🌙', color: '#6366f1' } });
   assert.deepEqual(PLACES.blackhole, { area: 'space', game: true, domain: 'numbers', badge: { label: '✨', color: '#7c3aed' } });
   assert.deepEqual(placesIn('island'), [...ISLAND_GAMES, 'rocket']);

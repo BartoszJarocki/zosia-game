@@ -25,6 +25,7 @@ registerHooks({ load(url, context, next) {
   if (url.endsWith('/src/engine.js')) source = `import * as THREE from 'three';
     export const camera = new THREE.PerspectiveCamera(42, 1180 / 820, 0.1, 500);
     export const post = { tier: 'medium' };
+    export const renderer = { getRenderTarget: () => null, setRenderTarget: () => {}, render: () => {} };
     export const ease = { inOut: (x) => x, linear: (x) => x, out: (x) => x, in: (x) => x, bounce: (x) => x, back: (x) => x };
     export const animate = async (ms, fn) => {
       globalThis.__animations.push(ms);
@@ -74,10 +75,12 @@ async function scene(level = 1, n = 3) {
 test('a stay round keeps the craters in view and scores the number tile', async () => {
   const s = await scene(1, 3);
   const round = s.craterRound();
+  assert.equal(s.tappables.length, 0);
   await until(() => s.phase === 'choosing');
   assert.equal(s.last, 3);
   assert.equal(s.craters.visible, true);
   assert.equal(s.blocks.length, 3);
+  assert.equal(globalThis.__bubble.pic, '🪨');
   assert.ok(s.tappables.every((o) => typeof o.userData.num === 'number'));
   assert.ok(s.blocks.some((b) => b.userData.num === s.last));
   s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
@@ -93,6 +96,7 @@ test('a stay round keeps the craters in view and scores the number tile', async 
 test('a flash round hides the craters under pink dust, then counts them after a wrong tap', async () => {
   const s = await scene(3, 4);
   const round = s.craterRound();
+  assert.equal(s.tappables.length, 0);
   await until(() => s.phase === 'choosing');
   assert.equal(s.last, 4);
   assert.equal(s.craters.visible, false);
