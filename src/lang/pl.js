@@ -35,6 +35,10 @@ const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt' };
 const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
+const SATURN = {
+  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', wrong: 'Ojej! To jest lód. Lód jest tutaj.' },
+  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', wrong: 'Ojej! To jest skała. Skały są tutaj.' },
+};
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
 /** After a wrong tap, before the question again ("Nie, to nie ten." "Gdzie jest Zet?"). Always starts with "Nie". */
@@ -89,6 +93,7 @@ export const HOME_TASKS = {
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
+  saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
 };
 
@@ -214,6 +219,13 @@ export const T = {
   blackholeWatch: () => ['Patrz, jak lecą!'],
   blackholeHowMany: () => ['Ile kamyków wpadło?'],
   blackholeDone: () => ['Brawo! Czarna dziura świeci od twoich kamyków!'],
+  saturnStart: () => ['Jesteśmy przy Saturnie! Pierścienie się rozsypały. Pomożesz je naprawić?'],
+  saturnNamed: (kind) => [SATURN[kind].name, SATURN[kind].ring],
+  saturnWhich: () => ['Lód czy skała? Gdzie to pasuje?'],
+  saturnHint: (kind) => [SATURN[kind].name, SATURN[kind].ring],
+  saturnRight: (kind) => [SATURN[kind].right],
+  saturnWrong: (kind) => [SATURN[kind].wrong],
+  saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -464,6 +476,8 @@ export function allSegments(levels, allLetters) {
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
+  Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); add(T.saturnWrong(kind)); });
+  [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
