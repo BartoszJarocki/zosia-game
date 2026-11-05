@@ -22,7 +22,9 @@ let n = 0;
 const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; await page.screenshot({ path: OUT + f }); report.beats.push(f); };
 const st = (fn, arg) => page.evaluate(fn, arg);
 const fail = (why) => { report.failures.push(why); console.log(`FAIL ${why}`); };
-const until = (fn, arg, ms = 30000) => page.waitForFunction(fn, arg, { timeout: ms }).then(() => true, () => false);
+// a stage exists (and says it is ready) while the paw iris still covers it; a tap then lands on the iris, so every
+// wait also needs the iris open (under a software GPU the reveal takes seconds)
+const until = (fn, arg, ms = 60000) => page.waitForFunction(`(${fn})(${JSON.stringify(arg ?? null)}) && !document.querySelector('.iris.on')`, null, { timeout: ms }).then(() => true, () => false);
 // a finger lands on the middle of the button (the pulsing ones never count as still for Playwright's own click)
 const press = async (sel) => { const b = await page.locator(sel).first().boundingBox(); if (!b) return null; await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); return b; };
 
