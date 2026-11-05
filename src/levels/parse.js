@@ -74,6 +74,11 @@ export const SCHEMA = {
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  stars: {
+    stars: { type: 'range', min: 3, max: 7 },
+    labels: { type: 'enum', values: ['both', 'numeral'] },
+    rounds: { type: 'int', min: 1, max: 4, optional: true, default: 2 },
+  },
   telescope: {
     pool: { type: 'list', values: SPACE_PLACES },
     choices: { type: 'int', min: 2, max: 4 },
@@ -329,5 +334,9 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic ${action}s do not count towards levelling)`);
     if (s.types && !s.types.includes(action)) errors.push(`${where}: types needs ${action} for the easy last round`);
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
+  if (kind === 'stars' && s.stars) {
+    const pictures = s.stars[1] - s.stars[0] + 1;
+    if (s.rounds > pictures) errors.push(`${where}: rounds can't be more than the ${pictures} picture(s) in the stars range`);
   }
 }

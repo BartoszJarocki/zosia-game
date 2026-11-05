@@ -88,6 +88,7 @@ export const HOME_TASKS = {
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
+  stars: 'Poszukajcie wieczorem gwiazd na niebie!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
 };
@@ -143,6 +144,14 @@ export const TELESCOPE_AFTER = {
   jupiter: 'Jowiszu', saturn: 'Saturnie', uranus: 'Uranie', neptune: 'Neptunie',
 };
 
+const STAR_PICTURE_LINES = {
+  mountain: 'To góra!',
+  kite: 'To latawiec!',
+  house: 'To domek!',
+  rocket: 'To rakieta!',
+  dipper: 'To Wielki Wóz! Wielki Wóz to siedem gwiazd.',
+};
+
 export const SPACE_PASS = {
   sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',
   earth: 'Mijamy Ziemię!', moon: 'Mijamy Księżyc!', mars: 'Mijamy Marsa!',
@@ -175,6 +184,12 @@ export const T = {
   telescopeOrder: (kind) => [`Co jest po ${TELESCOPE_AFTER[kind]}?`],
   telescopeRight: (kind) => [`Tak! To jest ${TELESCOPE_NAMES[kind]}.`],
   telescopeDone: () => ['Brawo! Znasz już kosmos!'],
+  starsStart: () => ['Jesteśmy wśród gwiazd! Połączymy gwiazdki i zobaczymy obrazek.'],
+  starsAsk: (nums) => [`${nums.map((n, i) => i ? NUM[n] : cap(NUM[n])).join(', ')}, a co dalej?`],
+  starsHelp: (n) => [`Teraz numer ${NUM[n]}!`],
+  starsWrong: (chosen, target) => [`To jest ${NUM[chosen]}. Szukamy numeru ${NUM[target]}.`],
+  starsPicture: (id) => [STAR_PICTURE_LINES[id]],
+  starsDone: () => ['Brawo! Gwiazdy świecą obrazki!'],
   number: (n) => [`${cap(NUM[n])}!`],
   praise: (i) => [PRAISE[i]],
 
@@ -462,6 +477,11 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
+  nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
+  nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
+  for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
+  Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
+  [T.starsStart, T.starsDone].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));

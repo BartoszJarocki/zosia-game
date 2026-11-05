@@ -72,7 +72,7 @@ test('the mission router returns from the telescope and replay to the same parke
     hub: 'Hub', space: 'Space', letters: 'LettersMission', counting: 'CountingMission', cones: 'ConesMission',
     name: 'NameMission', balloons: 'BalloonsMission', stones: 'StonesMission', lookout: 'LookoutMission',
     delivery: 'DeliveryMission', picnic: 'PicnicMission', garage: 'GarageMission', moon: 'MoonMission',
-    blackhole: 'BlackHoleMission', telescope: 'TelescopeMission',
+    stars: 'StarsMission', blackhole: 'BlackHoleMission', telescope: 'TelescopeMission',
   };
   registerHooks({
     resolve(specifier, context, next) {
@@ -87,7 +87,7 @@ test('the mission router returns from the telescope and replay to the same parke
       const kind = url.match(/\/src\/scenes\/([a-z]+)\.js$/)?.[1];
       if (scenes[kind]) source = `export class ${scenes[kind]} {
         constructor(game, { at = 'earth' } = {}) {
-          this.kind = '${kind}'; this.area = '${['space', 'telescope', 'moon', 'blackhole'].includes(kind) ? 'space' : 'island'}';
+          this.kind = '${kind}'; this.area = '${['space', 'telescope', 'moon', 'blackhole', 'stars'].includes(kind) ? 'space' : 'island'}';
           if ('${kind}' === 'space' || '${kind}' === 'telescope') this.at = at;
         }
       }`;

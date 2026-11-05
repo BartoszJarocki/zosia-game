@@ -373,6 +373,26 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### ⭐ Star Pictures · `stars`
+
+Big gold stars sit on the corners of a hidden picture, each with a numeral under it. Star 1 already
+shines; she taps the next number in order and a glowing gold line draws the outline. At the end the
+picture fills with soft colour and Chase names it.
+
+| Level | stars | labels | rounds |
+|---|---|---|---|
+| 1 | 3–4 | both | 2 |
+| 2 | 4–5 | both | 2 |
+| 3 | 5–6 | numeral | 2 |
+| 4 | 6–7 | numeral | 2 |
+
+- **stars**: the range of star counts. Each round is one picture and a mission never repeats a
+  picture; level 4 always ends on the Wielki Wóz (7, the line left open).
+- **labels**: `both` draws the numeral and dots under each star; `numeral` draws only the numeral.
+- **rounds**: pictures joined per mission (1–4); every star after the first is a scored `sequence`
+  question, and its options are the stars not yet lit. A gentler run uses both labels and one
+  smaller picture.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

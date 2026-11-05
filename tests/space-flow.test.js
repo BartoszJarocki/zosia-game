@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['moon', 'blackhole', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['moon', 'blackhole', 'telescope', 'stars'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -157,6 +157,14 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
       assert.equal(s.state, 'waiting');
       continue;
     }
+    if (kind === 'stars') {
+      assert.deepEqual(started, ['blackhole', 'stars']);
+      assert.equal(getVisited().stars, 1);
+      assert.equal(s.routeIndex, 13);
+      await s.backToMap(); frame(s);
+      assert.equal(s.state, 'waiting');
+      continue;
+    }
     assert.equal(s.stopsOnScreen().length, 1);
     const visits = getVisited()[kind];
     assert.equal(visits, 1);
@@ -173,7 +181,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   await s.tapStop('earth'); assert.equal(landed, 1); s.exit();
   const interrupted = new Space({ hub() { landed++; } });
   interrupted.enter(); frame(interrupted);
-  const trip = interrupted.tapStop('stars');
+  const trip = interrupted.tapStop('comet');
   await interrupted.returnHome();
   await trip;
   assert.equal(interrupted.state, 'returning');
