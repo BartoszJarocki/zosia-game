@@ -11,6 +11,7 @@ export const EASIER = {
   stones: gentlerRiver,
   counting: (s) => ({ ...s, auto: true }),
   moon: (s) => ({ ...s, auto: true, slots: true }),
+  stars: (s) => ({ ...s, labels: 'both', stars: [s.stars[0], s.stars[0]], rounds: 1 }), // one smaller picture
   telescope: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: ['feature', 'order'].includes(s.ask) ? 'name' : s.ask }),
   blackhole: (s) => ({ ...s, auto: true, slots: true }),
   saturn: (s) => ({ ...s, named: true, sizes: 'same' }),
