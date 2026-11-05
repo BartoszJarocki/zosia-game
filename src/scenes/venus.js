@@ -10,9 +10,11 @@ import { bakeInside } from '../fx/optimize.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const SHAPE_Y = 1.25, SHAPE_Z = 1.35;
-const CLOUD_Z = 2.25, TILE_Y = -3.35, TILE_Z = 2.55;
-const CLOUD_OPEN = 5.4;
+const PLANET_R = 3.7, PLANET_Y = 1.15, PLANET_Z = -3.7;
+const SHAPE_Y = PLANET_Y, SHAPE_Z = 1.55;
+const WINDOW_R = 2.1, CLOUD_R = 2.25, CLOUD_Z = 2.25;
+const CLOUD_OPEN = 1.9, CLOUD_SHRINK = 0.8;
+const TILE_Y = -3.65, TILE_Z = 2.55;
 
 function paint(w, h, draw) {
   const canvas = document.createElement('canvas');
@@ -78,18 +80,27 @@ function peekPoint(shape, target) {
   return point;
 }
 
-function roundedRect(x0, y0, x1, y1, r) {
+function halfDisk(side, hole) {
   const s = new THREE.Shape();
-  s.moveTo(x0 + r, y0);
-  s.lineTo(x1 - r, y0);
-  s.quadraticCurveTo(x1, y0, x1, y0 + r);
-  s.lineTo(x1, y1 - r);
-  s.quadraticCurveTo(x1, y1, x1 - r, y1);
-  s.lineTo(x0 + r, y1);
-  s.quadraticCurveTo(x0, y1, x0, y1 - r);
-  s.lineTo(x0, y0 + r);
-  s.quadraticCurveTo(x0, y0, x0 + r, y0);
+  s.absarc(0, 0, CLOUD_R, side < 0 ? Math.PI / 2 : -Math.PI / 2, side < 0 ? Math.PI * 1.5 : Math.PI / 2, false);
+  s.lineTo(0, side < 0 ? CLOUD_R : -CLOUD_R);
+  if (hole) {
+    const p = new THREE.Path();
+    p.absarc(hole.x, hole.y, 0.8, 0, Math.PI * 2, true);
+    s.holes.push(p);
+  }
   return s;
+}
+
+/** Keep the peek hole inside the left cloud half, but still over the part she should see. */
+function peekHole(point) {
+  const length = Math.hypot(point.x, point.y);
+  const k = length > 1.4 ? 1.4 / length : 1;
+  const x = Math.min(-0.9, point.x * k);
+  let y = point.y * k;
+  const d = Math.hypot(x, y);
+  if (d > 1.45) y *= 1.45 / d;
+  return { x, y };
 }
 
 export class VenusMission extends Mission {
@@ -122,15 +133,31 @@ export class VenusMission extends Mission {
     this.maps.push(map);
     const material = new THREE.MeshStandardMaterial({ map, roughness: 0.95 });
     this.ownedMaterials.push(material);
-    const venus = mesh(new THREE.SphereGeometry(4.6, 48, 32), material, { y: -0.65, z: -4.1, shadow: false });
-    this.scene.add(venus);
-    this.builtGeometries.push(venus.geometry);
+    this.planet = mesh(new THREE.SphereGeometry(PLANET_R, 64, 48), material, { y: PLANET_Y, z: PLANET_Z, shadow: false });
+    this.planet.userData.dynamic = true;
+    this.scene.add(this.planet);
+    this.builtGeometries.push(this.planet.geometry);
+    this.revealWindow = this.makeWindow();
 
     this.cloudMaterial = mat('#fff6dd', { roughness: 1 });
     this.glowTexture = glowMap();
     this.maps.push(this.glowTexture);
     this.chaseWindow();
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+  }
+
+  makeWindow() {
+    const group = new THREE.Group();
+    group.position.set(0, SHAPE_Y, 0.95);
+    group.userData.dynamic = true;
+    const glow = new THREE.MeshStandardMaterial({ color: '#f7cf72', emissive: '#f0b84a', emissiveIntensity: 0.35, roughness: 0.85 });
+    this.ownedMaterials.push(glow);
+    const disk = mesh(new THREE.CircleGeometry(WINDOW_R, 64), glow, { shadow: false });
+    const rim = mesh(new THREE.TorusGeometry(WINDOW_R, 0.075, 10, 64), mat('#ffe7a8', { metalness: 0.1, roughness: 0.5 }), { z: 0.03, shadow: false });
+    group.add(disk, rim);
+    this.builtGeometries.push(disk.geometry, rim.geometry);
+    this.scene.add(group);
+    return group;
   }
 
   stars() {
@@ -147,12 +174,12 @@ export class VenusMission extends Mission {
 
   chaseWindow() {
     const window = new THREE.Group();
-    window.position.set(5.9, 2.65, 2);
-    window.add(mesh(new THREE.TorusGeometry(1.32, 0.14, 12, 48), mat('#ffe4a8', { metalness: 0.15, roughness: 0.45 }), { shadow: false }));
-    window.add(mesh(new THREE.CircleGeometry(1.28, 48), mat('#6f4fa8'), { z: -0.03, shadow: false }));
+    window.position.set(6, 3, 2.2);
+    window.add(mesh(new THREE.TorusGeometry(1.2, 0.13, 12, 48), mat('#ffe4a8', { metalness: 0.15, roughness: 0.45 }), { shadow: false }));
+    window.add(mesh(new THREE.CircleGeometry(1.16, 48), mat('#6f4fa8'), { z: -0.03, shadow: false }));
     this.chase = makePup();
-    this.chase.scale.setScalar(0.78);
-    this.chase.position.set(0, -1.14, 0.12);
+    this.chase.scale.setScalar(0.72);
+    this.chase.position.set(0, -1.05, 0.12);
     window.add(this.chase);
     this.scene.add(window);
     this.pup = this.chase;
@@ -189,7 +216,7 @@ export class VenusMission extends Mission {
 
       const shape = makeShapePiece({ ...piece, colour: 'yellow' });
       shape.position.set(0, SHAPE_Y, SHAPE_Z);
-      shape.scale.setScalar(piece.size * 2.1);
+      shape.scale.setScalar(piece.size * 1.85);
       shape.updateMatrixWorld(true);
       const body = shape.userData.body;
       body.material = body.material.clone();
@@ -203,7 +230,7 @@ export class VenusMission extends Mission {
         map: this.glowTexture, color: '#ffd36a', transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending,
       }));
       glow.position.set(0, SHAPE_Y, SHAPE_Z - 0.15);
-      glow.scale.setScalar(3.6);
+      glow.scale.setScalar(3);
       glow.userData.dynamic = true;
       glow.raycast = () => {};
       this.roundMaterials.push(glow.material);
@@ -225,9 +252,7 @@ export class VenusMission extends Mission {
       const right = this.tiles.find((tile) => tile.userData.choice === target);
 
       const point = peekPoint(shape, target);
-      this.clouds = this.makeClouds(this.L.reveal === 'part'
-        ? { x: THREE.MathUtils.clamp(point.x + 0.18, -2.15, -0.9), y: THREE.MathUtils.clamp(point.y, -2.1, 2.1) }
-        : null);
+      this.clouds = this.makeClouds(this.L.reveal === 'part' ? peekHole(point) : null);
       root.add(this.clouds);
 
       root.traverse((o) => {
@@ -293,7 +318,7 @@ export class VenusMission extends Mission {
     const clouds = new THREE.Group();
     clouds.position.set(0, SHAPE_Y, CLOUD_Z);
     clouds.userData.dynamic = true;
-    const puffGeo = new THREE.SphereGeometry(0.58, 14, 10);
+    const puffGeo = new THREE.SphereGeometry(0.5, 14, 10);
     this.roundGeometries.add(puffGeo);
     const left = this.cloudPanel(-1, hole, puffGeo);
     const right = this.cloudPanel(1, null, puffGeo);
@@ -305,29 +330,19 @@ export class VenusMission extends Mission {
   }
 
   cloudPanel(side, hole, puffGeo) {
-    const x0 = side < 0 ? -3.15 : -0.07;
-    const x1 = side < 0 ? 0.07 : 3.15;
-    const shape = roundedRect(x0, -3, x1, 3, 0.85);
-    if (hole) {
-      const p = new THREE.Path();
-      p.absarc(hole.x, hole.y, 0.86, 0, Math.PI * 2, true);
-      shape.holes.push(p);
-    }
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, curveSegments: 24 });
+    const shape = halfDisk(side, hole);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, curveSegments: 32 });
     geo.translate(0, 0, -0.11);
     this.roundGeometries.add(geo);
     const panel = new THREE.Group();
     panel.userData.dynamic = true;
     panel.add(mesh(geo, this.cloudMaterial, { shadow: false }));
-    const addPuff = (x, y, s = 1) => panel.add(mesh(puffGeo, this.cloudMaterial, { x, y, z: 0.12, s: [s, s * 0.85, s * 0.7], shadow: false }));
-    const xs = side < 0 ? [-2.75, -2, -1.25, -0.5] : [0.5, 1.25, 2, 2.75];
-    xs.forEach((x, i) => { addPuff(x, 3, 0.95 + (i % 2) * 0.12); addPuff(x, -3, 0.95 + ((i + 1) % 2) * 0.12); });
-    const edge = side < 0 ? -3.1 : 3.1;
-    for (let i = 0; i < 4; i++) {
-      const y = -2.2 + i * 1.45;
-      addPuff(edge, y, 1);
-      addPuff(side < 0 ? 0.03 : -0.03, y, 0.92);
+    const addPuff = (x, y, s = 1) => panel.add(mesh(puffGeo, this.cloudMaterial, { x, y, z: 0.12, s: [s, s * 0.9, s * 0.75], shadow: false }));
+    for (let i = 0; i < 5; i++) {
+      const a = (side < 0 ? Math.PI / 2 : -Math.PI / 2) + i * Math.PI / 4;
+      addPuff(Math.cos(a) * CLOUD_R, Math.sin(a) * CLOUD_R, 0.95 + (i % 2) * 0.12);
     }
+    for (let i = 0; i < 4; i++) addPuff(side < 0 ? 0.03 : -0.03, -1.65 + i * 1.1, 0.9);
     bakeInside(panel);
     return panel;
   }
@@ -342,6 +357,8 @@ export class VenusMission extends Mission {
     return animate(ms, (t) => {
       left.position.x = l0 + (-CLOUD_OPEN - l0) * t;
       right.position.x = r0 + (CLOUD_OPEN - r0) * t;
+      left.scale.setScalar(1 + (CLOUD_SHRINK - 1) * t);
+      right.scale.setScalar(1 + (CLOUD_SHRINK - 1) * t);
     }, ease.inOut);
   }
 

@@ -112,7 +112,8 @@ test('part rounds keep the clouds closed over all but a peek, then open them on 
   tiles(s).find((tile) => tile.userData.choice === s.last).userData.onTap();
   await round;
   assert.equal(clouds.userData.open, true);
-  assert.ok(clouds.userData.left.position.x <= -5.4);
+  assert.ok(clouds.userData.left.position.x <= -1.9);
+  assert.ok(clouds.userData.left.scale.x <= 0.8);
   s.alive = false; s.exit();
 });
 

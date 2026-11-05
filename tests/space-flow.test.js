@@ -145,14 +145,19 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     assert.equal(circles.length, 14);
     for (const c of circles) assert.ok(c.r >= 35 && c.x - c.r >= 0 && c.x + c.r <= w && c.y - c.r >= 0 && c.y + c.r <= h, JSON.stringify(c));
   }
-  for (const kind of ROAD_ORDER.filter((k) => !['earth', 'moon', 'venus'].includes(k))) {
+  for (const kind of ROAD_ORDER.filter((k) => !['earth', 'moon'].includes(k))) {
     await s.tapStop(kind); frame(s);
     assert.equal(s.visiting, kind);
     assert.equal(s.state, 'visiting');
-    if (kind === 'blackhole') {
-      assert.deepEqual(started, ['blackhole']);
-      assert.equal(getVisited().blackhole, 1);
-      assert.equal(s.routeIndex, 11);
+    if (kind === 'venus' || kind === 'blackhole') {
+      assert.equal(getVisited()[kind], 1);
+      if (kind === 'venus') {
+        assert.deepEqual(started, ['venus']);
+        assert.equal(s.routeIndex, 2);
+      } else {
+        assert.deepEqual(started, ['venus', 'blackhole']);
+        assert.equal(s.routeIndex, 11);
+      }
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
       continue;

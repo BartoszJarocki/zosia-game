@@ -92,6 +92,22 @@ function screenRect(object, camera, w, h) {
 
 const separate = (a, b) => a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom;
 
+function outlineRect(object, camera, w, h) {
+  object.updateWorldMatrix(true, true);
+  const xs = [], ys = [];
+  object.traverseVisible((o) => {
+    if (!o.geometry) return;
+    const position = o.geometry.getAttribute('position');
+    for (let i = 0; i < position.count; i++) {
+      const p = new THREE.Vector3().fromBufferAttribute(position, i).applyMatrix4(o.matrixWorld).project(camera);
+      xs.push((p.x + 1) / 2 * w);
+      ys.push((1 - p.y) / 2 * h);
+    }
+  });
+  const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
+  return { left, right, top, bottom, width: right - left, height: bottom - top };
+}
+
 test('every tile is a tappable group with a choice, and the right shape is last while the question is open', async () => {
   const s = await build(2);
   const { round } = await ask(s);
@@ -124,6 +140,24 @@ test('all tiles and Chase stay at least 70 px across, never touch, and keep clea
     assert.ok(Math.min(window.width, window.height) >= 70, `${w}x${h} Chase window`);
     for (const rect of rects) assert.ok(separate(rect, window), `${w}x${h} a tile covers Chase's window`);
     for (const rect of [window, ...rects]) assert.ok(rect.left >= 0 && rect.right <= w && rect.top >= 0 && rect.bottom <= h, `${w}x${h} stays on screen`);
+  }
+  tiles(s).find((tile) => tile.userData.choice === s.last).userData.onTap();
+  await round;
+  s.alive = false; s.exit();
+});
+
+test('Venus is a round planet and the cloud window sits inside its outline at every size', async () => {
+  const s = await build(2);
+  const { round } = await ask(s);
+  assert.equal(s.planet.geometry.type, 'SphereGeometry');
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = cameraFor(s, w, h);
+    const planet = outlineRect(s.planet, camera, w, h);
+    const window = outlineRect(s.revealWindow, camera, w, h);
+    assert.ok(Math.abs(planet.width - planet.height) <= planet.width * 0.06, `${w}x${h} planet is round: ${planet.width}x${planet.height}`);
+    assert.ok(planet.left < window.left && planet.right > window.right && planet.top < window.top && planet.bottom > window.bottom, `${w}x${h} cloud window inside the planet`);
+    const chase = screenRect(s.window, camera, w, h);
+    assert.ok(separate(planet, chase), `${w}x${h} planet covers Chase's window`);
   }
   tiles(s).find((tile) => tile.userData.choice === s.last).userData.onTap();
   await round;
