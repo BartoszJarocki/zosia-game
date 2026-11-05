@@ -147,8 +147,9 @@ export class SaturnMission extends Mission {
     ring.rotation.x = -Math.PI / 2;
     this.saturn.add(ring);
 
-    const missing = new THREE.Mesh(this.gapGeometry(radii[0], radii[1], gap), new THREE.MeshBasicMaterial({ color: SKY }));
-    missing.rotation.x = -Math.PI / 2;
+    const missing = new THREE.Mesh(this.gapGeometry(radii[0], radii[1], gap), new THREE.MeshBasicMaterial({
+      color: SKY, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+    }));
     missing.position.y = 0.02;
     this.saturn.add(missing);
 
@@ -156,10 +157,10 @@ export class SaturnMission extends Mission {
     tapGeo.rotateX(-Math.PI / 2);
     tapGeo.translate(0, 0, -mid(radii));
     const tap = new THREE.Mesh(tapGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-    tap.position.set(0, RING_Y, mid(radii));
+    tap.position.set(0, 0, mid(radii));
     tap.userData.choice = kind;
     tap.userData.tapHeight = 0;
-    this.scene.add(tap);
+    this.saturn.add(tap);
     this.tappable(tap, () => this.choose?.(kind));
     return { mesh: ring, gap: missing, tap, radii, total: gap, need: 0, filled: 0 };
   }

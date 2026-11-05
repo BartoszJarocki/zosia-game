@@ -106,6 +106,48 @@ test('a right piece shrinks its ring gap and both rings close when the pieces ar
   s.alive = false; s.exit();
 });
 
+test('each gap lies in its ring plane and is visible before the first piece', async () => {
+  const s = await build(4);
+  s.scene.updateMatrixWorld(true);
+  const normalOf = (obj) => {
+    obj.updateWorldMatrix(true, true);
+    const normal = new THREE.Vector3().fromBufferAttribute(obj.geometry.getAttribute('normal'), 0);
+    return normal.applyMatrix3(new THREE.Matrix3().getNormalMatrix(obj.matrixWorld)).normalize();
+  };
+  for (const kind of ['ice', 'rock']) {
+    const { mesh: ring, gap } = s.rings[kind];
+    assert.equal(gap.visible, true, kind);
+    assert.ok(Math.abs(normalOf(ring).dot(normalOf(gap))) > 0.999, `${kind} gap is parallel to its ring`);
+  }
+  s.alive = false; s.exit();
+});
+
+test('the ring taps line up with the drawn rings at every iPad size', async () => {
+  const s = await build(4);
+  s.scene.updateMatrixWorld(true);
+  const ray = new THREE.Raycaster();
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+    const direction = s.view.pos.clone().sub(s.view.look);
+    direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
+    camera.position.copy(s.view.look).add(direction); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
+    for (const kind of ['ice', 'rock']) {
+      const tap = ring(s, kind);
+      const [inner, outer] = s.rings[kind].radii;
+      const radius = (inner + outer) / 2;
+      for (const angle of [Math.PI / 2, Math.PI, 0]) {
+        const world = s.saturn.localToWorld(new THREE.Vector3(Math.cos(angle) * radius, 0.01, Math.sin(angle) * radius));
+        const ndc = world.clone().project(camera);
+        ray.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), camera);
+        const hits = ray.intersectObjects(s.tappables.filter((o) => o.userData.choice !== undefined), false);
+        assert.ok(hits.length, `${width}x${height} ${kind} ${angle}`);
+        assert.equal(hits[0].object, tap, `${width}x${height} ${kind} ${angle}`);
+      }
+    }
+  }
+  s.alive = false; s.exit();
+});
+
 test('Saturn has no shadows or point lights and stays below the medium draw budget', async () => {
   const s = await build(4);
   let draws = 0, shadows = 0, pointLights = 0;
