@@ -3,6 +3,7 @@
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
+import { STRIPE_ROWS } from '../levels/jupiter.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -35,6 +36,8 @@ const COLOUR = { red: ['czerwony', 'czerwona', 'czerwonego'], blue: ['niebieski'
 const SIZE = { big: ['duży', 'dużego'], small: ['mały', 'małego'] };
 const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt', heart: 'serduszko' };
 const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
+const JUPITER_COLOUR = { white: 'biały', orange: 'pomarańczowy', brown: 'brązowy', red: 'czerwony' };
+const stripeWords = (row) => row.map((c, i) => (i ? JUPITER_COLOUR[c] : cap(JUPITER_COLOUR[c])));
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
 const SATURN = {
@@ -102,6 +105,7 @@ export const HOME_TASKS = {
   stars: 'Poszukajcie wieczorem gwiazd na niebie!',
   venus: 'Znajdź w domu coś kwadratowego!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
+  jupiter: 'Znajdź w domu coś w paski!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
@@ -263,6 +267,19 @@ export const T = {
   venusRight: (s) => [`To jest ${SHAPE[s]}!`],
   venusWrong: (s) => [`Popatrz jeszcze raz. To jest ${SHAPE[s]}.`],
   venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
+  jupiterStart: () => ['Jesteśmy przy Jowiszu! To największa planeta. Pomalujemy jej paski!'],
+  jupiterWhich: () => ['Który kolor teraz?'],
+  jupiterGap: () => ['Którego paska brakuje?'],
+  jupiterHelp: (row, gap) => [`${stripeWords(row.slice(0, gap)).join(', ')}, i...?`],
+  jupiterRow: (row) => [`${stripeWords(row).join(', ')}!`],
+  jupiterTryAgain: () => ['Ojej! Spróbuj jeszcze raz.'],
+  jupiterBigger: () => ['Która jest większa?'],
+  jupiterSmaller: () => ['Która jest mniejsza?'],
+  jupiterBig: (big) => [big === 'sun' ? 'Słońce jest dużo większe od Ziemi!' : 'Jowisz jest dużo większy od Ziemi!'],
+  jupiterSmall: () => ['Ziemia jest dużo mniejsza!'],
+  jupiterLook: (ask) => [ask === 'smaller' ? 'Popatrz jeszcze raz. Ta jest mniejsza.' : 'Popatrz jeszcze raz. Ta jest większa.'],
+  jupiterSpot: () => ['Czerwona plama to wielka burza.'],
+  jupiterDone: () => ['Brawo! Jowisz ma piękne paski!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -543,5 +560,13 @@ export function allSegments(levels, allLetters) {
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
   Object.keys(TELESCOPE_AFTER).forEach((kind) => add(T.telescopeOrder(kind)));
+  // Jupiter: every stripe row, said aloud and as a help prefix
+  Object.values(STRIPE_ROWS).flat().forEach((row) => {
+    add(T.jupiterRow(row));
+    const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
+    gaps.forEach((gap) => add(T.jupiterHelp(row, gap)));
+  });
+  [T.jupiterStart, T.jupiterWhich, T.jupiterGap, T.jupiterTryAgain, T.jupiterBigger, T.jupiterSmaller, T.jupiterSmall, T.jupiterSpot, T.jupiterDone].forEach((f) => add(f()));
+  [T.jupiterLook('bigger'), T.jupiterLook('smaller'), T.jupiterBig('jupiter'), T.jupiterBig('sun')].forEach(add);
   return [...new Set(out)];
 }

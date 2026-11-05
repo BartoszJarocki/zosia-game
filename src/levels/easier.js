@@ -14,6 +14,7 @@ export const EASIER = {
   stars: (s) => ({ ...s, labels: 'both', stars: [s.stars[0], s.stars[0]], rounds: 1 }), // one smaller picture
   mercury: (s) => ({ ...s, show: 'stay', labels: 'both', choices: Math.max(2, s.choices - 1) }),
   telescope: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: ['feature', 'order'].includes(s.ask) ? 'name' : s.ask }),
+  jupiter: (s) => ({ ...s, pattern: 'AB', bigger: 'big' }),
   blackhole: (s) => ({ ...s, auto: true, slots: true }),
   saturn: (s) => ({ ...s, named: true, sizes: 'same' }),
   venus: (s) => ({ ...s, reveal: 'full', turned: false }),

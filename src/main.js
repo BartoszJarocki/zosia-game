@@ -23,6 +23,7 @@ import { StarsMission } from './scenes/stars.js';
 import { MercuryMission } from './scenes/mercury.js';
 import { VenusMission } from './scenes/venus.js';
 import { TelescopeMission } from './scenes/telescope.js';
+import { JupiterMission } from './scenes/jupiter.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
@@ -68,8 +69,8 @@ const updateSW = registerSW({
 const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
-  delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission, moon: MoonMission,
-  mars: MarsMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, stars: StarsMission, mercury: MercuryMission, venus: VenusMission, telescope: TelescopeMission,
+  delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission,
+  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, stars: StarsMission, telescope: TelescopeMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);

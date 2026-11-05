@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['mercury', 'venus', 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['mercury', 'venus', 'moon', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -153,10 +153,11 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
       mercury: { started: ['mercury'], routeIndex: 1 },
       venus: { started: ['mercury', 'venus'], routeIndex: 2 },
       mars: { started: ['mercury', 'venus', 'mars'], routeIndex: 5 },
-      saturn: { started: ['mercury', 'venus', 'mars', 'saturn'], routeIndex: 7 },
-      pluto: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto'], routeIndex: 10 },
-      blackhole: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
-      stars: { started: ['mercury', 'venus', 'mars', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
+      jupiter: { started: ['mercury', 'venus', 'mars', 'jupiter'], routeIndex: 6 },
+      saturn: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn'], routeIndex: 7 },
+      pluto: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto'], routeIndex: 10 },
+      blackhole: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
+      stars: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
     };
     if (gameStops[kind]) {
       assert.deepEqual(started, gameStops[kind].started);
@@ -176,7 +177,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.backToMap(); frame(s);
     assert.equal(s.state, 'waiting'); assert.equal(s.visiting, null);
   }
-  await s.tapStop('jupiter');
+  await s.tapStop('uranus');
   s.idleAt = performance.now() - 1; frame(s);
   await new Promise(setImmediate);
   assert.equal(s.state, 'waiting');
@@ -254,8 +255,8 @@ test('map entries check attention once; idle invitations never force a finale fl
   for (let i = 0; i < 120; i++) s.tick(1, i);
   assert.equal(globalThis.__checks, 1);
   assert.equal(globalThis.__lines.length, lines);
-  await s.tapStop('jupiter');
-  assert.equal(s.visiting, 'jupiter');
+  await s.tapStop('uranus');
+  assert.equal(s.visiting, 'uranus');
   assert.equal(s.nudgeAt, null);
   assert.equal(globalThis.__checks, 1);
   await s.backToMap();
