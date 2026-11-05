@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { animate, ease, wait, renderer } from '../engine.js';
+import { animate, ease, wait } from '../engine.js';
 import { mesh, rbox } from '../models.js';
-import { makePup } from '../characters.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
+import { PLACES } from '../places.js';
+import { portrait } from '../world/portrait.js';
 import { jupiterRounds, stripeRound, biggerRound, JUPITER_COLOURS } from '../levels/jupiter.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
@@ -56,26 +57,6 @@ function ballMaps() {
       }
     }),
   };
-}
-
-function portrait() {
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#657dcc');
-  scene.add(new THREE.HemisphereLight('#ffffff', '#cad9ff', 2.4));
-  const light = new THREE.DirectionalLight('#fff3dd', 2.5);
-  light.position.set(-3, 4, 6); scene.add(light);
-  const chase = makePup();
-  chase.position.set(0, -1.4, 0);
-  chase.userData.setHappy(60);
-  scene.add(chase);
-  scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-  camera.position.set(0, 0, 5);
-  const target = new THREE.WebGLRenderTarget(256, 256);
-  const previous = renderer.getRenderTarget();
-  renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.setRenderTarget(previous);
-  scene.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
-  return target;
 }
 
 export class JupiterMission extends Mission {
@@ -199,7 +180,7 @@ export class JupiterMission extends Mission {
     }
 
     const short = p.item === 'gap' ? T.jupiterGap() : T.jupiterWhich();
-    ui.bubble({ big: rowSVG(p.row, p.gap), pic: '🪐', onTap: () => this.replay() });
+    ui.bubble({ big: rowSVG(p.row, p.gap), pic: PLACES.jupiter.badge.label, onTap: () => this.replay() });
     this.question('pattern', p.item, {
       short,
       hint: () => T.jupiterHelp(p.row, p.gap),
@@ -253,7 +234,7 @@ export class JupiterMission extends Mission {
 
     balls.forEach((ball) => this.tappable(ball, () => choose(ball)));
     const short = p.ask === 'smaller' ? T.jupiterSmaller() : T.jupiterBigger();
-    ui.bubble({ big: '?', pic: '🪐', onTap: () => this.replay() });
+    ui.bubble({ big: '?', pic: PLACES.jupiter.badge.label, onTap: () => this.replay() });
     this.question('comparison', p.ask, {
       short,
       hint: () => T.lookCarefully(),

@@ -1,8 +1,8 @@
 // Pluto's rounds as data: the heart and the shapes around it. Pure (rng passed in), so tests/levels/pluto.test.js
 // checks them and scenes/pluto.js only draws and animates what this decides.
+import { shuffle } from '../util.js';
 import { SHAPES } from './garage.js';
 
-const shuffle = (a, rng) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const one = (a, rng) => a[Math.floor(rng() * a.length)];
 
 /** The pieces on the icy ground, left to right: one heart and the rest from koło, kwadrat, trójkąt. */

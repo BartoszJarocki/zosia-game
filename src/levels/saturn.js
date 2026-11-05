@@ -1,16 +1,8 @@
 // Saturn's pieces as data: which kind comes next, and how big it is. Pure (rng passed in), so
 // tests/levels/saturn.test.js checks the rules and scenes/saturn.js only draws what this decides.
+import { shuffle } from '../util.js';
 
 export const KINDS = ['ice', 'rock'];
-
-const shuffle = (a, random) => {
-  a = [...a];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
 
 const sizeBag = (n, sizes, random) => (sizes === 'mixed'
   ? shuffle([...Array(Math.ceil(n / 2)).fill('big'), ...Array(Math.floor(n / 2)).fill('small')], random)

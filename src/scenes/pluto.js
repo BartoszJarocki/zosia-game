@@ -4,6 +4,7 @@ import { mesh } from '../models.js';
 import { makeRocket } from '../world/rocket.js';
 import { makeShapePiece, shapeSVG } from '../world/garage-props.js';
 import { sparkle } from '../fx/particles.js';
+import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { plutoRound } from '../levels/pluto.js';
@@ -15,15 +16,6 @@ const PIECE = '#f9a8d4'; // one colour for every piece: colour never gives the a
 const DIM = '#b67f9c', BRIGHT = '#ffd9ec';
 const GROUND_Y = 0.025, PIECE_Y = 0.72, PIECE_Z = 2.8, GAP = 2.55;
 const across = (n) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * GAP);
-
-function texture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return map;
-}
 
 function glowMap() {
   return texture(128, (c) => {
