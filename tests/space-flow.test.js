@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['moon', 'mars', 'saturn', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -149,19 +149,18 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     await s.tapStop(kind); frame(s);
     assert.equal(s.visiting, kind);
     assert.equal(s.state, 'visiting');
-    if (['mars', 'saturn', 'blackhole'].includes(kind)) {
-      assert.deepEqual(started, { mars: ['mars'], saturn: ['mars', 'saturn'], blackhole: ['mars', 'saturn', 'blackhole'] }[kind]);
+    const gameStops = {
+      mars: { started: ['mars'], routeIndex: 5 },
+      saturn: { started: ['mars', 'saturn'], routeIndex: 7 },
+      pluto: { started: ['mars', 'saturn', 'pluto'], routeIndex: 10 },
+      blackhole: { started: ['mars', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
+      stars: { started: ['mars', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
+    };
+    if (gameStops[kind]) {
+      assert.deepEqual(started, gameStops[kind].started);
       assert.equal(started.at(-1), kind);
       assert.equal(getVisited()[kind], 1);
-      assert.equal(s.routeIndex, { mars: 5, saturn: 7, blackhole: 11 }[kind]);
-      await s.backToMap(); frame(s);
-      assert.equal(s.state, 'waiting');
-      continue;
-    }
-    if (kind === 'stars') {
-      assert.deepEqual(started, ['mars', 'saturn', 'blackhole', 'stars']);
-      assert.equal(getVisited().stars, 1);
-      assert.equal(s.routeIndex, 13);
+      assert.equal(s.routeIndex, gameStops[kind].routeIndex);
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
       continue;

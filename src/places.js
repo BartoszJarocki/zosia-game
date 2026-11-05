@@ -52,7 +52,7 @@ export const PLACES = {
   saturn: { area: 'space', game: true, domain: 'shapes', badge: { label: '🪐', color: '#d4a14a' } },
   uranus: { area: 'space', game: false, domain: 'space' },
   neptune: { area: 'space', game: false, domain: 'space' },
-  pluto: { area: 'space', game: false, domain: 'space' },
+  pluto: { area: 'space', game: true, domain: 'shapes', badge: { label: '🤍', color: '#f9a8d4' } },
   blackhole: { area: 'space', game: true, domain: 'numbers', badge: { label: '✨', color: '#7c3aed' } },
   comet: { area: 'space', game: false, domain: 'space' },
   stars: { area: 'space', game: true, domain: 'numbers', badge: { label: '⭐', color: '#eab308' } },

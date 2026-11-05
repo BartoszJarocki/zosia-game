@@ -134,6 +134,11 @@ export const SCHEMA = {
     sort: { type: 'enum', values: ['colour', 'size', 'switch'], optional: true },
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 3 },
   },
+  pluto: {
+    choices: { type: 'int', min: 2, max: 4 }, // pieces on the ground: one heart and the rest
+    turned: { type: 'bool' }, // textbook shapes, or turned and resized
+    rounds: { type: 'int', min: 1, max: 6 },
+  },
 };
 
 const clean = (s) => s.replace(/`/g, '').replace(/\*\*/g, '').trim();

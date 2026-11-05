@@ -365,6 +365,25 @@ mends a little more of the gap; when both rings are whole, Saturn turns slowly a
 - **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
   getting its own big and small share, so size never tells her the answer.
 
+### 🤍 Pluto's Heart · `pluto`
+
+The rocket lands on Pluto, a small pale planet with a big, soft heart on its front, dim at first. Chase
+watches from his round window. On the icy ground lie a few shapes, all one colour: she finds the heart.
+Each heart floats up into Pluto's heart, which shines a little brighter.
+
+| Level | choices | turned | rounds |
+|---|---|---|---|
+| 1 | 2 | no | 3 |
+| 2 | 3 | no | 3 |
+| 3 | 4 | no | 3 |
+| 4 | 4 | yes | 3 |
+
+- **choices**: how many pieces lie on the ground (2–4): one heart and the rest from koło, kwadrat and
+  trójkąt, all in the same colour so colour never gives the answer.
+- **turned**: `no`, every piece is the textbook shape; `yes`, the pieces are turned and bigger or
+  smaller (the heart too).
+- **rounds**: hearts to find per mission (1–6). Each is one scored `shape` question, item 'heart'.
+
 ### 🕳️ The Black Hole · `blackhole`
 
 Through the rocket's golden window, she sends friendly space pebbles towards a small, distant black

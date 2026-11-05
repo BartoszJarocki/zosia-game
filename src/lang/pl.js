@@ -31,7 +31,7 @@ const pupGen = CONFIG.pupGenitive || pup;
 // czerwona flaga, do czerwonego koszyka).
 const COLOUR = { red: ['czerwony', 'czerwona', 'czerwonego'], blue: ['niebieski', 'niebieska', 'niebieskiego'], yellow: ['żółty', 'żółta', 'żółtego'], green: ['zielony', 'zielona', 'zielonego'] };
 const SIZE = { big: ['duży', 'dużego'], small: ['mały', 'małego'] };
-const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt' };
+const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt', heart: 'serduszko' };
 const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
@@ -94,6 +94,7 @@ export const HOME_TASKS = {
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
+  pluto: 'Narysuj z mamą serduszko!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
   stars: 'Poszukajcie wieczorem gwiazd na niebie!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
@@ -224,6 +225,11 @@ export const T = {
   moonWatch: () => ['Patrz, jak skacze!'],
   moonHowMany: () => ['Ile było skoków?'],
   moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
+  plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
+  plutoAsk: () => ['Gdzie jest serduszko?'],
+  plutoRight: () => ['Tak! To jest serduszko!'],
+  plutoWrong: (s) => [`To jest ${SHAPE[s]}. Serduszko jest tutaj.`],
+  plutoDone: () => ['Brawo! Serduszko Plutona świeci!'],
   blackholeStart: () => ['Patrzymy przez okno rakiety. Czarna dziura jest bardzo daleko.'],
   blackholeDrop: (n) => [`Wypuść ${NUM[n]} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
   blackholeDropShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
@@ -492,7 +498,7 @@ export function allSegments(levels, allLetters) {
   nums.slice(0, marsMax).forEach((n) => { add(T.marsAsk(n)); add(T.marsRepeat(n)); add(T.marsWrong(n)); });
   [T.marsStart, T.marsDots, T.marsRight, T.marsDone, T.marsFact].forEach((f) => add(f()));
   // the Garage
-  Object.keys(SHAPE).forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
+  Object.keys(SHAPE).filter((sh) => sh !== 'heart').forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
   Object.keys(COLOUR).forEach((c) => { add(T.flag(c)); add(T.noFlag(c)); add(T.block('colour', c)); add(T.into('colour', c)); add(T.noBasket('colour', c)); });
   Object.keys(SIZE).forEach((sz) => { add(T.block('size', sz)); add(T.into('size', sz)); add(T.noBasket('size', sz)); });
   [T.doorBroken, T.shapeFits, T.doorFixed, T.flagsStart, T.flagNext, T.flagGap, T.blocksStart, T.whichBasket, T.sortSwitch, T.tidied].forEach((f) => add(f()));
@@ -508,6 +514,8 @@ export function allSegments(levels, allLetters) {
   for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
   Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
   [T.starsStart, T.starsDone].forEach((f) => add(f()));
+  [T.plutoStart, T.plutoAsk, T.plutoRight, T.plutoDone].forEach((f) => add(f()));
+  ['circle', 'square', 'triangle'].forEach((sh) => add(T.plutoWrong(sh)));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
   Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); add(T.saturnWrong(kind)); });

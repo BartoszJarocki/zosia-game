@@ -8,13 +8,21 @@ import { labelTexture, shade } from '../textures.js';
 export const COLOUR_HEX = { red: '#ef4444', blue: '#2563eb', yellow: '#facc15', green: '#16a34a' };
 const WICKER = '#c8955a';
 
-/** Corner points (x, y up), about one unit across. A circle is the only curve. */
+/** A soft heart, sampled from its curve so it extrudes and draws like the other pieces. */
+const heartOutline = Array.from({ length: 40 }, (_, i) => {
+  const t = (i / 40) * Math.PI * 2;
+  const x = (16 * Math.sin(t) ** 3) / 17;
+  const y = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17;
+  return [x * 0.55, y * 0.75 + 0.265];
+}).reverse();
+/** Corner points (x, y up), about one unit across. A circle is the only true curve. */
 const OUTLINES = {
   square: [[-0.48, -0.48], [0.48, -0.48], [0.48, 0.48], [-0.48, 0.48]],
   triangle: [[-0.6, -0.52], [0.6, -0.52], [0, 0.52]],
   right: [[-0.55, -0.5], [0.55, -0.5], [-0.55, 0.55]],
   flat: [[-0.7, -0.28], [0.7, -0.28], [0.2, 0.36]],
   tall: [[-0.32, -0.62], [0.32, -0.62], [0, 0.62]],
+  heart: heartOutline,
 };
 const CIRCLE_R = 0.55;
 const outline = (shape, odd) => OUTLINES[odd || shape];
@@ -53,7 +61,7 @@ export function makeShapePiece({ shape, colour, turn = 0, size = 1, odd = null }
   const g = new THREE.Group();
   const geo = new THREE.ExtrudeGeometry(trace(new THREE.Shape(), shape, odd, { s: PIECE_SCALE }), { depth: PIECE_DEPTH, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2, curveSegments: 28 });
   geo.translate(0, 0, -PIECE_DEPTH / 2);
-  const body = mesh(geo, mat(COLOUR_HEX[colour], { roughness: 0.35 }));
+  const body = mesh(geo, mat(COLOUR_HEX[colour] || colour, { roughness: 0.35 }));
   body.rotation.z = turn;
   g.add(body);
   g.userData.body = body;

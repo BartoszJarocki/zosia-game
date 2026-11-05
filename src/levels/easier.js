@@ -19,4 +19,5 @@ export const EASIER = {
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
   picnic: (s) => ({ ...s, close: false, numerals: false }),
   garage: easierGarage,
+  pluto: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), turned: false }),
 };
