@@ -72,7 +72,7 @@ test('the mission router returns from the telescope and replay to the same parke
     hub: 'Hub', space: 'Space', letters: 'LettersMission', counting: 'CountingMission', cones: 'ConesMission',
     name: 'NameMission', balloons: 'BalloonsMission', stones: 'StonesMission', lookout: 'LookoutMission',
     delivery: 'DeliveryMission', picnic: 'PicnicMission', garage: 'GarageMission', moon: 'MoonMission',
-    blackhole: 'BlackHoleMission', telescope: 'TelescopeMission',
+    blackhole: 'BlackHoleMission', telescope: 'TelescopeMission', comet: 'CometMission',
   };
   registerHooks({
     resolve(specifier, context, next) {

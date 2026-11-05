@@ -4,24 +4,17 @@ import { levelFor, assistFor } from './progress.js';
 import { LEVELS, ALL_LETTERS, maxLevel } from './levels/data.js';
 import { shuffle } from './util.js';
 import { EASIER } from './levels/easier.js';
+import { isLookalike, lookalikes } from './levels/lookalikes.js';
 
 export { LEVELS };
-
-// Uppercase letters that are easy to confuse. Kept apart early, used on purpose later.
-const LOOKALIKE = {
-  E: 'FB', F: 'EP', M: 'WN', W: 'MV', N: 'MHZ', O: 'CGD', C: 'OG', G: 'CO', P: 'RBF', R: 'PBK', B: 'PRD',
-  D: 'OB', I: 'LTJ', L: 'IT', T: 'IL', U: 'OW', K: 'R', H: 'N', Z: 'SN', S: 'Z', J: 'I', A: 'H',
-};
-
-/** Easy to confuse with each other (B and P, E and F…). */
-export const isLookalike = (a, b) => (LOOKALIKE[a] || '').includes(b) || (LOOKALIKE[b] || '').includes(a);
+export { isLookalike };
 
 /**
  * Pick `n` wrong answers for `target`.
  * similar=false: avoid lookalikes (fair for beginners). similar=true: include one or two on purpose.
  */
 export function distractors(target, pool, n, similar = false) {
-  const look = [...(LOOKALIKE[target] || '')];
+  const look = lookalikes(target);
   const others = shuffle([...pool].filter((l) => l !== target && !look.includes(l)));
   if (!similar) return others.slice(0, n);
   const tricky = shuffle(look.filter((l) => ALL_LETTERS.includes(l))).slice(0, Math.min(2, n));

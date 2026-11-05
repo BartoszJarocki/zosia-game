@@ -90,6 +90,7 @@ export const HOME_TASKS = {
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   blackhole: 'Policz z mamą kamyki na spacerze!',
   telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
+  comet: 'Narysuj z mamą kometę z długim ogonem!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
@@ -271,6 +272,13 @@ export const T = {
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
   balloonDone: (l, w = word(l)) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${w}!`],
 
+  // Comet Catch
+  cometStart: () => ['Komety lecą! Kometa to kula lodu i pyłu.'],
+  cometAsk: (l) => [`Złap komety z literą ${L(l)}!`],
+  cometRoundDone: () => ['Mamy wszystkie!'],
+  cometDone: () => ['Brawo! Złapałaś wszystkie komety!'],
+  cometFact: () => ['Ogon komety rośnie blisko Słońca.'],
+
   // Name Train
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
@@ -423,7 +431,7 @@ export function allSegments(levels, allLetters) {
   nums.slice(1, riverN).forEach((n) => { add(T.riverCounted(n)); add(T.riverAfter(n - 1)); });
   [1, 2, 3].forEach((k) => add(T.tooManyBack(k))); // (Treat House: at most three extra treats from the pile)
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.cometAsk(l)); add(T.spellNext(l)); });
   // every word a grown-up can pick for a letter (#parent) is recorded, so the voice never changes
   letters.forEach((l) => wordChoices(l).forEach(([w]) => { add(T.letterLike(l, w)); add(T.kittyFound(l, w)); add(T.balloonDone(l, w)); }));
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -461,7 +469,7 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_PASS));
   add(Object.values(SPACE_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
-  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone].forEach((f) => add(f()));
+  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));

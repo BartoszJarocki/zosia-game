@@ -30,6 +30,14 @@ export const SCHEMA = {
     similar: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to pop
   },
+  comet: {
+    pool: { type: 'letters' },
+    targets: { type: 'int', min: 1, max: 4 },
+    total: { type: 'int', min: 3, max: 9 },
+    speed: { type: 'range', min: 0.1, max: 2, float: true },
+    similar: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to catch
+  },
   name: {
     words: { type: 'words', minLen: 2, maxLen: 8, extra: 'Y' }, // (Y only in names, e.g. RYSIEK: shown and named, never asked elsewhere)
     mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight', 'whose'], optional: true },
@@ -283,7 +291,7 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.ask === 'order' && (s.pool.some((k) => !PLANETS.includes(k)) || !itemsFor(s).length)) errors.push(`${where}: order needs neighbouring planets in road order`);
     for (const target of s.pool) if (distractors(s, target).length < s.choices - 1) errors.push(`${where}: not enough unambiguous choices for ${target}`);
   }
-  if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
+  if ((kind === 'balloons' || kind === 'comet') && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
   if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
