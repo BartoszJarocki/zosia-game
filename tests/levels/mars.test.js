@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { marsBubble, marsChoices, marsPool, marsSkill } from '../../src/levels/mars.js';
+import { marsBubble, marsPool, marsSkill } from '../../src/levels/mars.js';
 import { parseGame } from '../../src/levels/parse.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
@@ -31,22 +31,6 @@ test('Mars rounds ask for a numeral or an amount', () => {
   assert.equal(marsSkill('name'), 'quantity');
   assert.deepEqual(marsPool(3), [1, 2, 3]);
   assert.deepEqual(marsPool(9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-});
-
-test('Mars choices fit the range and use neighbours from level 2', () => {
-  assert.deepEqual(marsChoices(3, { max: 3, choices: 3 }, 1).sort(), [1, 2, 3]);
-  assert.deepEqual(marsChoices(3, { max: 5, choices: 3 }, 2).sort(), [2, 3, 4]);
-  assert.deepEqual(marsChoices(1, { max: 5, choices: 2 }, 2).sort(), [1, 2]);
-  assert.deepEqual(marsChoices(9, { max: 9, choices: 3 }, 2).filter((n) => n >= 8).sort(), [8, 9]);
-  for (const random of [() => 0, () => 0.5, () => 0.999]) {
-    const old = Math.random;
-    Math.random = random;
-    const opts = marsChoices(4, { max: 6, choices: 4 }, 2);
-    Math.random = old;
-    assert.equal(opts.length, 4);
-    assert.ok(opts.includes(4));
-    assert.ok(opts.includes(3) || opts.includes(5));
-  }
 });
 
 const table = (row) => `### Test · \`mars\`\n\n| Level | max | choices | ask | rock | rounds |\n|---|---|---|---|---|---|\n| 1 | ${row} |\n`;

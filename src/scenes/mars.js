@@ -7,7 +7,8 @@ import { sparkle, dust } from '../fx/particles.js';
 import { glyphTexture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { marsBubble, marsChoices, marsPool, marsSkill } from '../levels/mars.js';
+import { numberChoices } from '../levels.js';
+import { marsBubble, marsPool, marsSkill } from '../levels/mars.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
@@ -161,7 +162,7 @@ export class MarsMission extends Mission {
       const target = this.pick(skill, marsPool(this.L.max));
       this.last = target;
       const n = Math.min(this.L.choices, this.L.max);
-      const opts = marsChoices(target, this.L, this.level);
+      const opts = numberChoices(target, this.L.max, n, this.level >= 2);
       const rocks = [];
       let solved = false, lastWrong = null;
 
@@ -270,7 +271,19 @@ export class MarsMission extends Mission {
         rock.rotation.z = side * t * 1.1;
       }, ease.in);
     }));
-    rocks.forEach((rock) => rock.removeFromParent());
+    rocks.forEach((rock) => this.disposeRock(rock));
+  }
+
+  disposeRock(rock) {
+    rock.traverse((o) => {
+      if (!o.isMesh) return;
+      o.geometry.dispose();
+      for (const m of [o.material].flat()) {
+        m.map?.dispose();
+        m.dispose();
+      }
+    });
+    rock.removeFromParent();
   }
 
   doneLine() { return [...T.marsDone(), ...T.marsFact()]; }
