@@ -373,6 +373,27 @@ The last level asks what comes next along the road from the Sun.
   follows a planet along the road. Order records `sequence`; the others record `space`.
 - **rounds**: how many places to find.
 
+### 🪐 Saturn's Rings · `saturn`
+
+The rocket stops at Saturn, where the rings have broken apart. Chase names each piece as it floats in, or she
+works out by its look whether it is ice or rock, then drags it to the right ring (or taps the ring). Each piece
+mends a little more of the gap; when both rings are whole, Saturn turns slowly and Chase cheers.
+
+| Level | pieces | named | sizes |
+|---|---|---|---|
+| 1 | 4 | yes | same |
+| 2 | 6 | yes | same |
+| 3 | 6 | no | same |
+| 4 | 8 | no | mixed |
+
+- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question, so the
+  progress paws count pieces. Both kinds come in every mission, never three of the same kind in a row, and
+  their counts differ by at most one.
+- **named**: `yes` names each piece as it arrives and asks for its ring ("To jest lód. Gdzie jest lodowy
+  pierścień?"). `no` asks her to judge by its look ("Lód czy skała? Gdzie to pasuje?"); help names it first.
+- **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
+  getting its own big and small share, so size never tells her the answer.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

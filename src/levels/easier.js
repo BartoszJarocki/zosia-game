@@ -12,6 +12,7 @@ export const EASIER = {
   moon: (s) => ({ ...s, auto: true, slots: true }),
   telescope: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: ['feature', 'order'].includes(s.ask) ? 'name' : s.ask }),
   blackhole: (s) => ({ ...s, auto: true, slots: true }),
+  saturn: (s) => ({ ...s, named: true, sizes: 'same' }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
   picnic: (s) => ({ ...s, close: false, numerals: false }),

@@ -49,7 +49,7 @@ export const PLACES = {
   moon: { area: 'space', game: true, domain: 'numbers', badge: { label: '🌙', color: '#6366f1' } },
   mars: { area: 'space', game: false, domain: 'space' },
   jupiter: { area: 'space', game: false, domain: 'space' },
-  saturn: { area: 'space', game: false, domain: 'space' },
+  saturn: { area: 'space', game: true, domain: 'shapes', badge: { label: '🪐', color: '#d4a14a' } },
   uranus: { area: 'space', game: false, domain: 'space' },
   neptune: { area: 'space', game: false, domain: 'space' },
   pluto: { area: 'space', game: false, domain: 'space' },

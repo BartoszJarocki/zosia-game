@@ -88,6 +88,11 @@ export const SCHEMA = {
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  saturn: {
+    pieces: { type: 'int', min: 2, max: 8 },
+    named: { type: 'bool' },
+    sizes: { type: 'enum', values: ['same', 'mixed'] },
+  },
   delivery: {
     pool: { type: 'letters' },
     choices: { type: 'int', min: 2, max: 4 },
