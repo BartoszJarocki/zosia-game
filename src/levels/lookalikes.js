@@ -13,12 +13,13 @@ export const isLookalike = (a, b) => lookalikes(a).includes(b) || lookalikes(b).
 
 /**
  * Pick `n` wrong answers for `target`.
- * similar=false: avoid lookalikes (fair for beginners). similar=true: include one or two on purpose.
+ * similar=false: avoid lookalikes (fair for beginners). similar=true: include one or two on purpose,
+ * drawn from `alphabet` (the letters a tricky lookalike may come from).
  */
-export function distractors(target, pool, n, similar = false) {
+export function distractors(target, pool, n, similar = false, alphabet = pool) {
   const look = lookalikes(target);
   const others = shuffle([...pool].filter((l) => l !== target && !look.includes(l)));
   if (!similar) return others.slice(0, n);
-  const tricky = shuffle(look.filter((l) => pool.includes(l))).slice(0, Math.min(2, n));
+  const tricky = shuffle(look.filter((l) => alphabet.includes(l))).slice(0, Math.min(2, n));
   return shuffle([...tricky, ...others.slice(0, n - tricky.length)]);
 }

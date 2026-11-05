@@ -8,6 +8,7 @@ import { showLetter } from '../config.js';
 import { say, sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { cometLetters, cometPlan } from '../levels/comet.js';
+import { ALL_LETTERS } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
@@ -199,7 +200,7 @@ export class CometMission extends Mission {
       this.speedK = 1;
       let popped = 0, done = false, lastWrong = null, help = 0;
 
-      const letters = cometLetters(this.L, target, pool);
+      const letters = cometLetters({ ...this.L, alphabet: ALL_LETTERS }, target, pool);
       const { laneOf, speeds, starts } = cometPlan(this.L);
       const inLane = LANES.map((_, i) => laneOf.filter((l) => l === i).length);
       const seen = LANES.map(() => 0);

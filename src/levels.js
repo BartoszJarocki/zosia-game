@@ -1,13 +1,18 @@
 // Difficulty design lives in GAME.md (one table row per level). This file adds the logic around it:
 // lookalike distractors, number choices, and "assist" (a gentler run after a rough one).
 import { levelFor, assistFor } from './progress.js';
-import { LEVELS, maxLevel } from './levels/data.js';
+import { LEVELS, ALL_LETTERS, maxLevel } from './levels/data.js';
 import { shuffle } from './util.js';
 import { EASIER } from './levels/easier.js';
-import { isLookalike, distractors } from './levels/lookalikes.js';
+import { isLookalike, distractors as pickDistractors } from './levels/lookalikes.js';
 
 export { LEVELS };
-export { isLookalike, distractors };
+export { isLookalike };
+
+/** Island games take tricky letters from the whole alphabet, as they always have. */
+export function distractors(target, pool, n, similar = false) {
+  return pickDistractors(target, pool, n, similar, ALL_LETTERS);
+}
 
 /** Wrong number choices: neighbours (±1) are the natural challenge once she can count. */
 export function numberChoices(target, max, n, near = false) {

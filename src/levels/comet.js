@@ -12,9 +12,9 @@ const shuffle = (a, random = Math.random) => {
 };
 
 /** The letters in one round: the asked letter `targets` times, the rest wrong ones. */
-export function cometLetters({ targets, total, similar }, target, pool, random = Math.random) {
+export function cometLetters({ targets, total, similar, alphabet }, target, pool, random = Math.random) {
   const nOthers = Math.max(0, total - targets);
-  const set = distractors(target, pool, Math.min(pool.length - 1, nOthers), similar);
+  const set = distractors(target, pool, Math.min(pool.length - 1, nOthers), similar, alphabet ?? pool);
   return shuffle([
     ...Array(targets).fill(target),
     ...Array.from({ length: nOthers }, (_, i) => set[i % set.length] || target),
