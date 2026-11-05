@@ -17,6 +17,8 @@ const L = (l) => cap(letterName(l));
 const word = (l) => letterWord(l)[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
 const treats = (n) => (n === 1 ? 'smakołyk' : n >= 2 && n <= 4 ? 'smakołyki' : 'smakołyków');
+/** 1 krater, 2–4 kratery, 5+ kraterów */
+const craterWord = (n) => (n === 1 ? 'krater' : n <= 4 ? 'kratery' : 'kraterów');
 /** jedno piętro, dwa piętra, pięć pięter */
 const nFloors = (n) => (n === 1 ? 'jedno piętro' : n <= 4 ? `${NUM[n]} piętra` : `${NUM[n]} pięter`);
 
@@ -91,6 +93,7 @@ export const HOME_TASKS = {
   delivery: 'Znajdź w domu coś na Em, jak mama!',
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
+  mercury: 'Policz z mamą guziki na swojej bluzce!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
@@ -248,6 +251,12 @@ export const T = {
   saturnRight: (kind) => [SATURN[kind].right],
   saturnWrong: (kind) => [SATURN[kind].wrong],
   saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
+  mercuryStart: () => ['Jesteśmy na Merkurym!', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
+  mercuryStayAsk: () => ['Ile jest kraterów?'],
+  mercuryFlashAsk: () => ['Szybkie oko! Ile było kraterów?'],
+  mercuryRight: (n) => [`Tak! ${cap(NUM[n])} ${craterWord(n)}!`],
+  mercuryWrong: () => ['Popatrz jeszcze raz.'],
+  mercuryDone: () => ['Brawo! Policzyłaś kratery na Merkurym!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -520,6 +529,8 @@ export function allSegments(levels, allLetters) {
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
   Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); add(T.saturnWrong(kind)); });
   [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
+  nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
+  [T.mercuryStart, T.mercuryStayAsk, T.mercuryFlashAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));

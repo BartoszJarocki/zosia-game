@@ -294,6 +294,29 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
 - Rounds that can't really be got wrong (`give` with auto, `share`) are played but don't count towards the next
   level, so every level has a `howMany`, `flash` or `hidden` round (a gentler run after a rough one turns `auto` on).
 
+### 🌑 Mercury's Craters · `mercury`
+
+The rocket lands on Mercury under a bright violet sky. A patch of grey ground shows a few round craters
+laid out like the dots on a die, so she sees how many at once. Below it are the number tiles to choose from.
+
+| Level | craters | show | labels | choices | rounds |
+|---|---|---|---|---|---|
+| 1 | 1–3 | stay | both | 3 | 3 |
+| 2 | 1–4 | stay | both | 3 | 3 |
+| 3 | 1–4 | flash | both | 3 | 3 |
+| 4 | 2–5 | flash | numeral | 3 | 3 |
+| 5 | 3–6 | flash | numeral | 4 | 3 |
+
+- **craters** — the range of crater counts (1 to 6), laid out like a die so a small number is seen at a glance.
+- **show** — `stay` keeps the craters in view while she chooses. `flash` ("Szybkie oko!") shows them for two
+  seconds, then a soft light-pink dust cloud drifts over them and she chooses from memory.
+- **labels** — `both` puts the numeral and its dots on each tile. `numeral` shows only the numeral.
+- **choices** — how many tiles (2 to 4). From level 2 the wrong tiles are the neighbours (±1), as on Cone Road.
+- **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
+  and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
+  one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
+  tries again.
+
 ### 🌙 Moon Jumps · `moon`
 
 Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each slow, floaty

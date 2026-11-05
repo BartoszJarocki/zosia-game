@@ -16,8 +16,8 @@ const ISLAND_GAMES = [
 const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
 const { levels, missions, errors } = parseGame(md, { childName: CONFIG.childName });
 
-test('the island and space have all seventeen games in badge order', () => {
-  assert.deepEqual(GAMES, [...ISLAND_GAMES, 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope']);
+test('the island and space have all eighteen games in badge order', () => {
+  assert.deepEqual(GAMES, [...ISLAND_GAMES, 'mercury', 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope']);
   assert.deepEqual(GAMES.filter((kind) => PLACES[kind].area === 'island'), ISLAND_GAMES);
   const games = placesIn('island').filter((kind) => PLACES[kind].game);
   assert.deepEqual(games.sort(), [...ISLAND_GAMES].sort());
@@ -41,7 +41,7 @@ test('every place has an area, game flag and domain; games also require badges',
 });
 
 test('every game has a schema, easier settings, text and level rows', () => {
-  assert.equal(GAMES.length, 17);
+  assert.equal(GAMES.length, 18);
   assert.deepEqual(errors, []);
   for (const kind of GAMES) {
     assert.ok(Object.keys(SCHEMA[kind]).length > 0, `${kind}: schema`);
@@ -72,11 +72,12 @@ test('place tables have no missing or unknown kinds', () => {
 });
 
 
-test('the rocket connects the island to eight look-only places and seven space games', () => {
+test('the rocket connects the island to seven look-only places and eight space games', () => {
   assert.deepEqual(PLACES.rocket, { area: 'island', game: false, domain: 'space', leadsTo: 'space' });
   assert.deepEqual(placesIn('space'), ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'blackhole', 'comet', 'stars', 'telescope']);
-  for (const kind of placesIn('space').filter((k) => !['moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(k))) assert.deepEqual(PLACES[kind], { area: 'space', game: false, domain: 'space' });
+  for (const kind of placesIn('space').filter((k) => !['mercury', 'moon', 'mars', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(k))) assert.deepEqual(PLACES[kind], { area: 'space', game: false, domain: 'space' });
   assert.deepEqual(PLACES.telescope, { area: 'space', game: true, domain: 'space', stop: false, badge: { label: '🔭', color: '#0d9488' } });
+  assert.deepEqual(PLACES.mercury, { area: 'space', game: true, domain: 'numbers', badge: { label: '🪨', color: '#9ca3af' } });
   assert.deepEqual(PLACES.moon, { area: 'space', game: true, domain: 'numbers', badge: { label: '🌙', color: '#6366f1' } });
   assert.deepEqual(PLACES.mars, { area: 'space', game: true, domain: 'numbers', badge: { label: '🚙', color: '#c2410c' } });
   assert.deepEqual(PLACES.saturn, { area: 'space', game: true, domain: 'shapes', badge: { label: '🪐', color: '#d4a14a' } });
@@ -98,6 +99,8 @@ test('every game has a scene in the mission registry; only island places need is
     assert.match(readFileSync(new URL(`../src/scenes/${kind}.js`, import.meta.url), 'utf8'), new RegExp(`export (class|function) ${scene}\\b`));
     if (PLACES[kind].area === 'island') assert.match(layout, new RegExp(`\\b${kind}:`));
   }
+  assert.doesNotMatch(layout, /\bmercury:/);
+  assert.equal(MILESTONES.mercury, undefined);
   assert.doesNotMatch(layout, /\bmoon:/);
   assert.equal(MILESTONES.moon, undefined);
   assert.doesNotMatch(layout, /\bstars:/);
@@ -110,6 +113,7 @@ test('every game has a scene in the mission registry; only island places need is
 
 test('home remembers the current map or the mission origin', () => {
   assert.equal(homeArea({ area: PLACES.letters.area }), 'island');
+  assert.equal(homeArea({ area: PLACES.mercury.area }), 'space');
   assert.equal(homeArea({ area: PLACES.moon.area }), 'space');
   assert.equal(homeArea({ area: PLACES.pluto.area }), 'space');
   assert.equal(homeArea({ area: PLACES.blackhole.area }), 'space');
