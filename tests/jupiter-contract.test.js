@@ -174,6 +174,32 @@ test('a size round hides the background planet and keeps the big ball clear of C
   s.alive = false; s.exit();
 });
 
+test('the two balls keep a 50 px gap with Earth on either side at every iPad size', async () => {
+  for (const earthLeft of [true, false]) {
+    const s = await build();
+    const answers = earthLeft ? [0.9, 0] : [0.9, 0.9];
+    s.random = () => answers.shift() ?? 0.9;
+    s.L = { ...s.L, bigger: 'big' };
+    const round = s.sizeRound();
+    await flush();
+    const balls = s.tappables.filter((o) => o.userData.choice);
+    const earth = balls.find((o) => o.userData.choice === 'earth');
+    const big = balls.find((o) => o.userData.choice !== 'earth');
+    assert.ok(earth && big);
+    assert.equal(earth.position.x < big.position.x, earthLeft);
+    for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+      const camera = cameraFor(s, width, height);
+      const e = disc(earth, earth.userData.radius, camera, width, height);
+      const b = disc(big, big.userData.radius, camera, width, height);
+      const gap = Math.hypot(e.x - b.x, e.y - b.y) - e.r - b.r;
+      assert.ok(gap >= 50, `Earth ${earthLeft ? 'left' : 'right'} ${width}x${height}: ${gap.toFixed(1)} px between the balls`);
+    }
+    await balls.find((o) => o.userData.choice === s.last).userData.onTap();
+    await round;
+    s.alive = false; s.exit();
+  }
+});
+
 test('all controls stay inside both iPads and the scene stays below the draw budget', async () => {
   const s = await build();
   const round = s.stripesRound();

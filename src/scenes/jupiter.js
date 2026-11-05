@@ -12,6 +12,8 @@ import { Mission } from './mission.js';
 
 const COLOUR_HEX = { white: '#f4ecdd', orange: '#ef8b31', brown: '#8b5a35', red: '#d83a3a' };
 const BALL_R = { jupiter: 2.9, sun: 2.9, earth: 0.56 };
+const BALL_GAP = 0.95;
+const BIG_LEFT_X = -2.2, BIG_RIGHT_X = 0.4;
 const BAR_W = 5.2, BAR_H = 0.44, STEP = 0.5, ROW_Z = -0.8;
 const across = (n, gap) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * gap);
 
@@ -213,7 +215,12 @@ export class JupiterMission extends Mission {
     this.planet.visible = false;
     this.redSpot.visible = false;
     const p = biggerRound(this.L.bigger, this.random);
-    const balls = [p.left, p.right].map((kind, i) => this.makeBall(kind, across(2, 3.4)[i]));
+    const sep = BALL_R.jupiter + BALL_R.earth + BALL_GAP;
+    // The pair shifts left when the big ball is on the right, clear of Chase's window.
+    const bigLeft = p.right === 'earth';
+    const bigX = bigLeft ? BIG_LEFT_X : BIG_RIGHT_X;
+    const xs = bigLeft ? [bigX, bigX + sep] : [bigX - sep, bigX];
+    const balls = [p.left, p.right].map((kind, i) => this.makeBall(kind, xs[i]));
     const right = balls.find((ball) => ball.userData.choice === p.answer);
     let solved = false, lastWrong = null, resolveRound;
     const done = new Promise((resolve) => { resolveRound = resolve; });
