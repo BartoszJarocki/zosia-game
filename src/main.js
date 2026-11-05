@@ -24,6 +24,7 @@ import { MercuryMission } from './scenes/mercury.js';
 import { VenusMission } from './scenes/venus.js';
 import { TelescopeMission } from './scenes/telescope.js';
 import { JupiterMission } from './scenes/jupiter.js';
+import { CometMission } from './scenes/comet.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
@@ -70,7 +71,7 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission,
-  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, stars: StarsMission, telescope: TelescopeMission,
+  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, comet: CometMission, stars: StarsMission, telescope: TelescopeMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);

@@ -521,6 +521,24 @@ and the Sun with Earth.
   `pattern` with the pattern name as its item; `bigger` is scored as `comparison` with `bigger` or
   `smaller`. Every question counts.
 
+### ☄️ Comet Catch · `comet`
+
+Comets with letters glide slowly past. Catch every comet with the asked letter, counting them as you go.
+
+| Level | pool | targets | total | speed | similar | rounds |
+|---|---|---|---|---|---|---|
+| 1 | START | 2 | 4 | 0.25–0.4 | no | 3 |
+| 2 | MORE | 2 | 5 | 0.25–0.4 | no | 3 |
+| 3 | MORE | 3 | 6 | 0.3–0.5 | no | 2 |
+| 4 | ALL | 3 | 6 | 0.3–0.5 | yes | 2 |
+
+Levels add new letters (2), more comets to catch and a little more speed (3), then lookalikes (4).
+
+- **targets** — how many comets have the right letter (1–4) · **total** — comets in the sky (3–9)
+- **speed** — how fast they glide, a range (each lane picks a speed inside it). They cross in five lanes
+  that never touch, from right to left below the speech bubble, then leave and come back later in another lane
+- **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

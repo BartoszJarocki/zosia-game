@@ -125,7 +125,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   frame(s);
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
   assert.equal(s.state, 'waiting');
-  assert.ok(['mercury', 'venus', 'moon', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
+  assert.ok(['mercury', 'venus', 'moon', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'comet', 'stars', 'telescope'].includes(s.suggested), `suggested ${s.suggested}`); // (the director picks among fresh games at random)
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -157,13 +157,21 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
       saturn: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn'], routeIndex: 7 },
       pluto: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto'], routeIndex: 10 },
       blackhole: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole'], routeIndex: 11 },
-      stars: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'stars'], routeIndex: 13 },
+      stars: { started: ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'pluto', 'blackhole', 'comet', 'stars'], routeIndex: 13 },
     };
     if (gameStops[kind]) {
       assert.deepEqual(started, gameStops[kind].started);
       assert.equal(started.at(-1), kind);
       assert.equal(getVisited()[kind], 1);
       assert.equal(s.routeIndex, gameStops[kind].routeIndex);
+      await s.backToMap(); frame(s);
+      assert.equal(s.state, 'waiting');
+      continue;
+    }
+    if (kind === 'comet') {
+      assert.ok(started.includes('comet'));
+      assert.equal(getVisited().comet, 1);
+      assert.equal(s.routeIndex, 12);
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
       continue;
