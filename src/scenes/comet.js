@@ -11,9 +11,12 @@ import { cometLetters, cometPlan } from '../levels/comet.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const X0 = 9.5, X1 = -9.5;
-// Five lanes below the speech bubble. A comet is 1.16 wide, so 1.7 apart never touches.
-const LANES = [0.4, 2.1, 3.8, 5.5, 7.2];
+// Comets stay fully in view at every iPad size (the narrowest view is 15 wide): the tail reaches
+// 2.8 right of the centre and the body 0.6 left of it, plus the hint pulse.
+const X0 = 3.8, X1 = -6.0;
+// Five lanes below the speech bubble, clear of the rocket below them. A comet is 1.16 tall,
+// so 1.55 apart never touches.
+const LANES = [1.65, 3.2, 4.75, 6.3, 7.85];
 
 function texture(size, draw) {
   const canvas = document.createElement('canvas');
@@ -106,8 +109,8 @@ export class CometMission extends Mission {
     this.maps.push(this.tailMap, this.haloMap);
 
     this.rocket = makeRocket();
-    this.rocket.position.set(-7.2, 1, 1.2);
-    this.rocket.scale.setScalar(0.82);
+    this.rocket.position.set(-5.9, 0.12, 0.4);
+    this.rocket.scale.setScalar(0.5);
     this.rocket.userData.flame.visible = false;
     this.scene.add(this.rocket);
     this.net = new THREE.Group();
@@ -119,7 +122,7 @@ export class CometMission extends Mission {
     this.net.position.set(0.95, 0.45, 0.15);
     this.rocket.add(this.net);
     this.onUpdate((dt, t) => {
-      this.rocket.position.y = 1 + Math.sin(t * 0.8) * 0.08;
+      this.rocket.position.y = 0.12 + Math.sin(t * 0.8) * 0.05;
     });
 
     this.onUpdate((dt, t) => this.glide(dt, t));
@@ -140,8 +143,14 @@ export class CometMission extends Mission {
       d.wobble = Math.max(0, d.wobble - dt * 2.5);
       d.inflate = Math.min(1, d.inflate + dt * 3);
       c.scale.setScalar(Math.max(0.001, d.inflate));
-      if (c.position.x < X1) this.sendAway(c);
+      if (c.position.x < X1) this.wrap(c);
     }
+  }
+
+  /** Back to the right edge: all `total` comets keep drifting through the view. */
+  wrap(c) {
+    c.position.set(X0, LANES[c.userData.lane], 0);
+    if (this.tapComet && !c.userData.onTap) this.tappable(c, () => this.tapComet(c));
   }
 
   /** Off the left edge: rest for a moment, then come back from the right in another lane. */
@@ -211,7 +220,7 @@ export class CometMission extends Mission {
         this.poke();
         if (c.userData.letter !== target) {
           lastWrong = c;
-          this.wrong(c.userData.letter, { quiet: true, feedback: false });
+          this.wrong(c.userData.letter, { obj: c.userData.body, said: this.lookalikeNo(target, c.userData.letter) });
           c.userData.wobble = 1;
           const right = this.comets.find((x) => x.userData.letter === target && x.userData.wait <= 0);
           if (right) this.hint(right, () => done || right.userData.popped || right.userData.wait > 0);
@@ -243,12 +252,15 @@ export class CometMission extends Mission {
 
       const rest = letters.map((letter, i) => {
         const lane = laneOf[i];
+        const step = inLane[lane] ? 1 / inLane[lane] : 0;
         const c = makeComet(letter, this.tailMap, this.haloMap);
         Object.assign(c.userData, {
           letter, lane, speed: speeds[lane], phase: Math.random() * 6, tapHeight: 0,
-          inflate: 0, wait: 0, wobble: 0,
+          inflate: 1, wait: 0, wobble: 0,
         });
-        c.position.set(X0 - (((starts[lane] + seen[lane]++ / inLane[lane]) % 1) * (X0 - X1)), LANES[lane], 0);
+        // Each comet starts inside the view. Two in one lane sit half a lane apart, so wrapping
+        // never brings them together.
+        c.position.set(X1 + ((starts[lane] + seen[lane]++ * step) % 1) * (X0 - X1), LANES[lane], 0);
         this.scene.add(c);
         this.tappable(c, () => tap(c));
         return c;

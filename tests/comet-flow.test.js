@@ -93,7 +93,7 @@ test('a right tap catches and counts; a wrong letter only wobbles and shows the 
   await wrong.userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(wrong.userData.wobble, 1);
-  assert.equal(globalThis.__lines.length, linesBefore);
+  assert.ok(globalThis.__lines.slice(linesBefore).some((line) => /^Nie/.test(line)));
   assert.ok(all.find((o) => o.userData.letter === target && o.userData.hinting));
   await right.userData.onTap();
   assert.equal(s.answers.length, 1);

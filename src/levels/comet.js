@@ -1,4 +1,4 @@
-import { isLookalike, lookalikes } from './lookalikes.js';
+import { distractors } from './lookalikes.js';
 
 export const COMET_LANES = 5;
 
@@ -10,15 +10,6 @@ const shuffle = (a, random = Math.random) => {
   }
   return a;
 };
-
-/** The same wrong picks as Balloon Hill: lookalikes only when the level asks, and never the target. */
-function distractors(target, pool, n, similar) {
-  const all = [...pool];
-  const others = shuffle(all.filter((l) => l !== target && !isLookalike(target, l)));
-  if (!similar) return others.slice(0, n);
-  const tricky = shuffle(all.filter((l) => l !== target && isLookalike(target, l))).slice(0, Math.min(2, n));
-  return shuffle([...tricky, ...others.slice(0, n - tricky.length)]);
-}
 
 /** The letters in one round: the asked letter `targets` times, the rest wrong ones. */
 export function cometLetters({ targets, total, similar }, target, pool, random = Math.random) {

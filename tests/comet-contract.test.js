@@ -43,9 +43,44 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 const { CometMission } = await import('../src/scenes/comet.js');
+const { camera } = await import('../src/engine.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const flush = () => new Promise(setImmediate);
+
+function frame(s, w, h) {
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  const { pos, look, minWidth } = s.view;
+  const direction = pos.clone().sub(look);
+  const base = direction.length();
+  direction.setLength(Math.max(base, minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
+  camera.position.copy(look).add(direction);
+  camera.lookAt(look);
+  camera.updateMatrixWorld(true);
+}
+
+function visibleBox(obj) {
+  obj.updateWorldMatrix(true, true);
+  const box = new THREE.Box3();
+  obj.traverse((o) => {
+    if (!o.isMesh) return;
+    for (let p = o; p; p = p.parent) if (!p.visible) return;
+    o.geometry.computeBoundingBox();
+    box.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));
+  });
+  return box;
+}
+
+function onScreen(obj) {
+  const box = visibleBox(obj);
+  const p = new THREE.Vector3();
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    p.set(x, y, z).project(camera);
+    if (Math.abs(p.x) > 1 || Math.abs(p.y) > 1) return false;
+  }
+  return true;
+}
 
 async function build(level = 1) {
   const s = new CometMission({ home() {}, startMission() {} });
@@ -95,4 +130,22 @@ test('Comet has no shadows or point lights, stays under 100 draws, and every com
     assert.ok((Math.max(...xs) - Math.min(...xs)) * w / 2 >= 70, `${w}x${h} comet width`);
   }
   s.alive = false; s.exit();
+});
+
+test('every tappable comet and the rocket stay fully on screen through a whole round at every size', async () => {
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const s = await build(4);
+    frame(s, w, h);
+    for (let i = 0; i < 400; i++) {
+      s.update(0.1, i * 0.1);
+      s.scene.updateMatrixWorld(true);
+      const live = s.tappables.filter((o) => o.userData.letter);
+      assert.ok(live.length > 0, `${w}x${h} step ${i}: no comet to tap`);
+      for (const c of live) assert.ok(onScreen(c), `${w}x${h} step ${i}: a tappable comet is off screen`);
+      assert.ok(live.some((c) => c.userData.letter === s.last), `${w}x${h} step ${i}: no asked-letter comet`);
+      assert.ok(onScreen(s.rocket), `${w}x${h} step ${i}: the rocket is off screen`);
+      await flush();
+    }
+    s.alive = false; s.exit();
+  }
 });
