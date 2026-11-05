@@ -9,7 +9,7 @@ import { dust, sparkle } from '../fx/particles.js';
 import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
-import { levelFor, getWorld } from '../progress.js';
+import { levelFor, getWorld, getVisited } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
@@ -27,6 +27,8 @@ import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 import { makeGarageLandmark } from '../world/garage-props.js';
 import { makeLaunchPad } from '../world/rocket.js';
+import { addKeepsakes } from '../world/keepsakes.js';
+import { makeNightSky, nightSkyLine } from '../world/night-sky.js';
 import { PLACES, placesIn } from '../places.js';
 
 const START = new THREE.Vector3(0, 0, 0);
@@ -151,6 +153,7 @@ export class Hub extends Stage {
     const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
     this.placeGroups = {};
     for (const kind of placesIn('island')) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
+    this.addKeepsakes();
     const houses = HOUSES.map(([x, z, w, r]) => {
       const h = makeHouse(w, r);
       h.position.set(x, 0, z);
@@ -465,7 +468,7 @@ export class Hub extends Stage {
     if (!this.alive) return;
     this.yawnAt = performance.now() / 1000;
     await wait(900);
-    await say([...task, ...T.goodnight()]);
+    await say([...task, ...nightSkyLine(getVisited()), ...T.goodnight()]);
     if (!this.alive) return;
     const look0 = this.view.look.clone(), pos0 = this.view.pos.clone();
     animate(1800, (k) => (this.drowsy = 0.4 + k * 0.6), ease.inOut);
@@ -501,7 +504,7 @@ export class Hub extends Stage {
     const picture = document.getElementById('game');
     picture.classList.toggle('now', !ms);
     picture.classList.add('night');
-    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); } };
+    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); this.removeNightSky(); } };
     if (!ms) return set(1);
     return animate(ms, set, ease.inOut);
   }
@@ -515,6 +518,30 @@ export class Hub extends Stage {
     }
   }
 
+  /** The keepsakes: a small model of every space place she has visited, in one ring round the pad. */
+  addKeepsakes() {
+    const [x, z] = LAYOUT.rocket.at;
+    this.keepsakes = addKeepsakes(this.scene, [x, z], getVisited());
+    return this.keepsakes;
+  }
+
+  /** The Moon and the Wielki Wóz fade in over the sleeping island; they live only for this night. */
+  showNightSky({ instant = false } = {}) {
+    if (this.nightSkyGroup) return this.nightSkyGroup;
+    const group = (this.nightSkyGroup = makeNightSky(HOME_VIEW, innerWidth || 1180, innerHeight || 820));
+    this.scene.add(group);
+    if (instant) return group;
+    const materials = group.userData.materials;
+    for (const m of materials) { m.userData.fadeTo = m.opacity; m.transparent = true; m.opacity = 0; }
+    animate(1600, (k) => { for (const m of materials) m.opacity = m.userData.fadeTo * k; }, ease.inOut);
+    return group;
+  }
+
+  removeNightSky() {
+    this.nightSkyGroup?.userData.remove();
+    this.nightSkyGroup = null;
+  }
+
   /** The island sleeps: stars rest, little z's float over Chase, and places answer "Czejs śpi… Do jutra!". */
   sleep({ now = false } = {}) {
     if (now) { // back on an island that is already asleep
@@ -524,6 +551,7 @@ export class Hub extends Stage {
       this.truck.rotation.y = 0;
     }
     this.asleep = true;
+    this.showNightSky({ instant: now });
     this.micro = null;
     clearInterval(this.idleTimer);
     const head = new THREE.Vector3();
