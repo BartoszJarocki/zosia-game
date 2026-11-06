@@ -294,6 +294,251 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
 - Rounds that can't really be got wrong (`give` with auto, `share`) are played but don't count towards the next
   level, so every level has a `howMany`, `flash` or `hidden` round (a gentler run after a rough one turns `auto` on).
 
+### 🌑 Mercury's Craters · `mercury`
+
+The rocket lands on Mercury under a bright violet sky. A patch of grey ground shows a few round craters
+laid out like the dots on a die, so she sees how many at once. Below it are the number tiles to choose from.
+
+| Level | craters | show | labels | choices | rounds |
+|---|---|---|---|---|---|
+| 1 | 1–3 | stay | both | 3 | 3 |
+| 2 | 1–4 | stay | both | 3 | 3 |
+| 3 | 1–4 | flash | both | 3 | 3 |
+| 4 | 2–5 | flash | numeral | 3 | 3 |
+| 5 | 3–6 | flash | numeral | 4 | 3 |
+
+- **craters** — the range of crater counts (1 to 6), laid out like a die so a small number is seen at a glance.
+- **show** — `stay` keeps the craters in view while she chooses. `flash` ("Szybkie oko!") shows them for two
+  seconds, then a soft light-pink dust cloud drifts over them and she chooses from memory.
+- **labels** — `both` puts the numeral and its dots on each tile. `numeral` shows only the numeral.
+- **choices** — how many tiles (2 to 4). From level 2 the wrong tiles are the neighbours (±1), as on Cone Road.
+- **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
+  and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
+  one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
+  tries again.
+
+### 🌙 Moon Jumps · `moon`
+
+Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each slow, floaty
+jump leaves a pair of footprints in a row, so she can count the jumps afterwards.
+
+| Level | types | jump | howMany | auto | slots | rounds |
+|---|---|---|---|---|---|---|
+| 1 | jump, howMany | 1–3 | 1–3 | yes | yes | 3 |
+| 2 | jump, howMany | 1–4 | 1–4 | yes | no | 3 |
+| 3 | jump, howMany | 2–5 | 2–5 | no | no | 4 |
+| 4 | jump, howMany | 3–7 | 3–6 | no | no | 4 |
+
+- **types**: each kind comes up at least once, with extra rounds repeating one. Kinds alternate when
+  there are two, and the last round is always `jump` with auto on, including levels 3 and 4.
+  `jump` asks "Skocz trzy razy!": she taps Chase once per jump, and each landing is counted aloud.
+  Taps while he is in the air are ignored. `howMany` asks her to watch him jump silently, then
+  "Ile było skoków?": she can tap each footprint pair to count it and choose the numeral. The other
+  choices are one less and one more. The footprints then light up and are counted to her number.
+- **jump** / **howMany**: the number ranges, up to 9; `—` when howMany is unused.
+- **auto**: `yes` finishes a jump round when the requested number of footprints is there. With `no`,
+  she taps the rocket flag when she is done. Too few: "Za mało! Skacz dalej!" Too many: the extra
+  footprints fade and she hears "Za dużo! Teraz dobrze? Dotknij flagi!" She taps the flag again herself.
+- **slots**: `yes` shows ghost footprint outlines and dots under the numeral choices. With `no`,
+  neither is shown; help reveals the outlines. A gentler run turns both auto and slots on.
+- **rounds**: tasks per mission, 1 to 8, with at least one per kind. Automatic jump rounds are played
+  but unscored, so every level includes howMany. Manual jumps practise producing a number (`counting`);
+  howMany practises `quantity`.
+
+### 🚙 The Mars Rover · `mars`
+
+The rocket lands on Mars, under a pinkish-violet sky with two tiny moons. Chase sits in a six-wheeled rover
+with a dish on top. Big red rocks ahead show white numerals (and dots under them early on). Tap the rock the
+bubble asks for and the rover drives there, scans it and sparkles.
+
+| Level | max | choices | ask | rock | rounds |
+|---|---|---|---|---|---|
+| 1 | 3 | 3 | both | both | 3 |
+| 2 | 5 | 3 | both | numeral | 3 |
+| 3 | 5 | 3 | numeral | numeral | 3 |
+| 4 | 6 | 3 | dots | numeral | 3 |
+| 5 | 9 | 4 | name | numeral | 3 |
+
+- **max**: numbers go from 1 to max (2–9)
+- **choices**: how many rocks (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
+- **ask**: `both` shows a numeral and dots; `numeral` shows only the numeral; `dots` shows dots in the
+  bubble, so she counts them and finds the numeral (help lights the dots one by one; the number is named
+  only when the answer is shown); `name` shows nothing, only speaks ("Jedziemy do kamienia z numerem trzy!")
+- **rock**: what the rocks show: `both` (numeral + dots) or `numeral`
+- **rounds**: how many rocks she visits (1–8)
+
+### 🪐 Saturn's Rings · `saturn`
+
+The rocket stops at Saturn, where the rings have broken apart. Chase names each piece as it floats in, or she
+works out by its look whether it is ice or rock, then drags it to the right ring (or taps the ring). Each piece
+mends a little more of the gap; when both rings are whole, Saturn turns slowly and Chase cheers.
+
+| Level | pieces | named | sizes |
+|---|---|---|---|
+| 1 | 4 | yes | same |
+| 2 | 6 | yes | same |
+| 3 | 6 | no | same |
+| 4 | 8 | no | mixed |
+
+- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question, so the
+  progress paws count pieces. Both kinds come in every mission, never three of the same kind in a row, and
+  their counts differ by at most one.
+- **named**: `yes` names each piece as it arrives and asks for its ring ("To jest lód. Gdzie jest lodowy
+  pierścień?"). `no` asks her to judge by its look ("Lód czy skała? Gdzie to pasuje?"); help names it first.
+- **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
+  getting its own big and small share, so size never tells her the answer.
+
+### 🤍 Pluto's Heart · `pluto`
+
+The rocket lands on Pluto, a small pale planet with a big, soft heart on its front, dim at first. Chase
+watches from his round window. On the icy ground lie a few shapes, all one colour: she finds the heart.
+Each heart floats up into Pluto's heart, which shines a little brighter.
+
+| Level | choices | turned | rounds |
+|---|---|---|---|
+| 1 | 2 | no | 3 |
+| 2 | 3 | no | 3 |
+| 3 | 4 | no | 3 |
+| 4 | 4 | yes | 3 |
+
+- **choices**: how many pieces lie on the ground (2–4): one heart and the rest from koło, kwadrat and
+  trójkąt, all in the same colour so colour never gives the answer.
+- **turned**: `no`, every piece is the textbook shape; `yes`, the pieces are turned and bigger or
+  smaller (the heart too).
+- **rounds**: hearts to find per mission (1–6). Each is one scored `shape` question, item 'heart'.
+
+### 🕳️ The Black Hole · `blackhole`
+
+Through the rocket's golden window, she sends friendly space pebbles towards a small, distant black
+hole in a bright violet sky. Each pebble spirals gently into its glowing ring and lights one bead
+under the window, so she can still count what she sent. Chase stays in the rocket and cheers.
+
+| Level | types | drop | howMany | auto | slots | rounds |
+|---|---|---|---|---|---|---|
+| 1 | drop, howMany | 1–3 | 1–3 | yes | yes | 3 |
+| 2 | drop, howMany | 1–4 | 1–4 | yes | no | 3 |
+| 3 | drop, howMany | 2–6 | 2–5 | no | no | 4 |
+| 4 | drop, howMany | 3–8 | 3–7 | no | no | 4 |
+
+- **types**: the Moon's round order. Each kind appears, kinds alternate, and the last round is
+  always `drop` with auto on. `drop` asks "Wypuść trzy kamyki!": tap a pebble or drag it towards
+  the window. One floats away at a time, with each new bead counted aloud. `howMany` sends N
+  pebbles silently, then asks "Ile kamyków wpadło?" She can tap each bead to count before choosing
+  the numeral. Choices are one less and one more, using another positive number when N is 1.
+  The beads then glow one by one and are counted to her number.
+- **drop** / **howMany**: the number ranges, up to 9.
+- **auto**: `yes` finishes at N lit beads. With `no`, she taps the rocket's big button to check.
+  Too few: "Za mało! Wypuść jeszcze!" Too many: the extra beads go dark and she hears
+  "Za dużo! Teraz dobrze? Dotknij guzika!" She taps the button again herself.
+- **slots**: `yes` shows unlit bead outlines and dots under the numerals. With `no`, help can
+  reveal the outlines. A gentler run turns auto and slots on.
+- **rounds**: tasks per mission, 1 to 8, at least one per kind. Automatic drops are unscored,
+  so every level includes a scored `howMany` round. Manual drops practise `counting`;
+  choosing the numeral practises `quantity`.
+
+### ⭐ Star Pictures · `stars`
+
+Big gold stars sit on the corners of a hidden picture, each with a numeral under it. Star 1 already
+shines; she taps the next number in order and a glowing gold line draws the outline. At the end the
+picture fills with soft colour and Chase names it.
+
+| Level | stars | labels | rounds |
+|---|---|---|---|
+| 1 | 3–4 | both | 2 |
+| 2 | 4–5 | both | 2 |
+| 3 | 5–6 | numeral | 2 |
+| 4 | 6–7 | numeral | 2 |
+
+- **stars**: the range of star counts. Each round is one picture and a mission never repeats a
+  picture; level 4 always ends on the Wielki Wóz (7, the line left open).
+- **labels**: `both` draws the numeral and dots under each star; `numeral` draws only the numeral.
+- **rounds**: pictures joined per mission (1–4); every star after the first is a scored `sequence`
+  question, and its options are the stars not yet lit. A gentler run uses both labels and one
+  smaller picture.
+
+### 🔭 The Telescope · `telescope`
+
+She looks through a round brass eyepiece and taps a floating place. First she matches a picture,
+then finds a place by name or by a feature. The place hops with sparkles: "Tak! To jest Saturn."
+The last level asks what comes next along the road from the Sun.
+
+| Level | pool | choices | ask | rounds |
+|---|---|---|---|---|
+| 1 | sun, earth, moon, saturn | 2 | match | 4 |
+| 2 | sun, earth, moon, saturn, mars, jupiter | 2 | name | 4 |
+| 3 | sun, earth, moon, saturn, mars, jupiter, comet, blackhole | 3 | name | 5 |
+| 4 | sun, earth, saturn, mars, jupiter, comet, pluto | 3 | feature | 5 |
+| 5 | mercury, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto | 3 | name | 5 |
+| 6 | mercury, venus, earth, mars, jupiter, saturn, uranus, neptune | 3 | order | 5 |
+
+- **pool**: place kinds from `PLACES`. Feature pools only include places with a feature question.
+- **choices**: how many places float below the picture (2 to 4), with one unambiguous answer.
+- **ask**: `match` shows the same place above; `name` asks its name; `feature` asks about rings,
+  redness, our home, the largest planet, a tail, a heart or light and warmth; `order` asks what
+  follows a planet along the road. Order records `sequence`; the others record `space`.
+- **rounds**: how many places to find.
+
+### ☁️ Venus's Clouds · `venus`
+
+Venus is a big, friendly ball under thick, soft, creamy clouds. A few clouds slide apart
+and show a big glowing shape: which one is it? Chase watches from his round window.
+In a `part` level only a corner or a curve peeks out until she answers.
+
+| Level | reveal | turned | choices | rounds |
+|---|---|---|---|---|
+| 1 | full | no | 2 | 3 |
+| 2 | full | no | 3 | 3 |
+| 3 | part | no | 3 | 3 |
+| 4 | part | yes | 3 | 3 |
+
+- **reveal**: `full` opens the clouds over the whole shape; `part` shows only part of it until she answers.
+- **turned**: `no`, the textbook shape; `yes`, turned and bigger or smaller (the square stands on a corner, the triangle is not the textbook one).
+- **choices**: how many tiles (2 or 3): the right shape and the others from koło, kwadrat, trójkąt.
+- **rounds**: shapes per mission (1–6), each kind before any repeats, never the same shape twice in a row. Each is one question, skill `shape`, item the shape, every question scored.
+
+### 🟠 Jupiter's Stripes · `jupiter`
+
+The rocket arrives at Jupiter under a bright violet sky. Jupiter is a huge ball with wide horizontal
+stripes, and Chase watches from his round window. She paints the stripe row, then compares Jupiter
+and the Sun with Earth.
+
+| Level | types | pattern | bigger | rounds |
+|---|---|---|---|---|
+| 1 | stripes, bigger | AB | big | 3 |
+| 2 | stripes, bigger | ABB | big | 3 |
+| 3 | stripes, bigger | gap | both | 3 |
+| 4 | stripes, bigger | ABC | both | 4 |
+
+- **types**: each kind comes up once; extra rounds repeat `stripes`, and no kind comes twice in a
+  row unless there is no other room for it.
+- **pattern**: `AB` white, orange, white, orange, which next · `ABB` white, orange, orange (or
+  white, white, orange), which next · `gap` an AB or ABB row with one stripe missing in the middle
+  instead of at the end · `ABC` white, orange, brown, which next. At least two full repeats come
+  before the blank. The pots are the row's colours plus one extra, red.
+- **bigger**: `big` always asks for the bigger · `both` asks bigger or smaller at random. Earth is
+  small on purpose; the huge ball is Jupiter or the Sun.
+- **rounds**: tasks per mission, 1 to 8, with at least one per kind. `stripes` is scored as
+  `pattern` with the pattern name as its item; `bigger` is scored as `comparison` with `bigger` or
+  `smaller`. Every question counts.
+
+### ☄️ Comet Catch · `comet`
+
+Comets with letters glide slowly past. Catch every comet with the asked letter, counting them as you go.
+
+| Level | pool | targets | total | speed | similar | rounds |
+|---|---|---|---|---|---|---|
+| 1 | START | 2 | 4 | 0.25–0.4 | no | 3 |
+| 2 | MORE | 2 | 5 | 0.25–0.4 | no | 3 |
+| 3 | MORE | 3 | 6 | 0.3–0.5 | no | 2 |
+| 4 | ALL | 3 | 6 | 0.3–0.5 | yes | 2 |
+
+Levels add new letters (2), more comets to catch and a little more speed (3), then lookalikes (4).
+
+- **targets** — how many comets have the right letter (1–4) · **total** — comets in the sky (3–9)
+- **speed** — how fast they glide, a range (each lane picks a speed inside it). They cross in five lanes
+  that never touch, from right to left below the speech bubble, then leave and come back later in another lane
+- **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

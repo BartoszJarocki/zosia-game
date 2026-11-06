@@ -14,12 +14,24 @@ import { LookoutMission } from './scenes/lookout.js';
 import { DeliveryMission } from './scenes/delivery.js';
 import { PicnicMission } from './scenes/picnic.js';
 import { GarageMission } from './scenes/garage.js';
+import { MoonMission } from './scenes/moon.js';
+import { MarsMission } from './scenes/mars.js';
+import { SaturnMission } from './scenes/saturn.js';
+import { BlackHoleMission } from './scenes/blackhole.js';
+import { PlutoMission } from './scenes/pluto.js';
+import { StarsMission } from './scenes/stars.js';
+import { MercuryMission } from './scenes/mercury.js';
+import { VenusMission } from './scenes/venus.js';
+import { TelescopeMission } from './scenes/telescope.js';
+import { JupiterMission } from './scenes/jupiter.js';
+import { CometMission } from './scenes/comet.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
 import { learning } from './learning/events.js';
 import { startSession, getSession, dev } from './session/session.js';
 import { takeDevNext } from './parent/next.js';
+import { GAMES, homeArea } from './places.js';
 
 /** Developer tools asked for something on the next trip to the island. */
 function applyDevNext() {
@@ -29,11 +41,11 @@ function applyDevNext() {
   else dev.suggestOnce = { 'lost-kitten': 'letters', 'balloons-escaping': 'balloons' }[next] || null;
 }
 
-/** The grown-ups' page over the game (from the badge shelf); back to the island when it closes. */
+/** The grown-ups' page over the game (from the badge shelf); back to the current area when it closes. */
 async function openParentPage() {
   hush();
   const { showParentView } = await import('./parent/view.js');
-  showParentView({ onClose: (e) => { e?.target?.closest('.parent-view')?.remove(); applyDevNext(); game.hub(); } });
+  showParentView({ onClose: (e) => { e?.target?.closest('.parent-view')?.remove(); applyDevNext(); game.home(); } });
 }
 import { registerSW } from 'virtual:pwa-register';
 
@@ -59,16 +71,34 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission,
+  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, comet: CometMission, stars: StarsMission, telescope: TelescopeMission,
 };
+for (const kind of GAMES) {
+  if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
+}
 
 const game = {
   hub({ greet = false } = {}) {
     hush();
     return pawWipe(() => { setStage(new Hub(game, { greet })); ui.hubHud(); });
   },
+  home() {
+    const stage = getStage();
+    return homeArea(stage) === 'space' ? game.space({ at: stage.at || stage.kind }) : game.hub();
+  },
+  async space({ launch = false, at = 'earth' } = {}) {
+    const { Space } = await import('./scenes/space.js');
+    hush();
+    return pawWipe(() => setStage(new Space(game, { launch, at })));
+  },
   startMission(kind) {
     hush();
-    return pawWipe(() => setStage(new MISSIONS[kind](game)));
+    const at = getStage()?.at || 'earth';
+    return pawWipe(() => {
+      const mission = new MISSIONS[kind](game);
+      if (kind === 'telescope') mission.at = at;
+      setStage(mission);
+    });
   },
 };
 
@@ -104,8 +134,9 @@ async function boot() {
     game.hub({ greet: true });
   });
 
-  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #avatar (and #parent, #reset above)
+  // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #mercury, #venus, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
+  if (jump === 'space' || jump === 'launch') await game.space({ launch: jump === 'launch' });
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }
 boot();

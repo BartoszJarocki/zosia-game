@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Stage, animate, ease, addSkyAndLights, hop, wait } from '../engine.js';
+import { Stage, animate, ease, addSkyAndLights, hop, wait, camera } from '../engine.js';
 import { makeTruck, seatRiders, makeKitten, makeBone, makeCone, makeBalloon, makeStone, makeTrain, star, mat, mesh, rbox } from '../models.js';
 import { makePup, makeGirl } from '../characters.js';
 import { makeTree, makeBush, makeRock, makeCloud, makeHills, makeMeadowDetail, makeButterfly, makeBird, contactShadow } from '../world/nature.js';
@@ -9,7 +9,7 @@ import { dust, sparkle } from '../fx/particles.js';
 import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
-import { levelFor, getWorld } from '../progress.js';
+import { levelFor, getWorld, getVisited } from '../progress.js';
 import { maxLevel } from '../levels/data.js';
 import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
@@ -26,13 +26,18 @@ import { addToys } from './hub-toys.js';
 import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 import { makeGarageLandmark } from '../world/garage-props.js';
+import { makeLaunchPad } from '../world/rocket.js';
+import { addKeepsakes, KEEPSAKE_CLEAR } from '../world/keepsakes.js';
+import { makeNightSky, nightSkyLine } from '../world/night-sky.js';
+import { PLACES, placesIn } from '../places.js';
 
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
 const portrait = () => innerHeight > innerWidth;
 
 // Letter games on the left, number games on the right.
-const PLACES = {
+const LAYOUT = {
+  rocket: { at: [-6, -19], via: [[-2.6, -1.8], [-5, -4.6], [-6.6, -10]], marker: [-6, 7, -19], starSize: 2, hit: [3.2, 5.5] },
   letters: { at: [-15, -3] },
   balloons: { at: [-13.5, 8] },
   name: { at: [-5.5, 14.5] },
@@ -47,6 +52,9 @@ const PLACES = {
   lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
+for (const kind of placesIn('island')) {
+  if (!LAYOUT[kind]) throw new Error(`Missing island layout for ${kind}`);
+}
 
 // the island's houses: [x, z, wall, roof] (Pup Delivery's parcels end up at their doors)
 const HOUSES = [[-20, 2.5, '#fbcfe8', '#16a34a'], [20, 2.5, '#fed7aa', '#2563eb'], [-11, -14, '#bbf7d0', '#f97316'], [11, -14, '#fecaca', '#0891b2']];
@@ -55,6 +63,7 @@ export class Hub extends Stage {
   constructor(game, { greet = false, silent = false } = {}) {
     super();
     this.game = game;
+    this.area = 'island';
     this.greet = greet;
     this.silent = silent; // behind the start screen: slow orbit, no talking
     // portrait: frame closer (the sides of the beach go, every place stays in view)
@@ -115,8 +124,8 @@ export class Hub extends Stage {
     // roads to every place
     s.add(mesh(new THREE.CircleGeometry(3.4, 48), mat('#e8d5a3', { roughness: 1 }), { y: 0.09, rx: -Math.PI / 2 }));
     s.add(mesh(new THREE.RingGeometry(3.4, 3.75, 48), mat('#c9b27a', { roughness: 1 }), { y: 0.085, rx: -Math.PI / 2, shadow: false }));
-    for (const kind of Object.keys(PLACES)) {
-      const p = PLACES[kind];
+    for (const kind of placesIn('island')) {
+      const p = LAYOUT[kind];
       p.pos = new THREE.Vector3(p.at[0], 0, p.at[1]);
       if (p.drive) {
         p.curve = new THREE.CatmullRomCurve3(p.drive.map(([x, z]) => new THREE.Vector3(x, 0, z)));
@@ -134,13 +143,17 @@ export class Hub extends Stage {
       p.curve = new THREE.CatmullRomCurve3([START.clone(), p1, mid, park]);
       s.add(makeRoad(p.curve));
     }
-    const roadPts = Object.values(PLACES).flatMap((p) => p.curve.getSpacedPoints(24));
+    const roadPts = placesIn('island').filter((kind) => PLACES[kind].game).flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+    const rocketRoad = LAYOUT.rocket.curve.getSpacedPoints(24);
+    const [rocketX, rocketZ] = LAYOUT.rocket.at;
+    const nearRocket = (x, z) => Math.hypot(x - rocketX, z - rocketZ) < KEEPSAKE_CLEAR || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
-    const builders = { letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
+    const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
     this.placeGroups = {};
-    for (const kind of Object.keys(PLACES)) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
+    for (const kind of placesIn('island')) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
+    this.addKeepsakes();
     const houses = HOUSES.map(([x, z, w, r]) => {
       const h = makeHouse(w, r);
       h.position.set(x, 0, z);
@@ -154,7 +167,7 @@ export class Hub extends Stage {
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
     // trees, bushes, grass — kept off the roads, places, houses and the kittens' lawn; the same every visit
-    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...Object.values(PLACES).map((p) => [p.at[0], p.at[1], 4])];
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4])];
     const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
     const rnd = seeded(20261028);
     let seed = 1;
@@ -162,13 +175,25 @@ export class Hub extends Stage {
       const a = rnd() * Math.PI * 2, r = 5 + Math.sqrt(rnd()) * 18;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (!clear(x, z, 1.2) || (z > 9 && Math.abs(x) < 17) || (z > 4 && Math.abs(x) > 17)) continue;
-      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); s.add(b); continue; }
+      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); if (!nearRocket(x, z)) s.add(b); continue; }
       const t = makeTree({ scale: 0.95 + rnd() * 0.6, seed: seed++ });
       t.position.set(x, 0, z);
-      s.add(t);
+      if (!nearRocket(x, z)) s.add(t);
     }
     const k = detail();
-    s.add(makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 }));
+    const meadow = makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 });
+    // Clear only the new pad and road without changing the seeded scenery elsewhere.
+    const instance = new THREE.Matrix4(), at = new THREE.Vector3();
+    meadow.traverse((o) => {
+      if (!o.isInstancedMesh) return;
+      for (let i = 0; i < o.count; i++) {
+        o.getMatrixAt(i, instance);
+        at.setFromMatrixPosition(instance);
+        if (nearRocket(at.x, at.z)) o.setMatrixAt(i, instance.scale(new THREE.Vector3(0, 0, 0)));
+      }
+      o.instanceMatrix.needsUpdate = true;
+    });
+    s.add(meadow);
     for (let i = 0; i < 4; i++) s.add(makeButterfly({ center: [(i - 1.5) * 8, 4 + (i % 2) * 6], radius: 4, height: 1.4, color: ['#f472b6', '#fbbf24', '#60a5fa', '#a78bfa'][i] }));
     for (let i = 0; i < 4; i++) s.add(makeBird({ radius: 34 + i * 5, height: 20 + i * 2, speed: 0.08 + i * 0.01, seed: i * 1.7 }));
     for (let i = 0; i < 8; i++) {
@@ -222,7 +247,7 @@ export class Hub extends Stage {
       const from = new THREE.Vector3(-30, 48, 60), to = HOME_VIEW.pos.clone();
       this.view.pos.copy(from);
       this.busy = true;
-      animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; });
+      this.arriving = animate(2800, (t) => this.view.pos.lerpVectors(from, to, t), ease.inOut).then(() => { this.busy = false; this.arriving = null; });
     }
     // session director: gently suggest where to go next (every place can still be tapped)
     const session = (this.session = getSession());
@@ -235,7 +260,8 @@ export class Hub extends Stage {
     session.rewardedUpTo = session.completed.length;
     const forced = step === 'mission' && (dev.suggestOnce || dev.suggest);
     dev.suggestOnce = null;
-    this.suggested = forced || suggestNext(session, Object.keys(PLACES));
+    const games = placesIn('island').filter((kind) => PLACES[kind].game);
+    this.suggested = (games.includes(forced) && forced) || suggestNext(session, games);
     if (this.suggested) this.highlight(this.suggested);
     // …told as a little story when there is one ("Ojej! Kotek potrzebuje pomocy!")
     const event = pickEvent({ step, suggested: this.suggested });
@@ -309,7 +335,7 @@ export class Hub extends Stage {
   }
 
   addPlace(kind, group) {
-    const p = PLACES[kind];
+    const p = LAYOUT[kind];
     if (group) {
       group.position.copy(p.pos);
       group.lookAt(new THREE.Vector3(p.pos.x * 0.4, 0, 40)); // face the camera
@@ -319,13 +345,13 @@ export class Hub extends Stage {
     // bouncing glowing star says "tap me!", with this mission's level stars under it
     const marker = new THREE.Group();
     marker.position.set(mx, my, mz);
-    const big = star('#fde047', 0.95, 0.28);
+    const big = star('#fde047', p.starSize || 0.95, 0.28);
     big.material = (this.starMat ||= new THREE.MeshStandardMaterial({ color: '#ffe066', emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 }));
     big.userData.dynamic = true; // grows when the place is suggested
     marker.add(big);
     (this.markers ||= {})[kind] = { marker, big };
-    const level = levelFor(kind);
-    const total = maxLevel(kind);
+    const level = PLACES[kind].game ? levelFor(kind) : 0;
+    const total = PLACES[kind].game ? maxLevel(kind) : 0;
     for (let i = 0; i < total; i++) {
       const lit = i < level;
       const st = star(lit ? '#fde047' : '#cbd5e1', 0.32, 0.1);
@@ -383,9 +409,10 @@ export class Hub extends Stage {
   }
 
   async go(kind) {
-    if (this.busy) return;
+    if (this.arriving) await this.arriving;
+    if (!this.alive || this.busy) return;
     this.busy = true;
-    const p = PLACES[kind];
+    const p = LAYOUT[kind];
     hush();
     sfx.siren(3);
     this.truck.userData.setFlashing(true);
@@ -396,7 +423,10 @@ export class Hub extends Stage {
     say(T.go(kind));
     await this.drive(p);
     await wait(200);
-    if (this.alive) this.game.startMission(kind);
+    if (this.alive) {
+      if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+      else this.game.startMission(kind);
+    }
   }
 
   /** The cruiser drives a place's road; the camera follows and leans in (lift: look that much higher at the end). */
@@ -431,14 +461,14 @@ export class Hub extends Stage {
     animate(6000, (k) => (this.drowsy = k * 0.4), ease.inOut);
     await wait(1500);
     if (!this.alive) return;
-    await this.drive(PLACES.lookout, { ms: 3600, lean: 0.4, lift: 3.5 });
+    await this.drive(LAYOUT.lookout, { ms: 3600, lean: 0.4, lift: 3.5 });
     const r0 = this.truck.rotation.y;
     await animate(1400, (k) => { this.truck.rotation.y = r0 * (1 - k); }, ease.inOut); // turns round at the door: goodnight, everyone
     await talk;
     if (!this.alive) return;
     this.yawnAt = performance.now() / 1000;
     await wait(900);
-    await say([...task, ...T.goodnight()]);
+    await say([...task, ...nightSkyLine(getVisited()), ...T.goodnight()]);
     if (!this.alive) return;
     const look0 = this.view.look.clone(), pos0 = this.view.pos.clone();
     animate(1800, (k) => (this.drowsy = 0.4 + k * 0.6), ease.inOut);
@@ -474,7 +504,7 @@ export class Hub extends Stage {
     const picture = document.getElementById('game');
     picture.classList.toggle('now', !ms);
     picture.classList.add('night');
-    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); } };
+    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); this.removeNightSky(); } };
     if (!ms) return set(1);
     return animate(ms, set, ease.inOut);
   }
@@ -488,15 +518,40 @@ export class Hub extends Stage {
     }
   }
 
+  /** The keepsakes: a small model of every space place she has visited, in one ring round the pad. */
+  addKeepsakes() {
+    const [x, z] = LAYOUT.rocket.at;
+    this.keepsakes = addKeepsakes(this.scene, [x, z], getVisited());
+    return this.keepsakes;
+  }
+
+  /** The Moon and the Wielki Wóz fade in over the sleeping island; they live only for this night. */
+  showNightSky({ instant = false } = {}) {
+    if (this.nightSkyGroup) return this.nightSkyGroup;
+    const group = (this.nightSkyGroup = makeNightSky(camera, innerWidth || 1180, innerHeight || 820));
+    this.scene.add(group);
+    if (instant) return group;
+    const materials = group.userData.materials;
+    for (const m of materials) { m.userData.fadeTo = m.opacity; m.transparent = true; m.opacity = 0; }
+    animate(1600, (k) => { for (const m of materials) m.opacity = m.userData.fadeTo * k; }, ease.inOut);
+    return group;
+  }
+
+  removeNightSky() {
+    this.nightSkyGroup?.userData.remove();
+    this.nightSkyGroup = null;
+  }
+
   /** The island sleeps: stars rest, little z's float over Chase, and places answer "Czejs śpi… Do jutra!". */
   sleep({ now = false } = {}) {
     if (now) { // back on an island that is already asleep
       this.dusk(0);
       this.drowsy = 1;
-      PLACES.lookout.curve.getPointAt(1, this.truck.position);
+      LAYOUT.lookout.curve.getPointAt(1, this.truck.position);
       this.truck.rotation.y = 0;
     }
     this.asleep = true;
+    this.showNightSky({ instant: now });
     this.micro = null;
     clearInterval(this.idleTimer);
     const head = new THREE.Vector3();
@@ -541,7 +596,8 @@ export class Hub extends Stage {
   wake(kind) {
     startSession();
     hush();
-    this.game.startMission(kind);
+    if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+    else this.game.startMission(kind);
   }
 }
 

@@ -6,6 +6,7 @@
 //   ### Name · `kind`     → a mission; the first table after it has one row per level.
 
 import { parseNeeds } from './gate.js';
+import { SPACE_PLACES, PLANETS, FEATURES, distractors, itemsFor } from './telescope.js';
 
 /** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
 export const SOUNDABLE = 'AEFHILMNORSUWZ';
@@ -28,6 +29,14 @@ export const SCHEMA = {
     speed: { type: 'range', min: 0.1, max: 2, float: true },
     similar: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to pop
+  },
+  comet: {
+    pool: { type: 'letters' },
+    targets: { type: 'int', min: 1, max: 4 },
+    total: { type: 'int', min: 3, max: 9 },
+    speed: { type: 'range', min: 0.1, max: 2, float: true },
+    similar: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to catch
   },
   name: {
     words: { type: 'words', minLen: 2, maxLen: 8, extra: 'Y' }, // (Y only in names, e.g. RYSIEK: shown and named, never asked elsewhere)
@@ -65,6 +74,64 @@ export const SCHEMA = {
     slots: { type: 'bool', optional: true, default: true }, // ghost spots for the treats (give rounds)
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // tasks
   },
+  moon: {
+    types: { type: 'list', values: ['jump', 'howMany'] },
+    jump: { type: 'range', min: 1, max: 9 },
+    howMany: { type: 'range', min: 1, max: 9, optional: true },
+    auto: { type: 'bool' },
+    slots: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  stars: {
+    stars: { type: 'range', min: 3, max: 7 },
+    labels: { type: 'enum', values: ['both', 'numeral'] },
+    rounds: { type: 'int', min: 1, max: 4, optional: true, default: 2 },
+  },
+  mercury: {
+    craters: { type: 'range', min: 1, max: 6 },
+    show: { type: 'enum', values: ['stay', 'flash'] },
+    labels: { type: 'enum', values: ['both', 'numeral'] },
+    choices: { type: 'int', min: 2, max: 4 },
+    rounds: { type: 'int', min: 1, max: 6 },
+  },
+  telescope: {
+    pool: { type: 'list', values: SPACE_PLACES },
+    choices: { type: 'int', min: 2, max: 4 },
+    ask: { type: 'enum', values: ['match', 'name', 'feature', 'order'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  mars: {
+    max: { type: 'int', min: 2, max: 9 },
+    choices: { type: 'int', min: 2, max: 4 },
+    ask: { type: 'enum', values: ['both', 'numeral', 'dots', 'name'] },
+    rock: { type: 'enum', values: ['both', 'numeral'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  blackhole: {
+    types: { type: 'list', values: ['drop', 'howMany'] },
+    drop: { type: 'range', min: 1, max: 9 },
+    howMany: { type: 'range', min: 1, max: 9, optional: true },
+    auto: { type: 'bool' },
+    slots: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  saturn: {
+    pieces: { type: 'int', min: 2, max: 8 },
+    named: { type: 'bool' },
+    sizes: { type: 'enum', values: ['same', 'mixed'] },
+  },
+  venus: {
+    reveal: { type: 'enum', values: ['full', 'part'] },
+    turned: { type: 'bool' },
+    choices: { type: 'int', min: 2, max: 3 },
+    rounds: { type: 'int', min: 1, max: 6 },
+  },
+  jupiter: {
+    types: { type: 'list', values: ['stripes', 'bigger'] },
+    pattern: { type: 'enum', values: ['AB', 'ABB', 'gap', 'ABC'] },
+    bigger: { type: 'enum', values: ['big', 'both'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   delivery: {
     pool: { type: 'letters' },
     choices: { type: 'int', min: 2, max: 4 },
@@ -93,6 +160,11 @@ export const SCHEMA = {
     pattern: { type: 'enum', values: ['AB', 'gap', 'ABB'], optional: true },
     sort: { type: 'enum', values: ['colour', 'size', 'switch'], optional: true },
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 3 },
+  },
+  pluto: {
+    choices: { type: 'int', min: 2, max: 4 }, // pieces on the ground: one heart and the rest
+    turned: { type: 'bool' }, // textbook shapes, or turned and resized
+    rounds: { type: 'int', min: 1, max: 6 },
   },
 };
 
@@ -254,8 +326,15 @@ export function resolveLetters(expr, sets, name) {
 }
 
 function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
-  if (kind === 'balloons' && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
+  if (kind === 'telescope' && s.pool) {
+    if (new Set(s.pool).size !== s.pool.length) errors.push(`${where}: pool must have distinct places`);
+    if (s.ask === 'feature' && s.pool.some((k) => !FEATURES.includes(k))) errors.push(`${where}: feature pool must only contain places with a feature question`);
+    if (s.ask === 'order' && (s.pool.some((k) => !PLANETS.includes(k)) || !itemsFor(s).length)) errors.push(`${where}: order needs neighbouring planets in road order`);
+    for (const target of s.pool) if (distractors(s, target).length < s.choices - 1) errors.push(`${where}: not enough unambiguous choices for ${target}`);
+  }
+  if ((kind === 'balloons' || kind === 'comet') && s.targets >= s.total) errors.push(`${where}: targets (${s.targets}) must be fewer than total (${s.total})`);
   if (kind === 'cones' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
+  if (kind === 'mars' && s.choices > s.max) errors.push(`${where}: choices (${s.choices}) can't be more than max (${s.max})`);
   if (kind === 'cones' && s.bubble === 'name' && s.sign === 'numeral') errors.push(`${where}: bubble "name" asks "which cone has N dots?", so the signs need dots (sign: dots or both)`);
   if (kind === 'cones' && s.bubble === 'dots' && s.sign === 'dots') errors.push(`${where}: bubble "dots" asks for the numeral, so the signs need numerals (sign: numeral or both)`);
   if (kind === 'cones' && s.dots === 'dice' && s.max > 6) errors.push(`${where}: dice patterns go up to 6, so numbers up to ${s.max} need dots in rows of five (dots: line)`);
@@ -294,4 +373,19 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
   }
   if (kind === 'garage') for (const m of s.modes || []) if (!s[m]) errors.push(`${where}: modes includes ${m}, so set the ${m} column`);
+  if (kind === 'jupiter') {
+    if (s.types && (!s.types.includes('stripes') || !s.types.includes('bigger'))) errors.push(`${where}: types needs both stripes and bigger (every question is scored)`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
+  if (kind === 'moon' || kind === 'blackhole') {
+    const action = kind === 'moon' ? 'jump' : 'drop';
+    for (const t of s.types || []) if (!s[t]) errors.push(`${where}: types includes ${t}, so set a ${t} range`);
+    if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic ${action}s do not count towards levelling)`);
+    if (s.types && !s.types.includes(action)) errors.push(`${where}: types needs ${action} for the easy last round`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
+  if (kind === 'stars' && s.stars) {
+    const pictures = s.stars[1] - s.stars[0] + 1;
+    if (s.rounds > pictures) errors.push(`${where}: rounds can't be more than the ${pictures} picture(s) in the stars range`);
+  }
 }

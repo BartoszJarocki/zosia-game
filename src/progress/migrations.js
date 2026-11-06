@@ -6,11 +6,12 @@
 //   v3  + sessions: { count, recent: [{ id, startedAt, endedAt, missions: [kind], finale }] }
 //   v4  + world: WorldState (adventure/world.js), seeded from badges so past play shows on the island
 //   v5  mastery on the scale that takes guessing out (learning/mastery.js); old values rescaled; the island keepsakes added in v5 seeded from badges
+//   v6  + visited: { [placeKind]: count }
 
 import { emptyStat, rateAfter } from '../learning/mastery.js';
 import { emptyWorld, normalizeWorld, applyReward, rewardsFromBadges } from '../adventure/world.js';
 
-export const VERSION = 5;
+export const VERSION = 6;
 
 /** Which skill the old item prefixes measured. */
 const LEGACY_PREFIX = { 'L:': 'letterVisual', 'N:': 'numeral', 'Q:': 'counting', 'H:': 'quantity' };
@@ -85,7 +86,12 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3 } = {}) {
     for (const id of rewardsFromBadges(badges)) applyReward(s.world, id);
     s.v = 5;
   }
+  if (s.v === 5) {
+    s.visited ??= {};
+    s.v = 6;
+  }
   // defaults for anything missing (also protects against hand-edited or partial saves)
+  if (!s.visited || typeof s.visited !== 'object' || Array.isArray(s.visited)) s.visited = {};
   if (!s.missions || typeof s.missions !== 'object') s.missions = {};
   if (!s.skills || typeof s.skills !== 'object') s.skills = {};
   if (!s.sessions || typeof s.sessions !== 'object') s.sessions = { count: 0, recent: [] };

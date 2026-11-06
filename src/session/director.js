@@ -7,6 +7,8 @@
 //
 // Suggestions never lock anything: any place can be tapped at any time.
 
+import { PLACES } from '../places.js';
+
 export const SESSION = Object.freeze({
   targetMissions: 2,                 // regular missions before the finale (start conservatively)
   finale: 'lookout',
@@ -15,7 +17,9 @@ export const SESSION = Object.freeze({
 });
 
 /** Letter games and number games, for variety. */
-export const DOMAIN = { letters: 'letters', balloons: 'letters', name: 'letters', cones: 'numbers', stones: 'numbers', counting: 'numbers', lookout: 'numbers', delivery: 'letters', picnic: 'numbers', garage: 'shapes' };
+export const DOMAIN = Object.fromEntries(
+  Object.entries(PLACES).map(([kind, place]) => [kind, place.domain]),
+);
 
 /**
  * @typedef {object} SessionState

@@ -1,0 +1,136 @@
+import * as THREE from 'three';
+import { hop } from '../engine.js';
+import { sfx } from '../audio.js';
+import * as ui from '../ui.js';
+import { T } from '../lang/pl.js';
+import { itemsFor, questionFor } from '../levels/telescope.js';
+import { makeSpacePlace } from './space.js';
+import { Mission } from './mission.js';
+
+const POSITIONS = {
+  2: [[-3.2, -1.6], [3.2, -1.6]],
+  3: [[-3.1, 1.8], [3.1, 1.8], [0, -3]],
+  4: [[-3, 2.6], [3, 2.6], [-3, -2.6], [3, -2.6]],
+};
+const radius = (kind, ask) => kind === 'comet' || kind === 'blackhole' ? 1.05 : kind === 'jupiter' && ask === 'feature' ? 2 : 1.35;
+
+export class TelescopeMission extends Mission {
+  constructor(game) {
+    super(game, 'telescope');
+    this.at = 'earth';
+    this.view = { pos: new THREE.Vector3(0, 0, 22), look: new THREE.Vector3(), minWidth: 16.4 };
+    this.post = { tilt: 0, ao: false };
+    this.drift = 0;
+    this.bubbleAt = 'left';
+    this.models = new Map();
+    this.choices = [];
+  }
+
+  build() {
+    this.scene.background = new THREE.Color('#38224f');
+    this.scene.add(new THREE.HemisphereLight('#f1eaff', '#7562a8', 2));
+    const light = new THREE.DirectionalLight('#fff1dc', 2.2);
+    light.position.set(-10, 30, 28);
+    this.scene.add(light);
+    const sky = new THREE.Mesh(new THREE.CircleGeometry(8, 128), new THREE.MeshBasicMaterial({ color: '#8260c7' }));
+    sky.position.z = -2.5;
+    this.scene.add(sky);
+    for (const [r, tube, color] of [[8.05, 0.25, '#c59a58'], [7.85, 0.08, '#f7dc9b'], [8.28, 0.08, '#886638']]) {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 12, 128), new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.25 }));
+      rim.position.z = -2.5;
+      this.scene.add(rim);
+    }
+    this.onUpdate((dt, t) => {
+      for (const obj of this.choices) {
+        if (!obj.userData.hopping) obj.position.y = obj.userData.y + Math.sin(t * 1.2 + obj.userData.phase) * 0.08;
+      }
+    });
+  }
+
+  place(kind, r) {
+    if (!this.models.has(kind)) {
+      const model = makeSpacePlace(kind, new THREE.Quaternion(), 1);
+      model.userData = {};
+      this.models.set(kind, model);
+    }
+    const obj = this.models.get(kind).clone(true);
+    obj.traverse((part) => { if (part.userData.decorative) part.raycast = () => {}; });
+    obj.scale.setScalar(r);
+    obj.userData = { dynamic: true, tapHeight: 0, place: kind };
+    this.scene.add(obj);
+    return obj;
+  }
+
+  doneLine() { return T.telescopeDone(); }
+
+  round(r) {
+    return new Promise((resolve) => {
+      const ask = this.L.ask;
+      const skill = ask === 'order' ? 'sequence' : 'space';
+      const q = questionFor(this.L, this.pick(skill, itemsFor(this.L)));
+      this.last = q.target;
+      let solved = false, lastWrong = null;
+      const prompt = ask === 'match' ? T.telescopeMatch() : ask === 'feature' ? T.telescopeFeature(q.target)
+        : ask === 'order' ? T.telescopeOrder(q.after) : T.telescopeName(q.target);
+      const shown = ask === 'match' ? this.place(q.target, 1.6) : null;
+      if (shown) shown.position.set(0, q.options.length > 2 ? 4.4 : 3.4, 0);
+      this.choices = q.options.map((kind, i) => {
+        const obj = this.place(kind, radius(kind, ask));
+        const [x, row] = POSITIONS[q.options.length][i];
+        const y = row - (ask === 'match' && q.options.length > 2 ? 1.1 : 0);
+        obj.position.set(x, y, 0);
+        Object.assign(obj.userData, { y, phase: i * 2 });
+        this.tappable(obj, async () => {
+          if (solved || !this.alive) return;
+          this.poke();
+          if (kind !== q.target) {
+            lastWrong = obj;
+            this.wrong(kind, { obj });
+            return;
+          }
+          solved = true;
+          this.correct(kind);
+          this.stopIdle();
+          this.choices.forEach((choice) => this.untap(choice));
+          obj.userData.hopping = true;
+          sfx.good();
+          this.success(obj.position.clone(), { big: true });
+          await Promise.all([hop(obj, 0.5, 600), this.say(T.telescopeRight(kind))]);
+          if (!this.alive) return;
+          this.choices.forEach((choice) => choice.removeFromParent());
+          this.choices = [];
+          shown?.removeFromParent();
+          resolve();
+        });
+        return obj;
+      });
+      const right = this.choices.find((obj) => obj.userData.place === q.target);
+      ui.bubble({ onTap: () => this.replay() });
+      this.question(q.skill, q.item, {
+        short: prompt,
+        hint: () => {
+          if (shown) hop(shown, 0.2, 600);
+          return prompt;
+        },
+        simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : this.choices.find((obj) => obj !== right && obj.parent)),
+        reveal: () => this.hint(right, () => solved),
+      }, { options: q.options.length });
+      this.ask(r === 0 ? [...T.telescopeStart(), ...prompt] : prompt);
+    });
+  }
+
+  exit() {
+    super.exit();
+    const materials = new Set(), textures = new Set(), geometries = new Set();
+    for (const model of this.models.values()) model.traverse((obj) => {
+      if (obj.geometry) geometries.add(obj.geometry);
+      for (const material of [obj.material].flat().filter(Boolean)) {
+        materials.add(material);
+        if (material.map?.userData.space && !obj.userData.decorative) textures.add(material.map);
+      }
+    });
+    geometries.forEach((g) => g.dispose());
+    textures.forEach((t) => t.dispose());
+    materials.forEach((m) => m.dispose());
+  }
+}

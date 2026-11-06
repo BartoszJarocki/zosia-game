@@ -88,7 +88,7 @@ test('v4 → v5: mastery moves to the scale that takes guessing out, counts kept
   const stat = (mastery, attempts) => ({ attempts, correctFirstTry: attempts, assisted: 0, wrong: 2, mastery, confusions: { P: 1 } });
   const v4 = { v: 4, missions: {}, skills: { letterAudio: { B: stat(0.98, 10), M: stat(0.85, 40), A: stat(0.72, 40) }, numeral: { 3: stat(0.2, 1) } }, sessions: { count: 0, recent: [] } };
   const { state } = migrate(v4);
-  assert.equal(state.v, 5);
+  assert.equal(state.v, 6);
   assert.deepEqual([state.skills.letterAudio.B.mastery, state.skills.letterAudio.M.mastery, state.skills.letterAudio.A.mastery, state.skills.numeral[3].mastery], [0.898, 0.464, 0, 0.4]);
   assert.deepEqual({ ...state.skills.letterAudio.B, mastery: 0.98 }, v4.skills.letterAudio.B, 'only mastery changes');
 });
@@ -109,4 +109,23 @@ test('v4 → v5: what she already played shows on the island at once (the new ke
 test('rescaleMastery: nothing seen stays nothing', () => {
   assert.equal(rescaleMastery(0, 0), 0);
   assert.equal(rescaleMastery(0.5, 0), 0);
+});
+
+test('v5 save keeps every old field and adds empty visits in v6', () => {
+  const v5 = { ...migrate(v1).state, v: 5, extra: { keep: ['this'] } };
+  delete v5.visited;
+  const before = structuredClone(v5);
+  const { state, changed } = migrate(v5);
+  assert.equal(state.v, 6);
+  assert.equal(changed, true);
+  assert.deepEqual(state, { ...before, v: 6, visited: {} });
+  assert.deepEqual(v5, before);
+});
+
+test('v6 save is unchanged, including visit counts', () => {
+  const v6 = { ...migrate(v1).state, visited: { moon: 3, mars: 1 }, extra: ['kept'] };
+  const { state, changed } = migrate(v6);
+  assert.equal(state.v, 6);
+  assert.equal(changed, false);
+  assert.deepEqual(state, v6);
 });

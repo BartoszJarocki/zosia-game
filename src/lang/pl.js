@@ -3,6 +3,7 @@
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
+import { STRIPE_ROWS } from '../levels/jupiter.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -17,6 +18,8 @@ const L = (l) => cap(letterName(l));
 const word = (l) => letterWord(l)[0];
 /** 1 smakołyk, 2–4 smakołyki, 5+ smakołyków */
 const treats = (n) => (n === 1 ? 'smakołyk' : n >= 2 && n <= 4 ? 'smakołyki' : 'smakołyków');
+/** 1 krater, 2–4 kratery, 5+ kraterów */
+const craterWord = (n) => (n === 1 ? 'krater' : n <= 4 ? 'kratery' : 'kraterów');
 /** jedno piętro, dwa piętra, pięć pięter */
 const nFloors = (n) => (n === 1 ? 'jedno piętro' : n <= 4 ? `${NUM[n]} piętra` : `${NUM[n]} pięter`);
 
@@ -31,10 +34,16 @@ const pupGen = CONFIG.pupGenitive || pup;
 // czerwona flaga, do czerwonego koszyka).
 const COLOUR = { red: ['czerwony', 'czerwona', 'czerwonego'], blue: ['niebieski', 'niebieska', 'niebieskiego'], yellow: ['żółty', 'żółta', 'żółtego'], green: ['zielony', 'zielona', 'zielonego'] };
 const SIZE = { big: ['duży', 'dużego'], small: ['mały', 'małego'] };
-const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt' };
+const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt', heart: 'serduszko' };
 const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
+const JUPITER_COLOUR = { white: 'biały', orange: 'pomarańczowy', brown: 'brązowy', red: 'czerwony' };
+const stripeWords = (row) => row.map((c, i) => (i ? JUPITER_COLOUR[c] : cap(JUPITER_COLOUR[c])));
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
+const SATURN = {
+  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', wrong: 'Ojej! To jest lód. Lód jest tutaj.' },
+  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', wrong: 'Ojej! To jest skała. Skały są tutaj.' },
+};
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
 /** After a wrong tap, before the question again ("Nie, to nie ten." "Gdzie jest Zet?"). Always starts with "Nie". */
@@ -45,7 +54,8 @@ export const YES_STEP = ['Tak!', 'Brawo!', 'Super!'];
 const RIVER_ON = ['A dalej?', 'A teraz?'];
 
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
-const PLACE_TO = {
+export const PLACE_TO = {
+  rocket: 'do rakiety',
   letters: 'do Kociego Parku',
   balloons: 'na Balonową Łąkę',
   name: 'do Literkowego Pociągu',
@@ -86,11 +96,116 @@ export const HOME_TASKS = {
   delivery: 'Znajdź w domu coś na Em, jak mama!',
   picnic: 'Kto ma więcej na talerzu, ty czy mama?',
   garage: 'Znajdź w domu coś okrągłego!',
+  mercury: 'Policz z mamą guziki na swojej bluzce!',
+  moon: 'Poszukaj z mamą Księżyca na niebie!',
+  mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
+  saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
+  pluto: 'Narysuj z mamą serduszko!',
+  blackhole: 'Policz z mamą kamyki na spacerze!',
+  stars: 'Poszukajcie wieczorem gwiazd na niebie!',
+  venus: 'Znajdź w domu coś kwadratowego!',
+  telescope: 'Poszukaj z mamą w książeczce planety z pierścieniami!',
+  jupiter: 'Znajdź w domu coś w paski!',
+  comet: 'Narysuj z mamą kometę z długim ogonem!',
 };
 
 export const PLACE_LINES = Object.fromEntries(Object.entries(PLACE_TO).map(([k, to]) => [k, `Jedziemy ${to}!`]));
 
+const SPACE_DESTINATIONS = {
+  sun: 'w stronę Słońca', mercury: 'na Merkurego', venus: 'na Wenus',
+  moon: 'na Księżyc', mars: 'na Marsa', jupiter: 'do Jowisza',
+  saturn: 'do Saturna', uranus: 'do Urana', neptune: 'do Neptuna',
+  pluto: 'na Plutona', blackhole: 'zobaczyć czarną dziurę', comet: 'do komety', stars: 'do gwiazd',
+};
+
+export const SPACE_LINES = {
+  helmets: ['Zakładamy kaski!'],
+  board: ['Wsiadamy do rakiety!'],
+  countdown: ['Odliczamy! Pięć, cztery, trzy, dwa, jeden!'],
+  start: ['Naciśnij START!'],
+  startAgain: ['Naciśnij wielki guzik START!'],
+  lift: ['Start! Lecimy!'],
+  earth: ['To nasza Ziemia!'],
+  map: ['Dokąd lecimy?'],
+  again: ['Lecimy dalej czy do domu?'],
+  home: ['Wracamy do domu!'],
+  goodnight: ['Robi się późno. Wracamy do domu!'],
+  inviteHome: ['Czas wracać do domu! Polecimy na Ziemię?'],
+  far: ['Lecimy daleko, daleko!'],
+  sunglasses: [`${pup} zakłada okulary przeciwsłoneczne!`],
+};
+
+export const SPACE_INVITE = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, [`Może polecimy ${to}?`]]));
+export const SPACE_TO = Object.fromEntries(Object.entries(SPACE_DESTINATIONS).map(([kind, to]) => [kind, `Lecimy ${to}!`]));
+
+SPACE_INVITE.telescope = ['Może popatrzymy przez teleskop?'];
+SPACE_TO.telescope = 'Patrzymy przez teleskop!';
+
+export const TELESCOPE_NAMES = {
+  sun: 'Słońce', mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', moon: 'Księżyc',
+  mars: 'Mars', jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
+  pluto: 'Pluton', comet: 'kometa', blackhole: 'czarna dziura',
+};
+export const TELESCOPE_FEATURES = {
+  saturn: 'Która planeta ma wielkie pierścienie?',
+  mars: 'Która planeta jest czerwona?',
+  earth: 'Gdzie jest nasz dom?',
+  jupiter: 'Która planeta jest największa?',
+  comet: 'Co ma długi ogon?',
+  pluto: 'Co ma jasne serduszko?',
+  sun: 'Co świeci i grzeje?',
+};
+export const TELESCOPE_AFTER = {
+  mercury: 'Merkurym', venus: 'Wenus', earth: 'Ziemi', mars: 'Marsie',
+  jupiter: 'Jowiszu', saturn: 'Saturnie', uranus: 'Uranie', neptune: 'Neptunie',
+};
+
+const STAR_PICTURE_LINES = {
+  mountain: 'To góra!',
+  kite: 'To latawiec!',
+  house: 'To domek!',
+  rocket: 'To rakieta!',
+  dipper: 'To Wielki Wóz! Wielki Wóz to siedem gwiazd.',
+};
+
+export const SPACE_PASS = {
+  sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',
+  earth: 'Mijamy Ziemię!', moon: 'Mijamy Księżyc!', mars: 'Mijamy Marsa!',
+  jupiter: 'Mijamy Jowisza!', saturn: 'Mijamy Saturna!', uranus: 'Mijamy Urana!',
+  neptune: 'Mijamy Neptuna!', pluto: 'Mijamy Plutona!',
+};
+
+export const SPACE_FACTS = {
+  sun: ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.'],
+  mercury: ['To jest Merkury.', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
+  venus: ['To jest Wenus.', 'Wenus to najgorętsza planeta.'],
+  earth: ['To nasza Ziemia.', 'Na Ziemi jest dużo wody.'],
+  moon: ['To jest Księżyc.', 'Księżyc świeci światłem Słońca.', 'Księżyc widać też w dzień.'],
+  mars: ['To jest Mars.', 'Mars jest czerwony jak rdza.', 'Mars ma dwa małe księżyce.'],
+  jupiter: ['To jest Jowisz.', 'Jowisz to największa planeta.', 'Czerwona plama to wielka burza.'],
+  saturn: ['To jest Saturn.', 'Saturn ma wielkie pierścienie.', 'Są z lodu i skał.'],
+  uranus: ['To jest Uran.', 'Uran toczy się jak piłka.'],
+  neptune: ['To jest Neptun.', 'Neptun jest najdalej od Słońca.', 'Tu wieją najmocniejsze wiatry.'],
+  pluto: ['To jest Pluton.', 'Pluton to planeta karłowata.', 'Pluton ma jasne serduszko.'],
+  blackhole: ['To jest czarna dziura.', 'Czarna dziura mocno przyciąga.', 'Jest bardzo, bardzo daleko.'],
+  comet: ['To jest kometa.', 'Kometa to kula lodu i pyłu.', 'Ogon rośnie blisko Słońca.'],
+  stars: ['To są gwiazdy.', 'Wielki Wóz to siedem gwiazd.'],
+};
+
 export const T = {
+  telescopeStart: () => ['Patrzymy przez teleskop!'],
+  telescopeMatch: () => ['Znajdź taki sam!'],
+  telescopeName: (kind) => [`Gdzie jest ${TELESCOPE_NAMES[kind]}?`],
+  telescopeFeature: (kind) => [TELESCOPE_FEATURES[kind]],
+  telescopeOrder: (kind) => [`Co jest po ${TELESCOPE_AFTER[kind]}?`],
+  telescopeRight: (kind) => [`Tak! To jest ${TELESCOPE_NAMES[kind]}.`],
+  telescopeDone: () => ['Brawo! Znasz już kosmos!'],
+  starsStart: () => ['Jesteśmy wśród gwiazd! Połączymy gwiazdki i zobaczymy obrazek.'],
+  starsAsk: (nums) => [`${nums.map((n, i) => i ? NUM[n] : cap(NUM[n])).join(', ')}, a co dalej?`],
+  starsHelp: (n) => [`Teraz numer ${NUM[n]}!`],
+  starsWrong: (chosen, target) => [`To jest ${NUM[chosen]}. Szukamy numeru ${NUM[target]}.`],
+  starsPicture: (id) => [STAR_PICTURE_LINES[id]],
+  starsDone: () => ['Brawo! Gwiazdy świecą obrazki!'],
   number: (n) => [`${cap(NUM[n])}!`],
   praise: (i) => [PRAISE[i]],
 
@@ -105,9 +220,68 @@ export const T = {
   playOn: () => ['Możesz dalej się bawić!'],
   homeTask: (kind) => (HOME_TASKS[kind] ? ['Misja w domu!', HOME_TASKS[kind]] : []),
   goodnight: () => [`Dobranoc, ${voc}! Do jutra!`],
+  nightSky: () => ['Popatrz! Na niebie świeci Księżyc i Wielki Wóz.'],
   asleep: () => [`${pup} śpi… Do jutra!`],
   // the celebration, after the badge line ("again" or the island?)
   againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
+  againOrSpace: () => ['Jeszcze raz czy lecimy dalej?'],
+  moonStart: () => ['Jesteśmy na Księżycu! Tu skacze się wysoko i powoli.'],
+  moonJump: (n) => [`Skocz ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
+  moonJumpShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'raz' : 'razy'}!`],
+  moonHelp: () => [`Dotknij ${pupGen}, to skoczy!`],
+  moonFlag: () => ['Dotknij flagi, kiedy skończysz!'],
+  moonTooFew: () => ['Za mało! Skacz dalej!'],
+  moonTooMany: () => ['Za dużo! Teraz dobrze? Dotknij flagi!'],
+  moonWatch: () => ['Patrz, jak skacze!'],
+  moonHowMany: () => ['Ile było skoków?'],
+  moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
+  plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
+  plutoAsk: () => ['Gdzie jest serduszko?'],
+  plutoRight: () => ['Tak! To jest serduszko!'],
+  plutoWrong: (s) => [`To jest ${SHAPE[s]}. Serduszko jest tutaj.`],
+  plutoDone: () => ['Brawo! Serduszko Plutona świeci!'],
+  blackholeStart: () => ['Patrzymy przez okno rakiety. Czarna dziura jest bardzo daleko.'],
+  blackholeDrop: (n) => [`Wypuść ${NUM[n]} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
+  blackholeDropShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
+  blackholeHelp: () => ['Dotknij kamyka, to poleci!'],
+  blackholeGlow: () => ['Czarna dziura świeci jak lampka!'],
+  blackholeButton: () => ['Dotknij guzika, kiedy skończysz!'],
+  blackholeTooFew: () => ['Za mało! Wypuść jeszcze!'],
+  blackholeTooMany: () => ['Za dużo! Teraz dobrze? Dotknij guzika!'],
+  blackholeWatch: () => ['Patrz, jak lecą!'],
+  blackholeHowMany: () => ['Ile kamyków wpadło?'],
+  blackholeDone: () => ['Brawo! Czarna dziura świeci od twoich kamyków!'],
+  saturnStart: () => ['Jesteśmy przy Saturnie! Pierścienie się rozsypały. Pomożesz je naprawić?'],
+  saturnNamed: (kind) => [SATURN[kind].name, SATURN[kind].ring],
+  saturnWhich: () => ['Lód czy skała? Gdzie to pasuje?'],
+  saturnHint: (kind) => [SATURN[kind].name, SATURN[kind].ring],
+  saturnRight: (kind) => [SATURN[kind].right],
+  saturnWrong: (kind) => [SATURN[kind].wrong],
+  saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
+  mercuryStart: () => ['Jesteśmy na Merkurym!', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
+  mercuryStayAsk: () => ['Ile jest kraterów?'],
+  mercuryFlashAsk: () => ['Szybkie oko! Ile było kraterów?'],
+  mercuryRight: (n) => [`Tak! ${cap(NUM[n])} ${craterWord(n)}!`],
+  mercuryWrong: () => ['Popatrz jeszcze raz.'],
+  mercuryDone: () => ['Brawo! Policzyłaś kratery na Merkurym!'],
+  venusStart: () => ['Jesteśmy przy Wenus! Wenus to najgorętsza planeta. Jest cała w chmurach.'],
+  venusAsk: () => ['Chmury się rozsuwają. Jaki to kształt?'],
+  venusRight: (s) => [`To jest ${SHAPE[s]}!`],
+  venusWrong: (s) => [`Popatrz jeszcze raz. To jest ${SHAPE[s]}.`],
+  venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
+  jupiterStart: () => ['Jesteśmy przy Jowiszu! To największa planeta. Pomalujemy jej paski!'],
+  jupiterWhich: () => ['Który kolor teraz?'],
+  jupiterGap: () => ['Którego paska brakuje?'],
+  jupiterHelp: (row, gap) => [`${stripeWords(row.slice(0, gap)).join(', ')}, i...?`],
+  jupiterRow: (row) => [`${stripeWords(row).join(', ')}!`],
+  jupiterTryAgain: () => ['Ojej! Spróbuj jeszcze raz.'],
+  jupiterBigger: () => ['Która jest większa?'],
+  jupiterSmaller: () => ['Która jest mniejsza?'],
+  jupiterBig: (big) => [big === 'sun' ? 'Słońce jest dużo większe od Ziemi!' : 'Jowisz jest dużo większy od Ziemi!'],
+  jupiterSmall: () => ['Ziemia jest dużo mniejsza!'],
+  jupiterLook: (ask) => [ask === 'smaller' ? 'Popatrz jeszcze raz. Ta jest mniejsza.' : 'Popatrz jeszcze raz. Ta jest większa.'],
+  jupiterSpot: () => ['Czerwona plama to wielka burza.'],
+  jupiterDone: () => ['Brawo! Jowisz ma piękne paski!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
@@ -165,6 +339,13 @@ export const T = {
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
   balloonDone: (l, w = word(l)) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${w}!`],
 
+  // Comet Catch
+  cometStart: () => ['Komety lecą! Kometa to kula lodu i pyłu.'],
+  cometAsk: (l) => [`Złap komety z literą ${L(l)}!`],
+  cometRoundDone: () => ['Mamy wszystkie!'],
+  cometDone: () => ['Brawo! Złapałaś wszystkie komety!'],
+  cometFact: () => ['Ogon komety rośnie blisko Słońca.'],
+
   // Name Train
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
@@ -198,6 +379,16 @@ export const T = {
   countDots: () => ['Policz kropki!'], // (the clue: the dots light up one by one)
   conesGoal: () => ['Kotek czeka na końcu drogi!'],
   conesSaved: () => ['Droga wolna! Uratowałaś kotka!'],
+
+  // The Mars Rover
+  marsStart: () => ['Jesteśmy na Marsie! Mars jest czerwony jak rdza. Pojedziemy łazikiem!'],
+  marsAsk: (n) => [`Jedziemy do kamienia z numerem ${NUM[n]}!`],
+  marsDots: () => ['Policz kropki! Do którego kamienia jedziemy?'],
+  marsRepeat: (n) => [`Gdzie jest numer ${NUM[n]}?`],
+  marsRight: () => ['Brawo! Łazik dojechał!'],
+  marsWrong: (n) => [`To nie ten kamień. Szukamy numeru ${NUM[n]}.`],
+  marsDone: () => ['Brawo! Łazik zbadał wszystkie kamienie!'],
+  marsFact: () => ['Mars ma dwa małe księżyce.'],
   dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
 
   // River
@@ -317,7 +508,7 @@ export function allSegments(levels, allLetters) {
   nums.slice(1, riverN).forEach((n) => { add(T.riverCounted(n)); add(T.riverAfter(n - 1)); });
   [1, 2, 3].forEach((k) => add(T.tooManyBack(k))); // (Treat House: at most three extra treats from the pile)
   PRAISE.forEach((_, i) => add(T.praise(i)));
-  letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.spellNext(l)); });
+  letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.cometAsk(l)); add(T.spellNext(l)); });
   // every word a grown-up can pick for a letter (#parent) is recorded, so the voice never changes
   letters.forEach((l) => wordChoices(l).forEach(([w]) => { add(T.letterLike(l, w)); add(T.kittyFound(l, w)); add(T.balloonDone(l, w)); }));
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
@@ -336,7 +527,7 @@ export function allSegments(levels, allLetters) {
   }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
-  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
+  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.nightSky, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.kittensPlay, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,
@@ -344,10 +535,47 @@ export function allSegments(levels, allLetters) {
   [...NO, ...YES_STEP, ...RIVER_ON, ...Object.values(WORLD_LINES)].forEach((line) => add([line]));
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots()); add(T.conesGoal()); add(T.conesSaved());
+  const marsMax = Math.max(...levels.mars.map((l) => l.max));
+  nums.slice(0, marsMax).forEach((n) => { add(T.marsAsk(n)); add(T.marsRepeat(n)); add(T.marsWrong(n)); });
+  [T.marsStart, T.marsDots, T.marsRight, T.marsDone, T.marsFact].forEach((f) => add(f()));
   // the Garage
-  Object.keys(SHAPE).forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
+  Object.keys(SHAPE).filter((sh) => sh !== 'heart').forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
   Object.keys(COLOUR).forEach((c) => { add(T.flag(c)); add(T.noFlag(c)); add(T.block('colour', c)); add(T.into('colour', c)); add(T.noBasket('colour', c)); });
   Object.keys(SIZE).forEach((sz) => { add(T.block('size', sz)); add(T.into('size', sz)); add(T.noBasket('size', sz)); });
   [T.doorBroken, T.shapeFits, T.doorFixed, T.flagsStart, T.flagNext, T.flagGap, T.blocksStart, T.whichBasket, T.sortSwitch, T.tidied].forEach((f) => add(f()));
+  add(Object.values(SPACE_LINES).flat());
+  add(Object.values(SPACE_INVITE).flat());
+  add(Object.values(SPACE_TO));
+  add(Object.values(SPACE_PASS));
+  add(Object.values(SPACE_FACTS).flat());
+  nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
+  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
+  nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
+  for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
+  Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
+  [T.starsStart, T.starsDone].forEach((f) => add(f()));
+  [T.plutoStart, T.plutoAsk, T.plutoRight, T.plutoDone].forEach((f) => add(f()));
+  ['circle', 'square', 'triangle'].forEach((sh) => add(T.plutoWrong(sh)));
+  nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
+  [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
+  Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); add(T.saturnWrong(kind)); });
+  [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
+  nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
+  [T.mercuryStart, T.mercuryStayAsk, T.mercuryFlashAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
+  Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); add(T.venusWrong(sh)); });
+  [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
+  [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
+  Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
+  Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
+  Object.keys(TELESCOPE_AFTER).forEach((kind) => add(T.telescopeOrder(kind)));
+  // Jupiter: every stripe row, said aloud and as a help prefix
+  Object.values(STRIPE_ROWS).flat().forEach((row) => {
+    add(T.jupiterRow(row));
+    const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
+    gaps.forEach((gap) => add(T.jupiterHelp(row, gap)));
+  });
+  [T.jupiterStart, T.jupiterWhich, T.jupiterGap, T.jupiterTryAgain, T.jupiterBigger, T.jupiterSmaller, T.jupiterSmall, T.jupiterSpot, T.jupiterDone].forEach((f) => add(f()));
+  [T.jupiterLook('bigger'), T.jupiterLook('smaller'), T.jupiterBig('jupiter'), T.jupiterBig('sun')].forEach(add);
   return [...new Set(out)];
 }

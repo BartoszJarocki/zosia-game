@@ -29,11 +29,11 @@ function answer(c, pFirst, rng) {
 }
 
 /** Mastery after each of n answers. */
-function history(c, pFirst, n, rng) {
+function history(c, pFirst, n, rng, mission = 'm', skill = 'numeral', item = '1') {
   const skills = {}, out = [];
   for (let i = 0; i < n; i++) {
     const { wrongs, assist } = answer(c, pFirst, rng);
-    const s = applyEvent(skills, makeEvent({ mission: 'm', skill: 'numeral', item: '1', correct: true, firstTry: wrongs === 0, attempt: wrongs + 1, assistLevel: assist, options: c, at: i + 1 }));
+    const s = applyEvent(skills, makeEvent({ mission, skill, item, correct: true, firstTry: wrongs === 0, attempt: wrongs + 1, assistLevel: assist, options: c, at: i + 1 }));
     out.push({ m: s.mastery, kind: categorize(s) });
   }
   return out;
@@ -59,4 +59,14 @@ for (const c of [2, 3, 4]) {
   const firstFamiliar = Array.from({ length: RUNS }, () => { const h = history(c, 0.9, 40, rng); const i = h.findIndex((x) => x.m >= FAMILIAR); return i === -1 ? 99 : i + 1; });
   const at40 = Array.from({ length: RUNS }, () => history(c, 0.9, 40, rng)[39]);
   console.log(`  ${c} choices: answers until familiar median ${quant(firstFamiliar, 0.5)}, p90 ${quant(firstFamiliar, 0.9)} · familiar within 6 answers: ${pct(firstFamiliar.filter((n) => n <= 6).length, RUNS)} · mastery after 40 ${mean(at40.map((x) => x.m))}, familiar then ${pct(at40.filter((x) => x.kind === 'familiar').length, RUNS)}`);
+}
+
+for (const c of [2, 3]) {
+  const rng = mulberry(71 + c);
+  const runs = Array.from({ length: RUNS }, () => history(c, 1 / c, 40, rng, 'telescope', 'space', 'saturn'));
+  const at10 = runs.map((h) => h[9].m), at40 = runs.map((h) => h[39].m);
+  const ever = runs.filter((h) => h.some((x) => x.m >= FAMILIAR)).length;
+  console.log(`telescope, random tapping, ${c} choices: mastery after 10 ${mean(at10)}, after 40 ${mean(at40)} · below familiar after 40 ${pct(at40.filter((m) => m < FAMILIAR).length, RUNS)} · ever familiar in 40 ${pct(ever, RUNS)}`);
+  const knowing = Array.from({ length: RUNS }, () => history(c, 0.9, 40, rng, 'telescope', 'space', 'saturn')[39]);
+  console.log(`telescope, 90% right first time, ${c} choices: mastery after 40 ${mean(knowing.map((x) => x.m))} · familiar then ${pct(knowing.filter((x) => x.kind === 'familiar').length, RUNS)}`);
 }
