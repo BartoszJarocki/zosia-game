@@ -220,6 +220,7 @@ export const T = {
   playOn: () => ['Możesz dalej się bawić!'],
   homeTask: (kind) => (HOME_TASKS[kind] ? ['Misja w domu!', HOME_TASKS[kind]] : []),
   goodnight: () => [`Dobranoc, ${voc}! Do jutra!`],
+  nightSky: () => ['Popatrz! Na niebie świeci Księżyc i Wielki Wóz.'],
   asleep: () => [`${pup} śpi… Do jutra!`],
   // the celebration, after the badge line ("again" or the island?)
   againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
@@ -526,7 +527,7 @@ export function allSegments(levels, allLetters) {
   }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
-  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
+  [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.nightSky, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
     T.eventKitten, T.eventBalloons, T.eventAlarm, T.finaleStart, T.finaleDone, T.kittyHid, T.kittyMatch, T.findSame, T.kittensPlay, T.whichNow, T.lookAtWord, T.trainsCame, T.whichMissing, T.dragTreat, T.riverMissing, T.whichFits,

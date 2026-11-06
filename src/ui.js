@@ -2,6 +2,7 @@ import { sfx, say } from './audio.js';
 import { T } from './lang/pl.js';
 import { CONFIG } from './config.js';
 import { PLACES } from './places.js';
+import { shelfItems } from './shelf.js';
 import { DICE } from './textures.js';
 
 const ui = document.getElementById('ui');
@@ -24,8 +25,8 @@ export const ICON = {
 export const starsHTML = (level, cls = '', total = 3) =>
   `<div class="stars ${cls}">${Array.from({ length: total }, (_, i) => `<span class="${i < level ? 'on' : ''}">★</span>`).join('')}</div>`;
 
-export function badgeSVG(kind) {
-  const m = MISSIONS[kind];
+export function badgeSVG(kind, badge = MISSIONS[kind]) {
+  const m = badge;
   const fs = m.label.length > 3 ? 22 : m.label.length > 2 ? 30 : 42;
   return `<svg viewBox="0 0 100 110" aria-hidden="true">
     <defs><linearGradient id="g-${kind}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
@@ -112,10 +113,8 @@ export function hubHud() {
   clear();
   const b = badges.get();
   const shelf = el(`<div class="shelf"></div>`);
-  for (const kind of Object.keys(MISSIONS)) {
-    const n = b[kind];
-    if (!n) continue;
-    shelf.append(el(`<div class="shelf-item">${badgeSVG(kind)}${n > 1 ? `<span>${n}</span>` : ''}</div>`));
+  for (const { kind, count, badge } of shelfItems(b)) {
+    shelf.append(el(`<div class="shelf-item">${badgeSVG(kind, badge)}${count > 1 ? `<span>${count}</span>` : ''}</div>`));
   }
   // a full shelf overlaps its badges a little instead of growing over the Lookout (each count stays on top)
   const items = [...shelf.children];
