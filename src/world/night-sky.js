@@ -2,8 +2,11 @@ import * as THREE from 'three';
 import { starShape } from '../models.js';
 import { T } from '../lang/pl.js';
 
-// The Big Dipper's seven stars, in screen fractions (x right, y up).
-const DIPPER = [[-0.55, 0.42], [-0.32, 0.47], [-0.08, 0.44], [0.10, 0.27], [0.03, 0.08], [-0.20, 0.04], [-0.30, 0.22]];
+// The Big Dipper's seven stars, in screen fractions (x right, y up), high in the top band.
+const DIPPER = [[-0.12, 0.845], [0.11, 0.87], [0.35, 0.855], [0.53, 0.772], [0.46, 0.68], [0.23, 0.66], [0.13, 0.748]];
+const DISTANCE = 100;
+const MOON_RADIUS = 4.8;
+const RENDER_ORDER = 50;
 
 /** Chase says the night line only if she has ever been to the Moon or the stars. */
 export const nightSkyLine = (visited = {}) => (visited.moon || visited.stars ? T.nightSky() : []);
@@ -23,44 +26,60 @@ function haloTexture() {
   return t;
 }
 
-/** A soft Moon and the Wielki Wóz, built in the camera plane of the island's HOME_VIEW. */
-export function makeNightSky(view, width = 1180, height = 820, fov = 42) {
-  const dir = view.look.clone().sub(view.pos).normalize();
+/** The picture plane of the live camera: right, up and the view direction as they are now. */
+function planeOf(viewOrCamera, width, height, fov) {
+  if (viewOrCamera.isCamera) {
+    const c = viewOrCamera;
+    return { pos: c.position.clone(), quat: c.quaternion.clone(), aspect: c.aspect || width / height, fov: c.fov || fov };
+  }
+  const dir = viewOrCamera.look.clone().sub(viewOrCamera.pos).normalize();
   const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
   const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+  const quat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, dir.clone().negate()));
+  return { pos: viewOrCamera.pos.clone(), quat, aspect: width / height, fov };
+}
+
+/** A soft Moon and the Wielki Wóz, drawn on the live camera's glass over everything else. */
+export function makeNightSky(viewOrCamera, width = 1180, height = 820, fov = 42) {
+  const plane = planeOf(viewOrCamera, width, height, fov);
   const group = new THREE.Group();
-  group.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, dir.clone().negate()));
-  group.position.copy(view.pos).addScaledVector(dir, 100);
+  group.position.copy(plane.pos);
+  group.quaternion.copy(plane.quat);
+  group.renderOrder = RENDER_ORDER;
 
-  const halfH = 100 * Math.tan(THREE.MathUtils.degToRad(fov / 2));
-  const halfW = halfH * width / height;
+  const halfH = DISTANCE * Math.tan(THREE.MathUtils.degToRad(plane.fov / 2));
+  const halfW = halfH * plane.aspect;
+  const at = (x, y) => new THREE.Vector3(x * halfW, y * halfH, -DISTANCE);
 
-  const moonMat = new THREE.MeshBasicMaterial({ color: '#fff6cf', transparent: true, depthWrite: false });
-  const moon = new THREE.Mesh(new THREE.SphereGeometry(3.6, 32, 24), moonMat);
-  moon.position.set(0.62 * halfW, 0.66 * halfH, 0);
+  const glass = (opts) => ({ transparent: true, depthTest: false, depthWrite: false, fog: false, ...opts });
+  const setTop = (o) => { o.renderOrder = RENDER_ORDER; o.frustumCulled = false; return o; };
+
+  const moonMat = new THREE.MeshBasicMaterial(glass({ color: '#fff6cf' }));
+  const moon = setTop(new THREE.Mesh(new THREE.SphereGeometry(MOON_RADIUS, 32, 24), moonMat));
+  moon.position.copy(at(0.76, 0.80));
   moon.userData.moon = true;
   group.add(moon);
 
   const glowMap = haloTexture();
-  const glowMat = new THREE.SpriteMaterial({ map: glowMap, color: '#fff3b8', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
-  const glow = new THREE.Sprite(glowMat);
+  const glowMat = new THREE.SpriteMaterial(glass({ map: glowMap, color: '#fff3b8', opacity: 0.55, blending: THREE.AdditiveBlending }));
+  const glow = setTop(new THREE.Sprite(glowMat));
   glow.position.copy(moon.position);
-  glow.scale.setScalar(14);
+  glow.scale.setScalar(MOON_RADIUS * 5);
   group.add(glow);
 
   const starGeo = new THREE.ShapeGeometry(starShape(1.15, 0.5));
-  const starMat = new THREE.MeshBasicMaterial({ color: '#fff2a8', transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const starMat = new THREE.MeshBasicMaterial(glass({ color: '#fff2a8', side: THREE.DoubleSide }));
   const stars = DIPPER.map(([x, y]) => {
-    const s = new THREE.Mesh(starGeo, starMat);
-    s.position.set(x * halfW, y * halfH, 0);
+    const s = setTop(new THREE.Mesh(starGeo, starMat));
+    s.position.copy(at(x, y));
     s.userData.star = true;
     group.add(s);
     return s;
   });
 
-  const lineGeo = new THREE.BufferGeometry().setFromPoints(DIPPER.map(([x, y]) => new THREE.Vector3(x * halfW, y * halfH, 0)));
-  const lineMat = new THREE.LineBasicMaterial({ color: '#dcd2ff', transparent: true, opacity: 0.65, depthWrite: false });
-  group.add(new THREE.Line(lineGeo, lineMat));
+  const lineGeo = new THREE.BufferGeometry().setFromPoints(DIPPER.map(([x, y]) => at(x, y)));
+  const lineMat = new THREE.LineBasicMaterial(glass({ color: '#dcd2ff', opacity: 0.65 }));
+  group.add(setTop(new THREE.Line(lineGeo, lineMat)));
 
   const materials = [moonMat, glowMat, starMat, lineMat];
   group.userData.moon = moon;

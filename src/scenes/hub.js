@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Stage, animate, ease, addSkyAndLights, hop, wait } from '../engine.js';
+import { Stage, animate, ease, addSkyAndLights, hop, wait, camera } from '../engine.js';
 import { makeTruck, seatRiders, makeKitten, makeBone, makeCone, makeBalloon, makeStone, makeTrain, star, mat, mesh, rbox } from '../models.js';
 import { makePup, makeGirl } from '../characters.js';
 import { makeTree, makeBush, makeRock, makeCloud, makeHills, makeMeadowDetail, makeButterfly, makeBird, contactShadow } from '../world/nature.js';
@@ -27,7 +27,7 @@ import { pickMicroReward, microDue } from '../adventure/micro.js';
 import { pickEvent } from '../adventure/events.js';
 import { makeGarageLandmark } from '../world/garage-props.js';
 import { makeLaunchPad } from '../world/rocket.js';
-import { addKeepsakes } from '../world/keepsakes.js';
+import { addKeepsakes, KEEPSAKE_CLEAR } from '../world/keepsakes.js';
 import { makeNightSky, nightSkyLine } from '../world/night-sky.js';
 import { PLACES, placesIn } from '../places.js';
 
@@ -147,7 +147,7 @@ export class Hub extends Stage {
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
     const rocketRoad = LAYOUT.rocket.curve.getSpacedPoints(24);
     const [rocketX, rocketZ] = LAYOUT.rocket.at;
-    const nearRocket = (x, z) => Math.hypot(x - rocketX, z - rocketZ) < 4 || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+    const nearRocket = (x, z) => Math.hypot(x - rocketX, z - rocketZ) < KEEPSAKE_CLEAR || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
     const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
@@ -528,7 +528,7 @@ export class Hub extends Stage {
   /** The Moon and the Wielki Wóz fade in over the sleeping island; they live only for this night. */
   showNightSky({ instant = false } = {}) {
     if (this.nightSkyGroup) return this.nightSkyGroup;
-    const group = (this.nightSkyGroup = makeNightSky(HOME_VIEW, innerWidth || 1180, innerHeight || 820));
+    const group = (this.nightSkyGroup = makeNightSky(camera, innerWidth || 1180, innerHeight || 820));
     this.scene.add(group);
     if (instant) return group;
     const materials = group.userData.materials;

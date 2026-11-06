@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { makeSpacePlace } from '../scenes/space.js';
+import { star } from '../models.js';
 
 // The space road's places, in the order they stand on the map.
 export const KEEPSAKE_KINDS = ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'blackhole', 'comet', 'stars'];
-export const KEEPSAKE_RING = 3.7;
+export const KEEPSAKE_RING = 4.45;
+export const KEEPSAKE_SIZE = 2.2; // world across, about 34 CSS px at 1180x820
+export const KEEPSAKE_CLEAR = KEEPSAKE_RING + KEEPSAKE_SIZE / 2 + 0.15;
 
-const MODEL = 0.2;
-const POST = 0.4;
+const MODEL = 0.9;
+const POST = 0.55;
 const POST_COLOR = '#b9a77a';
 const QUAT = new THREE.Quaternion();
 
@@ -48,6 +51,47 @@ function paint(geometry, matrix, color) {
   return g;
 }
 
+function meshBox(root) {
+  const box = new THREE.Box3();
+  const b = new THREE.Box3();
+  root.updateWorldMatrix(true, true);
+  root.traverseVisible((o) => {
+    if (!o.isMesh || !o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    box.union(b);
+  });
+  return box;
+}
+
+/** The comet's short tail, so the keepsake still reads as a comet after merging. */
+function addCometTail(model) {
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 8), new THREE.MeshBasicMaterial());
+  tail.rotation.z = -Math.PI / 2;
+  tail.position.x = 0.55;
+  tail.userData.trim = true;
+  model.add(tail);
+}
+
+/** The map's stars stop is a constellation; a single bright star reads better at keepsake size. */
+function starKeepsake() {
+  const g = new THREE.Group();
+  g.add(star('#fff1a3', MODEL, 0.14));
+  return g;
+}
+
+/** Free the map model's geometry and textures now that its coloured copy is merged. */
+function disposeModel(root) {
+  root.traverseVisible((o) => {
+    if (o.isMesh || o.isLine) o.geometry?.dispose();
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const m of mats) {
+      for (const v of Object.values(m)) if (v?.isTexture) v.dispose();
+      m.dispose();
+    }
+  });
+}
+
 /** All visited space places as one merged, vertex-coloured mesh: one draw call however many there are. */
 export function makeKeepsakes(visited = {}) {
   const kinds = keepsakeKinds(visited);
@@ -59,25 +103,36 @@ export function makeKeepsakes(visited = {}) {
 
   const geos = [];
   const at = new THREE.Matrix4();
+  const size = new THREE.Vector3();
   kinds.forEach((kind, i) => {
     const a = (i / kinds.length) * Math.PI * 2 + Math.PI / 2;
     const x = Math.cos(a) * KEEPSAKE_RING;
     const z = Math.sin(a) * KEEPSAKE_RING;
-    group.userData.positions.push({ kind, x, z });
 
     const post = new THREE.CylinderGeometry(0.045, 0.06, POST, 6);
     geos.push(paint(post, at.makeTranslation(x, POST / 2, z), POST_COLOR));
     post.dispose();
 
     const [body, trim] = LOOK[kind];
-    const model = makeSpacePlace(kind, QUAT, MODEL);
-    model.position.set(x, POST + MODEL * 0.9, z);
+    const model = kind === 'stars' ? starKeepsake() : makeSpacePlace(kind, QUAT, MODEL);
+    if (kind === 'comet') addCometTail(model);
+    const raw = meshBox(model);
+    raw.getSize(size);
+    const centre = raw.getCenter(new THREE.Vector3());
+    const fit = KEEPSAKE_SIZE / Math.max(size.x, size.y);
+    model.scale.setScalar(fit);
+    model.position.set(x - centre.x * fit, POST + 0.06 - raw.min.y * fit, z - centre.z * fit);
     model.updateWorldMatrix(true, true);
     model.traverseVisible((o) => {
       if (!o.isMesh || !o.geometry) return;
-      const ring = /RingGeometry|TorusGeometry|ShapeGeometry/.test(o.geometry.type);
+      const ring = o.userData.trim || /RingGeometry|TorusGeometry|ShapeGeometry/.test(o.geometry.type);
       geos.push(paint(o.geometry, o.matrixWorld, ring ? trim : body));
     });
+    const box = meshBox(model);
+    box.union(new THREE.Box3(new THREE.Vector3(x - 0.06, 0, z - 0.06), new THREE.Vector3(x + 0.06, POST, z + 0.06)));
+    const radius = Math.max(box.max.x - x, x - box.min.x, box.max.z - z, z - box.min.z);
+    group.userData.positions.push({ kind, x, z, radius, box });
+    disposeModel(model);
   });
 
   const merged = mergeGeometries(geos, false);

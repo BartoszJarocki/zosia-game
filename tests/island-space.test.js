@@ -45,7 +45,7 @@ registerHooks({ load(url, context, next) {
 } });
 
 const { shelfItems, ROCKET_BADGE } = await import('../src/shelf.js');
-const { makeKeepsakes, addKeepsakes, keepsakeKinds, KEEPSAKE_KINDS } = await import('../src/world/keepsakes.js');
+const { makeKeepsakes, addKeepsakes, keepsakeKinds, KEEPSAKE_KINDS, KEEPSAKE_CLEAR } = await import('../src/world/keepsakes.js');
 const { makeNightSky, nightSkyLine } = await import('../src/world/night-sky.js');
 const { makeLaunchPad } = await import('../src/world/rocket.js');
 const { T, allSegments } = await import('../src/lang/pl.js');
@@ -70,6 +70,37 @@ function drawCost(root) {
   let calls = 0;
   root.traverseVisible((o) => { if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && o.material?.visible !== false) calls++; });
   return calls;
+}
+
+function cornersOf(box) {
+  const points = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) points.push(new THREE.Vector3(x, y, z));
+  return points;
+}
+
+function roundRect(o, camera, width, height) {
+  if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+  const centre = o.getWorldPosition(new THREE.Vector3());
+  const q = centre.clone().project(camera);
+  const focal = height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  const r = o.geometry.boundingSphere.radius * focal / centre.distanceTo(camera.position);
+  const x = (q.x + 1) / 2 * width, y = (1 - q.y) / 2 * height;
+  return { x0: x - r, x1: x + r, y0: y - r, y1: y + r };
+}
+
+function screenRect(points, camera, width, height) {
+  const rect = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  for (const p of points) {
+    const q = p.clone().project(camera);
+    const x = (q.x + 1) / 2 * width, y = (1 - q.y) / 2 * height;
+    rect.x0 = Math.min(rect.x0, x); rect.x1 = Math.max(rect.x1, x);
+    rect.y0 = Math.min(rect.y0, y); rect.y1 = Math.max(rect.y1, y);
+  }
+  return rect;
+}
+
+function overlaps(a, b) {
+  return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
 }
 
 test('the shelf keeps island badges and shows every space badge as one rocket', () => {
@@ -118,9 +149,24 @@ test('with every keepsake present the rocket tap target stays at least 70 px and
 
     for (const spot of group.userData.positions) {
       const r = Math.hypot(spot.x, spot.z);
-      assert.ok(r > TAP_RADIUS, `${spot.kind} covers the tap target`);
-      assert.ok(r <= 4.2, `${spot.kind} leaves the pad clearing`);
+      assert.ok(r - spot.radius > TAP_RADIUS, `${spot.kind} covers the tap target`);
+      assert.ok(r + spot.radius <= KEEPSAKE_CLEAR + 1e-6, `${spot.kind} leaves the pad clearing`);
     }
+  }
+});
+
+test('every keepsake reads at least 28 px across and stays out of the tap area', () => {
+  const all = Object.fromEntries(KEEPSAKE_KINDS.map((kind) => [kind, 1]));
+  const width = 1180, height = 820;
+  const camera = homeCamera(width, height);
+  const scene = new THREE.Scene();
+  const group = addKeepsakes(scene, PAD, all);
+  scene.updateMatrixWorld(true);
+  for (const spot of group.userData.positions) {
+    const box = spot.box.clone().applyMatrix4(group.matrixWorld);
+    const rect = screenRect(cornersOf(box), camera, width, height);
+    assert.ok(rect.x1 - rect.x0 >= 28, `${spot.kind}: ${(rect.x1 - rect.x0).toFixed(1)} px across`);
+    assert.ok(Math.hypot(spot.x, spot.z) - spot.radius > TAP_RADIUS, `${spot.kind} overlaps the rocket tap area`);
   }
 });
 
@@ -137,23 +183,49 @@ test('all keepsakes together add at most four draw calls and cast no shadows', (
   assert.equal(shadows, 0);
 });
 
-test('after goodnight the Moon and seven stars sit inside the picture at both iPad sizes', () => {
-  for (const [width, height] of [[1180, 820], [1366, 1024]]) {
+test('after goodnight the Moon and seven stars sit high in the picture, over everything', () => {
+  const shelf = { x0: 16, y0: 14, x1: 252, y1: 94 }; // the three-badge shelf at the top left
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = homeCamera(width, height);
     const scene = new THREE.Scene();
-    const sky = makeNightSky(HOME, width, height);
+    const other = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+    other.renderOrder = 6;
+    scene.add(other);
+    const sky = makeNightSky(camera, width, height);
     scene.add(sky);
     scene.updateMatrixWorld(true);
 
-    const moon = sky.userData.moon.getWorldPosition(new THREE.Vector3()).project(camera);
-    assert.ok(Math.abs(moon.x) < 0.9 && Math.abs(moon.y) < 0.9, `${width}x${height}: Moon on screen`);
-    assert.equal(sky.userData.stars.length, 7);
-    for (const star of sky.userData.stars) {
-      const p = star.getWorldPosition(new THREE.Vector3()).project(camera);
-      assert.ok(Math.abs(p.x) < 0.9 && Math.abs(p.y) < 0.9, `${width}x${height}: star on screen`);
-      assert.ok(p.y > -0.2 && p.y < 0.8, `${width}x${height}: star high in the picture`);
-      assert.ok(!(p.x < -0.5 && p.y > 0.55), `${width}x${height}: star clear of the shelf`);
+    for (const m of sky.userData.materials) {
+      assert.equal(m.depthTest, false, `${width}x${height}: not on the glass`);
+      assert.equal(m.depthWrite, false, `${width}x${height}: writes depth`);
+      assert.equal(m.fog, false, `${width}x${height}: fogged`);
     }
+    sky.traverse((o) => {
+      if (!(o.isMesh || o.isSprite || o.isLine)) return;
+      assert.ok(o.renderOrder > other.renderOrder, `${width}x${height}: drawn before the scene`);
+    });
+
+    const rectOf = (o) => roundRect(o, camera, width, height);
+    const moon = rectOf(sky.userData.moon);
+    assert.ok(moon.x0 >= 0 && moon.x1 <= width && moon.y0 >= 0 && moon.y1 <= height, `${width}x${height}: Moon on screen`);
+    assert.ok(moon.y1 < height * 0.2, `${width}x${height}: Moon in the top band`);
+    assert.ok(!overlaps(moon, shelf), `${width}x${height}: Moon over the shelf`);
+    if (width === 1180) assert.ok(moon.x1 - moon.x0 >= 80 && moon.x1 - moon.x0 <= 110, `${width}x${height}: Moon ${(moon.x1 - moon.x0).toFixed(1)} px across`);
+
+    assert.equal(sky.userData.stars.length, 7);
+    const stars = sky.userData.stars.map((star) => {
+      const rect = rectOf(star);
+      assert.ok(rect.x0 >= 0 && rect.x1 <= width && rect.y0 >= 0 && rect.y1 <= height, `${width}x${height}: star on screen`);
+      assert.ok(rect.y1 < height * 0.2, `${width}x${height}: star in the top band`);
+      assert.ok(!overlaps(rect, shelf), `${width}x${height}: star over the shelf`);
+      assert.ok(!overlaps(rect, moon), `${width}x${height}: star over the Moon`);
+      if (width === 1180) assert.ok(rect.x1 - rect.x0 >= 24 && rect.x1 - rect.x0 <= 36, `${width}x${height}: star ${(rect.x1 - rect.x0).toFixed(1)} px across`);
+      return rect;
+    });
+    for (let i = 0; i < stars.length; i++) for (let j = i + 1; j < stars.length; j++) {
+      assert.ok(!overlaps(stars[i], stars[j]), `${width}x${height}: stars ${i} and ${j} touch`);
+    }
+
     sky.userData.remove();
     assert.equal(sky.parent, null);
   }
