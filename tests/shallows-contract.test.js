@@ -40,9 +40,10 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 
-const { ShallowsMission } = await import('../src/scenes/shallows.js');
+const { ShallowsMission, makeThing } = await import('../src/scenes/shallows.js');
 const { LEVELS } = await import('../src/levels/data.js');
-const { thingById } = await import('../src/levels/shallows.js');
+const { thingById, THINGS } = await import('../src/levels/shallows.js');
+const EDGE = new THREE.Vector3(0, 1.78, 1.05);
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const flush = () => new Promise(setImmediate);
 const until = async (predicate) => {
@@ -88,9 +89,43 @@ function rectOf(obj, camera, w, h) {
 const separated = (a, b) => a.x1 + 0.5 < b.x0 || b.x1 + 0.5 < a.x0 || a.y1 + 0.5 < b.y0 || b.y1 + 0.5 < a.y0;
 const size = (r) => [r.x1 - r.x0, r.y1 - r.y0];
 
-test('shelves, the waiting thing and Chase\'s window never overlap at the three iPad sizes', async () => {
+/** The bubble body in style.css: left-anchored, below the home button, sized by its big glyph and picture. */
+function bubbleRect(w, h) {
+  const btn = Math.min(0.11 * w, 0.11 * h, 96);
+  const left = Math.max(16, 0) + btn + 24;
+  const top = Math.max(14, 0) + btn + 0.016 * h;
+  const big = Math.min(0.15 * w, 0.14 * h, 150);
+  const pic = Math.min(0.12 * w, 0.11 * h, 108);
+  const wide = big + Math.min(0.03 * w, 26) + pic + 2 * Math.min(0.036 * w, 32) + 10;
+  const tall = Math.max(big, pic) + 2 * 0.011 * h + 10;
+  return { x0: left, x1: left + wide, y0: top, y1: top + tall };
+}
+
+/** Bounds of the drawn parts only: the invisible hit sphere is not what she sees. */
+function drawnRect(obj, camera, w, h) {
+  const box = new THREE.Box3();
+  const part = new THREE.Box3();
+  obj.updateWorldMatrix(true, true);
+  obj.traverseVisible((o) => {
+    if (!o.isMesh || o.userData.zone || o.material?.visible === false) return;
+    o.geometry.computeBoundingBox();
+    part.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    box.union(part);
+  });
+  const points = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    const p = new THREE.Vector3(x, y, z).project(camera);
+    points.push({ x: (p.x + 1) / 2 * w, y: (1 - p.y) / 2 * h });
+  }
+  return {
+    x0: Math.min(...points.map((p) => p.x)), x1: Math.max(...points.map((p) => p.x)),
+    y0: Math.min(...points.map((p) => p.y)), y1: Math.max(...points.map((p) => p.y)),
+  };
+}
+
+test('the bubble, the shelves, the waiting thing and Chase\'s window never overlap at the three iPad sizes', async () => {
   const s = await scene(1, [thingById('jabłko')]);
-  const round = s.round(0);
+  s.round(0);
   await until(() => s.phase === 'dropping');
   assert.equal(s.last, 'drop');
   const drop = s.tappables.find((o) => o.userData.choice === 'drop');
@@ -99,6 +134,7 @@ test('shelves, the waiting thing and Chase\'s window never overlap at the three 
 
   for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = cameraFor(s, w, h);
+    const bubble = bubbleRect(w, h);
     const float = rectOf(s.shelves.float, camera, w, h);
     const sink = rectOf(s.shelves.sink, camera, w, h);
     const thing = rectOf(s.thing, camera, w, h);
@@ -107,10 +143,16 @@ test('shelves, the waiting thing and Chase\'s window never overlap at the three 
       const [rw, rh] = size(r);
       assert.ok(rw >= 120 && rh >= 120, `${name} ${rw.toFixed(0)}x${rh.toFixed(0)} at ${w}x${h}`);
     }
+    for (const [name, sign] of [['float', s.signs.float], ['sink', s.signs.sink]]) {
+      const [rw] = size(rectOf(sign, camera, w, h));
+      assert.ok(rw >= 160, `${name} sign ${rw.toFixed(0)} px at ${w}x${h}`);
+    }
     const [tw, th] = size(thing);
     assert.ok(tw >= 70 && th >= 70, `thing ${tw.toFixed(0)}x${th.toFixed(0)} at ${w}x${h}`);
     assert.ok(separated(float, sink), `shelves touch at ${w}x${h}`);
     assert.ok(separated(float, thing) && separated(sink, thing), `a shelf touches the thing at ${w}x${h}`);
+    assert.ok(separated(bubble, float) && separated(bubble, sink), `the bubble covers a shelf at ${w}x${h}`);
+    assert.ok(separated(bubble, window), `the bubble covers Chase's window at ${w}x${h}`);
     assert.ok(separated(float, window) && separated(sink, window) && separated(thing, window), `something covers Chase's window at ${w}x${h}`);
   }
   s.alive = false; s.exit();
@@ -125,6 +167,10 @@ test('the water surface and the sandy bottom are both visible, and a floating or
   const bottom = new THREE.Vector3(0, 0.04, 6.5).project(camera);
   assert.ok(Math.abs(surfaceAhead.y - surfaceBehind.y) * 820 / 2 > 10, 'the surface is visible from the camera');
   assert.ok(bottom.y < surfaceAhead.y, 'the sandy bottom sits below the surface on screen');
+  const water = s.surface.material;
+  assert.equal(water.transparent, true, 'the water is see-through');
+  assert.equal(water.depthWrite, false, 'the water does not hide the bottom');
+  assert.ok(water.opacity >= 0.35 && water.opacity <= 0.45, `water opacity ${water.opacity}`);
 
   const round = s.round(0);
   await until(() => s.phase === 'dropping');
@@ -141,8 +187,33 @@ test('the water surface and the sandy bottom are both visible, and a floating or
   sink.tappables.find((o) => o.userData.choice === 'drop').userData.onTap();
   await until(() => sink.phase === 'placing');
   assert.ok(key.position.y <= 0.1, `the key ends on the bottom (y ${key.position.y})`);
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    assert.ok(key.position.y <= 0.1, `the key is on the sand at ${w}x${h}`);
+    const r = drawnRect(key, cameraFor(sink, w, h), w, h);
+    assert.ok(r.x0 >= 0 && r.x1 <= w && r.y0 >= 0 && r.y1 <= h, `the sunk key stays on screen at ${w}x${h}`);
+  }
   stop(sink);
   s.alive = false;
+});
+
+test('every thing is at least 90 px across on the sand and 60 px on a shelf', async () => {
+  const s = await scene(1);
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = cameraFor(s, w, h);
+    for (const thing of THINGS) {
+      const obj = makeThing(thing.id, s.hitMat);
+      obj.position.copy(EDGE);
+      const onSand = drawnRect(obj, camera, w, h);
+      const [sw, sh] = size(onSand);
+      assert.ok(sw >= 90, `${thing.id} ${sw.toFixed(0)}x${sh.toFixed(0)} on the sand at ${w}x${h}`);
+      obj.scale.setScalar(obj.userData.shelfScale);
+      obj.position.set(-6, 1.45 + 0.54, 1.2);
+      const onShelf = drawnRect(obj, camera, w, h);
+      const [gw, gh] = size(onShelf);
+      assert.ok(gw >= 60, `${thing.id} ${gw.toFixed(0)}x${gh.toFixed(0)} on a shelf at ${w}x${h}`);
+    }
+  }
+  s.alive = false; s.exit();
 });
 
 test('the beach has no shadows or point lights and stays under 100 draws at medium', async () => {
