@@ -38,8 +38,26 @@ const UP = new THREE.Vector3(0, 1, 0).applyQuaternion(face);
 const FORWARD = new THREE.Vector3(0, 0, 1).applyQuaternion(face);
 const FLAT_RIGHT = new THREE.Vector3(RIGHT.x, 0, RIGHT.z).normalize();
 const FLAT_FORWARD = new THREE.Vector3(FORWARD.x, 0, FORWARD.z).normalize();
-const PAD_VIEW = { pos: new THREE.Vector3(0, 7, 17), look: new THREE.Vector3(0, 2, 0), minWidth: 13 };
-const patch = (r, color) => mesh(new THREE.CircleGeometry(r, 36), mat(color, { roughness: 1 }), { y: 0.03, rx: -Math.PI / 2, shadow: false });
+const PAD_VIEW = { pos: new THREE.Vector3(0, 7, 16), look: new THREE.Vector3(0, 1.8, -1.6), minWidth: 13 };
+const VISIT_ANGLE = THREE.MathUtils.degToRad(30);
+const WATER_Y = -0.3;
+const LAUNCH = {
+  island: { x: 0, z: -8, r: 5 },
+  boat: { x: 2.3, z: 1.4, y: -0.55, scale: 1.6 },
+};
+const patch = (r, color) => {
+  const m = mesh(new THREE.CircleGeometry(r, 36), mat(color, { roughness: 1 }), { y: 0.03, rx: -Math.PI / 2, shadow: false });
+  m.userData.patch = true;
+  return m;
+};
+
+function smoothWater(opts) {
+  const water = makeWater(opts);
+  water.material.normalScale.setScalar(0.12);
+  water.material.clearcoatNormalScale.setScalar(0.08);
+  water.material.roughness = 0.32;
+  return water;
+}
 
 const boxPoints = (center, x, y, z = 0) => {
   const points = [];
@@ -72,12 +90,26 @@ export function mapView(width, height, here = 'island', suggested = null, fov = 
 
 function makeIsland(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#f4d88f'));
-  g.add(mesh(new THREE.CylinderGeometry(r * 0.82, r * 0.92, 0.5, 32), mat('#6fcf62', { roughness: 1 }), { y: 0.28, shadow: false }));
-  g.add(mesh(new THREE.SphereGeometry(r * 0.52, 20, 14), mat('#f3f6fb'), { y: 0.75, s: [1, 0.6, 1], shadow: false }));
-  g.add(mesh(rbox(1.1, 0.85, 0.95, 0.1), mat('#fef3c7'), { y: 1.2, shadow: false }));
-  g.add(mesh(new THREE.ConeGeometry(0.85, 0.7, 4), mat('#ef4444'), { y: 1.95, ry: Math.PI / 4, shadow: false }));
-  g.add(mesh(rbox(0.35, 0.5, 0.08, 0.04), mat('#92400e'), { y: 1.0, z: 0.5, shadow: false }));
+  g.add(patch(r, '#a5f3fc'));
+  const base = new THREE.Group();
+  base.add(mesh(new THREE.CylinderGeometry(r * 0.82, r, 0.55, 32), mat('#f4d88f', { roughness: 1 }), { y: 0.3, shadow: false }));
+  base.add(mesh(new THREE.CylinderGeometry(r * 0.66, r * 0.78, 0.5, 32), mat('#6fcf62', { roughness: 1 }), { y: 0.75, shadow: false }));
+  g.add(base);
+  const palm = new THREE.Group();
+  palm.position.set(r * 0.05, 0.9, 0);
+  palm.add(mesh(new THREE.CylinderGeometry(r * 0.055, r * 0.085, r * 0.9, 10), mat('#92400e', { roughness: 0.9 }), { y: r * 0.45, rz: 0.08, shadow: false }));
+  const fronds = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU;
+    const frond = mesh(new THREE.SphereGeometry(r * 0.3, 10, 8), mat('#22c55e', { roughness: 1 }), {
+      x: Math.cos(a) * r * 0.32, y: r * 0.92, z: Math.sin(a) * r * 0.32, s: [1.5, 0.2, 0.55], ry: -a, rz: 0.16, shadow: false,
+    });
+    frond.userData.dynamic = true;
+    palm.add(frond);
+    fronds.push(frond);
+  }
+  g.add(palm);
+  g.userData.fronds = fronds;
   return g;
 }
 
@@ -85,85 +117,114 @@ function makeBuoy(r) {
   const g = new THREE.Group();
   g.add(patch(r, '#a5f3fc'));
   const bob = new THREE.Group();
-  bob.add(mesh(new THREE.CylinderGeometry(0.34, 0.45, 0.9, 14), mat('#ef4444'), { y: 0.55, shadow: false }));
-  bob.add(mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.2, 14), mat('#f8fafc'), { y: 0.68, shadow: false }));
-  bob.add(mesh(new THREE.ConeGeometry(0.34, 0.5, 14), mat('#ef4444'), { y: 1.2, shadow: false }));
-  bob.add(mesh(new THREE.SphereGeometry(0.17, 12, 10), mat('#fbbf24', { emissive: '#f59e0b', emissiveIntensity: 0.5 }), { y: 1.52, shadow: false }));
+  bob.add(mesh(new THREE.CylinderGeometry(r * 0.72, r, r * 1.1, 18), mat('#ef4444'), { y: r * 0.55, shadow: false }));
+  bob.add(mesh(new THREE.CylinderGeometry(r * 0.82, r * 0.82, r * 0.2, 18), mat('#f8fafc'), { y: r * 0.6, shadow: false }));
+  bob.add(mesh(new THREE.ConeGeometry(r * 0.72, r * 0.55, 18), mat('#ef4444'), { y: r * 1.35, shadow: false }));
+  const bell = new THREE.Group();
+  bell.position.y = r * 1.62;
+  bell.add(mesh(new THREE.CylinderGeometry(r * 0.05, r * 0.05, r * 0.28, 8), mat('#fbbf24'), { y: r * 0.14, shadow: false }));
+  bell.add(mesh(new THREE.SphereGeometry(r * 0.18, 14, 10), mat('#fbbf24', { metalness: 0.3, roughness: 0.35 }), { y: r * 0.3, s: [1, 0.85, 1], shadow: false }));
+  bob.add(bell);
   g.add(bob);
   g.userData.bob = bob;
+  g.userData.bell = bell;
   return g;
 }
 
 function makeShallows(r) {
   const g = new THREE.Group();
   g.add(patch(r, '#fde68a'));
-  const shimmer = mesh(new THREE.RingGeometry(r * 0.5, r * 0.96, 36),
+  const shimmer = mesh(new THREE.RingGeometry(r * 0.45, r * 0.96, 36),
     new THREE.MeshBasicMaterial({ color: '#67e8f9', transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide }),
     { y: 0.08, rx: -Math.PI / 2, shadow: false });
+  shimmer.userData.patch = true;
   g.add(shimmer);
-  const shells = [];
-  for (const [x, z, s] of [[-0.5, 0.2, 0.22], [0.3, -0.4, 0.18], [0.7, 0.5, 0.16]]) {
-    const shell = mesh(new THREE.SphereGeometry(0.3, 12, 8), mat('#fff7ed'), { x, y: 0.11, z, s: [s / 0.3, 0.4, s / 0.3], shadow: false });
-    shells.push(shell);
-    g.add(shell);
+  const ball = new THREE.Group();
+  ball.position.set(-r * 0.52, r * 0.45, -r * 0.15);
+  ball.add(mesh(new THREE.SphereGeometry(r * 0.45, 20, 14), mat('#f8fafc', { roughness: 0.5 }), { shadow: false }));
+  for (const [i, color] of ['#ef4444', '#2563eb', '#f59e0b'].entries()) {
+    ball.add(mesh(new THREE.TorusGeometry(r * 0.45, r * 0.05, 8, 24), mat(color),
+      { rx: i === 1 ? Math.PI / 2 : 0, ry: i === 2 ? Math.PI / 2 : 0, shadow: false }));
   }
+  g.add(ball);
+  const duck = new THREE.Group();
+  duck.position.set(r * 0.52, r * 0.16, r * 0.1);
+  duck.rotation.y = -0.35;
+  duck.add(mesh(new THREE.SphereGeometry(r * 0.36, 18, 12), mat('#facc15'), { y: r * 0.26, s: [1.3, 0.8, 1], shadow: false }));
+  duck.add(mesh(new THREE.SphereGeometry(r * 0.24, 16, 12), mat('#facc15'), { y: r * 0.62, z: r * 0.24, shadow: false }));
+  duck.add(mesh(new THREE.ConeGeometry(r * 0.1, r * 0.22, 10), mat('#f97316'), { y: r * 0.6, z: r * 0.5, rx: Math.PI / 2, shadow: false }));
+  for (const x of [-r * 0.07, r * 0.07]) duck.add(mesh(new THREE.SphereGeometry(r * 0.025, 8, 6), mat('#0f172a'), { x, y: r * 0.68, z: r * 0.44, shadow: false }));
+  g.add(duck);
   g.userData.shimmer = shimmer;
-  g.userData.shells = shells;
+  g.userData.toys = [ball, duck];
   return g;
 }
 
 function makeSeal(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#e0f2fe'));
-  g.add(mesh(new THREE.SphereGeometry(1.35, 20, 14), mat('#cbd5e1', { roughness: 0.9 }), { y: 0.35, s: [1.1, 0.7, 0.85], shadow: false }));
-  g.add(mesh(new THREE.SphereGeometry(0.55, 18, 14), mat('#94a3b8', { roughness: 0.85 }), { y: 0.68, z: 0.25, s: [1, 1.25, 1], shadow: false }));
-  g.add(mesh(new THREE.SphereGeometry(0.34, 16, 12), mat('#94a3b8', { roughness: 0.85 }), { y: 1.18, z: 0.42, shadow: false }));
-  g.add(mesh(new THREE.SphereGeometry(0.08, 10, 8), mat('#334155'), { y: 1.14, z: 0.73, shadow: false }));
-  for (const x of [-0.12, 0.12]) g.add(mesh(new THREE.SphereGeometry(0.055, 8, 6), mat('#0f172a'), { x, y: 1.26, z: 0.7, shadow: false }));
+  g.add(patch(r, '#7dd3fc'));
+  const base = new THREE.Group();
+  base.add(mesh(new THREE.CylinderGeometry(r * 0.9, r * 0.98, r * 0.28, 28), mat('#44403c', { roughness: 1 }), { y: r * 0.16, shadow: false }));
+  g.add(base);
+  const grey = mat('#94a3b8', { roughness: 0.9 });
+  const seal = new THREE.Group();
+  seal.position.y = r * 0.3;
+  seal.add(mesh(new THREE.SphereGeometry(r * 0.55, 20, 14), grey, { y: r * 0.16, s: [1.35, 0.62, 0.95], shadow: false }));
+  seal.add(mesh(new THREE.SphereGeometry(r * 0.24, 18, 14), grey, { y: r * 0.44, z: r * 0.34, s: [1, 1.15, 1], shadow: false }));
+  seal.add(mesh(new THREE.SphereGeometry(r * 0.14, 16, 12), grey, { y: r * 0.7, z: r * 0.46, shadow: false }));
+  seal.add(mesh(new THREE.SphereGeometry(r * 0.045, 10, 8), mat('#334155'), { y: r * 0.67, z: r * 0.58, shadow: false }));
+  for (const x of [-r * 0.06, r * 0.06]) seal.add(mesh(new THREE.SphereGeometry(r * 0.03, 8, 6), mat('#0f172a'), { x, y: r * 0.73, z: r * 0.56, shadow: false }));
   const flippers = [];
   for (const side of [-1, 1]) {
     const flip = new THREE.Group();
-    flip.position.set(side * 0.55, 0.45, 0.25);
-    flip.add(mesh(new THREE.SphereGeometry(0.24, 12, 8), mat('#94a3b8', { roughness: 0.85 }), { s: [1.4, 0.35, 0.8], shadow: false }));
-    g.add(flip);
+    flip.position.set(side * r * 0.48, r * 0.18, r * 0.16);
+    flip.add(mesh(new THREE.SphereGeometry(r * 0.18, 12, 8), grey, { s: [1.4, 0.35, 0.8], shadow: false }));
+    seal.add(flip);
     flippers.push(flip);
   }
+  g.add(seal);
   g.userData.flippers = flippers;
   return g;
 }
 
 function makeLighthouse(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#cbd5e1'));
-  g.add(mesh(new THREE.SphereGeometry(1.7, 18, 12), mat('#a8a29e', { roughness: 0.95 }), { y: 0.1, s: [1.1, 0.55, 1], shadow: false }));
-  g.add(mesh(new THREE.CylinderGeometry(0.62, 0.9, 4.2, 20), mat('#f8fafc', { roughness: 0.7 }), { y: 2.2, shadow: false }));
-  for (const y of [1.1, 2.3, 3.5]) g.add(mesh(new THREE.CylinderGeometry(0.78 - y * 0.05, 0.86 - y * 0.05, 0.5, 20), mat('#ef4444'), { y, shadow: false }));
-  g.add(mesh(new THREE.CylinderGeometry(0.86, 0.86, 0.18, 20), mat('#475569'), { y: 4.4, shadow: false }));
-  const lamp = mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.85, 18), new THREE.MeshStandardMaterial({ color: '#fff4c0', emissive: '#ffd84a', emissiveIntensity: 2.5, roughness: 0.4 }), { y: 4.95, shadow: false });
+  g.add(patch(r, '#bae6fd'));
+  const base = new THREE.Group();
+  base.add(mesh(new THREE.SphereGeometry(r * 0.85, 20, 14), mat('#a8a29e', { roughness: 0.95 }), { y: 0.12, s: [1.18, 0.55, 1], shadow: false }));
+  base.add(mesh(new THREE.CylinderGeometry(r * 0.28, r * 0.41, r * 1.95, 20), mat('#f8fafc', { roughness: 0.7 }), { y: r * 1.02, shadow: false }));
+  g.add(base);
+  const bands = new THREE.Group();
+  for (const y of [0.5, 1.05, 1.6]) bands.add(mesh(new THREE.CylinderGeometry(r * (0.36 - y * 0.045), r * (0.4 - y * 0.045), r * 0.23, 20), mat('#ef4444'), { y: r * y, shadow: false }));
+  g.add(bands);
+  g.add(mesh(new THREE.CylinderGeometry(r * 0.4, r * 0.4, r * 0.1, 20), mat('#475569'), { y: r * 2.05, shadow: false }));
+  const lamp = mesh(new THREE.CylinderGeometry(r * 0.27, r * 0.27, r * 0.4, 18), new THREE.MeshStandardMaterial({ color: '#fff4c0', emissive: '#ffd84a', emissiveIntensity: 2.5, roughness: 0.4 }), { y: r * 2.3, shadow: false });
   g.add(lamp);
-  g.add(mesh(new THREE.ConeGeometry(0.78, 0.7, 18), mat('#ef4444'), { y: 5.7, shadow: false }));
+  g.add(mesh(new THREE.ConeGeometry(r * 0.36, r * 0.33, 18), mat('#ef4444'), { y: r * 2.65, shadow: false }));
   g.userData.lamp = lamp;
   return g;
 }
 
-function bird() {
+function bird(scale = 1) {
   const g = new THREE.Group();
   const white = mat('#f8fafc', { roughness: 0.8 });
-  g.add(mesh(new THREE.SphereGeometry(0.25, 14, 10), white, { s: [1, 0.8, 1.5], shadow: false }));
-  for (const side of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(0.3, 12, 8), white, { x: side * 0.32, y: 0.05, s: [1.3, 0.25, 0.7], rz: side * 0.2, shadow: false }));
-  g.add(mesh(new THREE.ConeGeometry(0.08, 0.22, 8), mat('#f59e0b'), { y: -0.02, z: 0.38, rx: Math.PI / 2, shadow: false }));
+  g.add(mesh(new THREE.SphereGeometry(0.2, 14, 10), white, { s: [1, 0.8, 1.5], shadow: false }));
+  for (const side of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(0.38, 12, 8), white, { x: side * 0.36, y: 0.03, s: [1.5, 0.16, 0.55], rz: side * 0.28, shadow: false }));
+  g.add(mesh(new THREE.ConeGeometry(0.06, 0.16, 8), mat('#f59e0b'), { y: -0.01, z: 0.3, rx: Math.PI / 2, shadow: false }));
+  g.scale.setScalar(scale);
   return g;
 }
 
 function makeGulls(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#cbd5e1'));
-  g.add(mesh(new THREE.CylinderGeometry(0.16, 0.22, 2.2, 10), mat('#92400e'), { y: 1.1, shadow: false }));
+  g.add(patch(r, '#a5f3fc'));
+  g.add(mesh(new THREE.CylinderGeometry(r * 0.8, r * 0.9, r * 0.28, 24), mat('#57534e', { roughness: 1 }), { y: r * 0.16, shadow: false }));
   const birds = [];
-  for (const [x, y, z] of [[-0.4, 2.5, 0], [0.5, 2.85, 0.25]]) {
-    const b = bird();
+  const spots = [[-r * 0.42, r * 0.82, r * 0.05], [r * 0.4, r * 1.02, r * 0.25], [0, r * 1.18, -r * 0.12]];
+  for (const [x, y, z] of spots) {
+    const b = bird(r * 0.65);
     b.position.set(x, y, z);
-    b.rotation.y = x * 0.6;
+    b.rotation.y = x * 0.4;
     g.add(b);
     birds.push(b);
   }
@@ -174,22 +235,28 @@ function makeGulls(r) {
 
 function makeReef(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#fde68a'));
-  const water = mesh(new THREE.RingGeometry(0.3, r * 0.98, 36),
-    new THREE.MeshBasicMaterial({ color: '#67e8f9', transparent: true, opacity: 0.24, depthWrite: false, side: THREE.DoubleSide }),
-    { y: 0.12, rx: -Math.PI / 2, shadow: false });
-  g.add(water);
+  g.add(patch(r, '#67e8f9'));
+  const coral = new THREE.Group();
+  const colors = ['#fb7185', '#fb923c', '#f472b6'];
+  for (const [i, color] of colors.entries()) {
+    const x = (i - 1) * r * 0.58;
+    const h = r * (0.55 + (i % 2) * 0.25);
+    coral.add(mesh(new THREE.CylinderGeometry(r * 0.07, r * 0.12, h, 8), mat(color), { x, y: h * 0.5, z: (i - 1) * r * 0.2, rz: (i - 1) * 0.25, shadow: false }));
+    for (const side of [-1, 1]) coral.add(mesh(new THREE.CylinderGeometry(r * 0.05, r * 0.08, h * 0.6, 8), mat(color), { x: x + side * r * 0.24, y: h * 0.75, z: (i - 1) * r * 0.2, rz: side * 0.65, shadow: false }));
+    coral.add(mesh(new THREE.SphereGeometry(r * 0.11, 10, 8), mat(color), { x, y: h, z: (i - 1) * r * 0.2, shadow: false }));
+  }
+  g.add(coral);
   const crab = new THREE.Group();
-  crab.position.set(0, 0.2, 0);
-  crab.add(mesh(new THREE.SphereGeometry(0.35, 14, 10), mat('#ef4444'), { s: [1.25, 0.6, 1], shadow: false }));
+  crab.position.set(0, r * 0.18, r * 0.5);
+  crab.add(mesh(new THREE.SphereGeometry(r * 0.24, 14, 10), mat('#ef4444'), { s: [1.25, 0.6, 1], shadow: false }));
   for (const side of [-1, 1]) {
-    crab.add(mesh(new THREE.SphereGeometry(0.18, 10, 8), mat('#ef4444'), { x: side * 0.48, y: 0.06, z: 0.25, s: [1.3, 0.8, 0.7], shadow: false }));
-    crab.add(mesh(new THREE.SphereGeometry(0.06, 8, 6), mat('#0f172a'), { x: side * 0.18, y: 0.18, z: 0.38, shadow: false }));
-    for (let i = 0; i < 3; i++) crab.add(mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.38, 6), mat('#7f1d1d'), { x: side * 0.4, y: -0.08, z: -0.2 + i * 0.2, rz: side * 1.2, shadow: false }));
+    crab.add(mesh(new THREE.SphereGeometry(r * 0.12, 10, 8), mat('#ef4444'), { x: side * r * 0.32, y: r * 0.04, z: r * 0.16, s: [1.3, 0.8, 0.7], shadow: false }));
+    crab.add(mesh(new THREE.SphereGeometry(r * 0.04, 8, 6), mat('#0f172a'), { x: side * r * 0.12, y: r * 0.13, z: r * 0.24, shadow: false }));
+    for (let i = 0; i < 3; i++) crab.add(mesh(new THREE.CylinderGeometry(r * 0.02, r * 0.02, r * 0.26, 6), mat('#7f1d1d'), { x: side * r * 0.28, y: -r * 0.06, z: -r * 0.14 + i * r * 0.14, rz: side * 1.2, shadow: false }));
   }
   g.add(crab);
-  const shell = star('#fb923c', 0.28, 0.08);
-  shell.position.set(-0.8, 0.15, -0.4);
+  const shell = star('#fb923c', r * 0.12, 0.05);
+  shell.position.set(-r * 0.55, 0.12, -r * 0.4);
   shell.rotation.x = -Math.PI / 2;
   g.add(shell);
   g.userData.crab = crab;
@@ -198,15 +265,17 @@ function makeReef(r) {
 
 function makePort(r) {
   const g = new THREE.Group();
-  g.add(patch(r, '#a5f3fc'));
-  g.add(mesh(rbox(2.6, 0.24, 1.0, 0.08), mat('#b45309', { roughness: 0.9 }), { y: 0.35, shadow: false }));
-  for (const x of [-1.1, 0, 1.1]) g.add(mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8), mat('#92400e'), { x, y: 0.05, z: 0.35, shadow: false }));
+  g.add(patch(r, '#7dd3fc'));
+  const base = new THREE.Group();
+  base.add(mesh(rbox(r * 2.05, r * 0.18, r * 0.42, 0.05), mat('#b45309', { roughness: 0.9 }), { y: r * 0.3, z: -r * 0.1, shadow: false }));
+  for (const x of [-r * 0.8, 0, r * 0.8]) base.add(mesh(new THREE.CylinderGeometry(r * 0.05, r * 0.05, r * 0.5, 8), mat('#92400e'), { x, y: r * 0.04, z: -r * 0.1, shadow: false }));
+  g.add(base);
   const boats = [];
-  for (const [x, color] of [[-0.75, '#ef4444'], [0.85, '#2563eb']]) {
+  for (const [i, x] of [-r * 0.62, 0, r * 0.62].entries()) {
     const b = new THREE.Group();
-    b.add(mesh(rbox(0.8, 0.36, 1.1, 0.16), mat(color), { y: 0.25, shadow: false }));
-    b.add(mesh(rbox(0.45, 0.4, 0.45, 0.1), mat('#f8fafc'), { y: 0.58, z: -0.15, shadow: false }));
-    b.position.set(x, 0.15, 0.65);
+    b.add(mesh(rbox(r * 0.42, r * 0.24, r * 0.62, 0.1), mat(['#ef4444', '#2563eb', '#f59e0b'][i]), { y: r * 0.36, shadow: false }));
+    b.add(mesh(rbox(r * 0.22, r * 0.26, r * 0.3, 0.06), mat('#f8fafc'), { y: r * 0.58, z: -r * 0.08, shadow: false }));
+    b.position.set(x, 0.1, r * 0.5);
     g.add(b);
     boats.push(b);
   }
@@ -286,8 +355,8 @@ export class Bay extends AreaMap {
     const sun = new THREE.DirectionalLight('#fff2cf', 2.1);
     sun.position.set(-12, 28, 18);
     this.scene.add(sun);
-    const water = makeWater({ repeat: 20, flow: [0.008, 0.005], scale: 0.42,
-      stops: [[0, '#7ff0e6'], [0.35, '#4fd8e8'], [1, '#2bb8d8']], radial: true });
+    const water = smoothWater({ repeat: 20, flow: [0.008, 0.005], scale: 0.42,
+      stops: [[0, '#8ff7ee'], [0.4, '#5fe6f0'], [1, '#45d9e8']], radial: true });
     const sea = mesh(new THREE.PlaneGeometry(170, 150), water.material, { y: -0.35, z: -3, rx: -Math.PI / 2, shadow: false });
     sea.userData.tick = water.update;
     this.scene.add(sea);
@@ -392,30 +461,36 @@ export class Bay extends AreaMap {
   hideOtherStops(kind) {
     this.road.visible = false;
     Object.entries(this.bodies).forEach(([k, g]) => { g.visible = k === kind; });
-    this.cruiser.visible = true;
+    this.cruiser.visible = false;
   }
 
   visitView(kind) {
-    const { height } = BAY_LAYOUT[kind];
+    const { height, r } = BAY_LAYOUT[kind];
     const body = this.bodies[kind];
     const look = body.position.clone();
     look.y = Math.max(0.8, height * 0.45);
-    const distance = Math.max(9, height * 3.6, BAY_LAYOUT[kind].r * 4);
-    return { pos: look.clone().addScaledVector(FORWARD, distance), look, minWidth: Math.max(BAY_LAYOUT[kind].r * 3, height * 1.5) };
+    const distance = Math.max(6.8, height * 2.7, r * 2.6);
+    const side = FLAT_RIGHT.clone().multiplyScalar(0.82).addScaledVector(FLAT_FORWARD, 0.57).normalize();
+    const pos = look.clone().addScaledVector(side, Math.cos(VISIT_ANGLE) * distance);
+    pos.y += Math.sin(VISIT_ANGLE) * distance;
+    return { pos, look, minWidth: Math.max(r * 2.4, height * 1.6) };
   }
 
   react() {
     const kind = this.visiting, body = this.bodies[kind], u = body.userData;
     if (kind === 'buoy') {
       sfx.ding();
-      const start = body.rotation.z;
-      animate(900, (t) => { body.rotation.z = start + Math.sin(t * Math.PI * 3) * 0.18 * (1 - t); });
+      const start = u.bob.rotation.z, bell = u.bell.rotation.x;
+      animate(900, (t) => {
+        u.bob.rotation.z = start + Math.sin(t * Math.PI * 3) * 0.2 * (1 - t);
+        u.bell.rotation.x = bell + Math.sin(t * Math.PI * 6) * 0.55 * (1 - t);
+      });
     } else if (kind === 'shallows') {
       sfx.bubble();
       this.shimmerUntil = performance.now() + 1200;
-      const start = u.shells.map((s) => s.scale.clone());
+      const start = u.toys.map((toy) => toy.rotation.y);
       animate(1000, (t) => {
-        u.shells.forEach((s, i) => s.scale.copy(start[i]).multiplyScalar(1 + Math.sin(t * Math.PI * 4 + i) * 0.35));
+        u.toys.forEach((toy, i) => { toy.rotation.y = start[i] + Math.sin(t * Math.PI * 3 + i) * 0.9 * (1 - t); });
       });
     } else if (kind === 'seal') {
       sfx.pop();
@@ -446,6 +521,9 @@ export class Bay extends AreaMap {
     } else if (kind === 'port') {
       sfx.toot();
       this.portJoyUntil = performance.now() + 1400;
+    } else if (kind === 'island') {
+      sfx.pop();
+      this.palmUntil = performance.now() + 1200;
     } else {
       hop(body, 0.2, 500);
     }
@@ -462,10 +540,15 @@ export class Bay extends AreaMap {
     if (port) port.boats.forEach((b, i) => {
       const k = now < (this.portJoyUntil || 0) ? 0.18 : 0.04;
       b.rotation.z = Math.sin(t * 3 + i) * k;
-      b.position.y = 0.15 + Math.sin(t * 2.4 + i) * k * 0.3;
+      b.position.y = 0.1 + Math.sin(t * 2.4 + i) * k * 0.3;
     });
     const shimmer = this.bodies.shallows?.userData.shimmer;
     if (shimmer) shimmer.material.opacity = 0.28 + Math.sin(t * 2.4) * 0.07 + (now < (this.shimmerUntil || 0) ? Math.sin(t * 12) * 0.18 : 0);
+    const fronds = this.bodies.island?.userData.fronds;
+    if (fronds) {
+      const k = now < (this.palmUntil || 0) ? 0.22 : 0.05;
+      fronds.forEach((f, i) => { f.rotation.z = 0.16 + Math.sin(t * (k > 0.1 ? 8 : 1.3) + i) * k; });
+    }
   }
 
   releaseWorld() {
@@ -478,25 +561,32 @@ export class Bay extends AreaMap {
     this.launchRoot.userData.bakeInside = true;
     this.scene.add(this.launchRoot);
     this.scene.background.set('#9fe8ff');
-    const water = makeWater({ repeat: 8, flow: [0.01, 0.006], scale: 0.45,
-      stops: [[0, '#6fe6e0'], [1, '#2bb8d8']], radial: true });
-    this.launchRoot.add(mesh(new THREE.PlaneGeometry(80, 60), water.material, { y: -0.3, rx: -Math.PI / 2, shadow: false }));
-    this.launchRoot.add(mesh(new THREE.CylinderGeometry(8, 9, 0.7, 36), mat('#f4d88f', { roughness: 1 }), { y: -0.25, z: -4, shadow: false }));
-    this.launchRoot.add(mesh(new THREE.CylinderGeometry(7.2, 7.8, 0.4, 36), mat('#6fcf62', { roughness: 1 }), { y: 0.1, z: -4.2, shadow: false }));
-    this.launchRoot.add(mesh(rbox(3.2, 0.24, 5.2, 0.08), mat('#b45309', { roughness: 0.9 }), { y: 0.32, z: 2.3, shadow: false }));
-    for (const x of [-1.4, 0, 1.4]) this.launchRoot.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8), mat('#92400e'), { x, y: 0.05, z: 4.3, shadow: false }));
-    this.cruiser.position.set(0, 1.05, 0.6);
-    this.cruiser.scale.setScalar(2.2);
+    const water = smoothWater({ repeat: 8, flow: [0.01, 0.006], scale: 0.45,
+      stops: [[0, '#8ff7ee'], [0.5, '#5fe6f0'], [1, '#45d9e8']], radial: true });
+    this.launchRoot.add(mesh(new THREE.PlaneGeometry(90, 70), water.material, { y: WATER_Y, rx: -Math.PI / 2, shadow: false }));
+    const island = LAUNCH.island;
+    this.launchRoot.add(mesh(new THREE.CylinderGeometry(island.r, island.r * 1.08, 0.7, 36), mat('#f4d88f', { roughness: 1 }), { y: WATER_Y + 0.05, z: island.z, shadow: false }));
+    this.launchRoot.add(mesh(new THREE.CylinderGeometry(island.r * 0.72, island.r * 0.78, 0.5, 36), mat('#6fcf62', { roughness: 1 }), { y: WATER_Y + 0.2, z: island.z - 0.6, shadow: false }));
+    this.launchRoot.add(mesh(rbox(2.0, 0.22, 7.6, 0.06), mat('#b45309', { roughness: 0.9 }), { y: WATER_Y + 0.44, z: -1.8, shadow: false }));
+    for (const x of [-0.9, 0.9]) for (const z of [-4.4, -2.2, 0.2, 1.9]) {
+      this.launchRoot.add(mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.1, 8), mat('#92400e'), { x, y: WATER_Y + 0.2, z, shadow: false }));
+    }
+    this.cruiser.position.set(LAUNCH.boat.x, LAUNCH.boat.y, LAUNCH.boat.z);
+    this.cruiser.scale.setScalar(LAUNCH.boat.scale);
+    this.cruiser.rotation.set(0, 0, 0);
     this.crew = new THREE.Group();
     this.crew.userData.dynamic = true;
     this.girl = makeGirl();
     this.pup = makePup();
     this.crew.add(this.girl, this.pup);
-    this.girl.position.set(-2.1, 0.35, 2.7);
-    this.pup.position.set(-3.4, 0.35, 2.5);
+    this.girl.position.set(-1.2, 0.35, -6.2);
+    this.pup.position.set(-2.5, 0.35, -6.0);
     lifeJacket(this.girl.userData.parts.body, 0.36, 0.48, 0.35);
     lifeJacket(this.pup, 0.55, 0.5, 0.62);
     this.launchRoot.add(this.crew);
+    this.launchRoot.userData.water = WATER_Y;
+    this.launchRoot.userData.island = { ...island };
+    this.launchRoot.userData.pier = { x: 0, z: -1.8, length: 7.6, width: 2 };
     this.launchUi = boatHud();
   }
 
@@ -508,7 +598,7 @@ export class Bay extends AreaMap {
     const from = [this.girl.position.clone(), this.pup.position.clone()];
     await Promise.all([say(SEA_LINES.board), animate(2200, (t) => {
       [this.girl, this.pup].forEach((who, i) => {
-        who.position.lerpVectors(from[i], new THREE.Vector3(i ? 0.3 : -0.3, 1.85, 0.8), t);
+        who.position.lerpVectors(from[i], new THREE.Vector3(i ? LAUNCH.boat.x + 0.35 : LAUNCH.boat.x - 0.35, 1.35, LAUNCH.boat.z - 0.1), t);
         who.position.y += Math.sin(t * Math.PI) * 0.55;
         who.scale.setScalar(1 - t * 0.8);
         who.userData.idle(performance.now() / 1000);
@@ -535,8 +625,8 @@ export class Bay extends AreaMap {
     sfx.toot();
     const sky = new THREE.Color('#9fe8ff'), bay = new THREE.Color('#8fdcff');
     await animate(4200, (t) => {
-      this.cruiser.position.z = 0.6 + t * 17;
-      this.cruiser.position.y = 1.05 + Math.sin(t * Math.PI) * 1.4;
+      this.cruiser.position.z = LAUNCH.boat.z + t * 17;
+      this.cruiser.position.y = LAUNCH.boat.y + t * 0.9 + Math.sin(t * Math.PI) * 1.4;
       this.view.look.lerpVectors(PAD_VIEW.look, new THREE.Vector3(0, 7, -9), t);
       this.view.pos.lerpVectors(PAD_VIEW.pos, new THREE.Vector3(0, 27, 12), t);
       this.scene.background.copy(sky).lerp(bay, t);
