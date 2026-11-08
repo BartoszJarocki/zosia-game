@@ -560,6 +560,31 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
   a beam and the boat sails into the harbour. Wrong: the boat bobs, the dots reset, the right answer is shown and
   she tries again. A boat is never lost.
 
+### 🦆 Pływa czy tonie? · `shallows`
+
+A sunny sandy beach at the edge of clear shallow water. The water surface and the sandy bottom are both
+in view, from a low side-on camera. One thing waits at the water's edge; when it drops in, it splashes,
+then floats at the surface or sinks slowly to the bottom. Two little shelves stand on the sand, one under
+a duck on the waves ("pływa"), one under a stone on the bottom ("tonie"). Things already sorted stay on
+the shelves, so she sees the groups grow.
+
+| Level | mode | things | rounds |
+|---|---|---|---|
+| 1 | watch | familiar | 4 |
+| 2 | guess | familiar | 4 |
+| 3 | surprise | all | 5 |
+
+- **mode** — `watch`: she taps the thing, watches it float or sink, hears "Jabłko pływa!", then "Gdzie to położymy?"
+  and taps the matching shelf. `guess`: first "Pływa czy tonie?" and she taps a shelf as her guess, then the
+  thing drops in and shows the answer. `surprise`: as `guess`, with the big log and the little coin among the
+  things. A wrong guess is not punished: the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to
+  its shelf, then the next round.
+- **things** — `familiar`: an apple, a ball, a rubber duck, a stone, a key and a spoon. `all`: also a leaf,
+  a wooden block, a big log (clearly the biggest) and a little coin (clearly the smallest), so the log floats
+  and the coin sinks. Chase never says heavy or light.
+- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap; `guess` and
+  `surprise` are scored on the guess. Every level has at least one scored question.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

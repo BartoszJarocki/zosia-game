@@ -4,6 +4,7 @@
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
 import { STRIPE_ROWS } from '../levels/jupiter.js';
+import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -40,6 +41,10 @@ const JUPITER_COLOUR = { white: 'biały', orange: 'pomarańczowy', brown: 'brąz
 const stripeWords = (row) => row.map((c, i) => (i ? JUPITER_COLOUR[c] : cap(JUPITER_COLOUR[c])));
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
+const SHALLOWS_SURPRISE = {
+  kłoda: 'Taka duża, a pływa!',
+  moneta: 'Taka mała, a tonie!',
+};
 const SATURN = {
   ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', wrong: 'Ojej! To jest lód. Lód jest tutaj.' },
   rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', wrong: 'Ojej! To jest skała. Skały są tutaj.' },
@@ -100,6 +105,7 @@ export const HOME_TASKS = {
   mercury: 'Policz z mamą guziki na swojej bluzce!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   lighthouse: 'Policz z mamą, ile razy klaśniesz!',
+  shallows: 'W kąpieli sprawdź z mamą, co pływa, a co tonie!',
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   pluto: 'Narysuj z mamą serduszko!',
@@ -288,6 +294,14 @@ export const T = {
   lighthouseTooMany: () => ['Za dużo! Policz jeszcze raz!'],
   lighthouseCountHelp: () => ['Dotknij latarni i policz mrugnięcia!'],
   lighthouseDone: () => ['Brawo! Wszystkie łódki są w domu!'],
+  shallowsStart: () => [...SEA_FACTS.shallows],
+  shallowsDrop: () => ['Wrzuć to do wody!'],
+  shallowsAsk: () => ['Pływa czy tonie?'],
+  shallowsWhere: () => ['Gdzie to położymy?'],
+  shallowsThing: (thing) => [`${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
+  shallowsLook: (thing) => [`Popatrz! ${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
+  shallowsSurprise: (thing) => (SHALLOWS_SURPRISE[thing.id] ? [SHALLOWS_SURPRISE[thing.id]] : []),
+  shallowsDone: () => ['Brawo! Wiesz, co pływa, a co tonie!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
@@ -608,6 +622,8 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SEA_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
   [T.againOrSpace, T.againOrSea, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  SHALLOWS_THINGS.forEach((thing) => { add(T.shallowsThing(thing)); add(T.shallowsLook(thing)); add(T.shallowsSurprise(thing)); });
+  [T.shallowsStart, T.shallowsDrop, T.shallowsAsk, T.shallowsWhere, T.shallowsDone].forEach((f) => add(f()));
   nums.slice(0, 5).forEach((n) => add(T.lighthouseMake(n)));
   [T.lighthouseStart, T.lighthouseWhy, T.lighthouseEach, T.lighthouseHowMany, T.lighthouseMore, T.lighthouseDoneTap, T.lighthouseHome, T.lighthouseTooFew, T.lighthouseTooMany, T.lighthouseCountHelp, T.lighthouseDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));

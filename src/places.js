@@ -60,7 +60,10 @@ export const PLACES = {
   telescope: { area: 'space', game: true, domain: 'space', stop: false, badge: { label: '🔭', color: '#0d9488' } },
   island: { area: 'sea', game: false, domain: 'sea' },
   buoy: { area: 'sea', game: false, domain: 'sea' },
-  shallows: { area: 'sea', game: false, domain: 'sea' },
+  shallows: {
+    area: 'sea', game: true, domain: 'shapes',
+    badge: { label: '🦆', color: '#f59e0b' },
+  },
   seal: { area: 'sea', game: false, domain: 'sea' },
   lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } },
   gulls: { area: 'sea', game: false, domain: 'sea' },
