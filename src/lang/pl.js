@@ -106,6 +106,7 @@ export const HOME_TASKS = {
   moon: 'Poszukaj z mamą Księżyca na niebie!',
   lighthouse: 'Policz z mamą, ile razy klaśniesz!',
   shallows: 'W kąpieli sprawdź z mamą, co pływa, a co tonie!',
+  reef: 'Schowaj misia pod kocem i zapytaj mamę, gdzie jest miś!',
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   pluto: 'Narysuj z mamą serduszko!',
@@ -238,6 +239,28 @@ export const SEA_FACTS = {
   port: ['W porcie łódki odpoczywają.'],
 };
 
+/** The reef: the exact Polish place forms and animal forms, kept as data. */
+export const REEF_FACTS = [
+  'Krab chodzi bokiem.',
+  'Ośmiornica ma osiem ramion.',
+  'Pod wodą mieszkają kraby i rozgwiazdy.',
+];
+export const REEF_PLACES = {
+  'na:rock': 'na kamieniu',
+  'pod:rock': 'pod kamieniem',
+  'obok:rock': 'obok kamienia',
+  'w:shell': 'w muszli',
+  'na:shell': 'na muszli',
+  'obok:shell': 'obok muszli',
+};
+export const REEF_ANIMALS = {
+  crab: { nom: 'krab', acc: 'kraba', which: 'Który' },
+  starfish: { nom: 'rozgwiazda', acc: 'rozgwiazdę', which: 'Która' },
+  fish: { nom: 'rybka', acc: 'rybkę', which: 'Która' },
+  octopus: { nom: 'ośmiornica', acc: 'ośmiornicę', which: 'Która' },
+};
+const reefPlace = (word, on) => REEF_PLACES[`${word}:${on}`];
+
 export const T = {
   telescopeStart: () => ['Patrzymy przez teleskop!'],
   telescopeMatch: () => ['Znajdź taki sam!'],
@@ -302,6 +325,14 @@ export const T = {
   shallowsLook: (thing) => [`Popatrz! ${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
   shallowsSurprise: (thing) => (SHALLOWS_SURPRISE[thing.id] ? [SHALLOWS_SURPRISE[thing.id]] : []),
   shallowsDone: () => ['Brawo! Wiesz, co pływa, a co tonie!'],
+  reefStart: (i) => ['Jesteśmy na rafie!', 'Zaglądamy przez szklaną podłogę łódki!', REEF_FACTS[i % REEF_FACTS.length]],
+  reefAsk: (animal, word, on) => [`${REEF_ANIMALS[animal].which} ${REEF_ANIMALS[animal].nom} jest ${reefPlace(word, on)}?`],
+  reefRight: (animal, word, on) => [`Tak! ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
+  reefWrong: (animal, word, on) => [`Popatrz jeszcze raz. ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
+  reefPlaceAsk: (animal, word, on) => [`Połóż ${REEF_ANIMALS[animal].acc} ${reefPlace(word, on)}.`],
+  reefLook: () => ['Popatrz na wszystkie obrazki.'],
+  reefPlaceLook: () => ['Popatrz na wszystkie miejsca.'],
+  reefDone: () => ['Brawo! Znalazłaś wszystkie zwierzątka na rafie!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
@@ -626,6 +657,17 @@ export function allSegments(levels, allLetters) {
   [T.shallowsStart, T.shallowsDrop, T.shallowsAsk, T.shallowsWhere, T.shallowsDone].forEach((f) => add(f()));
   nums.slice(0, 5).forEach((n) => add(T.lighthouseMake(n)));
   [T.lighthouseStart, T.lighthouseWhy, T.lighthouseEach, T.lighthouseHowMany, T.lighthouseMore, T.lighthouseDoneTap, T.lighthouseHome, T.lighthouseTooFew, T.lighthouseTooMany, T.lighthouseCountHelp, T.lighthouseDone].forEach((f) => add(f()));
+  Object.keys(REEF_PLACES).forEach((key) => {
+    const [word, on] = key.split(':');
+    Object.keys(REEF_ANIMALS).forEach((animal) => {
+      add(T.reefAsk(animal, word, on));
+      add(T.reefRight(animal, word, on));
+      add(T.reefWrong(animal, word, on));
+      add(T.reefPlaceAsk(animal, word, on));
+    });
+  });
+  REEF_FACTS.forEach((_, i) => add(T.reefStart(i)));
+  [T.reefLook, T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
   for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));

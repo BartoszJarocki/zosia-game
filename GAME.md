@@ -584,6 +584,28 @@ the shelves, so she sees the groups grow.
   and the coin sinks. Chase never says heavy or light.
 - **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap; `guess` and
   `surprise` are scored on the guess. Every level has at least one scored question.
+### 🦀 The Reef · `reef`
+
+Looking down through the boat's round glass floor at a bright, shallow reef: sandy sea floor, green sea grass,
+a grey rock and a big pink shell. A crab, a starfish, a little fish and an octopus take turns hiding on, under,
+in and next to them.
+
+| Level | mode | words | choices | rounds |
+|---|---|---|---|---|
+| 1 | see | na, pod | 2 | 4 |
+| 2 | hear | na, pod, w | 3 | 4 |
+| 3 | hear | na, pod, w, obok | 3 | 4 |
+| 4 | place | na, pod, w, obok | 3 | 3 |
+
+- **mode**: `see` shows a small picture of the asked position in the bubble, to match with what she sees;
+  `hear` gives the words only; `place` shows one big scene, the animal waits above it and three glowing spots
+  mark places. She taps the spot and the animal swims there.
+- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock or shell, under the rock,
+  in the shell, and next to the rock or shell.
+- **choices**: how many small scenes side by side (2 to 4), or how many glowing spots in `place`.
+- **rounds**: questions per mission (1 to 8). Each is one scored question, skill `position`, item the word.
+  Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, the right
+  scene or spot is shown, and she tries again. The right word is never the same three times in a row.
 
 ### 🗼 The Lookout · `lookout`
 
