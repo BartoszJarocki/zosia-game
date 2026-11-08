@@ -20,8 +20,51 @@ const SHELF_Y = 1.45;
 const SLOTS = [[-1.5, 0.54], [0, 0.54], [1.5, 0.54], [-1.5, 1.34], [0, 1.34], [1.5, 1.34]];
 
 const SAND_SIZE = { kłoda: 3.6, moneta: 2, default: 2.35 };
-const SHELF_SIZE = { kłoda: 1.9, moneta: 1.3, default: 1.45 };
+const SHELF_SIZE = { kłoda: 1.6, moneta: 1.3, default: 1.45 };
 const target = (table, id) => table[id] ?? table.default;
+const tall = () => globalThis.innerHeight > globalThis.innerWidth;
+
+/** Small drawn pictures for the bubble, matching the things in the scene. */
+const THING_PICTURES = {
+  'jabłko': `<circle cx="50" cy="57" r="27" fill="#ef4444"/>
+    <ellipse cx="39" cy="48" rx="8" ry="5" fill="#f87171" opacity=".7"/>
+    <path d="M50 31 Q52 20 58 15" stroke="#7c4a1e" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path d="M58 20 Q72 10 78 22 Q68 32 58 20 Z" fill="#22c55e"/>`,
+  piłka: `<circle cx="50" cy="52" r="28" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+    <path d="M50 24 Q38 52 50 80 Q62 52 50 24 Z" fill="#ef4444"/>
+    <path d="M22 52 Q50 40 78 52 Q50 64 22 52 Z" fill="#2563eb"/>`,
+  kaczka: `<ellipse cx="45" cy="62" rx="28" ry="19" fill="#fde047"/>
+    <circle cx="66" cy="38" r="15" fill="#fde047"/>
+    <path d="M80 38 L94 33 L80 45 Z" fill="#f97316"/>
+    <circle cx="70" cy="34" r="3.5" fill="#1f2937"/>
+    <path d="M28 62 Q38 72 48 62" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  'liść': `<path d="M22 70 Q20 30 74 22 Q84 66 42 78 Q30 78 22 70 Z" fill="#4ade80" stroke="#16a34a" stroke-width="3"/>
+    <path d="M28 72 Q48 52 72 30" stroke="#166534" stroke-width="3" fill="none"/>
+    <path d="M23 71 L12 82" stroke="#166534" stroke-width="4" stroke-linecap="round"/>`,
+  klocek: `<rect x="24" y="40" width="52" height="42" rx="6" fill="#b45309"/>
+    <rect x="24" y="32" width="52" height="16" rx="6" fill="#d97706"/>
+    <rect x="34" y="52" width="12" height="20" rx="4" fill="#92400e"/>`,
+  'kłoda': `<rect x="16" y="42" width="60" height="30" rx="14" fill="#8b4a20"/>
+    <ellipse cx="76" cy="57" rx="12" ry="16" fill="#e5b878" stroke="#6b3410" stroke-width="3"/>
+    <ellipse cx="76" cy="57" rx="6" ry="8" fill="none" stroke="#b1702f" stroke-width="2"/>
+    <path d="M34 46 L28 34" stroke="#6b3410" stroke-width="4" stroke-linecap="round"/>`,
+  'kamień': `<path d="M22 64 Q18 44 38 34 Q58 22 74 38 Q88 52 80 68 Q70 80 46 80 Q26 78 22 64 Z" fill="#94a3b8" stroke="#64748b" stroke-width="3"/>
+    <path d="M36 48 Q46 42 56 48" stroke="#cbd5e1" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  klucz: `<circle cx="32" cy="38" r="14" fill="none" stroke="#fbbf24" stroke-width="8"/>
+    <path d="M42 48 L76 72" stroke="#fbbf24" stroke-width="8" stroke-linecap="round"/>
+    <path d="M64 64 L72 54 M70 70 L78 60" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"/>`,
+  moneta: `<circle cx="50" cy="52" r="28" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
+    <circle cx="50" cy="52" r="19" fill="none" stroke="#fde68a" stroke-width="4"/>
+    <path d="M44 44 L44 62 M44 44 L58 44 Q64 44 64 50 Q64 56 58 56 L44 56" stroke="#d97706" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  'łyżka': `<ellipse cx="42" cy="38" rx="16" ry="21" fill="#cbd5e1" stroke="#94a3b8" stroke-width="3" transform="rotate(-25 42 38)"/>
+    <path d="M52 52 L76 80" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>`,
+};
+
+export function thingPicture(id) {
+  const art = THING_PICTURES[id];
+  if (!art) return '';
+  return `<svg data-thing="${id}" viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true">${art}</svg>`;
+}
 
 function signMap(side) {
   const cv = document.createElement('canvas');
@@ -210,7 +253,7 @@ function disposeTree(root) {
 export class ShallowsMission extends Mission {
   constructor(game) {
     super(game, 'shallows');
-    this.view = { pos: new THREE.Vector3(0, 6.8, 15), look: new THREE.Vector3(0, 2, 0.5), minWidth: 18 };
+    this.view = { pos: new THREE.Vector3(0, 6.8, 15), look: new THREE.Vector3(0, 2, 0.5), get minWidth() { return tall() ? 18.8 : 20.2; } };
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.bubbleAt = 'left';
@@ -314,7 +357,7 @@ export class ShallowsMission extends Mission {
   }
 
   bubble(big = '?') {
-    ui.bubble({ big, pic: '🦆', onTap: () => this.replay(), passthrough: true });
+    ui.bubble({ big, pic: thingPicture(this.task?.id), onTap: () => this.replay(), passthrough: true });
   }
 
   openQuestion(task, step) {

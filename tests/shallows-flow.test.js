@@ -52,10 +52,10 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 
-const { ShallowsMission } = await import('../src/scenes/shallows.js');
+const { ShallowsMission, thingPicture } = await import('../src/scenes/shallows.js');
 const { CONFIG } = await import('../src/config.js');
 const { LEVELS } = await import('../src/levels/data.js');
-const { thingById } = await import('../src/levels/shallows.js');
+const { thingById, THINGS } = await import('../src/levels/shallows.js');
 const { learning } = await import('../src/learning/events.js');
 const { startSession, getSession } = await import('../src/session/session.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
@@ -157,6 +157,22 @@ test('surprise: the big log floats, the little coin sinks, and each gets its own
   assert.ok(globalThis.__lines.includes('Moneta tonie!'));
   assert.ok(globalThis.__lines.includes('Taka mała, a tonie!'));
   stop(coin);
+});
+
+test('the bubble picture is the round\'s own thing for every thing, so it never hints at an answer', async () => {
+  const seen = new Set();
+  for (const thing of THINGS) {
+    const s = await scene(1, [thingById(thing.id)]);
+    s.round(0);
+    await until(() => s.phase === 'dropping');
+    const pic = globalThis.__bubble.pic;
+    assert.equal(pic, thingPicture(thing.id));
+    assert.ok(pic.includes(`data-thing="${thing.id}"`), `${thing.id} is drawn in the bubble`);
+    seen.add(pic);
+    stop(s);
+    await flush();
+  }
+  assert.equal(seen.size, THINGS.length, 'every thing has its own picture');
 });
 
 test('every level runs through the base Mission loop to celebration and counts for the session', async () => {
