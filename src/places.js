@@ -57,6 +57,7 @@ export const PLACES = {
   comet: { area: 'space', game: true, domain: 'letters', badge: { label: '☄️', color: '#38bdf8' } },
   stars: { area: 'space', game: true, domain: 'numbers', badge: { label: '⭐', color: '#eab308' } },
   telescope: { area: 'space', game: true, domain: 'space', stop: false, badge: { label: '🔭', color: '#0d9488' } },
+  lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '🚨', color: '#0ea5e9' } },
 };
 
 export const placesIn = (area) => Object.keys(PLACES).filter((k) => PLACES[k].area === area);

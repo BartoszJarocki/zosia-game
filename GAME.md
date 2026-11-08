@@ -539,6 +539,27 @@ Levels add new letters (2), more comets to catch and a little more speed (3), th
   that never touch, from right to left below the speech bubble, then leave and come back later in another lane
 - **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
 
+### 🚨 The Lighthouse · `lighthouse`
+
+Dusk at the lighthouse: a warm orange-pink sky, calm green-blue water and a boat coming home. The lamp
+flashes, and she counts the flashes or makes the lamp flash as many times as the number on the boat's sail.
+
+| Level | mode | numbers | choices | rounds |
+|---|---|---|---|---|
+| 1 | marks | 1–3 | 2 | 4 |
+| 2 | flashes | 1–4 | 3 | 4 |
+| 3 | make | 2–5 | — | 3 |
+| 4 | more | 1–4 | — | 3 |
+
+- **mode**: `marks` keeps a yellow dot on the board for every flash (things that stay); `flashes` has no dots, so
+  she counts what she saw, and tapping the bubble replays the flashes; `make` puts the number on the boat's sail,
+  she taps the lamp that many times and then the boat; `more` flashes a number and she makes one flash more.
+- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
+- **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
+- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
+  a beam and the boat sails into the harbour. Wrong: the boat bobs, the dots reset, the right answer is shown and
+  she tries again. A boat is never lost.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
