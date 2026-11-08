@@ -9,18 +9,52 @@ import { reefPlan, reefChoices, reefSpots, placeKey, placeAt } from '../levels/r
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const MINI_WIDTH = 3.6, MINI_GAP = 0.3;
+const MINI_WIDTH = 4.8, MINI_GAP = 0.3;
 const MINI_AT = {
-  'na:rock': { x: -0.85, y: 1.7, z: 0.05 },
-  'na:shell': { x: 0.9, y: 0.86, z: 0.15 },
-  'pod:rock': { x: -0.85, y: 0.18, z: 0.35 },
-  'w:shell': { x: 0.9, y: 0.2, z: 0.15 },
-  'obok:rock': { x: -0.15, y: 0.18, z: 0.3 },
-  'obok:shell': { x: 1.55, y: 0.18, z: 0.35 },
+  'na:rock': { x: -1.2, y: 2.55, z: 0 },
+  'na:shell': { x: 1.05, y: 1.12, z: 0.1 },
+  'pod:rock': { x: -1.2, y: 0.15, z: 0.95 },
+  'w:shell': { x: 1.05, y: 1.05, z: 0.15 },
+  'obok:rock': { x: -2.1, y: 0.15, z: 1.35 },
+  'obok:shell': { x: 2.45, y: 0.15, z: 1.1 },
 };
-const ANIMAL_EMOJI = { crab: '🦀', starfish: '🌟', fish: '🐟', octopus: '🐙' };
+const ANIMAL_SCALE = { crab: 1.65, starfish: 1.7, fish: 1.85, octopus: 2.3 };
 
 let factCursor = 0;
+
+/** Small drawn pictures for the bubble, matching the animals in the scene. */
+const ANIMAL_PICTURES = {
+  crab: `<ellipse cx="50" cy="58" rx="23" ry="15" fill="#ef4444"/>
+    <circle cx="24" cy="45" r="9" fill="#ef4444"/>
+    <circle cx="76" cy="45" r="9" fill="#ef4444"/>
+    <path d="M30 62 L20 73 M70 62 L80 73" stroke="#b91c1c" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="41" cy="55" r="6" fill="#ffffff"/>
+    <circle cx="59" cy="55" r="6" fill="#ffffff"/>
+    <circle cx="42" cy="56" r="3" fill="#1f2937"/>
+    <circle cx="58" cy="56" r="3" fill="#1f2937"/>
+    <path d="M42 66 Q50 72 58 66" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" fill="none"/>`,
+  starfish: `<path d="M50 18 L59 42 L84 42 L64 57 L72 82 L50 67 L28 82 L36 57 L16 42 L41 42 Z" fill="#fb7185" stroke="#e11d48" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="43" cy="49" r="4" fill="#1f2937"/>
+    <circle cx="57" cy="49" r="4" fill="#1f2937"/>
+    <path d="M43 59 Q50 64 57 59" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" fill="none"/>`,
+  fish: `<ellipse cx="47" cy="53" rx="27" ry="17" fill="#60a5fa"/>
+    <path d="M72 53 L92 37 L92 69 Z" fill="#fb923c"/>
+    <ellipse cx="45" cy="37" rx="13" ry="6" fill="#fb923c"/>
+    <circle cx="59" cy="49" r="6" fill="#ffffff"/>
+    <circle cx="60" cy="50" r="3" fill="#1f2937"/>
+    <path d="M36 60 Q45 66 54 60" stroke="#1e3a8a" stroke-width="2.5" stroke-linecap="round" fill="none"/>`,
+  octopus: `<path d="M31 51 Q24 66 33 78 M40 55 Q36 71 45 81 M49 56 Q49 72 50 82 M58 55 Q62 71 55 81 M67 51 Q75 66 66 78" stroke="#a78bfa" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="50" cy="40" r="20" fill="#a78bfa"/>
+    <circle cx="43" cy="37" r="5" fill="#ffffff"/>
+    <circle cx="57" cy="37" r="5" fill="#ffffff"/>
+    <circle cx="44" cy="38" r="2.5" fill="#1f2937"/>
+    <circle cx="56" cy="38" r="2.5" fill="#1f2937"/>
+    <path d="M43 46 Q50 52 57 46" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" fill="none"/>`,
+};
+
+function animalPicture(kind) {
+  return `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true">${ANIMAL_PICTURES[kind]}</svg>`;
+}
 
 /** A little bubble picture of the asked position: the animal, a rock or shell, and where they are. */
 function positionPicture(word, on) {
@@ -96,6 +130,17 @@ export class ReefMission extends Mission {
     this.world.add(mesh(new THREE.PlaneGeometry(30, 30), rippleMat, { y: 0.01, rx: -Math.PI / 2, shadow: false }));
     this.onUpdate((dt) => { this.rippleMap.offset.x = (this.rippleMap.offset.x + dt * 0.004) % 1; });
 
+    this.spotMap = texture(128, (c, size) => {
+      c.clearRect(0, 0, size, size);
+      const g = c.createRadialGradient(64, 64, 4, 64, 64, 64);
+      g.addColorStop(0, 'rgba(255, 251, 214, 0.95)');
+      g.addColorStop(0.55, 'rgba(253, 224, 102, 0.6)');
+      g.addColorStop(1, 'rgba(250, 204, 21, 0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, size, size);
+    });
+    this.maps.push(this.spotMap);
+
     const grassGeo = new THREE.ConeGeometry(0.11, 1.2, 5);
     const grassMats = [mat('#34d399', { roughness: 1 }), mat('#16a34a', { roughness: 1 })];
     for (let i = 0; i < 18; i++) {
@@ -115,7 +160,8 @@ export class ReefMission extends Mission {
     this.window = new THREE.Group();
     this.window.add(mesh(new THREE.CircleGeometry(1.0, 48), face, { shadow: false }));
     this.window.add(mesh(new THREE.TorusGeometry(1.06, 0.09, 12, 48), mat('#f8e7b5', { metalness: 0.1, roughness: 0.45 }), { z: 0.01, shadow: false }));
-    this.window.position.set(6.4, 7, 8);
+    this.window.position.set(5, 1, 5.5);
+    this.window.scale.setScalar(0.8);
     this.world.add(this.window);
     this.tappable(this.window, () => { sfx.bark(); hop(this.window, 0.18); });
 
@@ -171,6 +217,7 @@ export class ReefMission extends Mission {
 
   animal(kind) {
     const group = new THREE.Group();
+    group.userData.kind = kind;
     const black = this.material('#1f2937', { roughness: 0.6 });
     const face = (y, z) => {
       group.add(mesh(this.geo(new THREE.SphereGeometry(0.055, 8, 6)), black, { x: -0.12, y, z, shadow: false }));
@@ -227,35 +274,35 @@ export class ReefMission extends Mission {
   seat(animal, place, mini) {
     const at = mini ? MINI_AT[placeKey(place)] : placeAt(place);
     animal.position.set(at.x, at.y, at.z);
-    const scale = mini ? (place.word === 'w' ? 0.55 : 0.7) : (place.word === 'w' ? 0.85 : 1.05);
+    const scale = mini ? ANIMAL_SCALE[animal.userData.kind] : (place.word === 'w' ? 0.85 : 1.05);
     animal.scale.setScalar(scale);
   }
 
   makeMini(place, animalKind) {
     const group = new THREE.Group();
-    group.add(mesh(this.geo(new THREE.CircleGeometry(1.8, 40)), this.material('#fbe7b4', { roughness: 1 }), {
+    group.add(mesh(this.geo(new THREE.CircleGeometry(2.4, 48)), this.material('#fbe7b4', { roughness: 1 }), {
       y: 0.015, rx: -Math.PI / 2, shadow: false,
     }));
-    group.add(mesh(this.geo(new THREE.TorusGeometry(1.78, 0.035, 6, 40)), this.material('#a7f3d0', { roughness: 0.6 }), {
+    group.add(mesh(this.geo(new THREE.TorusGeometry(2.38, 0.04, 6, 48)), this.material('#a7f3d0', { roughness: 0.6 }), {
       y: 0.03, rx: -Math.PI / 2, shadow: false,
     }));
-    const rock = this.rock(1);
-    rock.position.set(-0.85, 0, 0);
+    const rock = this.rock(1.55);
+    rock.position.set(-1.2, 0, 0);
     group.add(rock);
-    const shell = this.shell(1);
-    shell.position.set(0.9, 0, 0.15);
+    const shell = this.shell(1.55);
+    shell.position.set(1.05, 0, 0.1);
     group.add(shell);
     const animal = this.animal(animalKind);
     this.seat(animal, place, true);
     group.add(animal);
-    const hit = mesh(this.geo(new THREE.BoxGeometry(3.5, 2.8, 0.2)), this.material('#ffffff', { visible: false }), {
-      y: 1.25, z: 0.25, shadow: false,
+    const hit = mesh(this.geo(new THREE.BoxGeometry(4.4, 5, 0.3)), this.material('#ffffff', { visible: false }), {
+      y: 2.45, z: 0.25, shadow: false,
     });
     group.add(hit);
     group.userData.hit = hit;
     group.userData.animal = animal;
     group.userData.choice = place.word;
-    group.userData.tapHeight = 1.25;
+    group.userData.tapHeight = 2.2;
     return group;
   }
 
@@ -334,21 +381,18 @@ export class ReefMission extends Mission {
     group.position.set(at.x, at.y, at.z);
     group.userData.choice = place.word;
     group.userData.spot = true;
-    group.userData.tapHeight = 0;
-    const ringMat = this.material('#fef08a', { emissive: '#f59e0b', emissiveIntensity: 0.9, roughness: 0.4 });
-    const ring = mesh(this.geo(new THREE.TorusGeometry(0.55, 0.08, 8, 28)), ringMat, { rx: -Math.PI / 2, shadow: false });
-    const disc = mesh(this.geo(new THREE.CircleGeometry(0.5, 24)), this.material('#fff7cc', { transparent: true, opacity: 0.7, depthWrite: false }), {
-      y: 0.01, rx: -Math.PI / 2, shadow: false,
-    });
-    group.add(ring, disc);
-    group.add(mesh(this.geo(new THREE.SphereGeometry(1.2, 12, 8)), this.material('#ffffff', { visible: false }), { shadow: false }));
-    group.userData.ring = ring;
+    group.userData.tapHeight = 0.7;
+    const glowMat = new THREE.MeshBasicMaterial({ map: this.spotMap, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+    this.roundMaterials.add(glowMat);
+    const disc = mesh(this.geo(new THREE.CircleGeometry(1.3, 40)), glowMat, { rx: -Math.PI / 2, shadow: false });
+    group.add(disc);
+    group.add(mesh(this.geo(new THREE.BoxGeometry(2.65, 1.5, 0.5)), this.material('#ffffff', { visible: false }), { y: 0.75, shadow: false }));
+    group.userData.ring = disc;
     group.userData.disc = disc;
     const off = this.onUpdate((dt, t) => {
-      const k = 1 + Math.sin(t * 5 + at.x) * 0.12;
-      ring.scale.setScalar(k);
+      const k = 1 + Math.sin(t * 5 + at.x) * 0.08;
       disc.scale.setScalar(k);
-      ringMat.emissiveIntensity = 0.7 + Math.sin(t * 5 + at.x) * 0.25;
+      glowMat.opacity = 0.65 + Math.sin(t * 5 + at.x) * 0.2;
     });
     this.roundOffs.push(off);
     return group;
@@ -391,7 +435,7 @@ export class ReefMission extends Mission {
         reveal: () => this.hint(right, () => this.phase !== 'asking'),
       }, { options: this.spots.length });
 
-      ui.bubble({ big: '?', pic: ANIMAL_EMOJI[target.animal], onTap: () => this.replay(), passthrough: true });
+      ui.bubble({ big: '?', pic: animalPicture(target.animal), onTap: () => this.replay(), passthrough: true });
       this.ask(T.reefPlaceAsk(target.animal, target.place.word, target.place.on));
     });
   }

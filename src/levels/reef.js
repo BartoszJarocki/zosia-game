@@ -12,12 +12,12 @@ export const REEF_PLACES = [
 ];
 
 const SPOT_AT = {
-  'na:rock': { x: -3.8, y: 2.2, z: 0 },
-  'na:shell': { x: 2.4, y: 1.35, z: 0.6 },
-  'pod:rock': { x: -3.8, y: 0.25, z: 3.5 }, // far enough toward the camera that its marker clears the one on the rock
-  'w:shell': { x: 2.4, y: 0.35, z: 0.6 },
-  'obok:rock': { x: -0.4, y: 0.25, z: 1.9 },
-  'obok:shell': { x: 7.0, y: 0.25, z: -0.4 },
+  'na:rock': { x: -3.8, y: 2.15, z: 0 },
+  'na:shell': { x: 2.4, y: 1.0, z: 0.6 },
+  'pod:rock': { x: -3.8, y: 0.2, z: 1.35 }, // just under the rock's overhanging front edge
+  'w:shell': { x: 2.4, y: 0.95, z: 0.6 },
+  'obok:rock': { x: -7.4, y: 0.2, z: 1.35 },
+  'obok:shell': { x: 5.8, y: 0.2, z: 0.9 },
 };
 
 export const placeKey = (place) => `${place.word}:${place.on}`;
