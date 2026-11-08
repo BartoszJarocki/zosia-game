@@ -40,7 +40,7 @@ registerHooks({ load(url, context, next) {
   if (url.endsWith('/src/ui.js')) source = `
     export const badges = { get: () => ({}), add: (kind) => ({ [kind]: 1 }) };
     export const missionHud = () => {};
-    export const bubble = () => {};
+    export const bubble = (options) => { globalThis.__bubble = options; };
     export const hideBubble = () => {};
     export const nudgeBubble = () => {};
     export const setProgress = () => {};
@@ -52,6 +52,7 @@ registerHooks({ load(url, context, next) {
 const { ReefMission } = await import('../src/scenes/reef.js');
 const { PLACES, GAMES } = await import('../src/places.js');
 const { LEVELS } = await import('../src/levels/data.js');
+const { REEF_PLACES } = await import('../src/levels/reef.js');
 const { parseGame } = await import('../src/levels/parse.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const { CONFIG } = await import('../src/config.js');
@@ -142,18 +143,62 @@ test('choices and spots stay large, apart, on screen and clear of Chase at all t
 
 test('place spots are large, apart and clear of Chase at all three sizes', async () => {
   const s = await scene(4);
+  for (const target of REEF_PLACES) {
+    const round = s.placeRound({ word: target.word, animal: 'crab', place: target });
+    await until(() => s.phase === 'asking');
+    for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+      const camera = cameraFor(s, width, height);
+      const boxes = s.spots.map((spot) => screenBox(spot, camera, width, height));
+      const chase = screenBox(s.window, camera, width, height);
+      for (const box of boxes) {
+        assert.ok(box.maxX - box.minX >= 120, `${width}x${height}: spot ${box.maxX - box.minX} px wide`);
+        assert.equal(overlaps(box, chase), false, `${width}x${height}: spot clears Chase`);
+      }
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: spots ${i}/${j} for ${target.word}:${target.on}`);
+    }
+    await s.spots.find((o) => o.userData.choice === s.last).userData.onTap();
+    await round;
+    s.clearRound();
+  }
+  s.alive = false; s.exit();
+});
+
+test('Chase window is fully on screen, below the HUD and clear of the bubble at all three sizes', async () => {
+  const s = await scene(3);
   const round = s.round(0);
   await until(() => s.phase === 'asking');
   for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = cameraFor(s, width, height);
-    const boxes = s.spots.map((spot) => screenBox(spot, camera, width, height));
-    const chase = screenBox(s.window, camera, width, height);
-    for (const box of boxes) {
-      assert.ok(box.maxX - box.minX >= 120, `${width}x${height}: spot ${box.maxX - box.minX} px wide`);
-      assert.equal(overlaps(box, chase), false, `${width}x${height}: spot clears Chase`);
-    }
-    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: spots ${i}/${j}`);
+    const box = screenBox(s.window, camera, width, height);
+    assert.ok(box.minX >= 0 && box.maxX <= width && box.minY >= 0 && box.maxY <= height, `${width}x${height}: Chase window on screen`);
+    assert.ok(box.minX > width * 0.45, `${width}x${height}: Chase window clear of the left bubble`);
+    assert.ok(box.minY > height * 0.1, `${width}x${height}: Chase window below the HUD`);
   }
+  await s.tappables.find((o) => o.userData.choice === s.last).userData.onTap();
+  await round;
+  s.alive = false; s.exit();
+});
+
+test('every choice animal is at least 90 px across at 1180x820', async () => {
+  const s = await scene(3);
+  const camera = cameraFor(s, 1180, 820);
+  for (const kind of ['crab', 'starfish', 'fish', 'octopus']) {
+    const group = s.makeMini({ word: 'na', on: 'rock' }, kind);
+    s.scene.add(group);
+    group.updateMatrixWorld(true);
+    const box = screenBox(group.userData.animal, camera, 1180, 820);
+    assert.ok(Math.max(box.maxX - box.minX, box.maxY - box.minY) >= 90, `${kind}: ${(box.maxX - box.minX).toFixed(0)}x${(box.maxY - box.minY).toFixed(0)} px`);
+    group.removeFromParent();
+  }
+  s.alive = false; s.exit();
+});
+
+test('the place bubble draws the animal instead of using a starfish emoji', async () => {
+  const s = await scene(4);
+  const round = s.placeRound({ word: 'pod', animal: 'starfish', place: { word: 'pod', on: 'rock' } });
+  await until(() => s.phase === 'asking');
+  assert.match(globalThis.__bubble.pic, /<svg/);
+  assert.match(globalThis.__bubble.pic, /#fb7185/);
   await s.spots.find((o) => o.userData.choice === s.last).userData.onTap();
   await round;
   s.alive = false; s.exit();
