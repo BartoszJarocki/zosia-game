@@ -213,10 +213,11 @@ test('the name is one whole word until the clap: no syllable separators on the b
   assert.equal(board.userData.whole.visible, true);
   assert.ok(board.userData.blocks.every((b) => b.visible === false));
   assert.equal(board.userData.dots.visible, true);
+  assert.equal(board.userData.dots.children.length, 0);
   const horn = alone.tappables.find((o) => o.userData.choice === 'horn');
   await horn.userData.onTap();
+  assert.equal(board.userData.dots.children.length, 1);
   assert.equal(board.userData.dots.children[0].material, alone.dotOn);
-  assert.equal(board.userData.dots.children[1].material, alone.dotOff);
   assert.ok(board.userData.blocks.every((b) => b.visible === false));
   await horn.userData.onTap();
   await alone.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
@@ -253,6 +254,30 @@ test('the name is one whole word until the clap: no syllable separators on the b
   await whichRound;
   assert.equal(whichSplit, true);
   which.alive = false; which.exit();
+});
+
+test('the alone tally starts empty and grows one lit dot per toot', async () => {
+  const s = await scene(2);
+  s.pick = () => 'MEWA';
+  const round = s.round(0);
+  await until(() => s.phase === 'asking');
+  const board = s.boats[0].userData.board;
+  const horn = s.tappables.find((o) => o.userData.choice === 'horn');
+  assert.equal(board.userData.dots.children.length, 0);
+  await horn.userData.onTap();
+  assert.equal(board.userData.dots.children.length, 1);
+  assert.equal(board.userData.dots.children[0].material, s.dotOn);
+  await horn.userData.onTap();
+  await horn.userData.onTap();
+  assert.equal(s.target, 2);
+  assert.equal(board.userData.dots.children.length, 3);
+  await s.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+  await until(() => s.phase === 'asking' && s.count === 0);
+  assert.equal(board.userData.dots.children.length, 0);
+  for (let i = 0; i < s.target; i++) await horn.userData.onTap();
+  await s.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+  await round;
+  s.alive = false; s.exit();
 });
 
 test('no tappable overlaps another, the bubble, Chase or the HUD at all three sizes', async () => {
