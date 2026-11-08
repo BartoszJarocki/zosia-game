@@ -158,11 +158,11 @@ for (let r = 0; r < 16; r++) { // (rounds past the plan: right answers, so long 
     if (!ev?.correct) { await page.waitForTimeout(1500); await tap(b, 'picnic: then right'); }
   } else if (kind === 'counting' && now.label === 'plate') {
     for (let i = 0; i < 5; i++) { const p = (await options()).find((o) => o.label === 'plate' && o.right); if (!p) break; await tap(p, `plate ${i + 1}`); await page.waitForTimeout(800); }
-  } else if (((kind === 'moon' || kind === 'blackhole') && q.skill === 'counting') || (kind === 'lighthouse' && ['counting', 'sequence'].includes(q.skill))) {
-    // she makes N happen (jumps, pebbles, flashes), one at a time, then taps the flag, button or boat if the round waits
-    // like her: keep going until there are N (footprints, lit beads, flashes), not a fixed number of taps
-    const n = Number(q.item), label = { moon: 'Chase', blackhole: 'pebble', lighthouse: 'lamp' }[kind];
-    const count = () => st(() => { const s = window.__pup.getStage(); return s.kind === 'lighthouse' ? s.count : (s.prints || s.beads || []).length; });
+  } else if (((kind === 'moon' || kind === 'blackhole') && q.skill === 'counting') || (kind === 'lighthouse' && ['counting', 'sequence'].includes(q.skill)) || (kind === 'port' && q.item && !/^\d+$/.test(q.item))) {
+    // she makes N happen (jumps, pebbles, flashes, toots), one at a time, then taps the flag, button or boat if the round waits
+    // like her: keep going until there are N (footprints, lit beads, flashes, toots), not a fixed number of taps
+    const n = kind === 'port' ? (await st(() => window.__pup.getStage().target)) : Number(q.item), label = { moon: 'Chase', blackhole: 'pebble', lighthouse: 'lamp', port: 'horn' }[kind];
+    const count = () => st(() => { const s = window.__pup.getStage(); return s.kind === 'lighthouse' || s.kind === 'port' ? s.count : (s.prints || s.beads || []).length; });
     let taps = 0;
     for (; taps < n * 3 && (await count()) < n; taps++) { const o = (await options()).find((x) => x.label === label); if (!o) break; await tap(o, `${label} (${await count()} of ${n} so far)`); await page.waitForTimeout(kind === 'blackhole' ? 350 : 1800); }
     if (kind === 'blackhole' && taps > n) await mark(`EXTRA TAPS: ${taps} quick taps for ${n} pebbles (taps were lost)`);

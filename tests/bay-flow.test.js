@@ -69,7 +69,7 @@ test('the bay keeps every stop on screen, clear of each other, with no shadows a
   const s = new Bay({});
   s.enter(); s.collect(); optimizeScene(s.scene);
   assert.equal(s.state, 'waiting');
-  assert.match(s.suggested, /^(shallows|lighthouse|reef)$/);
+  assert.match(s.suggested, /^(shallows|lighthouse|reef|port)$/);
   assert.equal(globalThis.__checks, 1);
   let shadow = 0, pointLight = 0;
   s.scene.traverse((o) => { if (o.castShadow || o.receiveShadow) shadow++; if (o.isPointLight) pointLight++; });
@@ -100,7 +100,7 @@ test('the boat visits every look-only stop, starts the sea missions, comes back,
   const missions = [];
   const s = new Bay({ hub() { landed.push(1); }, startMission(kind) { missions.push(kind); } });
   s.enter(); s.collect(); optimizeScene(s.scene); frame(s);
-  for (const kind of SEA_ORDER.filter((k) => !['island', 'lighthouse', 'shallows', 'reef'].includes(k))) {
+  for (const kind of SEA_ORDER.filter((k) => !['island', 'lighthouse', 'shallows', 'reef', 'port'].includes(k))) {
     await s.tapStop(kind); frame(s);
     assert.equal(s.state, 'visiting');
     assert.equal(s.visiting, kind);
@@ -126,6 +126,12 @@ test('the boat visits every look-only stop, starts the sea missions, comes back,
   assert.deepEqual(missions, ['shallows', 'lighthouse', 'reef']);
   assert.equal(s.state, 'visiting');
   assert.equal(s.visiting, 'reef');
+  await s.backToMap(); frame(s);
+  assert.equal(s.state, 'waiting');
+  await s.tapStop('port'); frame(s);
+  assert.deepEqual(missions, ['shallows', 'lighthouse', 'reef', 'port']);
+  assert.equal(s.state, 'visiting');
+  assert.equal(s.visiting, 'port');
   await s.backToMap(); frame(s);
   assert.equal(s.state, 'waiting');
   await s.tapStop('seal'); frame(s);

@@ -68,7 +68,7 @@ export const PLACES = {
   lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } },
   gulls: { area: 'sea', game: false, domain: 'sea' },
   reef: { area: 'sea', game: true, domain: 'letters', badge: { label: '🦀', color: '#14b8a6' } },
-  port: { area: 'sea', game: false, domain: 'sea' },
+  port: { area: 'sea', game: true, domain: 'letters', badge: { label: '📯', color: '#7c3aed' } },
 };
 
 export const placesIn = (area) => Object.keys(PLACES).filter((k) => PLACES[k].area === area);

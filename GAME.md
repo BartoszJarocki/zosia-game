@@ -607,6 +607,27 @@ in and next to them.
   Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, the right
   scene or spot is shown, and she tries again. The right word is never the same three times in a row.
 
+### 📯 The Port · `port`
+
+A little sunny port with a wooden quay, five small moored boats bobbing, each with its name painted on a white
+board, and Chase watching from his round window. A big round horn stands on the quay. One boat comes forward,
+and she toots its name once for each syllable.
+
+| Level | mode | syllables | rounds |
+|---|---|---|---|
+| 1 | together | 1–2 | 4 |
+| 2 | alone | 1–3 | 4 |
+| 3 | which | 1–3 | 4 |
+
+- **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
+  `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
+  `which`: three boats come forward, "Która łódka ma dwa kawałki?", and she taps the tick under a boat.
+- **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
+  lights as she toots; the boat toots back once per syllable, then says the whole name.
+- **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
+  count in `which`). Too few or too many toots: Chase claps the name slowly and she tries again. Right: the boat
+  sails out happily. A boat is never lost.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
