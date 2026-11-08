@@ -1,0 +1,521 @@
+import * as THREE from 'three';
+import { animate, ease, wait } from '../engine.js';
+import { mat, mesh, rbox } from '../models.js';
+import { makeBoat } from '../world/props.js';
+import { portrait } from '../world/portrait.js';
+import { sparkle } from '../fx/particles.js';
+import { labelTexture, texture } from '../textures.js';
+import { showLetter } from '../config.js';
+import { sfx } from '../audio.js';
+import { T } from '../lang/pl.js';
+import { countVerdict } from '../levels/moon.js';
+import { BOATS, boatFor, countOf, namesIn, whichBoats } from '../levels/port.js';
+import { shuffle } from '../util.js';
+import * as ui from '../ui.js';
+import { Mission } from './mission.js';
+
+const BOAT_COLORS = ['#ef4444', '#2563eb', '#0ea5e9', '#f59e0b', '#14b8a6'];
+const colorFor = (word) => BOAT_COLORS[[...word].reduce((n, c) => n + c.charCodeAt(0), 0) % BOAT_COLORS.length];
+
+function syllableTexture(syllable) {
+  const shown = [...syllable].map(showLetter).join('');
+  return texture(256, (c, size) => {
+    c.fillStyle = '#ffffff';
+    c.fillRect(0, 0, size, size);
+    c.strokeStyle = '#c7d2fe';
+    c.lineWidth = 10;
+    c.strokeRect(5, 5, size - 10, size - 10);
+    c.fillStyle = '#1e3a8a';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = `700 ${Math.round(size * Math.min(0.56, 1.7 / Math.max(1, syllable.length)))}px "Fredoka", "Arial Rounded MT Bold", Arial, sans-serif`;
+    c.fillText(shown, size / 2, size * 0.55);
+  });
+}
+
+export class PortMission extends Mission {
+  constructor(game) {
+    super(game, 'port');
+    this.view = { pos: new THREE.Vector3(0, 8.4, 16.5), look: new THREE.Vector3(0, 1.4, -0.2), minWidth: 18 };
+    this.post = { tilt: 0.12, ao: false };
+    this.drift = 0;
+    this.bubbleAt = 'left';
+    this.phase = 'waiting';
+    this.mode = null;
+    this.word = null;
+    this.asked = null;
+    this.count = 0;
+    this.target = null;
+    this.boats = [];
+    this.boards = [];
+    this.tickButtons = [];
+    this.moored = [];
+    this.used = [];
+    this.puffs = new Set();
+    this.maps = [];
+    this.mats = [];
+    this.roundMaps = [];
+    this.roundMats = [];
+  }
+
+  build() {
+    this.skyMap = texture(512, (c, size) => {
+      const g = c.createLinearGradient(0, 0, 0, size);
+      g.addColorStop(0, '#7dd3fc');
+      g.addColorStop(0.55, '#bae6fd');
+      g.addColorStop(1, '#fef3c7');
+      c.fillStyle = g;
+      c.fillRect(0, 0, size, size);
+      c.fillStyle = 'rgba(255,255,255,0.55)';
+      for (const [x, y, rx, ry] of [[95, 105, 58, 19], [340, 140, 76, 23], [215, 70, 42, 15]]) {
+        c.beginPath();
+        c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+    });
+    this.scene.background = this.skyMap;
+    this.maps.push(this.skyMap);
+
+    this.scene.add(new THREE.HemisphereLight('#f7ffff', '#77cbb8', 2.4));
+    const sunLight = new THREE.DirectionalLight('#fff4cf', 2.1);
+    sunLight.position.set(-8, 16, 12);
+    this.scene.add(sunLight);
+
+    this.seaMap = texture(1024, (c, size) => {
+      c.fillStyle = '#48c9b0';
+      c.fillRect(0, 0, size, size);
+      for (let i = 0; i < 90; i++) {
+        const y = (i * 131 + 47) % size;
+        const x = (i * 293 + 71) % size;
+        c.strokeStyle = i % 2 ? 'rgba(255,255,255,0.24)' : 'rgba(22,116,118,0.14)';
+        c.lineWidth = 2 + i % 3;
+        c.beginPath();
+        c.moveTo(x, y);
+        c.quadraticCurveTo(x + 38, y - 7, x + 78 + i % 4 * 12, y);
+        c.stroke();
+      }
+    });
+    this.maps.push(this.seaMap);
+    const seaMat = new THREE.MeshStandardMaterial({ map: this.seaMap, roughness: 0.45 });
+    this.mats.push(seaMat);
+    this.scene.add(mesh(new THREE.CircleGeometry(64, 64), seaMat, { rx: -Math.PI / 2, shadow: false }));
+
+    const woodMat = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.85 });
+    const darkWood = new THREE.MeshStandardMaterial({ color: '#8b5a2b', roughness: 0.9 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: '#fef3c7', roughness: 0.8 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.7 });
+    this.mats.push(woodMat, darkWood, wallMat, roofMat);
+
+    this.quay = new THREE.Group();
+    this.quay.add(mesh(rbox(18, 0.34, 2.6, 0.08), woodMat, { y: 0.35, z: 3.6, shadow: false }));
+    for (const x of [-7.2, -3.6, 0, 3.6, 7.2]) this.quay.add(mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.9, 8), darkWood, { x, y: 0.02, z: 4.7, shadow: false }));
+    this.scene.add(this.quay);
+
+    this.harbour = new THREE.Group();
+    this.harbour.add(mesh(rbox(3.0, 4.0, 1.6, 0.1), wallMat, { y: 2.0, shadow: false }));
+    this.harbour.add(mesh(new THREE.ConeGeometry(2.4, 1.2, 4), roofMat, { y: 4.6, ry: Math.PI / 4, shadow: false }));
+    this.harbour.add(mesh(rbox(0.8, 1.5, 0.08, 0.04), darkWood, { y: 0.75, z: 0.81, shadow: false }));
+    this.harbour.position.set(-6.2, 0, -5.6);
+    this.scene.add(this.harbour);
+
+    this.portrait = portrait();
+    const portraitMat = new THREE.MeshBasicMaterial({ map: this.portrait.texture });
+    const rimMat = new THREE.MeshStandardMaterial({ color: '#f4cf87', roughness: 0.4 });
+    this.mats.push(portraitMat, rimMat);
+    this.window = new THREE.Group();
+    this.window.add(mesh(new THREE.CircleGeometry(0.98, 48), portraitMat, { shadow: false }));
+    this.window.add(mesh(new THREE.TorusGeometry(1.03, 0.09, 10, 48), rimMat, { shadow: false }));
+    this.window.position.set(-6.2, 3.0, -4.75);
+    this.window.lookAt(this.view.pos);
+    this.scene.add(this.window);
+
+    this.horn = new THREE.Group();
+    this.horn.add(mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.3, 32), mat('#7c3aed', { roughness: 0.5 }), { rx: Math.PI / 2, shadow: false }));
+    this.horn.add(mesh(new THREE.TorusGeometry(1.26, 0.1, 10, 32), mat('#fbbf24', { metalness: 0.2, roughness: 0.4 }), { z: 0.16, shadow: false }));
+    const hornMat = new THREE.MeshBasicMaterial({ map: labelTexture('📯', { fg: '#ffffff', stroke: 'rgba(0,0,0,0.2)' }), transparent: true, depthWrite: false });
+    this.mats.push(hornMat);
+    this.horn.add(mesh(new THREE.PlaneGeometry(1.8, 1.8), hornMat, { z: 0.22, shadow: false }));
+    this.horn.add(mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.5, 10), mat('#8b5a2b'), { y: -0.9, z: -0.1, shadow: false }));
+    this.horn.position.set(5.1, 1.55, 3.1);
+    this.horn.userData.choice = 'horn';
+    this.horn.userData.tapHeight = 1.2;
+    this.scene.add(this.horn);
+
+    this.moored = shuffle(BOATS).slice(0, 5).map((b, i) => this.makeBoatFor(b.word, { x: -6 + i * 3, z: -2.6, scale: 0.5 }));
+    this.onUpdate((dt, t) => {
+      this.moored.forEach((b, i) => {
+        b.position.y = b.userData.baseY + Math.sin(t * 2 + i) * 0.05;
+        b.rotation.z = Math.sin(t * 1.5 + i) * 0.035;
+      });
+      this.boats.forEach((b) => {
+        if (b.userData.sailing) return;
+        b.position.y = b.userData.baseY + Math.sin(t * 2.2 + b.userData.seed) * 0.07;
+        b.rotation.z = Math.sin(t * 1.7 + b.userData.seed) * 0.04;
+      });
+    });
+    this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+  }
+
+  makeBoard(word, round = false) {
+    const { syllables } = boatFor(word);
+    const width = syllables.length * 1.12 + (syllables.length - 1) * 0.18 + 0.4;
+    const board = new THREE.Group();
+    const bgMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 });
+    (round ? this.roundMats : this.mats).push(bgMat);
+    board.add(mesh(rbox(width, 1.2, 0.12, 0.08), bgMat, { shadow: false }));
+    const start = -((syllables.length - 1) / 2) * 1.3;
+    const blocks = syllables.map((syllable, i) => {
+      const map = syllableTexture(syllable);
+      const blockMat = new THREE.MeshStandardMaterial({ map, roughness: 0.45, emissive: '#f59e0b', emissiveIntensity: 0 });
+      (round ? this.roundMaps : this.maps).push(map);
+      (round ? this.roundMats : this.mats).push(blockMat);
+      const block = mesh(rbox(1.12, 0.92, 0.08, 0.06), blockMat, { x: start + i * 1.3, z: 0.09, shadow: false });
+      board.add(block);
+      return block;
+    });
+    board.userData.blocks = blocks;
+    return board;
+  }
+
+  makeBoatFor(word, { x, z, scale, round = false }) {
+    const boat = makeBoat(colorFor(word));
+    boat.scale.setScalar(scale);
+    boat.position.set(x, 0.04, z);
+    boat.userData.seed = Math.random() * 6;
+    boat.userData.baseY = 0.04;
+    boat.userData.word = word;
+    boat.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+    const sail = boat.children.find((o) => o.isMesh && o.geometry?.type === 'ShapeGeometry');
+    if (sail) sail.visible = false;
+    const board = this.makeBoard(word, round);
+    board.position.set(0, 1.95, 0.55);
+    boat.add(board);
+    boat.add(mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.3, 8), mat('#8b5a2b'), { y: 1.35, z: 0.35, shadow: false }));
+    boat.userData.board = board;
+    this.scene.add(boat);
+    return boat;
+  }
+
+  makeTick(num) {
+    const tick = new THREE.Group();
+    const discMat = new THREE.MeshStandardMaterial({ color: '#22c55e', roughness: 0.5, emissive: '#16a34a', emissiveIntensity: 0.2 });
+    const checkMat = new THREE.MeshBasicMaterial({ map: labelTexture('✓', { fg: '#ffffff', stroke: 'rgba(255,255,255,0)' }), transparent: true, depthWrite: false });
+    this.roundMats.push(discMat, checkMat);
+    tick.add(mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.18, 28), discMat, { rx: Math.PI / 2, shadow: false }));
+    tick.add(mesh(new THREE.PlaneGeometry(1.2, 1.2), checkMat, { z: 0.12, shadow: false }));
+    tick.userData.num = num;
+    tick.userData.tapHeight = 0;
+    return tick;
+  }
+
+  async round(r) {
+    if (r === 0) {
+      await this.say(T.portStart());
+      if (!this.alive) return;
+    }
+    this.mode = this.L.mode;
+    if (this.mode === 'which') await this.whichRound();
+    else await this.hornRound();
+    if (!this.alive) return;
+    this.clearRound();
+  }
+
+  async hornRound() {
+    const pool = namesIn(this.L.syllables);
+    let fresh = pool.filter((w) => !this.used.includes(w));
+    if (!fresh.length) { this.used = []; fresh = pool; }
+    this.word = this.pick('syllables', fresh);
+    this.used.push(this.word);
+    this.target = countOf(this.word);
+    this.last = this.target;
+    this.count = 0;
+    this.phase = 'arriving';
+    const boat = this.makeBoatFor(this.word, { x: 8.5, z: 1.2, scale: 1.05, round: true });
+    this.boats = [boat];
+    await this.enterBoat(boat, -1);
+    if (!this.alive) return;
+    this.phase = 'clapping';
+    if (this.mode === 'together') {
+      await this.say(T.portName(this.word));
+      if (!this.alive) return;
+      await this.clapSyllables(this.word);
+      if (!this.alive) return;
+    }
+    const prompt = [...T.portToot(), ...T.portDone()];
+    this.beginHorn(this.mode === 'together' ? prompt : [...T.portName(this.word), ...prompt]);
+    await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  beginHorn(prompt) {
+    this.phase = 'asking';
+    this.count = 0;
+    this.last = this.target;
+    this.horn.visible = true;
+    this.horn.userData.choice = 'horn';
+    this.boats[0].userData.choice = 'done';
+    this.tappable(this.horn, () => this.toot());
+    this.tappable(this.boats[0], () => this.checkBoat());
+    this.question('syllables', this.word, {
+      short: T.portToot,
+      hint: async () => {
+        await this.clapSyllables(this.word);
+        return T.portToot();
+      },
+      reveal: () => {
+        this.hint(this.horn, () => this.phase !== 'asking');
+        return T.portHelp();
+      },
+    }, { options: 1 });
+    ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
+    this.ask(prompt);
+  }
+
+  toot() {
+    if (this.phase !== 'asking') return;
+    this.poke();
+    this.count++;
+    sfx.toot();
+    this.puff();
+    const block = this.boats[0]?.userData.board.userData.blocks[this.count - 1];
+    if (block) this.light(block);
+    this.last = this.count >= this.target ? 'done' : this.target;
+  }
+
+  async checkBoat() {
+    if (this.phase !== 'asking') return;
+    this.poke();
+    const verdict = countVerdict(this.count, this.target);
+    if (verdict === 'right') { await this.solveHorn(); return; }
+    this.wrong(this.count, { obj: this.boats[0], feedback: false });
+    await this.say(verdict === 'few' ? T.portTooFew() : T.portTooMany());
+    if (!this.alive) return;
+    this.count = 0;
+    this.last = this.target;
+    this.unlight(this.boats[0]);
+    this.phase = 'helping';
+    await this.clapSyllables(this.word);
+    if (!this.alive) return;
+    this.phase = 'asking';
+    this.ask(T.portToot());
+  }
+
+  async solveHorn() {
+    const boat = this.boats[0];
+    this.phase = 'solved';
+    this.correct(this.word);
+    this.stopIdle();
+    this.untap(this.horn);
+    this.untap(boat);
+    delete this.horn.userData.choice;
+    delete boat.userData.choice;
+    sfx.good();
+    await this.singBack(this.word, boat);
+    if (!this.alive) return;
+    this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+    await this.say(T.portSuccess());
+    if (!this.alive) return;
+    await this.sailOut(boat);
+    this.resolveRound?.();
+    this.resolveRound = null;
+  }
+
+  async whichRound() {
+    const counts = Array.from({ length: this.L.syllables[1] - this.L.syllables[0] + 1 }, (_, i) => this.L.syllables[0] + i);
+    this.asked = this.pick('syllables', counts);
+    this.target = this.asked;
+    this.last = this.asked;
+    this.count = 0;
+    this.phase = 'arriving';
+    const xs = [-4.6, 0, 4.6];
+    const picks = whichBoats(this.asked, this.L.syllables);
+    this.boats = picks.map((b, i) => this.makeBoatFor(b.word, { x: 10.5 + i * 2, z: 1.15, scale: 1, round: true }));
+    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.word); });
+    await Promise.all(this.boats.map((boat, i) => this.enterBoat(boat, xs[i])));
+    if (!this.alive) return;
+    this.phase = 'choosing';
+    for (const boat of this.boats) {
+      const tick = this.makeTick(boat.userData.num);
+      tick.position.set(0, 0.28, 0.72);
+      boat.add(tick);
+      this.tickButtons.push(tick);
+      this.tappable(tick, () => this.pickBoat(boat));
+      this.boards.push(boat.userData.board);
+      this.tappable(boat.userData.board, () => {
+        if (this.phase !== 'choosing') return;
+        this.poke();
+        this.say(T.portName(boat.userData.word));
+      });
+    }
+    this.question('syllables', this.asked, {
+      short: () => T.portWhich(this.asked),
+      hint: () => T.portWhich(this.asked),
+      reveal: () => {
+        const right = this.boats.find((b) => b.userData.num === this.asked);
+        if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
+        return T.portWhich(this.asked);
+      },
+    }, { options: 3 });
+    ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
+    this.ask(T.portWhich(this.asked));
+    await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  async pickBoat(boat) {
+    if (this.phase !== 'choosing') return;
+    const num = boat.userData.num;
+    this.poke();
+    this.lookAt(boat);
+    if (num !== this.last) {
+      this.wrong(num, { obj: boat });
+      const right = this.boats.find((b) => b.userData.num === this.asked);
+      if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
+      await this.say(T.portHas(num));
+      return;
+    }
+    this.phase = 'solved';
+    this.correct(this.last);
+    this.stopIdle();
+    for (const tick of this.tickButtons) this.untap(tick);
+    for (const board of this.boards) this.untap(board);
+    sfx.good();
+    await this.say(T.portRight(num));
+    if (!this.alive) return;
+    await this.singBack(boat.userData.word, boat);
+    if (!this.alive) return;
+    this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+    await this.say(T.portSuccess());
+    if (!this.alive) return;
+    await this.sailOut(boat);
+    this.resolveRound?.();
+    this.resolveRound = null;
+  }
+
+  async clapSyllables(word) {
+    const boat = this.boats.find((b) => b.userData.word === word);
+    const blocks = boat?.userData.board.userData.blocks || [];
+    for (const [i, syllable] of boatFor(word).syllables.entries()) {
+      if (!this.alive) return;
+      this.light(blocks[i]);
+      sfx.toot();
+      await this.say(T.syllable(syllable));
+      if (!this.alive) return;
+    }
+    this.unlight(boat);
+    await wait(220);
+  }
+
+  async singBack(word, boat) {
+    const blocks = boat.userData.board.userData.blocks;
+    for (const [i, syllable] of boatFor(word).syllables.entries()) {
+      if (!this.alive) return;
+      this.light(blocks[i]);
+      sfx.toot();
+      await this.say(T.syllable(syllable));
+      if (!this.alive) return;
+    }
+    await this.say(T.spellWord(word));
+  }
+
+  light(block) {
+    if (!block) return;
+    block.material.emissiveIntensity = 0.9;
+    block.material.color.set('#fff3b0');
+  }
+
+  unlight(boat) {
+    const blocks = boat?.userData.board.userData.blocks || [];
+    blocks.forEach((block) => {
+      block.material.emissiveIntensity = 0;
+      block.material.color.set('#ffffff');
+    });
+  }
+
+  puff() {
+    const ring = mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 20),
+      new THREE.MeshBasicMaterial({ color: '#fef9c3', transparent: true, opacity: 0.9, depthWrite: false }),
+      { z: 0.4, shadow: false });
+    this.horn.add(ring);
+    this.puffs.add(ring);
+    animate(620, (t) => {
+      ring.scale.setScalar(1 + t * 2.2);
+      ring.position.z = 0.4 + t * 0.7;
+      ring.material.opacity = 0.9 * (1 - t);
+    }, ease.out).then(() => this.disposePuff(ring));
+  }
+
+  disposePuff(ring) {
+    if (!this.puffs.delete(ring)) return;
+    ring.removeFromParent();
+    ring.geometry.dispose();
+    ring.material.dispose();
+  }
+
+  async enterBoat(boat, toX) {
+    boat.userData.sailing = true;
+    const fromX = boat.position.x;
+    await animate(900, (t) => {
+      boat.position.x = fromX + (toX - fromX) * t;
+      boat.position.y = 0.04 + Math.sin(t * Math.PI) * 0.22;
+      boat.rotation.z = Math.sin(t * Math.PI) * 0.06;
+    }, ease.out);
+    boat.position.set(toX, 0.04, boat.position.z);
+    boat.rotation.z = 0;
+    boat.userData.sailing = false;
+  }
+
+  async sailOut(boat) {
+    boat.userData.sailing = true;
+    const x0 = boat.position.x, z0 = boat.position.z;
+    await animate(1800, (t) => {
+      boat.position.x = x0 + t * t * 10;
+      boat.position.z = z0 - t * 3;
+      boat.position.y = 0.04 + Math.sin(t * Math.PI) * 0.35;
+      boat.rotation.z = Math.sin(t * Math.PI * 2) * 0.06;
+    }, ease.linear);
+  }
+
+  clearRound() {
+    if (this.horn) this.untap(this.horn);
+    for (const tick of this.tickButtons) this.untap(tick);
+    for (const board of this.boards) this.untap(board);
+    for (const boat of this.boats) this.untap(boat);
+    for (const boat of this.boats) {
+      boat.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+      boat.removeFromParent();
+    }
+    for (const puff of [...this.puffs]) this.disposePuff(puff);
+    this.boats = [];
+    this.boards = [];
+    this.tickButtons = [];
+    this.roundMaps.forEach((map) => map.dispose());
+    this.roundMaps = [];
+    this.roundMats.forEach((m) => m.dispose());
+    this.roundMats = [];
+    this.count = 0;
+    this.last = null;
+    this.target = null;
+    this.asked = null;
+    this.word = null;
+    this.phase = 'waiting';
+  }
+
+  doneLine() { return T.portFinished(); }
+
+  success(at, options) {
+    super.success(null, options);
+    if (at) sparkle(this, at, { count: 8 });
+  }
+
+  exit() {
+    super.exit();
+    this.clearRound();
+    this.maps.forEach((map) => map.dispose());
+    this.maps = [];
+    this.mats.forEach((m) => m.dispose());
+    this.mats = [];
+    for (const root of [this.horn, this.harbour, this.quay, ...this.moored]) {
+      root?.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    }
+    this.portrait?.dispose();
+  }
+}

@@ -2,6 +2,7 @@
 // These are estimates from play, not a test: few answers = little to go on, and the view says so.
 import { categorize } from '../learning/scheduler.js';
 import { showLetter } from '../config.js';
+import { BOATS } from '../levels/port.js';
 
 export const LETTER_SKILLS = [
   ['letterVisual', 'sees it'],
@@ -24,18 +25,22 @@ const SPACE_NAMES = { sun: 'the Sun', mercury: 'Mercury', venus: 'Venus', earth:
 /** The Reef: on, under, in and next to (items are the Polish words that were asked). */
 export const POSITION_SKILLS = [['position', 'where it is']];
 export const POSITION_ITEMS = ['na', 'pod', 'w', 'obok'];
+/** The Port: the boat names she splits into syllables. */
+export const SYLLABLE_SKILLS = [['syllables', 'splits into syllables']];
+export const SYLLABLE_ITEMS = BOATS.map((b) => b.word);
 /** The Garage: shapes, what comes next in a row, sorting by colour or size (items: what was asked). */
 export const GARAGE_SKILLS = [['shape', 'shape'], ['pattern', 'pattern'], ['sorting', 'sorting']];
 /** The items a skill group has actually met (names and Garage items aren't a fixed list). */
 export const metItems = (skills, list) => [...new Set(list.flatMap(([skill]) => Object.keys(skills?.[skill] || {})))];
 const COMPARE_WORDS = { more: 'more', less: 'less', same: 'the same' };
-const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS, ...SPACE_SKILLS, ...POSITION_SKILLS]);
+const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS, ...SPACE_SKILLS, ...POSITION_SKILLS, ...SYLLABLE_SKILLS]);
 
 /** How an item reads for a grown-up: 4, B, "less (with numbers)". */
 export function itemLabel(skill, item) {
   const s = String(item);
   if (skill === 'space') return SPACE_NAMES[s] || s;
   if (skill === 'position') return s;
+  if (skill === 'syllables') return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   if (skill === 'sequence' && s.startsWith('space:')) return `after ${SPACE_NAMES[s.slice(6)] || s.slice(6)}`;
   if (skill === 'comparison') return `${COMPARE_WORDS[s.replace('#', '')] || s}${s.endsWith('#') ? ' (with numbers)' : ''}`;
   return /^\d+$/.test(s) ? s : showLetter(s);
@@ -47,7 +52,7 @@ export function itemLabel(skill, item) {
  * can't be guessed. (An estimate: the saved stats don't keep how many options each question had.)
  */
 // Telescope has two or three choices; use 1 / 3 like letters for the per-skill estimate.
-export const GUESS = { space: 1 / 3, position: 1 / 3, letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2, wordVisual: 1 / 3, shape: 1 / 3, pattern: 1 / 3, sorting: 1 / 2 };
+export const GUESS = { space: 1 / 3, position: 1 / 3, syllables: 1 / 3, letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2, wordVisual: 1 / 3, shape: 1 / 3, pattern: 1 / 3, sorting: 1 / 2 };
 export const chancePct = (skill) => Math.round(100 * (GUESS[skill] ?? 1 / 3));
 
 /** Fewer answers than this: shown, but marked as "not much to go on yet". */

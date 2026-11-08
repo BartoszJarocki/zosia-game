@@ -5,6 +5,7 @@ import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../
 import { gapCount } from '../levels/train.js';
 import { STRIPE_ROWS } from '../levels/jupiter.js';
 import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
+import { BOATS } from '../levels/port.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -107,6 +108,7 @@ export const HOME_TASKS = {
   lighthouse: 'Policz z mamą, ile razy klaśniesz!',
   shallows: 'W kąpieli sprawdź z mamą, co pływa, a co tonie!',
   reef: 'Schowaj misia pod kocem i zapytaj mamę, gdzie jest miś!',
+  port: `Klaśnij z mamą swoje imię po kawałku: ${kid.slice(0, 2)}-${kid.slice(2).toLowerCase()}!`,
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   pluto: 'Narysuj z mamą serduszko!',
@@ -333,6 +335,18 @@ export const T = {
   reefLook: () => ['Popatrz na wszystkie obrazki.'],
   reefPlaceLook: () => ['Popatrz na wszystkie miejsca.'],
   reefDone: () => ['Brawo! Znalazłaś wszystkie zwierzątka na rafie!'],
+  portStart: () => ['W porcie łódki odpoczywają. Każda łódka ma imię.'],
+  portName: (word) => [`Ta łódka nazywa się ${sayWord(word)}.`],
+  portToot: () => ['Zatrąb jej imię po kawałku!'],
+  portDone: () => ['Gotowe? Dotknij łódki!'],
+  portWhich: (n) => [`Która łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}?`],
+  portHas: (n) => [`Ta łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}.`],
+  portRight: (n) => [`Tak! Ta łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}.`],
+  portTooFew: () => ['Za mało! Posłuchaj jeszcze raz.'],
+  portTooMany: () => ['Za dużo! Posłuchaj jeszcze raz.'],
+  portHelp: () => ['Dotknij rogu i zatrąb raz na każdy kawałek!'],
+  portSuccess: () => ['Brawo! Łódka wypływa w morze!'],
+  portFinished: () => ['Brawo! Wszystkie łódki wypłynęły w morze!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
@@ -668,6 +682,12 @@ export function allSegments(levels, allLetters) {
   });
   REEF_FACTS.forEach((_, i) => add(T.reefStart(i)));
   [T.reefLook, T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
+  BOATS.forEach((boat) => {
+    add(T.portName(boat.word));
+    boat.syllables.forEach((s) => add(T.syllable(s)));
+  });
+  [1, 2, 3].forEach((n) => { add(T.portWhich(n)); add(T.portHas(n)); add(T.portRight(n)); });
+  [T.portStart, T.portToot, T.portDone, T.portTooFew, T.portTooMany, T.portHelp, T.portSuccess, T.portFinished].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
   for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
