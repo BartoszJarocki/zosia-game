@@ -77,6 +77,10 @@ for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
 }
 
+const MAPS = {
+  space: () => import('./scenes/space.js').then((m) => m.Space),
+};
+
 const game = {
   hub({ greet = false } = {}) {
     hush();
@@ -84,12 +88,13 @@ const game = {
   },
   home() {
     const stage = getStage();
-    return homeArea(stage) === 'space' ? game.space({ at: stage.at || stage.kind }) : game.hub();
+    const area = homeArea(stage);
+    return MAPS[area] ? game.map(area, { at: stage.at || stage.kind }) : game.hub();
   },
-  async space({ launch = false, at = 'earth' } = {}) {
-    const { Space } = await import('./scenes/space.js');
+  async map(area, { launch = false, at } = {}) {
+    const Stage = await MAPS[area]();
     hush();
-    return pawWipe(() => setStage(new Space(game, { launch, at })));
+    return pawWipe(() => setStage(new Stage(game, { launch, at })));
   },
   startMission(kind) {
     hush();
@@ -136,7 +141,7 @@ async function boot() {
 
   // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #mercury, #venus, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
-  if (jump === 'space' || jump === 'launch') await game.space({ launch: jump === 'launch' });
+  if (jump === 'space' || jump === 'launch') await game.map('space', { launch: jump === 'launch' });
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }
 boot();

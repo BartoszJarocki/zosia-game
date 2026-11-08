@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Stage, animate, ease, hop, wait, camera, renderer } from '../engine.js';
+import { animate, ease, hop, wait, camera, renderer } from '../engine.js';
 import { mat, mesh, star, starShape } from '../models.js';
 import { makeGirl, makePup } from '../characters.js';
 import { makeCloud } from '../world/nature.js';
@@ -8,10 +8,10 @@ import { sparkle } from '../fx/particles.js';
 import { say, sfx, hush, unlockAudio } from '../audio.js';
 import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '../lang/pl.js';
 import { PLACES, placesIn } from '../places.js';
-import { getVisited, recordVisit } from '../progress.js';
-import { getSession, checkAttention } from '../session/session.js';
-import { spaceDecision, suggestSpace } from '../session/space.js';
+import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, launchHud } from '../ui.js';
+import { AreaMap } from './area-map.js';
+export { MOVES, nextState, flightStops } from './area-map.js';
 
 const rand = (seed) => () => {
   seed = (seed + 0x6d2b79f5) | 0;
@@ -231,35 +231,12 @@ export function checkLayout(kinds = placesIn('space'), layout = LAYOUT) {
 }
 checkLayout();
 
-export const MOVES = {
-  launch: ['waiting'],
-  waiting: ['flying', 'returning'],
-  flying: ['visiting', 'returning'],
-  visiting: ['waiting', 'returning'],
-  returning: [],
-};
-
-export function nextState(state, next) {
-  if (!MOVES[state]?.includes(next)) throw new Error(`Invalid space move: ${state} to ${next}`);
-  return next;
-}
-
-export function flightStops(from, to) {
-  const out = [];
-  const direction = Math.sign(to - from);
-  if (!direction) return out;
-  for (let i = direction > 0 ? Math.floor(from) + 1 : Math.ceil(from) - 1;
-    direction > 0 ? i <= to : i >= to; i += direction) out.push(i);
-  return out;
-}
-
 const PAD_VIEW = { pos: new THREE.Vector3(0, 7, 16), look: new THREE.Vector3(-0.7, 2.5, 0), minWidth: 12 };
 const RINGS = {
   saturn: { tilt: [0.5, 0, -0.32], ring: { inner: 1.3, outer: 2.1, stops: [[0.62, 0.72, '#c9a25e'], [0.72, 0.84, '#f4dc9c'], [0.87, 0.96, '#e3bf78'], [0.96, 1, '#f6e7bf']] } },
   uranus: { tilt: [0.1, 0.65, -1.3], ring: { inner: 1.45, outer: 1.75, stops: [[0.83, 0.88, '#e6fbff'], [0.94, 1, '#e6fbff']] } },
 };
 const noShadows = (root) => root.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
-const copyView = (view) => ({ pos: view.pos.clone(), look: view.look.clone(), minWidth: view.minWidth });
 const forward = (q) => new THREE.Vector3(0, 0, 1).applyQuaternion(q);
 const mapAim = new THREE.PerspectiveCamera();
 mapAim.position.set(0, 54, 38);
@@ -391,7 +368,7 @@ function addSpace(scene) {
   scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: '#fff1cf', size: 3, sizeAttenuation: false, transparent: true, map: halo(), depthWrite: false })));
 }
 
-function makeRoad(curve) {
+function buildRoad(curve) {
   const g = new THREE.Group();
   g.userData.bakeInside = true;
   const n = 450, pos = [], idx = [], points = curve.getSpacedPoints(n);
@@ -475,101 +452,36 @@ function crewPortrait(girl, pup, glasses, shaded) {
   return target;
 }
 
-export class Space extends Stage {
-  get at() { return ROAD_ORDER[Math.round(this.routeIndex)]; }
+const SPACE = {
+  kind: 'space-map',
+  area: 'space',
+  home: 'earth',
+  order: ROAD_ORDER,
+  layout: LAYOUT,
+  lines: SPACE_LINES,
+  to: SPACE_TO,
+  pass: SPACE_PASS,
+  facts: SPACE_FACTS,
+  invite: SPACE_INVITE,
+  decide: mapDecision,
+  suggest: suggestStop,
+};
 
-  constructor(game, { launch = false, at = 'earth' } = {}) {
-    super();
-    this.game = game;
-    this.kind = 'space-map';
-    this.area = 'space';
-    this.state = launch ? 'launch' : 'waiting';
-    this.visiting = null;
-    this.revision = 0;
-    this.view = launch ? copyView(PAD_VIEW) : mapView(globalThis.innerWidth || 1180, globalThis.innerHeight || 820);
-    this.post = { tilt: 0, ao: false };
-    this.drift = 0;
-    this.routeIndex = ROAD_ORDER.indexOf(LAYOUT[at] ? at : 'earth');
-    this.returned = PLACES[at]?.game === true;
-    this.bodies = {};
-    this.idleAt = null;
-    this.inviteAt = null;
-    this.suggested = null;
-    this.nudgeAt = null;
-    this.nudges = 0;
+export class Space extends AreaMap {
+  constructor(game, opts = {}) {
+    super(game, SPACE, opts);
   }
 
-  changeState(next, visiting = null) {
-    this.state = nextState(this.state, next);
-    this.visiting = next === 'visiting' ? visiting : null;
-    this.revision++;
-    this.idleAt = null;
-    this.nudgeAt = null;
-    if (next === 'waiting' && this.logAt) this.logAt = performance.now() + 1500;
-  }
+  addBackdrop() { addSpace(this.scene); }
 
-  enter() {
-    addSpace(this.scene);
-    this.face = MAP_FACE.clone();
-    this.right = MAP_RIGHT.clone();
-    this.up = MAP_UP.clone();
-    this.map = new THREE.Group();
-    this.map.userData.dynamic = true;
-    this.scene.add(this.map);
-    this.curve = new THREE.CatmullRomCurve3(ROAD_ORDER.map((k) => new THREE.Vector3(...LAYOUT[k].at)), false, 'catmullrom', 0.35);
-    this.road = makeRoad(this.curve);
-    this.map.add(this.road);
-    for (const kind of ROAD_ORDER) this.addStop(kind);
-    this.suggestion = star('#ffe066', 0.8, 0.16);
-    this.suggestion.userData.dynamic = true;
-    this.suggestion.material = new THREE.MeshBasicMaterial({ color: '#ffe895' });
-    this.map.add(this.suggestion);
-    this.suggestion.userData.tapHeight = 0;
-    this.tappable(this.suggestion, () => this.tapStop(this.suggested));
-    this.rocket = makeRocket();
-    this.rocket.userData.dynamic = true;
-    this.scene.add(this.rocket);
-    this.makeCrew();
-    this.rocket.userData.window.material.map = this.portraits[0].texture;
-    this.rocket.userData.window.material.color.set('#ffffff');
-    this.rocket.userData.window.material.needsUpdate = true;
-    this.activity = () => {
-      if (this.state === 'visiting') this.idleAt = performance.now() + 20000;
-      if (this.nudgeAt) this.nudgeAt = performance.now() + 25000;
-    };
-    window.addEventListener('pointerdown', this.activity, true);
-    this.resize = () => {
-      this.mapView = mapView(innerWidth, innerHeight, ROAD_ORDER[Math.round(this.routeIndex)], this.suggested, camera.fov);
-      if (['waiting', 'flying'].includes(this.state) && !this.cameraMove) this.view = copyView(this.mapView);
-    };
-    window.addEventListener('resize', this.resize);
-    if (this.state === 'launch') {
-      this.map.visible = false;
-      this.buildPad();
-      this.prepareLaunch();
-    } else {
-      this.parkRocket();
-      this.showHud();
-      this.direct(this.returned ? SPACE_LINES.again : SPACE_LINES.map);
-    }
-    noShadows(this.scene);
-    this.startLog();
-    this.onUpdate((dt, t) => this.tick(dt, t));
-  }
+  orient() { return { face: MAP_FACE.clone(), right: MAP_RIGHT.clone(), up: MAP_UP.clone() }; }
 
-  addStop(kind) {
+  makeRoad(curve) { return buildRoad(curve); }
+
+  makeStop(kind) {
     const { r, at } = LAYOUT[kind];
     const g = makeSpacePlace(kind, this.face, r);
     g.position.set(at[0], r * 0.55, at[2]);
-    g.userData.dynamic = true;
-    g.userData.tapHeight = 0;
-    const hit = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.userData.dynamic = true;
-    g.add(hit);
-    g.userData.hit = hit;
-    this.bodies[kind] = g;
-    this.map.add(g);
-    this.tappable(g, () => this.tapStop(kind));
     if (kind === 'neptune') {
       const wind = new THREE.Group();
       wind.userData.dynamic = true;
@@ -581,6 +493,128 @@ export class Space extends Stage {
       g.add(wind);
       this.wind = wind;
     }
+    return g;
+  }
+
+  makeVehicle() {
+    this.rocket = makeRocket();
+    this.rocket.userData.dynamic = true;
+    this.vehicle = this.rocket;
+    this.scene.add(this.rocket);
+    this.makeCrew();
+  }
+
+  onVehicleReady() {
+    this.rocket.userData.window.material.map = this.portraits[0].texture;
+    this.rocket.userData.window.material.color.set('#ffffff');
+    this.rocket.userData.window.material.needsUpdate = true;
+  }
+
+  startLaunch() {
+    this.map.visible = false;
+    this.buildPad();
+    this.prepareLaunch();
+  }
+
+  padView() { return PAD_VIEW; }
+
+  viewFor(width, height, here, suggested) { return mapView(width, height, here, suggested, camera.fov); }
+
+  parkedPosition(kind) { return parkedPosition(kind); }
+
+  suggestionPosition(kind) { return starPosition(kind); }
+
+  positionVehicle(index) {
+    this.routeIndex = index;
+    this.curve.getPoint(index / (this.order.length - 1), this.rocket.position);
+    // Above the lane and in front of the stops, never through a planet or the dark centre.
+    this.rocket.position.y += 4.2;
+    this.rocket.position.z += 4.5;
+  }
+
+  parkScale() { return 1.05; }
+
+  startFlight() { this.rocket.userData.flame.visible = true; }
+
+  stopFlight() { this.rocket.userData.flame.visible = false; }
+
+  parkRocket() { this.parkVehicle(); }
+
+  shrinkVehicle(t) { this.vehicle.scale.setScalar(1.05 - t * 0.5); }
+
+  resetVehicleLook() { this.rocket.userData.window.material.map = this.portraits[0].texture; }
+
+  hideOtherStops(kind) {
+    this.road.visible = false;
+    Object.entries(this.bodies).forEach(([k, g]) => { g.visible = k === kind; });
+    this.rocket.visible = kind === 'sun';
+  }
+
+  visitView(kind) {
+    const body = this.bodies[kind], r = body.userData.foot;
+    const look = body.position.clone();
+    if (kind === 'sun') {
+      look.addScaledVector(this.right, r * 0.65);
+      this.rocket.position.copy(body.position).addScaledVector(this.right, r * 2.5).addScaledVector(this.up, -r * 0.7);
+      this.rocket.scale.setScalar(r * 0.55);
+    }
+    const distance = r * (kind === 'blackhole' ? 7 : kind === 'sun' ? 6 : 4.3);
+    return { pos: look.clone().addScaledVector(forward(this.face), distance), look, minWidth: r * (kind === 'sun' ? 6.3 : kind === 'blackhole' ? 4.8 : 2.9) };
+  }
+
+  factLine(kind, line) { return kind === 'sun' ? [line, ...SPACE_LINES.sunglasses] : line; }
+
+  react() {
+    const kind = this.visiting, body = this.bodies[kind];
+    sfx.pop();
+    if (kind === 'sun') {
+      this.rocket.userData.window.material.map = this.portraits[1].texture;
+      hop(this.rocket, 0.18, 500);
+    } else if (kind === 'uranus') {
+      const start = body.rotation.z;
+      animate(1600, (t) => { body.rotation.z = start + t * TAU; });
+    } else if (kind === 'neptune') {
+      this.windUntil = performance.now() + 2200;
+    } else if (kind === 'blackhole') {
+      const glow = body.children.find((o) => o.isSprite);
+      animate(1100, (t) => { glow.material.opacity = 0.28 + Math.sin(t * Math.PI) * 0.22; });
+    } else {
+      hop(body, LAYOUT[kind].r * 0.12, 600);
+      sparkle(this, body.position.clone().addScaledVector(forward(this.face), LAYOUT[kind].r * 1.2), { count: 8, size: 0.15, speed: 1.5 });
+    }
+  }
+
+  showHud() {
+    spaceHud({ visiting: this.state === 'visiting', suggested: this.suggested === 'telescope',
+      onHome: () => this.returnHome(), onBack: () => this.backToMap(), onTelescope: () => this.openTelescope() });
+  }
+
+  openTelescope() {
+    if (!this.alive || this.state !== 'waiting' || this.cameraMove) return;
+    hush();
+    this.game.startMission('telescope');
+  }
+
+  animateWorld(dt, t, now) {
+    for (const [kind, g] of Object.entries(this.bodies)) {
+      const spin = g.userData.spinner;
+      if (spin) spin.rotation[g.userData.spinAxis || 'y'] += dt * (kind === 'sun' ? 0.06 : 0.18);
+    }
+    this.rocket.userData.flame.scale.y = 1 + Math.sin(t * 24) * 0.15;
+    this.wind.visible = this.visiting === 'neptune' && now < (this.windUntil || 0);
+    if (this.wind.visible) this.wind.position.copy(this.right).multiplyScalar(Math.sin(t * 7) * 0.8);
+  }
+
+  releaseWorld() {
+    this.launchUi?.remove();
+    this.portraits?.forEach((p) => p.dispose());
+    const textures = new Set();
+    this.scene.traverse((o) => {
+      for (const m of [o.material].flat().filter(Boolean)) {
+        for (const t of [m.map, m.emissiveMap]) if (t?.userData.space && t !== haloTex) textures.add(t);
+      }
+    });
+    textures.forEach((t) => t.dispose());
   }
 
   makeCrew() {
@@ -685,287 +719,10 @@ export class Space extends Stage {
       if (!this.alive) return;
       this.launchRoot.visible = false;
       this.map.visible = true;
-      this.parkRocket();
+      this.parkVehicle();
       this.changeState('waiting');
       this.showHud();
       this.direct(SPACE_LINES.map);
     });
-  }
-
-  parkRocket() {
-    this.rocket.quaternion.copy(this.face);
-    this.rocket.scale.setScalar(1.05);
-    this.rocket.userData.flame.visible = false;
-    this.rocket.position.copy(parkedPosition(ROAD_ORDER[Math.round(this.routeIndex)]));
-  }
-
-  positionRocket(index) {
-    this.routeIndex = index;
-    this.curve.getPoint(index / (ROAD_ORDER.length - 1), this.rocket.position);
-    // Above the lane and in front of the stops, never through a planet or the dark centre.
-    this.rocket.position.y += 4.2;
-    this.rocket.position.z += 4.5;
-  }
-
-  direct(greeting) {
-    const session = getSession();
-    const decision = spaceDecision(session, checkAttention());
-    const games = placesIn('space').filter((kind) => PLACES[kind].game);
-    this.suggested = decision === 'invite' ? 'earth' : decision === 'suggest'
-      ? suggestSpace(session, ROAD_ORDER, ROAD_ORDER[Math.round(this.routeIndex)], getVisited(), games) : null;
-    this.suggestion.visible = !!this.suggested && PLACES[this.suggested].stop !== false;
-    this.showHud();
-    this.updateSuggestion(0);
-    this.resize();
-    if (decision === 'home') { this.returnHome(SPACE_LINES.goodnight); return; }
-    this.nudgeLine = decision === 'invite' ? SPACE_LINES.inviteHome : SPACE_INVITE[this.suggested];
-    this.nudges = 0;
-    this.nudgeAt = this.nudgeLine ? performance.now() + 25000 : null;
-    say(greeting === SPACE_LINES.again ? [...greeting, ...(decision === 'invite' ? this.nudgeLine : [])] : this.nudgeLine || greeting);
-  }
-
-  updateSuggestion(t) {
-    if (!this.suggested || PLACES[this.suggested].stop === false) return;
-    this.suggestion.position.copy(starPosition(this.suggested)).addScaledVector(this.up, Math.sin(t * 3) * 0.2);
-    this.suggestion.quaternion.copy(this.face);
-    this.suggestion.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
-  }
-
-  showHud() {
-    spaceHud({ visiting: this.state === 'visiting', suggested: this.suggested === 'telescope',
-      onHome: () => this.returnHome(), onBack: () => this.backToMap(), onTelescope: () => this.openTelescope() });
-  }
-
-  openTelescope() {
-    if (!this.alive || this.state !== 'waiting' || this.cameraMove) return;
-    hush();
-    this.game.startMission('telescope');
-  }
-
-  async tapStop(kind) {
-    if (!this.alive || this.cameraMove) return;
-    if (this.state === 'visiting') {
-      if (kind === this.visiting) this.fact();
-      return;
-    }
-    if (this.state !== 'waiting') return;
-    if (kind === 'earth') return this.returnHome();
-    this.changeState('flying');
-    const revision = this.revision;
-    this.suggestion.visible = false;
-    await this.flyTo(kind, SPACE_TO[kind]);
-    if (!this.alive || revision !== this.revision) return;
-    await this.visit(kind);
-  }
-
-  async flyTo(kind, line) {
-    const revision = this.revision;
-    const target = ROAD_ORDER.indexOf(kind);
-    const stops = flightStops(this.routeIndex, target);
-    this.rocket.userData.flame.visible = true;
-    let talk = say(line);
-    for (const index of stops) {
-      if (!this.alive || revision !== this.revision) return;
-      const from = this.routeIndex;
-      const far = LAYOUT[ROAD_ORDER[index]].far && !LAYOUT[ROAD_ORDER[Math.floor(from)]].far;
-      if (far) {
-        await talk;
-        if (!this.alive || revision !== this.revision) return;
-        talk = say(SPACE_LINES.far);
-      }
-      const a = this.curve.getPoint(from / (ROAD_ORDER.length - 1));
-      const b = this.curve.getPoint(index / (ROAD_ORDER.length - 1));
-      const dir = b.clone().sub(a);
-      const angle = Math.atan2(-dir.dot(this.right), dir.dot(this.up));
-      await Promise.all([talk, animate(Math.max(1100, a.distanceTo(b) * (far ? 190 : 105)), (t) => {
-        if (revision !== this.revision) return;
-        this.positionRocket(from + (index - from) * t);
-        this.rocket.quaternion.copy(this.face).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle));
-      }, ease.inOut)]);
-      if (!this.alive || revision !== this.revision) return;
-      talk = index !== target && SPACE_PASS[ROAD_ORDER[index]] ? say(SPACE_PASS[ROAD_ORDER[index]]) : Promise.resolve();
-    }
-    await talk;
-    if (this.alive && revision === this.revision) this.parkRocket();
-  }
-
-  async moveView(to, ms = 1100) {
-    const revision = this.revision, from = copyView(this.view);
-    const moving = animate(ms, (t) => {
-      if (revision !== this.revision) return;
-      this.view.pos.lerpVectors(from.pos, to.pos, t);
-      this.view.look.lerpVectors(from.look, to.look, t);
-      this.view.minWidth = from.minWidth + (to.minWidth - from.minWidth) * t;
-    });
-    this.cameraMove = moving;
-    await moving;
-    if (this.cameraMove === moving) this.cameraMove = null;
-  }
-
-  async visit(kind) {
-    this.changeState('visiting', kind);
-    recordVisit(kind);
-    const session = getSession();
-    session.lastActiveAt = Date.now();
-    const visited = (session.visited ||= {});
-    visited[kind] = (visited[kind] || 0) + 1;
-    if (PLACES[kind].game) return this.game.startMission(kind);
-    const revision = this.revision;
-    this.road.visible = false;
-    Object.entries(this.bodies).forEach(([k, g]) => { g.visible = k === kind; });
-    this.rocket.visible = kind === 'sun';
-    const body = this.bodies[kind], r = body.userData.foot;
-    const look = body.position.clone();
-    if (kind === 'sun') {
-      look.addScaledVector(this.right, r * 0.65);
-      this.rocket.position.copy(body.position).addScaledVector(this.right, r * 2.5).addScaledVector(this.up, -r * 0.7);
-      this.rocket.scale.setScalar(r * 0.55);
-    }
-    const distance = r * (kind === 'blackhole' ? 7 : kind === 'sun' ? 6 : 4.3);
-    const pos = look.clone().addScaledVector(forward(this.face), distance);
-    await this.moveView({ pos, look, minWidth: r * (kind === 'sun' ? 6.3 : kind === 'blackhole' ? 4.8 : 2.9) });
-    if (!this.alive || revision !== this.revision) return;
-    this.factIndex = SPACE_FACTS[kind].length > 2 ? 2 : 1;
-    this.showHud();
-    this.activity();
-    say(SPACE_FACTS[kind].slice(0, 2));
-  }
-
-  fact() {
-    const lines = SPACE_FACTS[this.visiting];
-    const line = lines[this.factIndex];
-    this.factIndex = this.factIndex + 1 < lines.length ? this.factIndex + 1 : 1;
-    this.activity();
-    this.react();
-    say(this.visiting === 'sun' ? [line, ...SPACE_LINES.sunglasses] : line);
-  }
-
-  react() {
-    const kind = this.visiting, body = this.bodies[kind];
-    sfx.pop();
-    if (kind === 'sun') {
-      this.rocket.userData.window.material.map = this.portraits[1].texture;
-      hop(this.rocket, 0.18, 500);
-    } else if (kind === 'uranus') {
-      const start = body.rotation.z;
-      animate(1600, (t) => { body.rotation.z = start + t * TAU; });
-    } else if (kind === 'neptune') {
-      this.windUntil = performance.now() + 2200;
-    } else if (kind === 'blackhole') {
-      const glow = body.children.find((o) => o.isSprite);
-      animate(1100, (t) => { glow.material.opacity = 0.28 + Math.sin(t * Math.PI) * 0.22; });
-    } else {
-      hop(body, LAYOUT[kind].r * 0.12, 600);
-      sparkle(this, body.position.clone().addScaledVector(forward(this.face), LAYOUT[kind].r * 1.2), { count: 8, size: 0.15, speed: 1.5 });
-    }
-  }
-
-  showMap() {
-    this.road.visible = true;
-    Object.values(this.bodies).forEach((g) => { g.visible = true; });
-    this.rocket.visible = true;
-    this.rocket.userData.window.material.map = this.portraits[0].texture;
-    this.parkRocket();
-    this.resize();
-  }
-
-  async backToMap() {
-    if (!this.alive || this.state !== 'visiting' || this.cameraMove) return;
-    const revision = this.revision;
-    this.idleAt = null;
-    this.showMap();
-    await this.moveView(this.mapView);
-    if (!this.alive || revision !== this.revision) return;
-    this.changeState('waiting');
-    this.showHud();
-    this.direct(SPACE_LINES.again);
-  }
-
-  async returnHome(line = SPACE_LINES.home) {
-    if (!this.alive || !MOVES[this.state].includes('returning')) return;
-    this.changeState('returning');
-    this.suggestion.visible = false;
-    this.showMap();
-    hush();
-    const talk = say(line);
-    await this.moveView(this.mapView, 800);
-    if (!this.alive) return;
-    await talk;
-    await this.flyTo('earth', []);
-    if (!this.alive) return;
-    await animate(650, (t) => this.rocket.scale.setScalar(1.05 - t * 0.5));
-    if (this.alive) this.game.hub();
-  }
-
-  stopsOnScreen() {
-    if (!['waiting', 'visiting'].includes(this.state) || this.cameraMove) return [];
-    const rect = renderer.domElement.getBoundingClientRect();
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-    return Object.entries(this.bodies).filter(([k]) => this.state === 'waiting' || k === this.visiting).map(([kind, g]) => {
-      const p = g.getWorldPosition(new THREE.Vector3());
-      const c = p.clone().project(camera);
-      const edge = p.addScaledVector(right, g.userData.hit.scale.x * g.scale.x).project(camera);
-      return { kind, x: rect.left + (c.x + 1) * rect.width / 2, y: rect.top + (1 - c.y) * rect.height / 2,
-        r: Math.abs(edge.x - c.x) * rect.width / 2 };
-    });
-  }
-
-  startLog() {
-    if (!new URLSearchParams(location.search).has('spacelog')) return;
-    this.previousReset = renderer.info.autoReset;
-    renderer.info.autoReset = false;
-    this.logAt = performance.now() + 1500;
-    this.onUpdate(() => {
-      if (this.logAt && this.state === 'waiting' && performance.now() > this.logAt) {
-        console.info('[space] renderer.info.render.calls', renderer.info.render.calls);
-        this.logAt = null;
-      }
-      renderer.info.reset();
-    });
-  }
-
-  tick(dt, t) {
-    const now = performance.now();
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-    const width = renderer.domElement.getBoundingClientRect().width;
-    for (const [kind, g] of Object.entries(this.bodies)) {
-      const spin = g.userData.spinner;
-      if (spin) spin.rotation[g.userData.spinAxis || 'y'] += dt * (kind === 'sun' ? 0.06 : 0.18);
-      const c = g.position.clone().project(camera), edge = g.position.clone().add(right).project(camera);
-      const perUnit = Math.abs(edge.x - c.x) * width / 2;
-      g.userData.hit.scale.setScalar(Math.max(g.userData.foot, 38 / Math.max(perUnit, 0.01)));
-    }
-    if (this.state === 'waiting') this.updateSuggestion(t);
-    this.rocket.userData.flame.scale.y = 1 + Math.sin(t * 24) * 0.15;
-    this.wind.visible = this.visiting === 'neptune' && now < (this.windUntil || 0);
-    if (this.wind.visible) this.wind.position.copy(this.right).multiplyScalar(Math.sin(t * 7) * 0.8);
-    if (this.inviteAt && now >= this.inviteAt) { this.inviteAt = null; say(SPACE_LINES.startAgain); }
-    if (this.idleAt && now >= this.idleAt) this.backToMap();
-    if (this.nudgeAt && now >= this.nudgeAt && this.state === 'waiting') {
-      say(this.nudgeLine);
-      this.nudgeAt = ++this.nudges < 2 ? now + 25000 : null;
-    }
-  }
-
-  resumed(ms) {
-    if (this.idleAt) this.idleAt += ms;
-    if (this.inviteAt) this.inviteAt += ms;
-    if (this.nudgeAt) this.nudgeAt += ms;
-  }
-
-  exit() {
-    window.removeEventListener('pointerdown', this.activity, true);
-    window.removeEventListener('resize', this.resize);
-    this.launchUi?.remove();
-    this.portraits?.forEach((p) => p.dispose());
-    const textures = new Set();
-    this.scene.traverse((o) => {
-      for (const m of [o.material].flat().filter(Boolean)) {
-        for (const t of [m.map, m.emissiveMap]) if (t?.userData.space && t !== haloTex) textures.add(t);
-      }
-    });
-    textures.forEach((t) => t.dispose());
-    if (this.previousReset !== undefined) renderer.info.autoReset = this.previousReset;
-    hush();
   }
 }

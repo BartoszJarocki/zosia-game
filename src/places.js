@@ -62,4 +62,5 @@ export const PLACES = {
 export const placesIn = (area) => Object.keys(PLACES).filter((k) => PLACES[k].area === area);
 export const GAMES = Object.keys(PLACES).filter((k) => PLACES[k].game);
 
-export const homeArea = (stage) => stage?.area === 'space' ? 'space' : 'island';
+export const MAP_AREAS = new Set(['space']);
+export const homeArea = (stage) => (stage?.area && MAP_AREAS.has(stage.area) ? stage.area : 'island');

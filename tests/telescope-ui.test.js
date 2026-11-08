@@ -98,7 +98,7 @@ test('the mission router returns from the telescope and replay to the same parke
   await new Promise(setImmediate);
   const { game, getStage } = window.__pup;
   for (const at of ['earth', 'saturn', 'blackhole']) {
-    await game.space({ at });
+    await game.map('space', { at });
     await game.startMission('telescope');
     assert.equal(getStage().kind, 'telescope');
     assert.equal(getStage().at, at);

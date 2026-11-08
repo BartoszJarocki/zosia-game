@@ -424,7 +424,7 @@ export class Hub extends Stage {
     await this.drive(p);
     await wait(200);
     if (this.alive) {
-      if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+      if (PLACES[kind].leadsTo) this.game.map(PLACES[kind].leadsTo, { launch: true });
       else this.game.startMission(kind);
     }
   }
@@ -596,7 +596,7 @@ export class Hub extends Stage {
   wake(kind) {
     startSession();
     hush();
-    if (PLACES[kind].leadsTo) this.game.space({ launch: true });
+    if (PLACES[kind].leadsTo) this.game.map(PLACES[kind].leadsTo, { launch: true });
     else this.game.startMission(kind);
   }
 }
