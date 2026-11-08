@@ -72,7 +72,7 @@ test('the mission router returns from the telescope and replay to the same parke
     hub: 'Hub', space: 'Space', letters: 'LettersMission', counting: 'CountingMission', cones: 'ConesMission',
     name: 'NameMission', balloons: 'BalloonsMission', stones: 'StonesMission', lookout: 'LookoutMission',
     delivery: 'DeliveryMission', picnic: 'PicnicMission', garage: 'GarageMission', moon: 'MoonMission',
-    mars: 'MarsMission', saturn: 'SaturnMission', pluto: 'PlutoMission', stars: 'StarsMission', blackhole: 'BlackHoleMission', mercury: 'MercuryMission', venus: 'VenusMission', telescope: 'TelescopeMission', jupiter: 'JupiterMission', comet: 'CometMission', lighthouse: 'LighthouseMission',
+    mars: 'MarsMission', saturn: 'SaturnMission', pluto: 'PlutoMission', stars: 'StarsMission', blackhole: 'BlackHoleMission', mercury: 'MercuryMission', venus: 'VenusMission', telescope: 'TelescopeMission', jupiter: 'JupiterMission', comet: 'CometMission', lighthouse: 'LighthouseMission', shallows: 'ShallowsMission',
   };
   registerHooks({
     resolve(specifier, context, next) {

@@ -82,6 +82,11 @@ export const SCHEMA = {
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
   },
+  shallows: {
+    mode: { type: 'enum', values: ['watch', 'guess', 'surprise'] },
+    things: { type: 'enum', values: ['familiar', 'all'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   lighthouse: {
     mode: { type: 'enum', values: ['marks', 'flashes', 'make', 'more'] },
     numbers: { type: 'range', min: 1, max: 5 },
@@ -389,6 +394,10 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic ${action}s do not count towards levelling)`);
     if (s.types && !s.types.includes(action)) errors.push(`${where}: types needs ${action} for the easy last round`);
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
+  if (kind === 'shallows') {
+    if (s.mode === 'surprise' && s.things !== 'all') errors.push(`${where}: "surprise" needs things "all" (the big log and the little coin)`);
+    if (s.mode === 'surprise' && s.rounds < 2) errors.push(`${where}: "surprise" needs at least 2 rounds (the big log and the little coin)`);
   }
   if (kind === 'lighthouse' && s.numbers) {
     const cap = { marks: 3, flashes: 4, make: 5, more: 4 }[s.mode];
