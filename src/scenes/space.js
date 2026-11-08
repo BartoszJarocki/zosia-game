@@ -10,7 +10,7 @@ import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '..
 import { PLACES, placesIn } from '../places.js';
 import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, launchHud } from '../ui.js';
-import { AreaMap } from './area-map.js';
+import { AreaMap, fitView } from './area-map.js';
 export { MOVES, nextState, flightStops } from './area-map.js';
 
 const rand = (seed) => () => {
@@ -290,14 +290,7 @@ export function mapPoints(here = 'earth', suggested = null) {
 }
 
 export function mapView(width, height, here = 'earth', suggested = null, fov = 42) {
-  const points = mapPoints(here, suggested).map((p) => p.applyQuaternion(MAP_FACE.clone().invert()));
-  const sy = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 0.88, sx = sy * width / height;
-  const bounds = (axis, slope) => [Math.min(...points.map((p) => p[axis] - slope * p.z)), Math.max(...points.map((p) => p[axis] + slope * p.z))];
-  const [left, right] = bounds('x', sx), [bottom, top] = bounds('y', sy);
-  // These perspective bounds include depth, so the nearer bottom row gets the same screen margin.
-  const distance = Math.max((right - left) / (2 * sx), (top - bottom) / (2 * sy));
-  const look = new THREE.Vector3((left + right) / 2, (bottom + top) / 2, 0).applyQuaternion(MAP_FACE);
-  return { look, pos: look.clone().addScaledVector(MAP_FORWARD, distance), minWidth: 0 };
+  return fitView(mapPoints(here, suggested), width, height, MAP_FACE, MAP_FORWARD, fov);
 }
 
 function makeSun(r) {

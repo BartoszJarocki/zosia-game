@@ -26,9 +26,9 @@ test('the island and space have all twenty-one games in badge order', () => {
 test('every place has an area, game flag and domain; games also require badges', () => {
   for (const kind of Object.keys(PLACES)) {
     const place = PLACES[kind];
-    assert.match(place.area, /^(island|space)$/, kind);
+    assert.match(place.area, /^(island|space|sea)$/, kind);
     assert.equal(typeof place.game, 'boolean', kind);
-    assert.match(place.domain, /^(letters|numbers|shapes|space)$/, kind);
+    assert.match(place.domain, /^(letters|numbers|shapes|space|sea)$/, kind);
     if (ISLAND_GAMES.includes(kind)) {
       assert.equal(place.area, 'island', kind);
       assert.equal(place.game, true, kind);
@@ -62,7 +62,7 @@ test('every island game rewards its first finished run', () => {
 });
 
 test('place tables have no missing or unknown kinds', () => {
-  assert.deepEqual(Object.keys(PLACE_TO).sort(), [...ISLAND_GAMES, 'rocket'].sort());
+  assert.deepEqual(Object.keys(PLACE_TO).sort(), [...ISLAND_GAMES, 'rocket', 'harbour'].sort());
   assert.deepEqual(Object.keys(DOMAIN).sort(), Object.keys(PLACES).sort());
   assert.deepEqual(Object.keys(MILESTONES).sort(), [...ISLAND_GAMES].sort());
   const tables = { SCHEMA, EASIER, HOME_TASKS, levels, missions };
@@ -87,7 +87,7 @@ test('the rocket connects the island to four look-only places and eleven space g
   assert.deepEqual(PLACES.blackhole, { area: 'space', game: true, domain: 'numbers', badge: { label: '✨', color: '#7c3aed' } });
   assert.deepEqual(PLACES.comet, { area: 'space', game: true, domain: 'letters', badge: { label: '☄️', color: '#38bdf8' } });
   assert.deepEqual(PLACES.stars, { area: 'space', game: true, domain: 'numbers', badge: { label: '⭐', color: '#eab308' } });
-  assert.deepEqual(placesIn('island'), [...ISLAND_GAMES, 'rocket']);
+  assert.deepEqual(placesIn('island'), [...ISLAND_GAMES, 'rocket', 'harbour']);
 });
 
 test('every game has a scene in the mission registry; only island places need island layouts', () => {

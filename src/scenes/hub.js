@@ -38,6 +38,7 @@ const portrait = () => innerHeight > innerWidth;
 // Letter games on the left, number games on the right.
 const LAYOUT = {
   rocket: { at: [-6, -19], via: [[-2.6, -1.8], [-5, -4.6], [-6.6, -10]], marker: [-6, 7, -19], starSize: 2, hit: [3.2, 5.5] },
+  harbour: { at: [10.8, -23.1], via: [[2.6, -1.8], [5.2, -5.2], [7.6, -10.4], [9.4, -16.5]], marker: [10.8, 6.4, -23.1], starSize: 2, hit: [4.2, 4] },
   letters: { at: [-15, -3] },
   balloons: { at: [-13.5, 8] },
   name: { at: [-5.5, 14.5] },
@@ -143,14 +144,17 @@ export class Hub extends Stage {
       p.curve = new THREE.CatmullRomCurve3([START.clone(), p1, mid, park]);
       s.add(makeRoad(p.curve));
     }
-    const roadPts = placesIn('island').filter((kind) => PLACES[kind].game).flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
+    const roadPts = placesIn('island').filter((kind) => PLACES[kind].game || PLACES[kind].leadsTo).flatMap((kind) => LAYOUT[kind].curve.getSpacedPoints(24));
     const nearRoad = (x, z) => roadPts.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
     const rocketRoad = LAYOUT.rocket.curve.getSpacedPoints(24);
     const [rocketX, rocketZ] = LAYOUT.rocket.at;
     const nearRocket = (x, z) => Math.hypot(x - rocketX, z - rocketZ) < KEEPSAKE_CLEAR || rocketRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
+    const harbourRoad = LAYOUT.harbour.curve.getSpacedPoints(24);
+    const [harbourX, harbourZ] = LAYOUT.harbour.at;
+    const nearHarbour = (x, z) => Math.hypot(x - harbourX, z - harbourZ) < 4.6 || harbourRoad.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6);
 
     // places
-    const builders = { rocket: makeLaunchPad, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
+    const builders = { rocket: makeLaunchPad, harbour: makeHarbour, letters: makeLetterPark, balloons: makeBalloonHill, name: makeNameTrain, cones: makeConeRoad, stones: makeRiver, counting: makeTreatHouse, delivery: makePostOffice, picnic: makePicnic, garage: makeGarageLandmark };
     this.placeGroups = {};
     for (const kind of placesIn('island')) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     this.addKeepsakes();
@@ -167,7 +171,7 @@ export class Hub extends Stage {
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
     // trees, bushes, grass — kept off the roads, places, houses and the kittens' lawn; the same every visit
-    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4])];
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4]), [harbourX, harbourZ, 4.6]];
     const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
     const rnd = seeded(20261028);
     let seed = 1;
@@ -175,10 +179,10 @@ export class Hub extends Stage {
       const a = rnd() * Math.PI * 2, r = 5 + Math.sqrt(rnd()) * 18;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (!clear(x, z, 1.2) || (z > 9 && Math.abs(x) < 17) || (z > 4 && Math.abs(x) > 17)) continue;
-      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); if (!nearRocket(x, z)) s.add(b); continue; }
+      if (i % 4 === 0) { const b = makeBush({ seed: seed++, scale: 0.8 + rnd() * 0.4 }); b.position.set(x, 0, z); if (!nearRocket(x, z) && !nearHarbour(x, z)) s.add(b); continue; }
       const t = makeTree({ scale: 0.95 + rnd() * 0.6, seed: seed++ });
       t.position.set(x, 0, z);
-      if (!nearRocket(x, z)) s.add(t);
+      if (!nearRocket(x, z) && !nearHarbour(x, z)) s.add(t);
     }
     const k = detail();
     const meadow = makeMeadowDetail({ radius: 23.6, blades: Math.round(9000 * k), flowers: Math.round(260 * k) + 60, keepOut: keepOut.map(([x, z, r]) => [x, z, r - 0.5]), reject: nearRoad, seed: 5 });
@@ -189,7 +193,7 @@ export class Hub extends Stage {
       for (let i = 0; i < o.count; i++) {
         o.getMatrixAt(i, instance);
         at.setFromMatrixPosition(instance);
-        if (nearRocket(at.x, at.z)) o.setMatrixAt(i, instance.scale(new THREE.Vector3(0, 0, 0)));
+        if (nearRocket(at.x, at.z) || nearHarbour(at.x, at.z)) o.setMatrixAt(i, instance.scale(new THREE.Vector3(0, 0, 0)));
       }
       o.instanceMatrix.needsUpdate = true;
     });
@@ -670,6 +674,22 @@ function glyphBlock(text, bg, size = 1.3) {
   return b;
 }
 const pad = (r = 3, color = '#86efac') => mesh(new THREE.CylinderGeometry(r, r, 0.12, 48), mat(color, { roughness: 0.9 }), { y: 0.06 });
+
+function makeHarbour() {
+  const g = new THREE.Group();
+  const wood = mat('#b45309', { roughness: 0.9 });
+  g.add(mesh(new THREE.CylinderGeometry(3.3, 3.6, 0.2, 32), mat('#d6c39a', { roughness: 1 }), { y: 0.06, shadow: false }));
+  // The pier runs out from the back shore, away from the island.
+  for (let i = 0; i < 6; i++) g.add(mesh(rbox(2.7, 0.16, 0.72, 0.05), wood, { y: 0.42, z: -0.4 - i * 0.72, shadow: false }));
+  for (const x of [-1.25, 1.25]) for (const z of [-0.5, -1.9, -3.3, -4.4]) g.add(mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.5, 8), wood, { x, y: 0.02, z, shadow: false }));
+  const boat = makeBoat('#f59e0b');
+  boat.scale.setScalar(0.72);
+  boat.position.set(2.2, 0.05, -2.5);
+  boat.rotation.y = -0.5;
+  g.add(boat);
+  g.add(mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.15, 6), mat('#e5e7eb'), { x: 1.75, y: 0.8, z: -2.35, rz: 1.15, shadow: false }));
+  return g;
+}
 
 function makeLetterPark() {
   const g = new THREE.Group();

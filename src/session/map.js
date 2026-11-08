@@ -7,11 +7,11 @@ export function mapDecision(session, attention) {
   return step === 'mission' ? 'suggest' : 'none';
 }
 
-export function suggestStop(session, road, here, visited, games = []) {
+export function suggestStop(session, road, here, visited, games = [], home = 'earth') {
   const game = suggestNext(session, games);
   if (game) return game;
   const index = road.indexOf(here);
-  const outward = [...road.slice(index + 1), ...road.slice(0, index).reverse()].filter((kind) => kind !== 'earth');
+  const outward = [...road.slice(index + 1), ...road.slice(0, index).reverse()].filter((kind) => kind !== home);
   return outward.find((kind) => !visited[kind])
     || outward.find((kind) => !session.visited?.[kind]) || null;
 }

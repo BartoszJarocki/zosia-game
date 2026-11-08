@@ -30,6 +30,18 @@ export function flightStops(from, to) {
 
 const copyView = (view) => ({ pos: view.pos.clone(), look: view.look.clone(), minWidth: view.minWidth });
 
+/** Fit a map's world points on screen, with the same margin at every iPad size. */
+export function fitView(points, width, height, face, forward, fov = 42) {
+  const pts = points.map((p) => p.clone().applyQuaternion(face.clone().invert()));
+  const sy = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 0.88, sx = sy * width / height;
+  const bounds = (axis, slope) => [Math.min(...pts.map((p) => p[axis] - slope * p.z)), Math.max(...pts.map((p) => p[axis] + slope * p.z))];
+  const [left, right] = bounds('x', sx), [bottom, top] = bounds('y', sy);
+  // These perspective bounds include depth, so the nearer bottom row gets the same screen margin.
+  const distance = Math.max((right - left) / (2 * sx), (top - bottom) / (2 * sy));
+  const look = new THREE.Vector3((left + right) / 2, (bottom + top) / 2, 0).applyQuaternion(face);
+  return { look, pos: look.clone().addScaledVector(forward, distance), minWidth: 0 };
+}
+
 export class AreaMap extends Stage {
   get at() { return this.order[Math.round(this.routeIndex)]; }
 
@@ -226,7 +238,8 @@ export class AreaMap extends Stage {
     this.hideOtherStops(kind);
     await this.moveView(this.visitView(kind));
     if (!this.alive || revision !== this.revision) return;
-    this.factIndex = this.facts[kind].length > 2 ? 2 : 1;
+    const lines = this.facts[kind];
+    this.factIndex = lines.length > 2 ? 2 : lines.length > 1 ? 1 : 0;
     this.showHud();
     this.activity();
     say(this.facts[kind].slice(0, 2));
@@ -234,8 +247,8 @@ export class AreaMap extends Stage {
 
   fact() {
     const lines = this.facts[this.visiting];
-    const line = lines[this.factIndex];
-    this.factIndex = this.factIndex + 1 < lines.length ? this.factIndex + 1 : 1;
+    const line = lines[this.factIndex] ?? lines[0];
+    this.factIndex = lines.length > 1 && this.factIndex + 1 < lines.length ? this.factIndex + 1 : lines.length > 1 ? 1 : 0;
     this.activity();
     this.react();
     say(this.factLine(this.visiting, line));
@@ -292,7 +305,8 @@ export class AreaMap extends Stage {
   }
 
   startLog() {
-    if (!new URLSearchParams(location.search).has('spacelog')) return;
+    const params = new URLSearchParams(location.search);
+    if (!params.has('spacelog') && !params.has('maplog')) return;
     this.previousReset = renderer.info.autoReset;
     renderer.info.autoReset = false;
     this.logAt = performance.now() + 1500;
