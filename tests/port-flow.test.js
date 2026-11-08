@@ -150,6 +150,39 @@ test('which asks for a count and each boat carries it for the walker', async () 
   stop(s);
 });
 
+test('a done boat exposes only choice and a which boat exposes only its count for the walker', async () => {
+  const s = await scene(1);
+  s.pick = () => 'MEWA';
+  const round = s.round(0);
+  await until(() => s.phase === 'asking');
+  const boat = choice(s, 'done');
+  assert.equal(boat.userData.choice, 'done');
+  assert.equal(boat.userData.boatName, 'MEWA');
+  assert.equal(boat.userData.word, undefined);
+  assert.equal(boat.userData.letter, undefined);
+  assert.equal(boat.userData.num, undefined);
+  await choice(s, 'horn').userData.onTap();
+  await choice(s, 'horn').userData.onTap();
+  await boat.userData.onTap();
+  await round;
+  stop(s);
+
+  const q = await scene(3);
+  q.pick = () => 2;
+  const which = q.round(0);
+  await until(() => q.phase === 'choosing');
+  assert.equal(q.boats.length, 3);
+  for (const b of q.boats) {
+    assert.equal(typeof b.userData.num, 'number');
+    assert.equal(b.userData.word, undefined);
+    assert.equal(b.userData.letter, undefined);
+    assert.equal(b.userData.choice, undefined);
+  }
+  await count(q, 2).userData.onTap();
+  await which;
+  stop(q);
+});
+
 test('every Port level runs through base progress and celebration, and counts for the session', async () => {
   for (let level = 1; level <= 3; level++) {
     CONFIG.level = level;

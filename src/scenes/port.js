@@ -33,6 +33,27 @@ function syllableTexture(syllable) {
   });
 }
 
+/** The whole name on one board. Narrowed in the canvas so the wide board does not stretch the letters. */
+function wordTexture(word, aspect) {
+  const shown = [...word].map(showLetter).join('');
+  return texture(512, (c, size) => {
+    c.fillStyle = '#ffffff';
+    c.fillRect(0, 0, size, size);
+    c.strokeStyle = '#c7d2fe';
+    c.lineWidth = 10;
+    c.strokeRect(5, 5, size - 10, size - 10);
+    c.fillStyle = '#1e3a8a';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = `700 ${Math.round(Math.min(size * 0.56, (size * 4.1 * aspect) / shown.length))}px "Fredoka", "Arial Rounded MT Bold", Arial, sans-serif`;
+    c.save();
+    c.translate(size / 2, size * 0.54);
+    c.scale(1 / aspect, 1);
+    c.fillText(shown, 0, 0);
+    c.restore();
+  });
+}
+
 export class PortMission extends Mission {
   constructor(game) {
     super(game, 'port');
@@ -105,17 +126,21 @@ export class PortMission extends Mission {
     const wallMat = new THREE.MeshStandardMaterial({ color: '#fef3c7', roughness: 0.8 });
     const roofMat = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.7 });
     this.mats.push(woodMat, darkWood, wallMat, roofMat);
+    this.dotOff = new THREE.MeshBasicMaterial({ color: '#cbd5e1' });
+    this.dotOn = new THREE.MeshBasicMaterial({ color: '#fbbf24' });
+    this.mats.push(this.dotOff, this.dotOn);
 
+    // Kept low and near, so it never cuts the ticks in front of the boats.
     this.quay = new THREE.Group();
-    this.quay.add(mesh(rbox(18, 0.34, 2.6, 0.08), woodMat, { y: 0.35, z: 3.6, shadow: false }));
-    for (const x of [-7.2, -3.6, 0, 3.6, 7.2]) this.quay.add(mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.9, 8), darkWood, { x, y: 0.02, z: 4.7, shadow: false }));
+    this.quay.add(mesh(rbox(18, 0.34, 2.6, 0.08), woodMat, { y: 0.35, z: 5.6, shadow: false }));
+    for (const x of [-7.2, -3.6, 0, 3.6, 7.2]) this.quay.add(mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.9, 8), darkWood, { x, y: 0.02, z: 6.7, shadow: false }));
     this.scene.add(this.quay);
 
     this.harbour = new THREE.Group();
     this.harbour.add(mesh(rbox(3.0, 4.0, 1.6, 0.1), wallMat, { y: 2.0, shadow: false }));
     this.harbour.add(mesh(new THREE.ConeGeometry(2.4, 1.2, 4), roofMat, { y: 4.6, ry: Math.PI / 4, shadow: false }));
     this.harbour.add(mesh(rbox(0.8, 1.5, 0.08, 0.04), darkWood, { y: 0.75, z: 0.81, shadow: false }));
-    this.harbour.position.set(-6.2, 0, -5.6);
+    this.harbour.position.set(6.2, 0, -5.6);
     this.scene.add(this.harbour);
 
     this.portrait = portrait();
@@ -125,7 +150,7 @@ export class PortMission extends Mission {
     this.window = new THREE.Group();
     this.window.add(mesh(new THREE.CircleGeometry(0.98, 48), portraitMat, { shadow: false }));
     this.window.add(mesh(new THREE.TorusGeometry(1.03, 0.09, 10, 48), rimMat, { shadow: false }));
-    this.window.position.set(-6.2, 3.0, -4.75);
+    this.window.position.set(6.2, 3.0, -4.75);
     this.window.lookAt(this.view.pos);
     this.scene.add(this.window);
 
@@ -163,18 +188,52 @@ export class PortMission extends Mission {
     const bgMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 });
     (round ? this.roundMats : this.mats).push(bgMat);
     board.add(mesh(rbox(width, 1.2, 0.12, 0.08), bgMat, { shadow: false }));
+    const map = wordTexture(word, (width - 0.12) / 1.02);
+    const wholeMat = new THREE.MeshStandardMaterial({ map, roughness: 0.45 });
+    (round ? this.roundMaps : this.maps).push(map);
+    (round ? this.roundMats : this.mats).push(wholeMat);
+    const whole = mesh(rbox(width - 0.12, 1.02, 0.08, 0.06), wholeMat, { z: 0.09, shadow: false });
+    board.add(whole);
     const start = -((syllables.length - 1) / 2) * 1.3;
     const blocks = syllables.map((syllable, i) => {
-      const map = syllableTexture(syllable);
-      const blockMat = new THREE.MeshStandardMaterial({ map, roughness: 0.45, emissive: '#f59e0b', emissiveIntensity: 0 });
-      (round ? this.roundMaps : this.maps).push(map);
+      const blockMap = syllableTexture(syllable);
+      const blockMat = new THREE.MeshStandardMaterial({ map: blockMap, roughness: 0.45, emissive: '#f59e0b', emissiveIntensity: 0 });
+      (round ? this.roundMaps : this.maps).push(blockMap);
       (round ? this.roundMats : this.mats).push(blockMat);
       const block = mesh(rbox(1.12, 0.92, 0.08, 0.06), blockMat, { x: start + i * 1.3, z: 0.09, shadow: false });
+      block.visible = false;
       board.add(block);
       return block;
     });
     board.userData.blocks = blocks;
+    board.userData.whole = whole;
+    board.userData.split = false;
+    board.userData.text = [...word].map(showLetter).join('');
     return board;
+  }
+
+  makeDots(word) {
+    const dots = new THREE.Group();
+    const { syllables } = boatFor(word);
+    syllables.forEach((_, i) => {
+      dots.add(mesh(new THREE.CircleGeometry(0.13, 16), this.dotOff, { x: (i - (syllables.length - 1) / 2) * 0.42, z: 0.02, shadow: false }));
+    });
+    dots.visible = false;
+    return dots;
+  }
+
+  splitBoard(board) {
+    if (!board) return;
+    board.userData.split = true;
+    board.userData.whole.visible = false;
+    for (const block of board.userData.blocks) block.visible = true;
+  }
+
+  mergeBoard(board) {
+    if (!board) return;
+    board.userData.split = false;
+    board.userData.whole.visible = true;
+    for (const block of board.userData.blocks) block.visible = false;
   }
 
   makeBoatFor(word, { x, z, scale, round = false }) {
@@ -183,13 +242,17 @@ export class PortMission extends Mission {
     boat.position.set(x, 0.04, z);
     boat.userData.seed = Math.random() * 6;
     boat.userData.baseY = 0.04;
-    boat.userData.word = word;
+    boat.userData.boatName = word;
     boat.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
     const sail = boat.children.find((o) => o.isMesh && o.geometry?.type === 'ShapeGeometry');
     if (sail) sail.visible = false;
     const board = this.makeBoard(word, round);
     board.position.set(0, 1.95, 0.55);
     boat.add(board);
+    const dots = this.makeDots(word);
+    dots.position.set(0, 1.13, 0.64);
+    boat.add(dots);
+    board.userData.dots = dots;
     boat.add(mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.3, 8), mat('#8b5a2b'), { y: 1.35, z: 0.35, shadow: false }));
     boat.userData.board = board;
     this.scene.add(boat);
@@ -201,8 +264,8 @@ export class PortMission extends Mission {
     const discMat = new THREE.MeshStandardMaterial({ color: '#22c55e', roughness: 0.5, emissive: '#16a34a', emissiveIntensity: 0.2 });
     const checkMat = new THREE.MeshBasicMaterial({ map: labelTexture('✓', { fg: '#ffffff', stroke: 'rgba(255,255,255,0)' }), transparent: true, depthWrite: false });
     this.roundMats.push(discMat, checkMat);
-    tick.add(mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.18, 28), discMat, { rx: Math.PI / 2, shadow: false }));
-    tick.add(mesh(new THREE.PlaneGeometry(1.2, 1.2), checkMat, { z: 0.12, shadow: false }));
+    tick.add(mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.18, 28), discMat, { rx: Math.PI / 2, shadow: false }));
+    tick.add(mesh(new THREE.PlaneGeometry(0.9, 0.9), checkMat, { z: 0.12, shadow: false }));
     tick.userData.num = num;
     tick.userData.tapHeight = 0;
     return tick;
@@ -240,6 +303,8 @@ export class PortMission extends Mission {
       if (!this.alive) return;
       await this.clapSyllables(this.word);
       if (!this.alive) return;
+    } else {
+      boat.userData.board.userData.dots.visible = true;
     }
     const prompt = [...T.portToot(), ...T.portDone()];
     this.beginHorn(this.mode === 'together' ? prompt : [...T.portName(this.word), ...prompt]);
@@ -258,7 +323,7 @@ export class PortMission extends Mission {
     this.question('syllables', this.word, {
       short: T.portToot,
       hint: async () => {
-        await this.clapSyllables(this.word);
+        await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
         return T.portToot();
       },
       reveal: () => {
@@ -276,8 +341,9 @@ export class PortMission extends Mission {
     this.count++;
     sfx.toot();
     this.puff();
-    const block = this.boats[0]?.userData.board.userData.blocks[this.count - 1];
-    if (block) this.light(block);
+    const board = this.boats[0]?.userData.board;
+    if (this.mode === 'together') this.light(board?.userData.blocks[this.count - 1]);
+    else this.lightDot(board, this.count - 1);
     this.last = this.count >= this.target ? 'done' : this.target;
   }
 
@@ -293,7 +359,7 @@ export class PortMission extends Mission {
     this.last = this.target;
     this.unlight(this.boats[0]);
     this.phase = 'helping';
-    await this.clapSyllables(this.word);
+    await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
     if (!this.alive) return;
     this.phase = 'asking';
     this.ask(T.portToot());
@@ -320,6 +386,7 @@ export class PortMission extends Mission {
   }
 
   async whichRound() {
+    this.horn.visible = false;
     const counts = Array.from({ length: this.L.syllables[1] - this.L.syllables[0] + 1 }, (_, i) => this.L.syllables[0] + i);
     this.asked = this.pick('syllables', counts);
     this.target = this.asked;
@@ -329,13 +396,13 @@ export class PortMission extends Mission {
     const xs = [-4.6, 0, 4.6];
     const picks = whichBoats(this.asked, this.L.syllables);
     this.boats = picks.map((b, i) => this.makeBoatFor(b.word, { x: 10.5 + i * 2, z: 1.15, scale: 1, round: true }));
-    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.word); });
+    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.boatName); });
     await Promise.all(this.boats.map((boat, i) => this.enterBoat(boat, xs[i])));
     if (!this.alive) return;
     this.phase = 'choosing';
     for (const boat of this.boats) {
       const tick = this.makeTick(boat.userData.num);
-      tick.position.set(0, 0.28, 0.72);
+      tick.position.set(0, 0.62, 0.72);
       boat.add(tick);
       this.tickButtons.push(tick);
       this.tappable(tick, () => this.pickBoat(boat));
@@ -343,7 +410,7 @@ export class PortMission extends Mission {
       this.tappable(boat.userData.board, () => {
         if (this.phase !== 'choosing') return;
         this.poke();
-        this.say(T.portName(boat.userData.word));
+        this.say(T.portName(boat.userData.boatName));
       });
     }
     this.question('syllables', this.asked, {
@@ -380,7 +447,7 @@ export class PortMission extends Mission {
     sfx.good();
     await this.say(T.portRight(num));
     if (!this.alive) return;
-    await this.singBack(boat.userData.word, boat);
+    await this.singBack(boat.userData.boatName, boat);
     if (!this.alive) return;
     this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
     await this.say(T.portSuccess());
@@ -390,9 +457,11 @@ export class PortMission extends Mission {
     this.resolveRound = null;
   }
 
-  async clapSyllables(word) {
-    const boat = this.boats.find((b) => b.userData.word === word);
-    const blocks = boat?.userData.board.userData.blocks || [];
+  async clapSyllables(word, { merge = false } = {}) {
+    const boat = this.boats.find((b) => b.userData.boatName === word);
+    const board = boat?.userData.board;
+    this.splitBoard(board);
+    const blocks = board?.userData.blocks || [];
     for (const [i, syllable] of boatFor(word).syllables.entries()) {
       if (!this.alive) return;
       this.light(blocks[i]);
@@ -401,10 +470,12 @@ export class PortMission extends Mission {
       if (!this.alive) return;
     }
     this.unlight(boat);
+    if (merge) this.mergeBoard(board);
     await wait(220);
   }
 
   async singBack(word, boat) {
+    this.splitBoard(boat.userData.board);
     const blocks = boat.userData.board.userData.blocks;
     for (const [i, syllable] of boatFor(word).syllables.entries()) {
       if (!this.alive) return;
@@ -422,12 +493,19 @@ export class PortMission extends Mission {
     block.material.color.set('#fff3b0');
   }
 
+  lightDot(board, i) {
+    const dot = board?.userData.dots?.children[i];
+    if (dot) dot.material = this.dotOn;
+  }
+
   unlight(boat) {
-    const blocks = boat?.userData.board.userData.blocks || [];
+    const board = boat?.userData.board;
+    const blocks = board?.userData.blocks || [];
     blocks.forEach((block) => {
       block.material.emissiveIntensity = 0;
       block.material.color.set('#ffffff');
     });
+    for (const dot of board?.userData.dots?.children || []) dot.material = this.dotOff;
   }
 
   puff() {

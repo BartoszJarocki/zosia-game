@@ -96,6 +96,21 @@ function screenBox(object, camera, width, height) {
 
 const overlaps = (a, b) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
 
+/** The speech bubble's screen area (style.css: top left, below the home button, with its tail). */
+function bubbleBox(width, height) {
+  const btn = Math.min(width * 0.11, height * 0.11, 96);
+  const big = Math.min(width * 0.15, height * 0.14, 150);
+  const left = 16 + btn + 24;
+  const top = 14 + btn + height * 0.016;
+  return { minX: left, maxX: left + 370, minY: top, maxY: top + big + height * 0.022 + 28 };
+}
+
+const showed = (hit) => {
+  for (let o = hit.object; o; o = o.parent) if (o.visible === false) return false;
+  return hit.object.material?.visible !== false;
+};
+
+
 test('GAME.md parses the port levels exactly', () => {
   const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
   const { levels, missions, errors } = parseGame(md, { childName: CONFIG.childName });
@@ -179,6 +194,125 @@ test('the port has no shadows or point lights and leaves room for medium post pa
   assert.equal(pointLights, 0);
   assert.ok(draws + 20 < 100, `${draws} scene draws plus 20`);
   await s.tappables.find((o) => o.userData.num === 2).userData.onTap();
+  await round;
+  s.alive = false; s.exit();
+});
+
+test('the name is one whole word until the clap: no syllable separators on the board in alone and which', async () => {
+  const alone = await scene(2);
+  alone.pick = () => 'MEWA';
+  let splitAtSing = null;
+  const sing = alone.singBack.bind(alone);
+  alone.singBack = async (word, boat) => { await sing(word, boat); splitAtSing = boat.userData.board.userData.split; };
+  const aloneRound = alone.round(0);
+  await until(() => alone.phase === 'asking');
+  const board = alone.boats[0].userData.board;
+  assert.equal(board.userData.split, false);
+  assert.equal(board.userData.text, 'MEWA');
+  assert.match(board.userData.text, /^\p{L}+$/u);
+  assert.equal(board.userData.whole.visible, true);
+  assert.ok(board.userData.blocks.every((b) => b.visible === false));
+  assert.equal(board.userData.dots.visible, true);
+  const horn = alone.tappables.find((o) => o.userData.choice === 'horn');
+  await horn.userData.onTap();
+  assert.equal(board.userData.dots.children[0].material, alone.dotOn);
+  assert.equal(board.userData.dots.children[1].material, alone.dotOff);
+  assert.ok(board.userData.blocks.every((b) => b.visible === false));
+  await horn.userData.onTap();
+  await alone.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+  await aloneRound;
+  assert.equal(splitAtSing, true);
+  alone.alive = false; alone.exit();
+
+  const together = await scene(1);
+  together.pick = () => 'MEWA';
+  const togetherRound = together.round(0);
+  await until(() => together.phase === 'asking');
+  assert.equal(together.boats[0].userData.board.userData.split, true);
+  assert.ok(together.boats[0].userData.board.userData.blocks.every((b) => b.visible));
+  for (let i = 0; i < together.target; i++) await together.tappables.find((o) => o.userData.choice === 'horn').userData.onTap();
+  await together.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+  await togetherRound;
+  together.alive = false; together.exit();
+
+  const which = await scene(3);
+  which.pick = () => 2;
+  let whichSplit = null;
+  const whichSing = which.singBack.bind(which);
+  which.singBack = async (word, boat) => { await whichSing(word, boat); whichSplit = boat.userData.board.userData.split; };
+  const whichRound = which.round(0);
+  await until(() => which.phase === 'choosing');
+  for (const boat of which.boats) {
+    assert.equal(boat.userData.board.userData.split, false);
+    assert.match(boat.userData.board.userData.text, /^\p{L}+$/u);
+    assert.equal(boat.userData.board.userData.whole.visible, true);
+  }
+  await which.tappables.find((o) => o.userData.num === 1).userData.onTap();
+  for (const boat of which.boats) assert.equal(boat.userData.board.userData.split, false);
+  await which.tappables.find((o) => o.userData.num === 2).userData.onTap();
+  await whichRound;
+  assert.equal(whichSplit, true);
+  which.alive = false; which.exit();
+});
+
+test('no tappable overlaps another, the bubble, Chase or the HUD at all three sizes', async () => {
+  for (const level of [1, 3]) {
+    const s = await scene(level);
+    s.pick = () => (level === 3 ? 2 : 'MEWA');
+    const round = s.round(0);
+    await until(() => s.phase === (level === 3 ? 'choosing' : 'asking'));
+    if (level === 3) assert.equal(s.horn.visible, false);
+    for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+      const camera = cameraFor(s, width, height);
+      const bubble = bubbleBox(width, height);
+      const chase = screenBox(s.window, camera, width, height);
+      const btn = Math.min(width * 0.11, height * 0.11, 96);
+      assert.ok(chase.minY > 14 + btn, `${width}x${height}: window below the HUD`);
+      assert.equal(overlaps(chase, bubble), false, `${width}x${height}: window and bubble`);
+      const boxes = s.tappables.filter((o) => o.userData.onTap && o.parent).map((o) => screenBox(o, camera, width, height));
+      boxes.forEach((box) => {
+        assert.ok(box.minX >= -0.5 && box.maxX <= width + 0.5 && box.minY >= -0.5 && box.maxY <= height + 0.5, `${width}x${height}: on screen`);
+        assert.equal(overlaps(box, bubble), false, `${width}x${height}: under the bubble`);
+        assert.equal(overlaps(box, chase), false, `${width}x${height}: under Chase`);
+      });
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+        assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: tappables ${i}/${j}`);
+      }
+    }
+    if (level === 3) await s.tappables.find((o) => o.userData.num === 2).userData.onTap();
+    else {
+      for (let i = 0; i < s.target; i++) await s.tappables.find((o) => o.userData.choice === 'horn').userData.onTap();
+      await s.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+    }
+    await round;
+    s.alive = false; s.exit();
+  }
+});
+
+test('every tick is on screen, above the quay and first under the camera ray', async () => {
+  const s = await scene(3);
+  s.pick = () => 2;
+  const round = s.round(0);
+  await until(() => s.phase === 'choosing');
+  const ticks = s.tappables.filter((o) => o.userData.num !== undefined && o.userData.onTap);
+  assert.equal(ticks.length, 3);
+  s.scene.updateMatrixWorld(true);
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = cameraFor(s, width, height);
+    for (const tick of ticks) {
+      const box = screenBox(tick, camera, width, height);
+      assert.ok(box.minX >= 0 && box.maxX <= width && box.minY >= 0 && box.maxY <= height, `${width}x${height}: tick on screen`);
+      if (width !== 820) assert.ok(box.maxX - box.minX >= 70 && box.maxY - box.minY >= 70, `${width}x${height}: tick ${box.maxX - box.minX}`);
+      const at = tick.getWorldPosition(new THREE.Vector3());
+      const ray = new THREE.Raycaster(camera.position.clone(), at.clone().sub(camera.position).normalize());
+      const hit = ray.intersectObjects(s.scene.children, true).filter(showed)[0];
+      assert.ok(hit, `${width}x${height}: tick ${tick.userData.num} is in the way`);
+      let o = hit.object;
+      while (o && o !== tick) o = o.parent;
+      assert.equal(o, tick, `${width}x${height}: tick ${tick.userData.num} is covered by ${hit.object.geometry?.type}`);
+    }
+  }
+  await ticks.find((o) => o.userData.num === 2).userData.onTap();
   await round;
   s.alive = false; s.exit();
 });
