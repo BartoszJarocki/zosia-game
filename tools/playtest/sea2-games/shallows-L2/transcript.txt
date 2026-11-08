@@ -1,0 +1,89 @@
+  25.4  ----  page loaded
+  27.6  tone  480 Hz sawtooth
+  27.6  noise 80
+  27.6  tone  500 Hz sawtooth +160ms
+  27.6  noise 80
+  41.4  SAY   Cześć, Zosiu! Czejs gotowy do akcji! Dokąd jedziemy? Może nad rzekę? Dotknij gwiazdki!
+  42.1  clip  3600 ms
+  48.8  ----  island
+  49.2  clip  1200 ms
+  50.8  clip  1280 ms
+  66.4  SAY   Może nad rzekę? Dotknij gwiazdki!
+  66.4  clip  1200 ms
+  67.9  clip  1280 ms
+  73.8  ----  (screenshot island failed)
+  73.9  ----  starting shallows
+ 103.0  SAY   Tu jest płytko. Widać piasek na dnie.
+ 103.4  SAY   Pływa czy tonie?
+ 106.3  ----  mission shallows started
+ 106.3  ----  QUESTION r1/4 sorting:sink:łyżka bubble="? 🦆"
+ 109.5  ----  OPTIONS float sink*
+ 109.5  ----  TAP sink (right)
+ 109.5  SAY   Łyżka tonie!
+ 109.5  tone  850 Hz sine
+ 111.6  tone  500 Hz sine
+ 111.6  tone  523 Hz triangle
+ 111.6  tone  659 Hz triangle +90ms
+ 111.6  tone  784 Hz triangle +180ms
+ 111.6  tone  1046 Hz triangle +270ms
+ 111.6  SAY   Doskonale!
+ 112.0  clip  1200 ms
+ 113.3  tone  500 Hz sine
+ 113.8  SAY   Pływa czy tonie?
+ 114.1  ----  QUESTION r2/4 sorting:float:jabłko bubble="? 🦆"
+ 115.5  ----  OPTIONS float* sink
+ 115.5  ----  TAP sink (wrong on purpose)
+ 115.6  tone  494 Hz triangle
+ 115.6  tone  392 Hz triangle +170ms
+ 115.6  SAY   Popatrz! Jabłko pływa!
+ 115.6  tone  873 Hz sine
+ 116.7  ----  MOTION {"moved":0.21,"frames":4}
+ 117.8  tone  500 Hz sine
+ 117.8  tone  500 Hz sine
+ 118.3  SAY   Pływa czy tonie?
+ 120.7  ----  TAP sink (right)
+ 120.7  SAY   Kamień tonie!
+ 120.7  tone  896 Hz sine
+ 124.0  tone  500 Hz sine
+ 124.0  tone  523 Hz triangle
+ 124.0  tone  659 Hz triangle +90ms
+ 124.0  tone  784 Hz triangle +180ms
+ 124.0  tone  1046 Hz triangle +270ms
+ 124.0  SAY   Doskonale!
+ 124.0  clip  1200 ms
+ 125.2  tone  500 Hz sine
+ 125.7  SAY   Pływa czy tonie?
+ 125.8  ----  QUESTION r4/4 sorting:sink:klucz bubble="? 🦆"
+ 127.8  ----  OPTIONS float sink*
+ 127.8  ----  waiting 20 s like a thinking child
+ 136.0  SAY   Pływa czy tonie?
+ 143.7  SAY   Klucz tonie!
+ 150.1  ----  TAP sink (right)
+ 150.1  SAY   Klucz tonie!
+ 150.1  tone  909 Hz sine
+ 152.2  tone  500 Hz sine
+ 152.2  tone  523 Hz triangle
+ 152.2  tone  659 Hz triangle +90ms
+ 152.2  tone  784 Hz triangle +180ms
+ 152.2  tone  1046 Hz triangle +270ms
+ 152.2  SAY   Doskonale!
+ 152.2  clip  1200 ms
+ 153.4  tone  500 Hz sine
+ 153.8  tone  523 Hz square
+ 153.8  tone  659 Hz square +140ms
+ 153.8  tone  784 Hz square +280ms
+ 153.8  tone  1046 Hz square +420ms
+ 153.8  tone  784 Hz square +560ms
+ 153.8  tone  1046 Hz square +700ms
+ 153.8  SAY   Brawo! Wiesz, co pływa, a co tonie!
+ 153.9  ----  celebration
+ 153.9  SAY   Jeszcze raz czy płyniemy dalej?
+ 156.1  tone  700 Hz square
+ 156.1  tone  1050 Hz square +350ms
+ 156.1  tone  700 Hz square +700ms
+ 156.1  tone  1050 Hz square +1050ms
+ 165.2  SAY   Płyniemy dalej czy do domu?
+ 190.4  SAY   Może popłyniemy do latarni?
+ 193.4  ----  no open question (mission over?)
+
+errors: []

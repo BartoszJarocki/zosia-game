@@ -72,7 +72,7 @@ test('the mission router returns from the telescope and replay to the same parke
     hub: 'Hub', space: 'Space', letters: 'LettersMission', counting: 'CountingMission', cones: 'ConesMission',
     name: 'NameMission', balloons: 'BalloonsMission', stones: 'StonesMission', lookout: 'LookoutMission',
     delivery: 'DeliveryMission', picnic: 'PicnicMission', garage: 'GarageMission', moon: 'MoonMission',
-    mars: 'MarsMission', saturn: 'SaturnMission', pluto: 'PlutoMission', stars: 'StarsMission', blackhole: 'BlackHoleMission', mercury: 'MercuryMission', venus: 'VenusMission', telescope: 'TelescopeMission', jupiter: 'JupiterMission', comet: 'CometMission',
+    mars: 'MarsMission', saturn: 'SaturnMission', pluto: 'PlutoMission', stars: 'StarsMission', blackhole: 'BlackHoleMission', mercury: 'MercuryMission', venus: 'VenusMission', telescope: 'TelescopeMission', jupiter: 'JupiterMission', comet: 'CometMission', lighthouse: 'LighthouseMission', shallows: 'ShallowsMission', reef: 'ReefMission', port: 'PortMission',
   };
   registerHooks({
     resolve(specifier, context, next) {
@@ -98,7 +98,7 @@ test('the mission router returns from the telescope and replay to the same parke
   await new Promise(setImmediate);
   const { game, getStage } = window.__pup;
   for (const at of ['earth', 'saturn', 'blackhole']) {
-    await game.space({ at });
+    await game.map('space', { at });
     await game.startMission('telescope');
     assert.equal(getStage().kind, 'telescope');
     assert.equal(getStage().at, at);

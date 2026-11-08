@@ -7,6 +7,7 @@
 
 import { parseNeeds } from './gate.js';
 import { SPACE_PLACES, PLANETS, FEATURES, distractors, itemsFor } from './telescope.js';
+import { BOATS } from './port.js';
 
 /** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
 export const SOUNDABLE = 'AEFHILMNORSUWZ';
@@ -80,6 +81,28 @@ export const SCHEMA = {
     howMany: { type: 'range', min: 1, max: 9, optional: true },
     auto: { type: 'bool' },
     slots: { type: 'bool' },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  shallows: {
+    mode: { type: 'enum', values: ['watch', 'guess', 'surprise'] },
+    things: { type: 'enum', values: ['familiar', 'all'] },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  lighthouse: {
+    mode: { type: 'enum', values: ['marks', 'flashes', 'make', 'more'] },
+    numbers: { type: 'range', min: 1, max: 5 },
+    choices: { type: 'int', min: 2, max: 4, optional: true, default: 2 },
+    rounds: { type: 'int', min: 3, max: 5 },
+  },
+  reef: {
+    mode: { type: 'enum', values: ['see', 'hear', 'place'] },
+    words: { type: 'list', values: ['na', 'pod', 'w', 'obok'] },
+    choices: { type: 'int', min: 2, max: 4 },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
+  port: {
+    mode: { type: 'enum', values: ['together', 'alone', 'which'] },
+    syllables: { type: 'range', min: 1, max: 3 },
     rounds: { type: 'int', min: 1, max: 8 },
   },
   stars: {
@@ -383,6 +406,26 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic ${action}s do not count towards levelling)`);
     if (s.types && !s.types.includes(action)) errors.push(`${where}: types needs ${action} for the easy last round`);
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+  }
+  if (kind === 'shallows') {
+    if (s.mode === 'surprise' && s.things !== 'all') errors.push(`${where}: "surprise" needs things "all" (the big log and the little coin)`);
+    if (s.mode === 'surprise' && s.rounds < 2) errors.push(`${where}: "surprise" needs at least 2 rounds (the big log and the little coin)`);
+  }
+  if (kind === 'lighthouse' && s.numbers) {
+    const cap = { marks: 3, flashes: 4, make: 5, more: 4 }[s.mode];
+    if (cap && s.numbers[1] > cap) errors.push(`${where}: ${s.mode} counts up to ${cap} (got ${s.numbers[1]})`);
+    if (s.mode === 'make' && s.numbers[0] < 2) errors.push(`${where}: "make" starts from 2 (a boat's sail shows the count)`);
+  }
+  if (kind === 'reef') {
+    if (new Set(s.words).size !== s.words.length) errors.push(`${where}: words must be distinct`);
+    if (s.mode !== 'place' && s.choices > s.words.length) errors.push(`${where}: ${s.choices} scenes need at least ${s.choices} different words`);
+    if (s.mode === 'place' && s.choices !== 3) errors.push(`${where}: place needs exactly three glowing spots (got ${s.choices})`);
+  }
+  if (kind === 'port' && s.syllables) {
+    for (let n = s.syllables[0]; n <= s.syllables[1]; n++) {
+      if (!BOATS.some((b) => b.syllables.length === n)) errors.push(`${where}: no boat has ${n} syllable(s)`);
+    }
+    if (s.mode === 'which' && (s.syllables[0] !== 1 || s.syllables[1] !== 3)) errors.push(`${where}: "which" brings three boats with one, two and three syllables`);
   }
   if (kind === 'stars' && s.stars) {
     const pictures = s.stars[1] - s.stars[0] + 1;

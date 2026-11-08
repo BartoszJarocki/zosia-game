@@ -25,6 +25,10 @@ import { VenusMission } from './scenes/venus.js';
 import { TelescopeMission } from './scenes/telescope.js';
 import { JupiterMission } from './scenes/jupiter.js';
 import { CometMission } from './scenes/comet.js';
+import { LighthouseMission } from './scenes/lighthouse.js';
+import { ShallowsMission } from './scenes/shallows.js';
+import { ReefMission } from './scenes/reef.js';
+import { PortMission } from './scenes/port.js';
 import { resetProgress } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
@@ -71,11 +75,16 @@ const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
   cones: ConesMission, stones: StonesMission, counting: CountingMission, lookout: LookoutMission,
   delivery: DeliveryMission, picnic: PicnicMission, garage: GarageMission,
-  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, comet: CometMission, stars: StarsMission, telescope: TelescopeMission,
+  mercury: MercuryMission, venus: VenusMission, moon: MoonMission, mars: MarsMission, jupiter: JupiterMission, saturn: SaturnMission, pluto: PlutoMission, blackhole: BlackHoleMission, comet: CometMission, stars: StarsMission, telescope: TelescopeMission, lighthouse: LighthouseMission, shallows: ShallowsMission, reef: ReefMission, port: PortMission,
 };
 for (const kind of GAMES) {
   if (!MISSIONS[kind]) throw new Error(`Missing scene for ${kind}`);
 }
+
+const MAPS = {
+  space: () => import('./scenes/space.js').then((m) => m.Space),
+  sea: () => import('./scenes/bay.js').then((m) => m.Bay),
+};
 
 const game = {
   hub({ greet = false } = {}) {
@@ -84,12 +93,13 @@ const game = {
   },
   home() {
     const stage = getStage();
-    return homeArea(stage) === 'space' ? game.space({ at: stage.at || stage.kind }) : game.hub();
+    const area = homeArea(stage);
+    return MAPS[area] ? game.map(area, { at: stage.at || stage.kind }) : game.hub();
   },
-  async space({ launch = false, at = 'earth' } = {}) {
-    const { Space } = await import('./scenes/space.js');
+  async map(area, { launch = false, at } = {}) {
+    const Stage = await MAPS[area]();
     hush();
-    return pawWipe(() => setStage(new Space(game, { launch, at })));
+    return pawWipe(() => setStage(new Stage(game, { launch, at })));
   },
   startMission(kind) {
     hush();
@@ -136,7 +146,7 @@ async function boot() {
 
   // Debug shortcuts: #letters, #balloons, #name, #cones, #stones, #counting, #lookout, #delivery, #picnic, #garage, #mercury, #venus, #avatar (and #parent, #reset above)
   if (MISSIONS[jump]) { ui.clear(); setStage(new MISSIONS[jump](game)); }
-  if (jump === 'space' || jump === 'launch') await game.space({ launch: jump === 'launch' });
+  if (jump === 'space' || jump === 'launch') await game.map('space', { launch: jump === 'launch' });
   if (jump === 'avatar') import('./scenes/avatar.js').then((m) => { ui.clear(); setStage(new m.AvatarStage()); });
 }
 boot();

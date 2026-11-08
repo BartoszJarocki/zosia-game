@@ -1,0 +1,1203 @@
+{
+ "kind": "lighthouse",
+ "level": 1,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 24839,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 26738,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 26741,
+   "type": "noise",
+   "ms": 80,
+   "ended": 26867
+  },
+  {
+   "t": 26741,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 26742,
+   "type": "noise",
+   "ms": 80,
+   "ended": 27033
+  },
+  {
+   "t": 39753,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs gotowy do akcji! Dokąd jedziemy? Może do Literkowego Pociągu? Dotknij gwiazdki!"
+  },
+  {
+   "t": 40384,
+   "type": "clip",
+   "ms": 3600,
+   "ended": 45861
+  },
+  {
+   "t": 45860,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 46258,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 48008
+  },
+  {
+   "t": 48385,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 49662
+  },
+  {
+   "t": 64754,
+   "type": "say",
+   "text": "Może do Literkowego Pociągu? Dotknij gwiazdki!"
+  },
+  {
+   "t": 64755,
+   "type": "clip",
+   "ms": 1760,
+   "ended": 66515
+  },
+  {
+   "t": 66866,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 68136
+  },
+  {
+   "t": 70789,
+   "type": "me",
+   "text": "(screenshot island failed)"
+  },
+  {
+   "t": 70797,
+   "type": "me",
+   "text": "starting lighthouse"
+  },
+  {
+   "t": 81445,
+   "type": "say",
+   "text": "Robi się wieczór. Łódki wracają do domu. Latarnia świeci w nocy, żeby łódki trafiły do domu."
+  },
+  {
+   "t": 83567,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 83567,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 84273,
+   "type": "me",
+   "text": "mission lighthouse started"
+  },
+  {
+   "t": 84939,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 84939,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 86342,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 87727,
+   "type": "me",
+   "text": "QUESTION r1/4 quantity:2 bubble=\"? 💡\""
+  },
+  {
+   "t": 89078,
+   "type": "me",
+   "text": "OPTIONS 2* 3"
+  },
+  {
+   "t": 89088,
+   "type": "me",
+   "text": "TAP 2 (right)"
+  },
+  {
+   "t": 89113,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 89113,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 89114,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 89114,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 89114,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 90662,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 90662,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 90662,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 90663,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 91015,
+   "type": "say",
+   "text": "Hura!"
+  },
+  {
+   "t": 91039,
+   "type": "clip",
+   "ms": 960,
+   "ended": 91997
+  },
+  {
+   "t": 92004,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 92459,
+   "type": "say",
+   "text": "Każda latarnia mruga po swojemu."
+  },
+  {
+   "t": 93713,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 93714,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 95468,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 96475,
+   "type": "me",
+   "text": "QUESTION r2/4 quantity:1 bubble=\"? 💡\""
+  },
+  {
+   "t": 97568,
+   "type": "me",
+   "text": "OPTIONS 1* 2"
+  },
+  {
+   "t": 97576,
+   "type": "me",
+   "text": "TAP 2 (wrong on purpose)"
+  },
+  {
+   "t": 97582,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 97582,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 97584,
+   "type": "say",
+   "text": "Nie, to nie ten. Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 97653,
+   "type": "clip",
+   "ms": 1360,
+   "ended": 99016
+  },
+  {
+   "t": 98383,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.45,\"frames\":5}"
+  },
+  {
+   "t": 102227,
+   "type": "me",
+   "text": "TAP 1 (right)"
+  },
+  {
+   "t": 102234,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 102234,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 102235,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 102235,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 102235,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 103819,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 103819,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 103819,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 103820,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 104171,
+   "type": "say",
+   "text": "Świetnie!"
+  },
+  {
+   "t": 104197,
+   "type": "clip",
+   "ms": 960,
+   "ended": 105150
+  },
+  {
+   "t": 105152,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 106901,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 106901,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 108428,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 108428,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 109715,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 110577,
+   "type": "me",
+   "text": "QUESTION r3/4 quantity:2 bubble=\"? 💡\""
+  },
+  {
+   "t": 111805,
+   "type": "me",
+   "text": "OPTIONS 2* 3"
+  },
+  {
+   "t": 111808,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 119873,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 126749,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 126778,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 127816
+  },
+  {
+   "t": 127816,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 127835,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 128872
+  },
+  {
+   "t": 128872,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 132864,
+   "type": "me",
+   "text": "TAP 2 (right)"
+  },
+  {
+   "t": 132872,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 132872,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 132872,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 132873,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 132873,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 134729,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 134729,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 134729,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 134729,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 135083,
+   "type": "say",
+   "text": "Wspaniale!"
+  },
+  {
+   "t": 135114,
+   "type": "clip",
+   "ms": 1120,
+   "ended": 136232
+  },
+  {
+   "t": 136234,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 137807,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 137807,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 139386,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 139387,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 140761,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 140762,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 142103,
+   "type": "say",
+   "text": "Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 143069,
+   "type": "me",
+   "text": "QUESTION r4/4 quantity:3 bubble=\"? 💡\""
+  },
+  {
+   "t": 144072,
+   "type": "me",
+   "text": "OPTIONS 2 3*"
+  },
+  {
+   "t": 144077,
+   "type": "me",
+   "text": "TAP 2 (wrong on purpose)"
+  },
+  {
+   "t": 144083,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 144083,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 144084,
+   "type": "say",
+   "text": "Nie, to nie ten. Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 144084,
+   "type": "clip",
+   "ms": 1360,
+   "ended": 145448
+  },
+  {
+   "t": 144829,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.28,\"frames\":5}"
+  },
+  {
+   "t": 146256,
+   "type": "me",
+   "text": "TAP 2 (wrong again, quickly)"
+  },
+  {
+   "t": 146262,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 146262,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 146268,
+   "type": "noise",
+   "ms": 350,
+   "ended": 146611
+  },
+  {
+   "t": 146269,
+   "type": "say",
+   "text": "Nie, nie ten. Ile razy mrugnęła latarnia?"
+  },
+  {
+   "t": 146339,
+   "type": "clip",
+   "ms": 1600,
+   "ended": 147933
+  },
+  {
+   "t": 150155,
+   "type": "me",
+   "text": "TAP 3 (right)"
+  },
+  {
+   "t": 150162,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 150162,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 150162,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 150162,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 150162,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 151992,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 151992,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 151992,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 151992,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 152343,
+   "type": "say",
+   "text": "Wspaniale!"
+  },
+  {
+   "t": 152344,
+   "type": "clip",
+   "ms": 1120,
+   "ended": 153459
+  },
+  {
+   "t": 153460,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 153915,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 153915,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 153916,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 153916,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 153916,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 153916,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 153917,
+   "type": "say",
+   "text": "Brawo! Wszystkie łódki są w domu!"
+  },
+  {
+   "t": 153925,
+   "type": "me",
+   "text": "celebration"
+  },
+  {
+   "t": 153926,
+   "type": "say",
+   "text": "Jeszcze raz czy płyniemy dalej?"
+  },
+  {
+   "t": 154910,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 154910,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 154910,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 154910,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 164870,
+   "type": "say",
+   "text": "Płyniemy dalej czy do domu?"
+  },
+  {
+   "t": 189905,
+   "type": "say",
+   "text": "Może popłyniemy do latarni?"
+  },
+  {
+   "t": 192743,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  }
+ ],
+ "events": [
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "2",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 2755,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794137495985,
+   "options": 2,
+   "chosen": "2",
+   "level": 1,
+   "round": 0
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "1",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 2106,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794137504462,
+   "options": 2,
+   "errorType": "wrongChoice",
+   "chosen": "2",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "1",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 6757,
+   "assistLevel": 0,
+   "attempt": 2,
+   "scored": true,
+   "at": 1794137509114,
+   "options": 2,
+   "chosen": "1",
+   "level": 1,
+   "round": 1
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "2",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 17028,
+   "assistLevel": 1,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794137533628,
+   "options": 2,
+   "errorType": "timeout",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "2",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 23150,
+   "assistLevel": 2,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794137539751,
+   "options": 2,
+   "chosen": "2",
+   "level": 1,
+   "round": 2
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "3",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 1975,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794137550963,
+   "options": 2,
+   "errorType": "wrongChoice",
+   "chosen": "2",
+   "level": 1,
+   "round": 3
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "3",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 4153,
+   "assistLevel": 0,
+   "attempt": 2,
+   "scored": true,
+   "at": 1794137553141,
+   "options": 2,
+   "errorType": "wrongChoice",
+   "chosen": "2",
+   "level": 1,
+   "round": 3
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "quantity",
+   "item": "3",
+   "correct": true,
+   "firstTry": false,
+   "latencyMs": 8053,
+   "assistLevel": 2,
+   "attempt": 3,
+   "scored": true,
+   "at": 1794137557041,
+   "options": 2,
+   "chosen": "3",
+   "level": 1,
+   "round": 3
+  }
+ ],
+ "progress": {
+  "v": 6,
+  "missions": {
+   "lighthouse": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 0.25
+   },
+   "letters": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "balloons": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "name": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "cones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "stones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "counting": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "lookout": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "delivery": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "picnic": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "garage": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   }
+  },
+  "items": {},
+  "skills": {
+   "quantity": {
+    "1": {
+     "attempts": 1,
+     "correctFirstTry": 0,
+     "assisted": 0,
+     "wrong": 1,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0,
+     "avgLatencyMs": 6757,
+     "latencyN": 1,
+     "lastSeenAt": 1794137509114,
+     "confusions": {
+      "2": 1
+     }
+    },
+    "2": {
+     "attempts": 2,
+     "correctFirstTry": 2,
+     "assisted": 1,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 1,
+     "mastery": 0,
+     "avgLatencyMs": 12953,
+     "latencyN": 2,
+     "lastSeenAt": 1794137539751,
+     "confusions": {}
+    },
+    "3": {
+     "attempts": 1,
+     "correctFirstTry": 0,
+     "assisted": 1,
+     "wrong": 2,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0,
+     "avgLatencyMs": 8053,
+     "latencyN": 1,
+     "lastSeenAt": 1794137557041,
+     "confusions": {
+      "2": 2
+     }
+    }
+   }
+  },
+  "sessions": {
+   "count": 1,
+   "recent": [
+    {
+     "id": 1794137433606,
+     "startedAt": 1794137433606,
+     "endedAt": 1794137560794,
+     "missions": [
+      "lighthouse"
+     ],
+     "finale": false
+    }
+   ]
+  },
+  "world": {
+   "rescuedKittens": 0,
+   "balloonsAtLookout": 0,
+   "bridgeBuilt": false,
+   "trainUnlocked": false,
+   "lookoutLights": false,
+   "treatsAtHouse": 0,
+   "trafficLight": false,
+   "roadCones": 0,
+   "parcels": 0,
+   "picnicGuests": 0,
+   "lookoutKittens": 0,
+   "garageCar": false,
+   "bunting": false,
+   "completedEvents": [],
+   "rewards": [],
+   "unseen": []
+  },
+  "visited": {}
+ }
+}

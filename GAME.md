@@ -539,6 +539,95 @@ Levels add new letters (2), more comets to catch and a little more speed (3), th
   that never touch, from right to left below the speech bubble, then leave and come back later in another lane
 - **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
 
+### 💡 The Lighthouse · `lighthouse`
+
+Dusk at the lighthouse: a warm orange-pink sky, calm green-blue water and a boat coming home. The lamp
+flashes, and she counts the flashes or makes the lamp flash as many times as the number on the boat's sail.
+
+| Level | mode | numbers | choices | rounds |
+|---|---|---|---|---|
+| 1 | marks | 1–3 | 2 | 4 |
+| 2 | flashes | 1–4 | 3 | 4 |
+| 3 | make | 2–5 | — | 3 |
+| 4 | more | 1–4 | — | 3 |
+
+- **mode**: `marks` keeps a yellow dot on the board for every flash (things that stay); `flashes` has no dots, so
+  she counts what she saw, and tapping the bubble replays the flashes; `make` puts the number on the boat's sail,
+  she taps the lamp that many times and then the boat; `more` flashes a number and she makes one flash more.
+- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
+- **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
+- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
+  a beam and the boat sails into the harbour. Wrong: the boat bobs, the dots reset, the right answer is shown and
+  she tries again. A boat is never lost.
+
+### 🦆 Pływa czy tonie? · `shallows`
+
+A sunny sandy beach at the edge of clear shallow water. The water surface and the sandy bottom are both
+in view, from a low side-on camera. One thing waits at the water's edge; when it drops in, it splashes,
+then floats at the surface or sinks slowly to the bottom. Two little shelves stand on the sand, one under
+a duck on the waves ("pływa"), one under a stone on the bottom ("tonie"). Things already sorted stay on
+the shelves, so she sees the groups grow.
+
+| Level | mode | things | rounds |
+|---|---|---|---|
+| 1 | watch | familiar | 4 |
+| 2 | guess | familiar | 4 |
+| 3 | surprise | all | 5 |
+
+- **mode** — `watch`: she taps the thing, watches it float or sink, hears "Jabłko pływa!", then "Gdzie to położymy?"
+  and taps the matching shelf. `guess`: first "Pływa czy tonie?" and she taps a shelf as her guess, then the
+  thing drops in and shows the answer. `surprise`: as `guess`, with the big log and the little coin among the
+  things. A wrong guess is not punished: the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to
+  its shelf, then the next round.
+- **things** — `familiar`: an apple, a ball, a rubber duck, a stone, a key and a spoon. `all`: also a leaf,
+  a wooden block, a big log (clearly the biggest) and a little coin (clearly the smallest), so the log floats
+  and the coin sinks. Chase never says heavy or light.
+- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap; `guess` and
+  `surprise` are scored on the guess. Every level has at least one scored question.
+### 🦀 The Reef · `reef`
+
+Looking down through the boat's round glass floor at a bright, shallow reef: sandy sea floor, green sea grass,
+a grey rock and a big pink shell. A crab, a starfish, a little fish and an octopus take turns hiding on, under,
+in and next to them.
+
+| Level | mode | words | choices | rounds |
+|---|---|---|---|---|
+| 1 | see | na, pod | 2 | 4 |
+| 2 | hear | na, pod, w | 3 | 4 |
+| 3 | hear | na, pod, w, obok | 3 | 4 |
+| 4 | place | na, pod, w, obok | 3 | 3 |
+
+- **mode**: `see` shows a small picture of the asked position in the bubble, to match with what she sees;
+  `hear` gives the words only; `place` shows one big scene, the animal waits above it and three glowing spots
+  mark places. She taps the spot and the animal swims there.
+- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock or shell, under the rock,
+  in the shell, and next to the rock or shell.
+- **choices**: how many small scenes side by side (2 to 4), or how many glowing spots in `place`.
+- **rounds**: questions per mission (1 to 8). Each is one scored question, skill `position`, item the word.
+  Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, the right
+  scene or spot is shown, and she tries again. The right word is never the same three times in a row.
+
+### 📯 The Port · `port`
+
+A little sunny port with a wooden quay, five small moored boats bobbing, each with its name painted on a white
+board, and Chase watching from his round window. A big round horn stands on the quay. One boat comes forward,
+and she toots its name once for each syllable.
+
+| Level | mode | syllables | rounds |
+|---|---|---|---|
+| 1 | together | 1–2 | 4 |
+| 2 | alone | 1–3 | 4 |
+| 3 | which | 1–3 | 4 |
+
+- **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
+  `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
+  `which`: three boats come forward, "Która łódka ma dwa kawałki?", and she taps the tick under a boat.
+- **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
+  lights as she toots; the boat toots back once per syllable, then says the whole name.
+- **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
+  count in `which`). Too few or too many toots: Chase claps the name slowly and she tries again. Right: the boat
+  sails out happily. A boat is never lost.
+
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car

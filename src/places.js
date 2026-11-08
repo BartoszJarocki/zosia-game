@@ -42,6 +42,7 @@ export const PLACES = {
     badge: { label: '🔧', color: '#ea580c' },
   },
   rocket: { area: 'island', game: false, domain: 'space', leadsTo: 'space' },
+  harbour: { area: 'island', game: false, domain: 'sea', leadsTo: 'sea' },
   sun: { area: 'space', game: false, domain: 'space' },
   mercury: { area: 'space', game: true, domain: 'numbers', badge: { label: '🪨', color: '#9ca3af' } },
   venus: { area: 'space', game: true, domain: 'shapes', badge: { label: '☁️', color: '#f59e0b' } },
@@ -57,9 +58,21 @@ export const PLACES = {
   comet: { area: 'space', game: true, domain: 'letters', badge: { label: '☄️', color: '#38bdf8' } },
   stars: { area: 'space', game: true, domain: 'numbers', badge: { label: '⭐', color: '#eab308' } },
   telescope: { area: 'space', game: true, domain: 'space', stop: false, badge: { label: '🔭', color: '#0d9488' } },
+  island: { area: 'sea', game: false, domain: 'sea' },
+  buoy: { area: 'sea', game: false, domain: 'sea' },
+  shallows: {
+    area: 'sea', game: true, domain: 'shapes',
+    badge: { label: '🦆', color: '#f59e0b' },
+  },
+  seal: { area: 'sea', game: false, domain: 'sea' },
+  lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } },
+  gulls: { area: 'sea', game: false, domain: 'sea' },
+  reef: { area: 'sea', game: true, domain: 'letters', badge: { label: '🦀', color: '#14b8a6' } },
+  port: { area: 'sea', game: true, domain: 'letters', badge: { label: '📯', color: '#7c3aed' } },
 };
 
 export const placesIn = (area) => Object.keys(PLACES).filter((k) => PLACES[k].area === area);
 export const GAMES = Object.keys(PLACES).filter((k) => PLACES[k].game);
 
-export const homeArea = (stage) => stage?.area === 'space' ? 'space' : 'island';
+export const MAP_AREAS = new Set(['space', 'sea']);
+export const homeArea = (stage) => (stage?.area && MAP_AREAS.has(stage.area) ? stage.area : 'island');

@@ -6,7 +6,7 @@ import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
-import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
+import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, POSITION_SKILLS, POSITION_ITEMS, SYLLABLE_SKILLS, SYLLABLE_ITEMS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
 
@@ -233,6 +233,8 @@ export function showParentView({ onClose }) {
       <p class="pv-never">Tap the word she knows best for each letter. Every word is recorded, so the voice stays the same.</p>
       <div class="pv-words">${pictureWords()}</div></section>
     ${metItems(skills, SPACE_SKILLS).length ? `<section><h2>Space</h2>${grid(itemReports(skills, SPACE_SKILLS, metItems(skills, SPACE_SKILLS)), (r) => itemLabel('space', r.item))}</section>` : ''}
+    <section><h2>Where things are <small class="pv-build">The Reef</small></h2>${grid(itemReports(skills, POSITION_SKILLS, POSITION_ITEMS), (r) => itemLabel('position', r.item))}</section>
+    <section><h2>Syllables <small class="pv-build">The Port</small></h2>${grid(itemReports(skills, SYLLABLE_SKILLS, SYLLABLE_ITEMS), (r) => itemLabel('syllables', r.item))}</section>
     <section><h2>Numbers</h2>${grid(itemReports(skills, NUMBER_SKILLS, nums))}</section>
     <section><h2>More, less, the same <small class="pv-build">Pup Picnic</small></h2>${grid(itemReports(skills, COMPARE_SKILLS, COMPARE_ITEMS), (r) => itemLabel('comparison', r.item))}</section>
     ${metItems(skills, WORD_SKILLS).length ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${grid(itemReports(skills, WORD_SKILLS, metItems(skills, WORD_SKILLS)), (r) => r.item)}</section>` : ''}

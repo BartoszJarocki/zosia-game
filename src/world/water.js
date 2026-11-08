@@ -26,6 +26,10 @@ function rippleNormals() {
   }
   normalTex = new THREE.DataTexture(data, S, S);
   normalTex.wrapS = normalTex.wrapT = THREE.RepeatWrapping;
+  normalTex.generateMipmaps = true;
+  normalTex.minFilter = THREE.LinearMipmapLinearFilter;
+  normalTex.magFilter = THREE.LinearFilter;
+  normalTex.anisotropy = 8;
   normalTex.needsUpdate = true;
   return normalTex;
 }

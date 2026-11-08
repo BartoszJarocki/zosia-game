@@ -4,6 +4,8 @@
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
 import { STRIPE_ROWS } from '../levels/jupiter.js';
+import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
+import { BOATS } from '../levels/port.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -40,6 +42,10 @@ const JUPITER_COLOUR = { white: 'biały', orange: 'pomarańczowy', brown: 'brąz
 const stripeWords = (row) => row.map((c, i) => (i ? JUPITER_COLOUR[c] : cap(JUPITER_COLOUR[c])));
 /** A block or basket by the rule she sorts by: colour or size (masculine forms). */
 const sorted = (rule, v) => (rule === 'size' ? SIZE[v] : COLOUR[v]);
+const SHALLOWS_SURPRISE = {
+  kłoda: 'Taka duża, a pływa!',
+  moneta: 'Taka mała, a tonie!',
+};
 const SATURN = {
   ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', wrong: 'Ojej! To jest lód. Lód jest tutaj.' },
   rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', wrong: 'Ojej! To jest skała. Skały są tutaj.' },
@@ -56,6 +62,7 @@ const RIVER_ON = ['A dalej?', 'A teraz?'];
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
 export const PLACE_TO = {
   rocket: 'do rakiety',
+  harbour: 'do przystani',
   letters: 'do Kociego Parku',
   balloons: 'na Balonową Łąkę',
   name: 'do Literkowego Pociągu',
@@ -98,6 +105,10 @@ export const HOME_TASKS = {
   garage: 'Znajdź w domu coś okrągłego!',
   mercury: 'Policz z mamą guziki na swojej bluzce!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
+  lighthouse: 'Policz z mamą, ile razy klaśniesz!',
+  shallows: 'W kąpieli sprawdź z mamą, co pływa, a co tonie!',
+  reef: 'Schowaj misia pod kocem i zapytaj mamę, gdzie jest miś!',
+  port: `Klaśnij z mamą swoje imię po kawałku: ${kid.slice(0, 2)}-${kid.slice(2).toLowerCase()}!`,
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   pluto: 'Narysuj z mamą serduszko!',
@@ -192,6 +203,66 @@ export const SPACE_FACTS = {
   stars: ['To są gwiazdy.', 'Wielki Wóz to siedem gwiazd.'],
 };
 
+export const SEA_LINES = {
+  jackets: ['Zakładamy kamizelki!'],
+  board: ['Wsiadamy do łódki!'],
+  start: ['Zatrąb! Płyniemy!'],
+  startAgain: ['Naciśnij wielki róg!'],
+  cast: ['Tuu-tuu! Płyniemy!'],
+  map: ['Gdzie popłyniemy?'],
+  again: ['Płyniemy dalej czy do domu?'],
+  home: ['Wracamy na wyspę!'],
+  goodnight: ['Robi się późno. Wracamy na wyspę.'],
+  inviteHome: ['Czas wracać na wyspę!'],
+  far: ['Płyniemy daleko, daleko!'],
+};
+
+const SEA_DESTINATIONS = {
+  island: 'na wyspę', buoy: 'do boi', shallows: 'na plażę', seal: 'do foki',
+  lighthouse: 'do latarni', gulls: 'do mew', reef: 'na rafę', port: 'do portu',
+};
+
+export const SEA_INVITE = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, [`Może popłyniemy ${to}?`]]));
+export const SEA_TO = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, `Płyniemy ${to}!`]));
+
+export const SEA_PASS = {
+  buoy: 'Mijamy boję!', shallows: 'Mijamy plażę!', seal: 'Mijamy fokę!',
+  lighthouse: 'Mijamy latarnię!', gulls: 'Mijamy mewy!', reef: 'Mijamy rafę!', port: 'Mijamy port!',
+};
+
+export const SEA_FACTS = {
+  island: ['To nasza wyspa.'],
+  buoy: ['Boja pokazuje łódkom drogę.'],
+  shallows: ['Tu jest płytko.', 'Widać piasek na dnie.'],
+  seal: ['Foka odpoczywa na kamieniu.'],
+  lighthouse: ['Latarnia świeci w nocy, żeby łódki trafiły do domu.', 'Każda latarnia mruga po swojemu.'],
+  gulls: ['Mewy szukają ryb.'],
+  reef: ['Pod wodą mieszkają kraby i rozgwiazdy.'],
+  port: ['W porcie łódki odpoczywają.'],
+};
+
+/** The reef: the exact Polish place forms and animal forms, kept as data. */
+export const REEF_FACTS = [
+  'Krab chodzi bokiem.',
+  'Ośmiornica ma osiem ramion.',
+  'Pod wodą mieszkają kraby i rozgwiazdy.',
+];
+export const REEF_PLACES = {
+  'na:rock': 'na kamieniu',
+  'pod:rock': 'pod kamieniem',
+  'obok:rock': 'obok kamienia',
+  'w:shell': 'w muszli',
+  'na:shell': 'na muszli',
+  'obok:shell': 'obok muszli',
+};
+export const REEF_ANIMALS = {
+  crab: { nom: 'krab', acc: 'kraba', which: 'Który' },
+  starfish: { nom: 'rozgwiazda', acc: 'rozgwiazdę', which: 'Która' },
+  fish: { nom: 'rybka', acc: 'rybkę', which: 'Która' },
+  octopus: { nom: 'ośmiornica', acc: 'ośmiornicę', which: 'Która' },
+};
+const reefPlace = (word, on) => REEF_PLACES[`${word}:${on}`];
+
 export const T = {
   telescopeStart: () => ['Patrzymy przez teleskop!'],
   telescopeMatch: () => ['Znajdź taki sam!'],
@@ -225,6 +296,7 @@ export const T = {
   // the celebration, after the badge line ("again" or the island?)
   againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
   againOrSpace: () => ['Jeszcze raz czy lecimy dalej?'],
+  againOrSea: () => ['Jeszcze raz czy płyniemy dalej?'],
   moonStart: () => ['Jesteśmy na Księżycu! Tu skacze się wysoko i powoli.'],
   moonJump: (n) => [`Skocz ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
   moonJumpShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'raz' : 'razy'}!`],
@@ -235,6 +307,46 @@ export const T = {
   moonWatch: () => ['Patrz, jak skacze!'],
   moonHowMany: () => ['Ile było skoków?'],
   moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
+  lighthouseStart: () => ['Robi się wieczór. Łódki wracają do domu.'],
+  lighthouseWhy: () => ['Latarnia świeci w nocy, żeby łódki trafiły do domu.'],
+  lighthouseEach: () => ['Każda latarnia mruga po swojemu.'],
+  lighthouseHowMany: () => ['Ile razy mrugnęła latarnia?'],
+  lighthouseMake: (n) => [`Mrugnij ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
+  lighthouseMore: () => ['Mrugnij o jeden raz więcej!'],
+  lighthouseDoneTap: () => ['Gotowe? Dotknij łódki!'],
+  lighthouseHome: () => ['Łódka bezpiecznie wróciła do domu!'],
+  lighthouseTooFew: () => ['Za mało! Policz jeszcze raz!'],
+  lighthouseTooMany: () => ['Za dużo! Policz jeszcze raz!'],
+  lighthouseCountHelp: () => ['Dotknij latarni i policz mrugnięcia!'],
+  lighthouseDone: () => ['Brawo! Wszystkie łódki są w domu!'],
+  shallowsStart: () => [...SEA_FACTS.shallows],
+  shallowsDrop: () => ['Wrzuć to do wody!'],
+  shallowsAsk: () => ['Pływa czy tonie?'],
+  shallowsWhere: () => ['Gdzie to położymy?'],
+  shallowsThing: (thing) => [`${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
+  shallowsLook: (thing) => [`Popatrz! ${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
+  shallowsSurprise: (thing) => (SHALLOWS_SURPRISE[thing.id] ? [SHALLOWS_SURPRISE[thing.id]] : []),
+  shallowsDone: () => ['Brawo! Wiesz, co pływa, a co tonie!'],
+  reefStart: (i) => ['Jesteśmy na rafie!', 'Zaglądamy przez szklaną podłogę łódki!', REEF_FACTS[i % REEF_FACTS.length]],
+  reefAsk: (animal, word, on) => [`${REEF_ANIMALS[animal].which} ${REEF_ANIMALS[animal].nom} jest ${reefPlace(word, on)}?`],
+  reefRight: (animal, word, on) => [`Tak! ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
+  reefWrong: (animal, word, on) => [`Popatrz jeszcze raz. ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
+  reefPlaceAsk: (animal, word, on) => [`Połóż ${REEF_ANIMALS[animal].acc} ${reefPlace(word, on)}.`],
+  reefLook: () => ['Popatrz na wszystkie obrazki.'],
+  reefPlaceLook: () => ['Popatrz na wszystkie miejsca.'],
+  reefDone: () => ['Brawo! Znalazłaś wszystkie zwierzątka na rafie!'],
+  portStart: () => ['W porcie łódki odpoczywają. Każda łódka ma imię.'],
+  portName: (word) => [`Ta łódka nazywa się ${sayWord(word)}.`],
+  portToot: () => ['Zatrąb jej imię po kawałku!'],
+  portDone: () => ['Gotowe? Dotknij łódki!'],
+  portWhich: (n) => [`Która łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}?`],
+  portHas: (n) => [`Ta łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}.`],
+  portRight: (n) => [`Tak! Ta łódka ma ${n === 1 ? 'jeden kawałek' : n === 2 ? 'dwa kawałki' : 'trzy kawałki'}.`],
+  portTooFew: () => ['Za mało! Posłuchaj jeszcze raz.'],
+  portTooMany: () => ['Za dużo! Posłuchaj jeszcze raz.'],
+  portHelp: () => ['Dotknij rogu i zatrąb raz na każdy kawałek!'],
+  portSuccess: () => ['Brawo! Łódka wypływa w morze!'],
+  portFinished: () => ['Brawo! Wszystkie łódki wypłynęły w morze!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
@@ -548,8 +660,34 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_TO));
   add(Object.values(SPACE_PASS));
   add(Object.values(SPACE_FACTS).flat());
+  add(Object.values(SEA_LINES).flat());
+  add(Object.values(SEA_INVITE).flat());
+  add(Object.values(SEA_TO));
+  add(Object.values(SEA_PASS));
+  add(Object.values(SEA_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
-  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  [T.againOrSpace, T.againOrSea, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  SHALLOWS_THINGS.forEach((thing) => { add(T.shallowsThing(thing)); add(T.shallowsLook(thing)); add(T.shallowsSurprise(thing)); });
+  [T.shallowsStart, T.shallowsDrop, T.shallowsAsk, T.shallowsWhere, T.shallowsDone].forEach((f) => add(f()));
+  nums.slice(0, 5).forEach((n) => add(T.lighthouseMake(n)));
+  [T.lighthouseStart, T.lighthouseWhy, T.lighthouseEach, T.lighthouseHowMany, T.lighthouseMore, T.lighthouseDoneTap, T.lighthouseHome, T.lighthouseTooFew, T.lighthouseTooMany, T.lighthouseCountHelp, T.lighthouseDone].forEach((f) => add(f()));
+  Object.keys(REEF_PLACES).forEach((key) => {
+    const [word, on] = key.split(':');
+    Object.keys(REEF_ANIMALS).forEach((animal) => {
+      add(T.reefAsk(animal, word, on));
+      add(T.reefRight(animal, word, on));
+      add(T.reefWrong(animal, word, on));
+      add(T.reefPlaceAsk(animal, word, on));
+    });
+  });
+  REEF_FACTS.forEach((_, i) => add(T.reefStart(i)));
+  [T.reefLook, T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
+  BOATS.forEach((boat) => {
+    add(T.portName(boat.word));
+    boat.syllables.forEach((s) => add(T.syllable(s)));
+  });
+  [1, 2, 3].forEach((n) => { add(T.portWhich(n)); add(T.portHas(n)); add(T.portRight(n)); });
+  [T.portStart, T.portToot, T.portDone, T.portTooFew, T.portTooMany, T.portHelp, T.portSuccess, T.portFinished].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
   for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));

@@ -37,7 +37,7 @@ async function open(setup) {
   // the time the call returns, so a watcher notes that it showed
   await page.waitForTimeout(3000);
   await page.evaluate(() => { setInterval(() => { if (window.__pup.getStage()?.kind === 'space-map') window.__sawMap = true; }, 50); });
-  await page.evaluate(() => window.__pup.game.space());
+  await page.evaluate(() => window.__pup.game.map('space'));
   await page.waitForFunction(() => window.__sawMap, null, { timeout: 90000 });
   return { page, errors };
 }
