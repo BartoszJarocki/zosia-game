@@ -51,7 +51,7 @@ const sailMap = (n) => texture(256, (c, size) => {
 export class LighthouseMission extends Mission {
   constructor(game) {
     super(game, 'lighthouse');
-    this.view = { pos: new THREE.Vector3(-1, 9.2, 17), look: new THREE.Vector3(-1, 2, 0), minWidth: 17 };
+    this.view = { pos: new THREE.Vector3(0, 9.2, 17), look: new THREE.Vector3(0, 3.4, 0), minWidth: 17 };
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.phase = 'waiting';
@@ -142,6 +142,7 @@ export class LighthouseMission extends Mission {
     this.lantern.material = this.lantern.material.clone();
     this.lantern.material.color.set('#fff6c7');
     this.lantern.material.emissiveIntensity = LAMP_BASE;
+    this.lantern.scale.setScalar(1.5);
     this.mats.push(this.lantern.material);
     const oldBeam = this.lighthouse.children.find((o) => o.userData.tick);
     if (oldBeam) oldBeam.visible = false;
@@ -177,7 +178,7 @@ export class LighthouseMission extends Mission {
 
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
     this.mats.push(hitMat);
-    this.lamp = mesh(new THREE.SphereGeometry(0.98, 12, 8), hitMat, { shadow: false });
+    this.lamp = mesh(new THREE.SphereGeometry(1.05, 12, 8), hitMat, { shadow: false });
     this.lamp.userData.choice = 'lamp';
     this.lamp.userData.tapHeight = 0;
     this.lantern.add(this.lamp);
@@ -190,8 +191,9 @@ export class LighthouseMission extends Mission {
     this.window = new THREE.Group();
     this.window.add(mesh(new THREE.CircleGeometry(0.98, 48), discMat, { shadow: false }));
     this.window.add(mesh(new THREE.TorusGeometry(1.03, 0.09, 10, 48), rimMat, { shadow: false }));
-    this.window.position.set(0, 3.85, 0.87);
-    this.lighthouse.add(this.window);
+    this.window.position.set(-3.6, 3, -2.5);
+    this.window.scale.setScalar(0.95);
+    this.scene.add(this.window);
     this.window.lookAt(this.view.pos);
 
     const woodMat = new THREE.MeshStandardMaterial({ color: '#a16207', roughness: 0.85 });
@@ -603,7 +605,7 @@ export class LighthouseMission extends Mission {
     this.maps = [];
     this.mats.forEach((m) => m.dispose());
     this.mats = [];
-    for (const root of [this.lighthouse, this.rock, this.harbour, this.board]) {
+    for (const root of [this.lighthouse, this.rock, this.harbour, this.board, this.window]) {
       root?.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
     }
     this.portrait?.dispose();

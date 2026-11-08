@@ -102,6 +102,31 @@ function screenBox(obj, camera, width, height) {
 
 const apart = (a, b) => a.right + 1 < b.left || b.right + 1 < a.left || a.bottom + 1 < b.top || b.bottom + 1 < a.top;
 
+// The bubble's box from src/style.css, for the widest content (a numeral with dots and the picture clue).
+function bubbleBox(s, width, height) {
+  const btn = Math.min(0.11 * width, 0.11 * height, 96);
+  const font = Math.min(0.12 * width, 0.11 * height, 118);
+  const dots = Math.min(0.03 * width, 0.026 * height, 24);
+  const gap = Math.min(0.03 * width, 26);
+  const pad = Math.min(0.036 * width, 32);
+  const w = 144 + font + 40 + 2 * gap + 2 * pad + 10;
+  const h = font * 1.1 + dots * 1.1 + 7 + 0.022 * height + 10;
+  const left = s.bubbleAt === 'left' ? 16 + btn + 24 : (width - w) / 2;
+  const top = 14 + btn + 0.016 * height;
+  return { left, right: left + w, top, bottom: top + h };
+}
+
+function hudBoxes(width, height) {
+  const btn = Math.min(0.11 * width, 0.11 * height, 96);
+  const paw = Math.min(0.065 * width, 0.055 * height, 50);
+  const gap = Math.min(0.014 * width, 12);
+  const paws = 3 * paw + 2 * gap + 28;
+  return [
+    { left: 16, right: 16 + btn, top: 14, bottom: 14 + btn },
+    { left: width / 2 - paws / 2, right: width / 2 + paws / 2, top: 14, bottom: 14 + 6 + paw },
+  ];
+}
+
 test('the Lighthouse place and its level table match the GAME.md contract', () => {
   assert.deepEqual(PLACES.lighthouse, { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } });
   const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
@@ -174,6 +199,52 @@ test('every tappable is at least 70 px, things do not touch, and the window stay
   marks.alive = false;
   marks.exit();
   void marksRound;
+});
+
+test('the lamp is a big, low tap target and the window sits clear of everything at all iPad sizes', async () => {
+  const sizes = [[1180, 820], [1366, 1024], [820, 1180]];
+
+  const make = await scene(4, 3);
+  const makeRound = make.round(0);
+  await until(() => make.phase === 'making');
+  for (const [width, height] of sizes) {
+    const camera = cameraFor(make, width, height);
+    const lamp = screenBox(make.lamp, camera, width, height);
+    assert.ok(lamp.width >= 130, `${width}x${height} lamp is ${lamp.width} px wide`);
+    assert.ok(lamp.height >= 130, `${width}x${height} lamp is ${lamp.height} px tall`);
+    assert.ok(lamp.left >= 0 && lamp.right <= width, `${width}x${height} lamp is inside the screen`);
+    assert.ok(lamp.top >= 40, `${width}x${height} lamp top margin is ${lamp.top} px`);
+    assert.ok(lamp.bottom <= height, `${width}x${height} lamp is inside the screen`);
+    for (const hud of hudBoxes(width, height)) assert.ok(apart(lamp, hud), `${width}x${height} lamp covers the HUD`);
+    assert.ok(apart(lamp, bubbleBox(make, width, height)), `${width}x${height} lamp covers the bubble`);
+
+    const window = screenBox(make.window, camera, width, height);
+    assert.ok(window.width >= 70, `${width}x${height} Chase's window is ${window.width} px`);
+    assert.ok(apart(window, lamp), `${width}x${height} the window covers the lamp`);
+    assert.ok(apart(window, bubbleBox(make, width, height)), `${width}x${height} the window covers the bubble`);
+  }
+  make.alive = false;
+  make.exit();
+  void makeRound;
+
+  const choose = await scene(2, 3);
+  const chooseRound = choose.round(0);
+  await until(() => choose.phase === 'choosing');
+  for (const [width, height] of sizes) {
+    const camera = cameraFor(choose, width, height);
+    const window = screenBox(choose.window, camera, width, height);
+    const others = [
+      ['lamp', choose.lamp], ['boat', choose.boat], ['tower', choose.lighthouse],
+      ...choose.choices.map((b, i) => [`buoy ${i + 1}`, b]),
+    ];
+    for (const [name, o] of others) {
+      assert.ok(apart(window, screenBox(o, camera, width, height)), `${width}x${height} the window overlaps ${name}`);
+    }
+    assert.ok(apart(window, bubbleBox(choose, width, height)), `${width}x${height} the window overlaps the bubble`);
+  }
+  choose.alive = false;
+  choose.exit();
+  void chooseRound;
 });
 
 test('Lighthouse has no shadows or point lights, and clears a round away', async () => {
