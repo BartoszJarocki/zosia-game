@@ -56,6 +56,7 @@ const RIVER_ON = ['A dalej?', 'A teraz?'];
 /** Where each place is, as in "Jedziemy …" / "Może …?" */
 export const PLACE_TO = {
   rocket: 'do rakiety',
+  harbour: 'do przystani',
   letters: 'do Kociego Parku',
   balloons: 'na Balonową Łąkę',
   name: 'do Literkowego Pociągu',
@@ -190,6 +191,44 @@ export const SPACE_FACTS = {
   blackhole: ['To jest czarna dziura.', 'Czarna dziura mocno przyciąga.', 'Jest bardzo, bardzo daleko.'],
   comet: ['To jest kometa.', 'Kometa to kula lodu i pyłu.', 'Ogon rośnie blisko Słońca.'],
   stars: ['To są gwiazdy.', 'Wielki Wóz to siedem gwiazd.'],
+};
+
+export const SEA_LINES = {
+  jackets: ['Zakładamy kamizelki!'],
+  board: ['Wsiadamy do łódki!'],
+  start: ['Zatrąb! Płyniemy!'],
+  startAgain: ['Naciśnij wielki róg!'],
+  cast: ['Tuu-tuu! Płyniemy!'],
+  map: ['Gdzie popłyniemy?'],
+  again: ['Płyniemy dalej czy do domu?'],
+  home: ['Wracamy na wyspę!'],
+  goodnight: ['Robi się późno. Wracamy na wyspę.'],
+  inviteHome: ['Czas wracać na wyspę!'],
+  far: ['Płyniemy daleko, daleko!'],
+};
+
+const SEA_DESTINATIONS = {
+  island: 'na wyspę', buoy: 'do boi', shallows: 'na plażę', seal: 'do foki',
+  lighthouse: 'do latarni', gulls: 'do mew', reef: 'na rafę', port: 'do portu',
+};
+
+export const SEA_INVITE = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, [`Może popłyniemy ${to}?`]]));
+export const SEA_TO = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, `Płyniemy ${to}!`]));
+
+export const SEA_PASS = {
+  buoy: 'Mijamy boję!', shallows: 'Mijamy plażę!', seal: 'Mijamy fokę!',
+  lighthouse: 'Mijamy latarnię!', gulls: 'Mijamy mewy!', reef: 'Mijamy rafę!', port: 'Mijamy port!',
+};
+
+export const SEA_FACTS = {
+  island: ['To nasza wyspa.'],
+  buoy: ['Boja pokazuje łódkom drogę.'],
+  shallows: ['Tu jest płytko.', 'Widać piasek na dnie.'],
+  seal: ['Foka odpoczywa na kamieniu.'],
+  lighthouse: ['Latarnia świeci w nocy, żeby łódki trafiły do domu.', 'Każda latarnia mruga po swojemu.'],
+  gulls: ['Mewy szukają ryb.'],
+  reef: ['Pod wodą mieszkają kraby i rozgwiazdy.'],
+  port: ['W porcie łódki odpoczywają.'],
 };
 
 export const T = {
@@ -548,6 +587,11 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_TO));
   add(Object.values(SPACE_PASS));
   add(Object.values(SPACE_FACTS).flat());
+  add(Object.values(SEA_LINES).flat());
+  add(Object.values(SEA_INVITE).flat());
+  add(Object.values(SEA_TO));
+  add(Object.values(SEA_PASS));
+  add(Object.values(SEA_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
   [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));

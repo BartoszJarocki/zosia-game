@@ -79,6 +79,7 @@ for (const kind of GAMES) {
 
 const MAPS = {
   space: () => import('./scenes/space.js').then((m) => m.Space),
+  sea: () => import('./scenes/bay.js').then((m) => m.Bay),
 };
 
 const game = {

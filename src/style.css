@@ -338,9 +338,11 @@ svg { display: block; }
 .rocket-countdown { position: absolute; top: 7%; left: 0; right: 0; text-align: center; font-size: min(24vh, 180px); font-weight: 700; color: #fff5a4; text-shadow: 0 5px 0 #c97029, 0 0 30px #ffcf65; }
 .rocket-countdown.lit { animation: countIn .4s ease-out; }
 .rocket-start { position: absolute; left: 50%; bottom: 9%; width: min(64vw, 340px); min-height: 130px; border: 8px solid white; border-radius: 70px; background: #eb3f52; color: white; font-size: 62px; font-weight: 700; box-shadow: 0 10px 0 #a22a45, 0 15px 30px #653b6e66; animation: rocketPulse 1.3s ease-in-out infinite; }
+.boat-horn { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); width: 180px; height: 180px; border: 8px solid white; border-radius: 50%; background: #f59e0b; color: white; font-size: 86px; line-height: 1; box-shadow: 0 10px 0 #b45309, 0 15px 30px #653b6e66; animation: hornPulse 1.3s ease-in-out infinite; }
+@keyframes hornPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
 @keyframes rocketPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
 @keyframes countIn { from { transform: scale(.7); opacity: .3; } to { transform: scale(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .rocket-start, .rocket-countdown.lit { animation: none; } .rocket-start { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .rocket-start, .rocket-countdown.lit, .boat-horn { animation: none; } .rocket-start, .boat-horn { transform: translateX(-50%); } }
 
 .space-telescope {
   position: absolute; right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom));

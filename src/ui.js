@@ -127,18 +127,38 @@ export function hubHud() {
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) shelf.addEventListener(ev, () => clearTimeout(t));
 }
 
-export function spaceHud({ onHome, onBack, onTelescope, visiting = false, suggested = false }) {
+export function spaceHud({ onHome, onBack, onTelescope, visiting = false, suggested = false, backIcon = '🚀' }) {
   clear();
   const hud = el(`<div class="space-hud">
     <div class="topbar"><button class="round-btn space-home" aria-label="Do domu">${ICON.home}</button>
     <button class="round-btn space-parent" aria-label="Dla rodzica, przytrzymaj">${ICON.paw()}</button></div>
-    ${visiting ? '<button class="round-btn space-back" aria-label="Wróć do mapy">🚀</button>' : `<button class="round-btn space-telescope${suggested ? ' suggested' : ''}" aria-label="Teleskop">${ICON.telescope}</button>`}
+    ${visiting ? `<button class="round-btn space-back" aria-label="Wróć do mapy">${backIcon}</button>`
+      : onTelescope ? `<button class="round-btn space-telescope${suggested ? ' suggested' : ''}" aria-label="Teleskop">${ICON.telescope}</button>` : ''}
   </div>`);
   press(hud.querySelector('.space-home'), onHome);
   holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), 3000);
   if (visiting) press(hud.querySelector('.space-back'), onBack);
-  else press(hud.querySelector('.space-telescope'), onTelescope);
+  else if (onTelescope) press(hud.querySelector('.space-telescope'), onTelescope);
   ui.append(hud);
+}
+
+/** The horn at the pier: one big button, then the boat sails. */
+export function boatHud() {
+  clear();
+  const hud = el('<div class="launch-hud"></div>');
+  ui.append(hud);
+  return {
+    start(onStart) {
+      const button = el('<button class="boat-horn" aria-label="Zatrąb!">📯</button>');
+      button.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        button.remove();
+        onStart();
+      }, { once: true });
+      hud.append(button);
+    },
+    remove() { hud.remove(); },
+  };
 }
 
 export function launchHud() {
