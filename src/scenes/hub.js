@@ -29,7 +29,7 @@ import { makeGarageLandmark } from '../world/garage-props.js';
 import { makeLaunchPad } from '../world/rocket.js';
 import { addKeepsakes, KEEPSAKE_CLEAR } from '../world/keepsakes.js';
 import { makeNightSky, nightSkyLine } from '../world/night-sky.js';
-import { addShells } from '../world/shells.js';
+import { addShells, SHELL_LAYOUT } from '../world/shells.js';
 import { makeLighthouseBeam, goodnightLines } from '../world/beam.js';
 import { PLACES, placesIn } from '../places.js';
 
@@ -175,7 +175,15 @@ export class Hub extends Stage {
     ({ lines: this.worldLines, objs: this.worldObjs } = addWorld(this, getWorld(), this.silent ? [] : takeUnseen(), { places: this.placeGroups, houses }));
 
     // trees, bushes, grass — kept off the roads, places, houses and the kittens' lawn; the same every visit
-    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4]), [harbourX, harbourZ, 4.6]];
+    // (the shells' arc stays open, with its sightline to the home camera)
+    const shellClear = SHELL_LAYOUT.flatMap(({ x, z }) => {
+      const sx = harbourX + x, sz = harbourZ + z;
+      return [0, 3, 6, 9].map((up) => {
+        const t = (HOME_VIEW.pos.z - (sz + up)) / (HOME_VIEW.pos.z - sz);
+        return [HOME_VIEW.pos.x + (sx - HOME_VIEW.pos.x) * t, sz + up, up ? 2.6 : 3.4];
+      });
+    });
+    const keepOut = [[0, -10.5, 5], [0, 0, 4], KITTEN_LAWN, ...HOUSES.map(([x, z]) => [x, z, 2]), ...placesIn('island').filter((kind) => PLACES[kind].game).map((kind) => [...LAYOUT[kind].at, 4]), [harbourX, harbourZ, 4.6], ...shellClear];
     const clear = (x, z, pad = 1) => keepOut.every(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) > kr + pad) && !nearRoad(x, z);
     const rnd = seeded(20261028);
     let seed = 1;
@@ -715,12 +723,12 @@ function makeHarbour() {
   // The pier runs out from the back shore, away from the island.
   for (let i = 0; i < 6; i++) g.add(mesh(rbox(2.7, 0.16, 0.72, 0.05), wood, { y: 0.42, z: -0.4 - i * 0.72, shadow: false }));
   for (const x of [-1.25, 1.25]) for (const z of [-0.5, -1.9, -3.3, -4.4]) g.add(mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.5, 8), wood, { x, y: 0.02, z, shadow: false }));
-  const boat = makeBoat('#f59e0b');
-  boat.scale.setScalar(0.72);
-  boat.position.set(2.2, 0.05, -2.5);
-  boat.rotation.y = -0.5;
+  const boat = makeBoat('#ef4444');
+  boat.name = 'harbour-boat';
+  boat.scale.setScalar(1.5);
+  boat.position.set(3.35, 0.05, -1.3);
+  boat.rotation.y = -0.4;
   g.add(boat);
-  g.add(mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.15, 6), mat('#e5e7eb'), { x: 1.75, y: 0.8, z: -2.35, rz: 1.15, shadow: false }));
   return g;
 }
 

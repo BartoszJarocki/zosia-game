@@ -5,18 +5,17 @@ import { starShape } from '../models.js';
 // The shell a sea stop leaves on the harbour's sand (the island itself is home, not a trip).
 export const SHELL_KINDS = ['scallop', 'spiral', 'starfish', 'pebble', 'crab'];
 export const SHELL_SIZE = 1.75; // nominal world across, about 28 to 40 CSS px at 1180x820
-export const SHELL_OUT = 0.1; // just beyond the harbour anchor, on the sand ring
 
-// One fixed spot per stop: turn is the angle along the shore from the harbour (negative is left).
-// The size even out their screen size, as the nearer right-hand sand projects larger.
+// One fixed spot per stop, as an offset from the harbour anchor: a loose arc across the open
+// sand in front of the pier, split by the road. The size evens out their screen size.
 export const SHELL_LAYOUT = [
-  { place: 'buoy', kind: 'scallop', turn: -0.23, size: 1.8 },
-  { place: 'shallows', kind: 'spiral', turn: -0.31, size: 1.78 },
-  { place: 'seal', kind: 'starfish', turn: -0.39, size: 1.8 },
-  { place: 'lighthouse', kind: 'pebble', turn: -0.47, size: 1.84 },
-  { place: 'gulls', kind: 'crab', turn: 0.27, size: 1.56 },
-  { place: 'reef', kind: 'scallop', turn: 0.37, size: 1.56 },
-  { place: 'port', kind: 'spiral', turn: 0.47, size: 1.46 },
+  { place: 'buoy', kind: 'scallop', x: -6.0, z: 8.6, size: 1.58 },
+  { place: 'shallows', kind: 'spiral', x: -5.8, z: 5.9, size: 1.8 },
+  { place: 'seal', kind: 'starfish', x: 5.4, z: 2.6, size: 1.5 },
+  { place: 'lighthouse', kind: 'pebble', x: 7.2, z: 4.4, size: 1.48 },
+  { place: 'gulls', kind: 'crab', x: 9.0, z: 6.2, size: 1.44 },
+  { place: 'reef', kind: 'scallop', x: 10.8, z: 8.0, size: 1.42 },
+  { place: 'port', kind: 'spiral', x: 12.6, z: 9.8, size: 1.32 },
 ];
 
 const LOOK = {
@@ -121,7 +120,7 @@ function disposeModel(root) {
 }
 
 /** Every visited sea stop as one merged, vertex-coloured mesh: one draw call however many there are. */
-export function makeShells(visited = {}, at = [10.8, -23.1]) {
+export function makeShells(visited = {}) {
   const places = shellPlaces(visited);
   const group = new THREE.Group();
   group.userData.shells = true;
@@ -130,15 +129,9 @@ export function makeShells(visited = {}, at = [10.8, -23.1]) {
   group.userData.positions = [];
   if (!places.length) return group;
 
-  const turn0 = Math.atan2(at[1], at[0]);
-  const radius = Math.hypot(at[0], at[1]) + SHELL_OUT;
   const geos = [];
   const extent = new THREE.Vector3();
-  SHELL_LAYOUT.filter((spot) => visited[spot.place]).forEach(({ place, kind, turn, size: across = SHELL_SIZE }) => {
-    const a = turn0 + turn;
-    const x = Math.cos(a) * radius - at[0];
-    const z = Math.sin(a) * radius - at[1];
-
+  SHELL_LAYOUT.filter((spot) => visited[spot.place]).forEach(({ place, kind, x, z, size: across = SHELL_SIZE }) => {
     const m = model(kind);
     const raw = meshBox(m);
     raw.getSize(extent);
@@ -168,9 +161,9 @@ export function makeShells(visited = {}, at = [10.8, -23.1]) {
   return group;
 }
 
-/** Put the shells on the sand beside the harbour's pier, one fixed spot per visited sea stop. */
+/** Put the shells on the sand in front of the harbour's pier, one fixed spot per visited sea stop. */
 export function addShells(scene, at, visited = {}) {
-  const group = makeShells(visited, at);
+  const group = makeShells(visited);
   group.position.set(at[0], 0, at[1]);
   scene.add(group);
   return group;
