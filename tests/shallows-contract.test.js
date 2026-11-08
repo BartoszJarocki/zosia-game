@@ -64,6 +64,8 @@ async function scene(level = 1, plan = null) {
 }
 
 function cameraFor(s, w, h) {
+  globalThis.innerWidth = w;
+  globalThis.innerHeight = h;
   const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 500);
   const direction = s.view.pos.clone().sub(s.view.look);
   direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
@@ -103,20 +105,18 @@ function bubbleRect(w, h) {
 
 /** Bounds of the drawn parts only: the invisible hit sphere is not what she sees. */
 function drawnRect(obj, camera, w, h) {
-  const box = new THREE.Box3();
   const part = new THREE.Box3();
+  const points = [];
   obj.updateWorldMatrix(true, true);
   obj.traverseVisible((o) => {
     if (!o.isMesh || o.userData.zone || o.material?.visible === false) return;
     o.geometry.computeBoundingBox();
     part.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
-    box.union(part);
+    for (const x of [part.min.x, part.max.x]) for (const y of [part.min.y, part.max.y]) for (const z of [part.min.z, part.max.z]) {
+      const p = new THREE.Vector3(x, y, z).project(camera);
+      points.push({ x: (p.x + 1) / 2 * w, y: (1 - p.y) / 2 * h });
+    }
   });
-  const points = [];
-  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
-    const p = new THREE.Vector3(x, y, z).project(camera);
-    points.push({ x: (p.x + 1) / 2 * w, y: (1 - p.y) / 2 * h });
-  }
   return {
     x0: Math.min(...points.map((p) => p.x)), x1: Math.max(...points.map((p) => p.x)),
     y0: Math.min(...points.map((p) => p.y)), y1: Math.max(...points.map((p) => p.y)),
@@ -154,6 +154,40 @@ test('the bubble, the shelves, the waiting thing and Chase\'s window never overl
     assert.ok(separated(bubble, float) && separated(bubble, sink), `the bubble covers a shelf at ${w}x${h}`);
     assert.ok(separated(bubble, window), `the bubble covers Chase's window at ${w}x${h}`);
     assert.ok(separated(float, window) && separated(sink, window) && separated(thing, window), `something covers Chase's window at ${w}x${h}`);
+  }
+  s.alive = false; s.exit();
+});
+
+test('every shelf, its sign and the things on it sit 24 px inside the screen at the three iPad sizes', async () => {
+  const s = await scene(1, [thingById('jabłko')]);
+  const log = makeThing('kłoda', s.hitMat);
+  s.shelves.float.attach(log);
+  log.position.set(-1.5, 0.54, 0.35);
+  log.rotation.set(0, 0, 0);
+  log.scale.setScalar(log.userData.shelfScale);
+  const coin = makeThing('moneta', s.hitMat);
+  s.shelves.sink.attach(coin);
+  coin.position.set(1.5, 0.54, 0.35);
+  coin.rotation.set(0, 0, 0);
+  coin.scale.setScalar(coin.userData.shelfScale);
+
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    s.scene.updateMatrixWorld(true);
+    const camera = cameraFor(s, w, h);
+    const parts = {
+      floatShelf: drawnRect(s.shelves.float, camera, w, h),
+      sinkShelf: drawnRect(s.shelves.sink, camera, w, h),
+      floatSign: drawnRect(s.signs.float, camera, w, h),
+      sinkSign: drawnRect(s.signs.sink, camera, w, h),
+      log: drawnRect(log, camera, w, h),
+      coin: drawnRect(coin, camera, w, h),
+    };
+    for (const [name, r] of Object.entries(parts)) {
+      assert.ok(r.x0 >= 24, `${name} starts at x ${r.x0.toFixed(0)} at ${w}x${h}`);
+      assert.ok(r.x1 <= w - 24, `${name} ends at x ${r.x1.toFixed(0)} of ${w} at ${w}x${h}`);
+      assert.ok(r.y0 >= 24, `${name} starts at y ${r.y0.toFixed(0)} at ${w}x${h}`);
+      assert.ok(r.y1 <= h - 24, `${name} ends at y ${r.y1.toFixed(0)} of ${h} at ${w}x${h}`);
+    }
   }
   s.alive = false; s.exit();
 });
