@@ -126,9 +126,8 @@ export class PortMission extends Mission {
     const wallMat = new THREE.MeshStandardMaterial({ color: '#fef3c7', roughness: 0.8 });
     const roofMat = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.7 });
     this.mats.push(woodMat, darkWood, wallMat, roofMat);
-    this.dotOff = new THREE.MeshBasicMaterial({ color: '#cbd5e1' });
     this.dotOn = new THREE.MeshBasicMaterial({ color: '#fbbf24' });
-    this.mats.push(this.dotOff, this.dotOn);
+    this.mats.push(this.dotOn);
 
     // Kept low and near, so it never cuts the ticks in front of the boats.
     this.quay = new THREE.Group();
@@ -212,14 +211,28 @@ export class PortMission extends Mission {
     return board;
   }
 
-  makeDots(word) {
+  makeDots() {
     const dots = new THREE.Group();
-    const { syllables } = boatFor(word);
-    syllables.forEach((_, i) => {
-      dots.add(mesh(new THREE.CircleGeometry(0.13, 16), this.dotOff, { x: (i - (syllables.length - 1) / 2) * 0.42, z: 0.02, shadow: false }));
-    });
     dots.visible = false;
     return dots;
+  }
+
+  /** The tally starts empty: one lit dot per toot, centred as the row grows, six at most. */
+  addDot(board) {
+    const dots = board?.userData.dots;
+    if (!dots || dots.children.length >= 6) return;
+    dots.add(mesh(new THREE.CircleGeometry(0.13, 16), this.dotOn, { z: 0.02, shadow: false }));
+    const n = dots.children.length;
+    dots.children.forEach((dot, i) => { dot.position.x = (i - (n - 1) / 2) * 0.42; });
+  }
+
+  resetDots(board) {
+    const dots = board?.userData.dots;
+    if (!dots) return;
+    for (const dot of [...dots.children]) {
+      dot.removeFromParent();
+      dot.geometry.dispose();
+    }
   }
 
   splitBoard(board) {
@@ -249,7 +262,7 @@ export class PortMission extends Mission {
     const board = this.makeBoard(word, round);
     board.position.set(0, 1.95, 0.55);
     boat.add(board);
-    const dots = this.makeDots(word);
+    const dots = this.makeDots();
     dots.position.set(0, 1.13, 0.64);
     boat.add(dots);
     board.userData.dots = dots;
@@ -343,7 +356,7 @@ export class PortMission extends Mission {
     this.puff();
     const board = this.boats[0]?.userData.board;
     if (this.mode === 'together') this.light(board?.userData.blocks[this.count - 1]);
-    else this.lightDot(board, this.count - 1);
+    else this.addDot(board);
     this.last = this.count >= this.target ? 'done' : this.target;
   }
 
@@ -358,6 +371,7 @@ export class PortMission extends Mission {
     this.count = 0;
     this.last = this.target;
     this.unlight(this.boats[0]);
+    this.resetDots(this.boats[0].userData.board);
     this.phase = 'helping';
     await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
     if (!this.alive) return;
@@ -493,11 +507,6 @@ export class PortMission extends Mission {
     block.material.color.set('#fff3b0');
   }
 
-  lightDot(board, i) {
-    const dot = board?.userData.dots?.children[i];
-    if (dot) dot.material = this.dotOn;
-  }
-
   unlight(boat) {
     const board = boat?.userData.board;
     const blocks = board?.userData.blocks || [];
@@ -505,7 +514,6 @@ export class PortMission extends Mission {
       block.material.emissiveIntensity = 0;
       block.material.color.set('#ffffff');
     });
-    for (const dot of board?.userData.dots?.children || []) dot.material = this.dotOff;
   }
 
   puff() {
