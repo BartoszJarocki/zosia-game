@@ -71,7 +71,7 @@ syllable.
 | Mewy | "Mewy szukają ryb." | none. They lift off and circle | look-only | 1 |
 | Boja | "Boja pokazuje statkom drogę." | none. Its bell rings | look-only | 1 |
 | Rafa | "Pod wodą mieszkają kraby i rozgwiazdy." "Krab chodzi bokiem." "Ośmiornica ma osiem ramion." | Through the glass floor. Level 1, two pictures, on and under the rock, "Gdzie krab jest pod kamieniem?" Level 2, three places, na, pod, w (a shell). Level 3, by the word alone with obok. Level 4, she places a thing, "Połóż rozgwiazdę obok muszli." (position) | Kitty Park, then Garage drag | 2 |
-| Mielizna | "Tu jest płytko." | Floats or sinks. Level 1, she drops a thing in and watches, then puts it on the shelf where its friends are, floaters or sinkers. Level 2, she guesses first, "Pływa czy tonie?", then drops it. Level 3, the surprises, a big log and a little coin. (sorting) | Garage sorting | 2 |
+| Plaża | "Tu jest płytko." "Widać piasek na dnie." | Floats or sinks. Level 1, she drops a thing in and watches, then puts it on the shelf where its friends are, floaters or sinkers. Level 2, she guesses first, "Pływa czy tonie?", then drops it. Level 3, the surprises, a big log and a little coin. (sorting) | Garage sorting | 2 |
 | Port | "W porcie łódki odpoczywają." | Each boat has a name, Mewa, Foka, Kot, Rybka, Kaczka. Level 1, Chase toots with her, "Me-wa!", one toot per syllable. Level 2, she toots alone, one to three syllables. Level 3, "Która łódka ma dwie sylaby?" (syllables) | Name Train's ending | 3 |
 
 The floaters are an apple, a ball, a rubber duck, a leaf, a wooden block and a big log. The sinkers are a stone, a key,
@@ -80,7 +80,7 @@ a coin and a metal spoon.
 ## 4. The bay map is a path of buoys
 
 The bay reuses the space map, with water instead of stars and buoys instead of the road. Stops sit in one loop from the
-harbour, so the boat never crosses its own path. The order is Przystań, Boja, Mielizna, Foka, Latarnia, Mewy, Rafa, Port, then back
+harbour, so the boat never crosses its own path. The order is Przystań, Boja, Plaża, Foka, Latarnia, Mewy, Rafa, Port, then back
 to Przystań. The lighthouse stands on its rock at the far end of the loop, as it does on the island.
 
 - A tap target of at least 70 px for every stop at all three sizes, as in space.
