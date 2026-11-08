@@ -29,6 +29,8 @@ import { makeGarageLandmark } from '../world/garage-props.js';
 import { makeLaunchPad } from '../world/rocket.js';
 import { addKeepsakes, KEEPSAKE_CLEAR } from '../world/keepsakes.js';
 import { makeNightSky, nightSkyLine } from '../world/night-sky.js';
+import { addShells } from '../world/shells.js';
+import { makeLighthouseBeam, goodnightLines } from '../world/beam.js';
 import { PLACES, placesIn } from '../places.js';
 
 const START = new THREE.Vector3(0, 0, 0);
@@ -100,6 +102,7 @@ export class Hub extends Stage {
     lh.position.set(18.5, 1.2, -21.5); // back right: in view, and clear of the badge shelf (top left)
     lh.scale.setScalar(1);
     s.add(lh);
+    this.lighthouse = lh;
     const boats = [['#ef4444', 36, 0.03], ['#f59e0b', 41, -0.022], ['#8b5cf6', 47, 0.017]].map(([c, r, sp], i) => {
       const b = makeBoat(c);
       b.scale.setScalar(1.4);
@@ -158,6 +161,7 @@ export class Hub extends Stage {
     this.placeGroups = {};
     for (const kind of placesIn('island')) this.addPlace(kind, (this.placeGroups[kind] = builders[kind]?.())); // (the Lookout is already standing)
     this.addKeepsakes();
+    this.addShells();
     const houses = HOUSES.map(([x, z, w, r]) => {
       const h = makeHouse(w, r);
       h.position.set(x, 0, z);
@@ -472,7 +476,9 @@ export class Hub extends Stage {
     if (!this.alive) return;
     this.yawnAt = performance.now() / 1000;
     await wait(900);
-    await say([...task, ...nightSkyLine(getVisited()), ...T.goodnight()]);
+    const visited = getVisited();
+    this.showLighthouseBeam();
+    await say(goodnightLines(visited, [...task, ...nightSkyLine(visited)]));
     if (!this.alive) return;
     const look0 = this.view.look.clone(), pos0 = this.view.pos.clone();
     animate(1800, (k) => (this.drowsy = 0.4 + k * 0.6), ease.inOut);
@@ -508,7 +514,7 @@ export class Hub extends Stage {
     const picture = document.getElementById('game');
     picture.classList.toggle('now', !ms);
     picture.classList.add('night');
-    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); this.removeNightSky(); } };
+    this.night = { restore: () => { glass.emissive.copy(from.glow); glass.emissiveIntensity = from.glowI; picture.classList.remove('night', 'now'); this.removeNightSky(); this.removeLighthouseBeam(); } };
     if (!ms) return set(1);
     return animate(ms, set, ease.inOut);
   }
@@ -529,6 +535,13 @@ export class Hub extends Stage {
     return this.keepsakes;
   }
 
+  /** The shells: one on the sand beside the harbour for every sea stop she has visited. */
+  addShells() {
+    const [x, z] = LAYOUT.harbour.at;
+    this.shells = addShells(this.scene, [x, z], getVisited());
+    return this.shells;
+  }
+
   /** The Moon and the Wielki Wóz fade in over the sleeping island; they live only for this night. */
   showNightSky({ instant = false } = {}) {
     if (this.nightSkyGroup) return this.nightSkyGroup;
@@ -546,6 +559,25 @@ export class Hub extends Stage {
     this.nightSkyGroup = null;
   }
 
+  /** The island lighthouse lights up and sweeps the sea twice, then keeps a gentle glow while it sleeps. */
+  showLighthouseBeam({ instant = false } = {}) {
+    if (this.lighthouseBeamGroup) return this.lighthouseBeamGroup;
+    const lh = this.lighthouse;
+    const group = (this.lighthouseBeamGroup = makeLighthouseBeam(getVisited(), {
+      at: lh ? [lh.position.x, lh.position.y, lh.position.z] : undefined,
+      instant,
+    }));
+    if (!group) return null;
+    this.scene.add(group);
+    this.onUpdate((dt) => group.userData.tick(dt));
+    return group;
+  }
+
+  removeLighthouseBeam() {
+    this.lighthouseBeamGroup?.userData.remove();
+    this.lighthouseBeamGroup = null;
+  }
+
   /** The island sleeps: stars rest, little z's float over Chase, and places answer "Czejs śpi… Do jutra!". */
   sleep({ now = false } = {}) {
     if (now) { // back on an island that is already asleep
@@ -555,6 +587,7 @@ export class Hub extends Stage {
       this.truck.rotation.y = 0;
     }
     this.asleep = true;
+    this.showLighthouseBeam({ instant: now });
     this.showNightSky({ instant: now });
     this.micro = null;
     clearInterval(this.idleTimer);
