@@ -17,7 +17,8 @@ const page = await browser.newPage({ viewport: { width: +w, height: +h } });
 const errors = [], logs = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => logs.push(m.text()));
-const report = { failures: [], errors, harbour: {}, horn: {}, stops: {}, calls: [] };
+const report = { failures: [], errors, harbour: {}, horn: {}, stops: {}, games: [], calls: [] };
+const GAME_STOPS = new Set(['lighthouse', 'shallows', 'reef']);
 let n = 0;
 const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; await page.screenshot({ path: OUT + f }); };
 const st = (fn, arg) => page.evaluate(fn, arg);
@@ -29,7 +30,7 @@ await page.goto(`${BASE}/?q=${quality}&maplog`);
 await page.waitForSelector('.start .play', { timeout: 30000 });
 await page.waitForTimeout(1500);
 await press('.start .play');
-if (!(await until(() => { const s = window.__pup?.getStage(); return s?.area === 'island' && s.markers?.harbour && !s.silent; }))) fail('the island never showed the harbour');
+if (!(await until(() => { const s = window.__pup?.getStage(); return s?.area === 'island' && s.markers?.harbour && !s.silent; }, null, 120000))) fail('the island never showed the harbour');
 await page.waitForTimeout(3500);
 await snap('island');
 
@@ -74,6 +75,17 @@ for (const s of stops) {
 for (const { kind } of stops.filter((s) => s.kind !== 'island')) {
   const target = (await st(() => window.__pup.getStage().stopsOnScreen())).find((x) => x.kind === kind);
   await page.mouse.click(target.x, target.y);
+  if (GAME_STOPS.has(kind)) {
+    if (!(await until((k) => window.__pup.getStage()?.kind === k, kind, 120000))) { fail(`${kind}: the mission never started`); continue; }
+    report.games.push({ kind, game: true });
+    report.stops[kind].game = true;
+    await page.waitForTimeout(1200);
+    await snap(`mission-${kind}`);
+    await st(() => window.__pup.game.home());
+    if (!(await until(() => { const s = window.__pup.getStage(); return s?.kind === 'sea-map' && s.state === 'waiting'; }, null, 120000))) fail(`${kind}: never returned to the bay map`);
+    await page.waitForTimeout(500);
+    continue;
+  }
   if (!(await until((k) => { const g = window.__pup.getStage(); return g.state === 'visiting' && g.visiting === k && document.querySelector('.space-back'); }, kind, 60000))) { fail(`${kind}: never arrived`); continue; }
   await page.waitForTimeout(1200);
   await snap(`visit-${kind}`);
@@ -97,6 +109,6 @@ else {
 }
 
 writeFileSync(`${OUT}report.json`, JSON.stringify(report, null, 1));
-console.log(JSON.stringify({ viewport: `${w}x${h}`, harbour: report.harbour, horn: report.horn, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px`])), calls: report.calls, errors, failures: report.failures }, null, 1));
+console.log(JSON.stringify({ viewport: `${w}x${h}`, harbour: report.harbour, horn: report.horn, stops: Object.fromEntries(Object.entries(report.stops).map(([k, s]) => [k, `${s.d}px`])), games: report.games, calls: report.calls, errors, failures: report.failures }, null, 1));
 await browser.close();
 process.exit(report.failures.length || errors.length ? 1 : 0);

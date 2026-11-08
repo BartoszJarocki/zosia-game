@@ -44,7 +44,7 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 const { Bay, mapView } = await import(root + '/src/scenes/bay.js');
-const { SEA_ORDER } = await import(root + '/src/levels/sea.js');
+const { SEA_ORDER, BAY_LAYOUT } = await import(root + '/src/levels/sea.js');
 const { getSession } = await import(root + '/src/session/session.js');
 const { getVisited } = await import(root + '/src/progress.js');
 const { camera } = await import(root + '/src/engine.js');
@@ -153,4 +153,50 @@ test('the pier launch boards the crew, waits for the horn and then reaches the m
   assert.equal(launch.stopsOnScreen().length, SEA_ORDER.length);
   launch.exit();
   assert.equal(mapView(1180, 820).minWidth, 0);
+});
+
+test('every stop model covers at least half its patch', () => {
+  const s = new Bay({});
+  s.enter();
+  for (const kind of SEA_ORDER) {
+    const body = s.bodies[kind];
+    body.updateWorldMatrix(true, true);
+    const box = new THREE.Box3();
+    body.traverse((o) => {
+      if (!o.geometry || o === body.userData.hit || o.userData.patch) return;
+      o.geometry.computeBoundingBox();
+      box.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));
+    });
+    const cover = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
+    assert.ok(cover >= BAY_LAYOUT[kind].r, `${kind}: ${cover.toFixed(2)} covers less than its patch radius ${BAY_LAYOUT[kind].r}`);
+  }
+  s.exit();
+});
+
+test('every visit is a three-quarter view from above the water', () => {
+  const s = new Bay({});
+  s.enter();
+  for (const kind of SEA_ORDER) {
+    const view = s.visitView(kind);
+    const ground = Math.hypot(view.pos.x - view.look.x, view.pos.z - view.look.z);
+    const pitch = Math.atan2(view.pos.y - view.look.y, ground) * 180 / Math.PI;
+    const aboveWater = Math.atan2(view.pos.y + 0.3, ground) * 180 / Math.PI;
+    assert.ok(pitch >= 25 && pitch <= 40, `${kind}: ${pitch.toFixed(1)} degrees`);
+    assert.ok(aboveWater >= 25 && aboveWater <= 40, `${kind}: ${aboveWater.toFixed(1)} degrees above the water`);
+  }
+  s.exit();
+});
+
+test('the launch floats the boat beside the pier with its hull under the water', () => {
+  const launch = new Bay({}, { launch: true });
+  launch.enter();
+  const water = launch.launchRoot.userData.water;
+  const island = launch.launchRoot.userData.island;
+  launch.scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(launch.cruiser);
+  assert.ok(box.min.y < water, `hull bottom ${box.min.y} is not below the water ${water}`);
+  const x = (box.min.x + box.max.x) / 2, z = (box.min.z + box.max.z) / 2;
+  const reach = Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 2;
+  assert.ok(Math.hypot(x - island.x, z - island.z) > island.r + reach, 'the boat sits over the beach');
+  launch.exit();
 });
