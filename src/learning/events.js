@@ -15,6 +15,7 @@ export const SKILLS = Object.freeze([
   'shape', 'pattern', 'sorting', // the Garage: find a shape · what comes next in a row · sort by colour or size
   'wordVisual',   // find a whole word she can see (Name Train: "Który pociąg jest Zosi?")
   'space',        // recognise a place in space: the Sun, the Moon, the planets, a comet, the black hole
+  'position',     // on, under, in, next to: where something is
 ]);
 
 /** Why an attempt didn't succeed. Only wrongChoice says something about knowledge. */

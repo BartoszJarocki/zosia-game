@@ -64,7 +64,7 @@ export const PLACES = {
   seal: { area: 'sea', game: false, domain: 'sea' },
   lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } },
   gulls: { area: 'sea', game: false, domain: 'sea' },
-  reef: { area: 'sea', game: false, domain: 'sea' },
+  reef: { area: 'sea', game: true, domain: 'letters', badge: { label: '🦀', color: '#14b8a6' } },
   port: { area: 'sea', game: false, domain: 'sea' },
 };
 

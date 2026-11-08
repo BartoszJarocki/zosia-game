@@ -18,8 +18,9 @@ const SEA_STOPS = ['island', 'buoy', 'shallows', 'seal', 'lighthouse', 'gulls', 
 test('the harbour is the island way to the sea, and the bay has its eight stops', () => {
   assert.deepEqual(PLACES.harbour, { area: 'island', game: false, domain: 'sea', leadsTo: 'sea' });
   assert.deepEqual(placesIn('sea'), SEA_STOPS);
-  for (const kind of SEA_STOPS.filter((k) => k !== 'lighthouse')) assert.deepEqual(PLACES[kind], { area: 'sea', game: false, domain: 'sea' });
+  for (const kind of SEA_STOPS.filter((k) => !['lighthouse', 'reef'].includes(k))) assert.deepEqual(PLACES[kind], { area: 'sea', game: false, domain: 'sea' });
   assert.deepEqual(PLACES.lighthouse, { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } });
+  assert.deepEqual(PLACES.reef, { area: 'sea', game: true, domain: 'letters', badge: { label: '🦀', color: '#14b8a6' } });
 });
 
 test('every sea place has a layout entry and the layout has no stray places', () => {

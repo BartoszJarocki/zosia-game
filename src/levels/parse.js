@@ -88,6 +88,12 @@ export const SCHEMA = {
     choices: { type: 'int', min: 2, max: 4, optional: true, default: 2 },
     rounds: { type: 'int', min: 3, max: 5 },
   },
+  reef: {
+    mode: { type: 'enum', values: ['see', 'hear', 'place'] },
+    words: { type: 'list', values: ['na', 'pod', 'w', 'obok'] },
+    choices: { type: 'int', min: 2, max: 4 },
+    rounds: { type: 'int', min: 1, max: 8 },
+  },
   stars: {
     stars: { type: 'range', min: 3, max: 7 },
     labels: { type: 'enum', values: ['both', 'numeral'] },
@@ -394,6 +400,11 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     const cap = { marks: 3, flashes: 4, make: 5, more: 4 }[s.mode];
     if (cap && s.numbers[1] > cap) errors.push(`${where}: ${s.mode} counts up to ${cap} (got ${s.numbers[1]})`);
     if (s.mode === 'make' && s.numbers[0] < 2) errors.push(`${where}: "make" starts from 2 (a boat's sail shows the count)`);
+  }
+  if (kind === 'reef') {
+    if (new Set(s.words).size !== s.words.length) errors.push(`${where}: words must be distinct`);
+    if (s.mode !== 'place' && s.choices > s.words.length) errors.push(`${where}: ${s.choices} scenes need at least ${s.choices} different words`);
+    if (s.mode === 'place' && s.choices !== 3) errors.push(`${where}: place needs exactly three glowing spots (got ${s.choices})`);
   }
   if (kind === 'stars' && s.stars) {
     const pictures = s.stars[1] - s.stars[0] + 1;
