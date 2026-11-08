@@ -279,7 +279,7 @@ export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome,
   ui.append(c);
   confetti();
   (talk || later(levelUp ? 8500 : 5500))
-    .then(() => { if (!live()) return; c.classList.add('asking'); return say(PLACES[kind].area === 'space' ? T.againOrSpace() : T.againOrIsland()); })
+    .then(() => { if (!live()) return; c.classList.add('asking'); return say(PLACES[kind].area === 'space' ? T.againOrSpace() : PLACES[kind].area === 'sea' ? T.againOrSea() : T.againOrIsland()); })
     .then(() => { if (!live()) return; arm(); window.addEventListener('pointerdown', rearm, true); });
 }
 

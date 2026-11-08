@@ -62,7 +62,7 @@ export const PLACES = {
   buoy: { area: 'sea', game: false, domain: 'sea' },
   shallows: { area: 'sea', game: false, domain: 'sea' },
   seal: { area: 'sea', game: false, domain: 'sea' },
-  lighthouse: { area: 'sea', game: false, domain: 'sea' },
+  lighthouse: { area: 'sea', game: true, domain: 'numbers', badge: { label: '💡', color: '#0ea5e9' } },
   gulls: { area: 'sea', game: false, domain: 'sea' },
   reef: { area: 'sea', game: false, domain: 'sea' },
   port: { area: 'sea', game: false, domain: 'sea' },

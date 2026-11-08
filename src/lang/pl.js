@@ -99,6 +99,7 @@ export const HOME_TASKS = {
   garage: 'Znajdź w domu coś okrągłego!',
   mercury: 'Policz z mamą guziki na swojej bluzce!',
   moon: 'Poszukaj z mamą Księżyca na niebie!',
+  lighthouse: 'Policz z mamą, ile razy klaśniesz!',
   mars: 'Znajdź z mamą na spacerze czerwony kamyk!',
   saturn: 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   pluto: 'Narysuj z mamą serduszko!',
@@ -264,6 +265,7 @@ export const T = {
   // the celebration, after the badge line ("again" or the island?)
   againOrIsland: () => ['Jeszcze raz czy na wyspę?'],
   againOrSpace: () => ['Jeszcze raz czy lecimy dalej?'],
+  againOrSea: () => ['Jeszcze raz czy płyniemy dalej?'],
   moonStart: () => ['Jesteśmy na Księżycu! Tu skacze się wysoko i powoli.'],
   moonJump: (n) => [`Skocz ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
   moonJumpShort: (n) => [`${cap(NUM[n])} ${n === 1 ? 'raz' : 'razy'}!`],
@@ -274,6 +276,18 @@ export const T = {
   moonWatch: () => ['Patrz, jak skacze!'],
   moonHowMany: () => ['Ile było skoków?'],
   moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
+  lighthouseStart: () => ['Robi się wieczór. Łódki wracają do domu.'],
+  lighthouseWhy: () => ['Latarnia świeci w nocy, żeby łódki trafiły do domu.'],
+  lighthouseEach: () => ['Każda latarnia mruga po swojemu.'],
+  lighthouseHowMany: () => ['Ile razy mrugnęła latarnia?'],
+  lighthouseMake: (n) => [`Mrugnij ${NUM[n]} ${n === 1 ? 'raz' : 'razy'}!`],
+  lighthouseMore: () => ['Mrugnij o jeden raz więcej!'],
+  lighthouseDoneTap: () => ['Gotowe? Dotknij łódki!'],
+  lighthouseHome: () => ['Łódka bezpiecznie wróciła do domu!'],
+  lighthouseTooFew: () => ['Za mało! Policz jeszcze raz!'],
+  lighthouseTooMany: () => ['Za dużo! Policz jeszcze raz!'],
+  lighthouseCountHelp: () => ['Dotknij latarni i policz mrugnięcia!'],
+  lighthouseDone: () => ['Brawo! Wszystkie łódki są w domu!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
@@ -593,7 +607,9 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SEA_PASS));
   add(Object.values(SEA_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
-  [T.againOrSpace, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  [T.againOrSpace, T.againOrSea, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
+  nums.slice(0, 5).forEach((n) => add(T.lighthouseMake(n)));
+  [T.lighthouseStart, T.lighthouseWhy, T.lighthouseEach, T.lighthouseHowMany, T.lighthouseMore, T.lighthouseDoneTap, T.lighthouseHome, T.lighthouseTooFew, T.lighthouseTooMany, T.lighthouseCountHelp, T.lighthouseDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
   for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
