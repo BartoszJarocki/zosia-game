@@ -183,7 +183,7 @@ export class PortMission extends Mission {
     boat.position.set(x, 0.04, z);
     boat.userData.seed = Math.random() * 6;
     boat.userData.baseY = 0.04;
-    boat.userData.word = word;
+    boat.userData.boatName = word;
     boat.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
     const sail = boat.children.find((o) => o.isMesh && o.geometry?.type === 'ShapeGeometry');
     if (sail) sail.visible = false;
@@ -329,7 +329,7 @@ export class PortMission extends Mission {
     const xs = [-4.6, 0, 4.6];
     const picks = whichBoats(this.asked, this.L.syllables);
     this.boats = picks.map((b, i) => this.makeBoatFor(b.word, { x: 10.5 + i * 2, z: 1.15, scale: 1, round: true }));
-    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.word); });
+    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.boatName); });
     await Promise.all(this.boats.map((boat, i) => this.enterBoat(boat, xs[i])));
     if (!this.alive) return;
     this.phase = 'choosing';
@@ -343,7 +343,7 @@ export class PortMission extends Mission {
       this.tappable(boat.userData.board, () => {
         if (this.phase !== 'choosing') return;
         this.poke();
-        this.say(T.portName(boat.userData.word));
+        this.say(T.portName(boat.userData.boatName));
       });
     }
     this.question('syllables', this.asked, {
@@ -380,7 +380,7 @@ export class PortMission extends Mission {
     sfx.good();
     await this.say(T.portRight(num));
     if (!this.alive) return;
-    await this.singBack(boat.userData.word, boat);
+    await this.singBack(boat.userData.boatName, boat);
     if (!this.alive) return;
     this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
     await this.say(T.portSuccess());
@@ -391,7 +391,7 @@ export class PortMission extends Mission {
   }
 
   async clapSyllables(word) {
-    const boat = this.boats.find((b) => b.userData.word === word);
+    const boat = this.boats.find((b) => b.userData.boatName === word);
     const blocks = boat?.userData.board.userData.blocks || [];
     for (const [i, syllable] of boatFor(word).syllables.entries()) {
       if (!this.alive) return;
