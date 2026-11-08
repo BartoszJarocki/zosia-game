@@ -18,9 +18,9 @@ const errors = [], logs = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => logs.push(m.text()));
 const report = { failures: [], errors, harbour: {}, horn: {}, stops: {}, games: [], calls: [] };
-const GAME_STOPS = new Set(['lighthouse', 'shallows', 'reef']);
+const GAME_STOPS = new Set(['lighthouse', 'shallows', 'reef', 'port']);
 let n = 0;
-const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; await page.screenshot({ path: OUT + f }); };
+const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; for (let i = 0; i < 3; i++) { try { await page.screenshot({ path: OUT + f, timeout: 20000 }); break; } catch { await page.waitForTimeout(500); } } }; // (a slow software GPU can miss one capture; the trip goes on)
 const st = (fn, arg) => page.evaluate(fn, arg);
 const fail = (why) => { report.failures.push(why); console.log(`FAIL ${why}`); };
 const until = (fn, arg, ms = 60000) => page.waitForFunction(`(${fn})(${JSON.stringify(arg ?? null)}) && !document.querySelector('.iris.on')`, null, { timeout: ms }).then(() => true, () => false);

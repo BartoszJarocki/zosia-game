@@ -19,7 +19,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => logs.push(m.text()));
 const report = { viewport: `${w}x${h}`, quality, beats: [], stops: {}, errors, failures: [] };
 let n = 0;
-const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; await page.screenshot({ path: OUT + f }); report.beats.push(f); };
+const snap = async (name) => { const f = `${String(++n).padStart(2, '0')}-${name}.png`; for (let i = 0; i < 3; i++) { try { await page.screenshot({ path: OUT + f, timeout: 20000 }); break; } catch { await page.waitForTimeout(500); } } report.beats.push(f); }; // (a slow software GPU can miss one capture; the trip goes on)
 const st = (fn, arg) => page.evaluate(fn, arg);
 const fail = (why) => { report.failures.push(why); console.log(`FAIL ${why}`); };
 // a stage exists (and says it is ready) while the paw iris still covers it; a tap then lands on the iris, so every

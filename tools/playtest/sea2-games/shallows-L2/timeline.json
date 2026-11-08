@@ -1,0 +1,815 @@
+{
+ "kind": "shallows",
+ "level": 2,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 25420,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 27565,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 27570,
+   "type": "noise",
+   "ms": 80,
+   "ended": 27710
+  },
+  {
+   "t": 27571,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 27572,
+   "type": "noise",
+   "ms": 80,
+   "ended": 27874
+  },
+  {
+   "t": 41355,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs gotowy do akcji! Dokąd jedziemy? Może nad rzekę? Dotknij gwiazdki!"
+  },
+  {
+   "t": 42143,
+   "type": "clip",
+   "ms": 3600,
+   "ended": 48819
+  },
+  {
+   "t": 48818,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 49241,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 50443
+  },
+  {
+   "t": 50820,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 52094
+  },
+  {
+   "t": 66356,
+   "type": "say",
+   "text": "Może nad rzekę? Dotknij gwiazdki!"
+  },
+  {
+   "t": 66357,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 67563
+  },
+  {
+   "t": 67914,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 69193
+  },
+  {
+   "t": 73828,
+   "type": "me",
+   "text": "(screenshot island failed)"
+  },
+  {
+   "t": 73882,
+   "type": "me",
+   "text": "starting shallows"
+  },
+  {
+   "t": 102962,
+   "type": "say",
+   "text": "Tu jest płytko. Widać piasek na dnie."
+  },
+  {
+   "t": 103408,
+   "type": "say",
+   "text": "Pływa czy tonie?"
+  },
+  {
+   "t": 106270,
+   "type": "me",
+   "text": "mission shallows started"
+  },
+  {
+   "t": 106295,
+   "type": "me",
+   "text": "QUESTION r1/4 sorting:sink:łyżka bubble=\"? 🦆\""
+  },
+  {
+   "t": 109495,
+   "type": "me",
+   "text": "OPTIONS float sink*"
+  },
+  {
+   "t": 109507,
+   "type": "me",
+   "text": "TAP sink (right)"
+  },
+  {
+   "t": 109528,
+   "type": "say",
+   "text": "Łyżka tonie!"
+  },
+  {
+   "t": 109529,
+   "type": "tone",
+   "hz": 850,
+   "to": 1529,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 111634,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 111642,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 111642,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 111643,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 111643,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 111644,
+   "type": "say",
+   "text": "Doskonale!"
+  },
+  {
+   "t": 112040,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 113292
+  },
+  {
+   "t": 113295,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 113752,
+   "type": "say",
+   "text": "Pływa czy tonie?"
+  },
+  {
+   "t": 114090,
+   "type": "me",
+   "text": "QUESTION r2/4 sorting:float:jabłko bubble=\"? 🦆\""
+  },
+  {
+   "t": 115537,
+   "type": "me",
+   "text": "OPTIONS float* sink"
+  },
+  {
+   "t": 115545,
+   "type": "me",
+   "text": "TAP sink (wrong on purpose)"
+  },
+  {
+   "t": 115556,
+   "type": "tone",
+   "hz": 494,
+   "to": 466,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 115556,
+   "type": "tone",
+   "hz": 392,
+   "to": 349,
+   "wave": "triangle",
+   "delay": 170
+  },
+  {
+   "t": 115557,
+   "type": "say",
+   "text": "Popatrz! Jabłko pływa!"
+  },
+  {
+   "t": 115558,
+   "type": "tone",
+   "hz": 873,
+   "to": 1572,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 116719,
+   "type": "me",
+   "text": "MOTION {\"moved\":0.21,\"frames\":4}"
+  },
+  {
+   "t": 117797,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 117798,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 118266,
+   "type": "say",
+   "text": "Pływa czy tonie?"
+  },
+  {
+   "t": 120671,
+   "type": "me",
+   "text": "TAP sink (right)"
+  },
+  {
+   "t": 120688,
+   "type": "say",
+   "text": "Kamień tonie!"
+  },
+  {
+   "t": 120689,
+   "type": "tone",
+   "hz": 896,
+   "to": 1612,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 123989,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 123990,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 123991,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 123991,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 123991,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 123991,
+   "type": "say",
+   "text": "Doskonale!"
+  },
+  {
+   "t": 123992,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 125194
+  },
+  {
+   "t": 125195,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 125663,
+   "type": "say",
+   "text": "Pływa czy tonie?"
+  },
+  {
+   "t": 125772,
+   "type": "me",
+   "text": "QUESTION r4/4 sorting:sink:klucz bubble=\"? 🦆\""
+  },
+  {
+   "t": 127826,
+   "type": "me",
+   "text": "OPTIONS float sink*"
+  },
+  {
+   "t": 127836,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 136021,
+   "type": "say",
+   "text": "Pływa czy tonie?"
+  },
+  {
+   "t": 143662,
+   "type": "say",
+   "text": "Klucz tonie!"
+  },
+  {
+   "t": 150092,
+   "type": "me",
+   "text": "TAP sink (right)"
+  },
+  {
+   "t": 150101,
+   "type": "say",
+   "text": "Klucz tonie!"
+  },
+  {
+   "t": 150102,
+   "type": "tone",
+   "hz": 909,
+   "to": 1637,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 152163,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 152163,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 152164,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 152164,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 152164,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 152164,
+   "type": "say",
+   "text": "Doskonale!"
+  },
+  {
+   "t": 152164,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 153363
+  },
+  {
+   "t": 153365,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 153833,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 153835,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 153835,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 153835,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 153835,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 153837,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 153838,
+   "type": "say",
+   "text": "Brawo! Wiesz, co pływa, a co tonie!"
+  },
+  {
+   "t": 153853,
+   "type": "me",
+   "text": "celebration"
+  },
+  {
+   "t": 153855,
+   "type": "say",
+   "text": "Jeszcze raz czy płyniemy dalej?"
+  },
+  {
+   "t": 156076,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 156077,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 156078,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 156078,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 165199,
+   "type": "say",
+   "text": "Płyniemy dalej czy do domu?"
+  },
+  {
+   "t": 190359,
+   "type": "say",
+   "text": "Może popłyniemy do latarni?"
+  },
+  {
+   "t": 193357,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  }
+ ],
+ "events": [
+  {
+   "mission": "shallows",
+   "skill": "sorting",
+   "item": "sink:łyżka",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 6112,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794139722471,
+   "options": 2,
+   "chosen": "sink",
+   "level": 2,
+   "round": 0
+  },
+  {
+   "mission": "shallows",
+   "skill": "sorting",
+   "item": "float:jabłko",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 1801,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794139728502,
+   "options": 2,
+   "errorType": "wrongChoice",
+   "chosen": "sink",
+   "level": 2,
+   "round": 1
+  },
+  {
+   "mission": "shallows",
+   "skill": "sorting",
+   "item": "sink:kamień",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 2417,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794139733633,
+   "options": 2,
+   "chosen": "sink",
+   "level": 2,
+   "round": 2
+  },
+  {
+   "mission": "shallows",
+   "skill": "sorting",
+   "item": "sink:klucz",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 17989,
+   "assistLevel": 1,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794139756602,
+   "options": 2,
+   "errorType": "timeout",
+   "level": 2,
+   "round": 3
+  },
+  {
+   "mission": "shallows",
+   "skill": "sorting",
+   "item": "sink:klucz",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 24434,
+   "assistLevel": 3,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794139763047,
+   "options": 2,
+   "chosen": "sink",
+   "level": 2,
+   "round": 3
+  }
+ ],
+ "progress": {
+  "v": 6,
+  "missions": {
+   "shallows": {
+    "level": 2,
+    "good": 1,
+    "lastAcc": 0.6666666666666666
+   },
+   "letters": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "balloons": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "name": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "cones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "stones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "counting": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "lookout": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "delivery": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "picnic": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "garage": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   }
+  },
+  "items": {},
+  "skills": {
+   "sorting": {
+    "sink:łyżka": {
+     "attempts": 1,
+     "correctFirstTry": 1,
+     "assisted": 0,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0.4,
+     "avgLatencyMs": 6112,
+     "latencyN": 1,
+     "lastSeenAt": 1794139722471,
+     "confusions": {}
+    },
+    "float:jabłko": {
+     "attempts": 0,
+     "correctFirstTry": 0,
+     "assisted": 0,
+     "wrong": 1,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0,
+     "avgLatencyMs": 0,
+     "latencyN": 0,
+     "lastSeenAt": 1794139728502,
+     "confusions": {
+      "sink": 1
+     }
+    },
+    "sink:kamień": {
+     "attempts": 1,
+     "correctFirstTry": 1,
+     "assisted": 0,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0.4,
+     "avgLatencyMs": 2417,
+     "latencyN": 1,
+     "lastSeenAt": 1794139733633,
+     "confusions": {}
+    },
+    "sink:klucz": {
+     "attempts": 1,
+     "correctFirstTry": 1,
+     "assisted": 1,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 1,
+     "mastery": 0,
+     "avgLatencyMs": 24434,
+     "latencyN": 1,
+     "lastSeenAt": 1794139763047,
+     "confusions": {}
+    }
+   }
+  },
+  "sessions": {
+   "count": 1,
+   "recent": [
+    {
+     "id": 1794139640494,
+     "startedAt": 1794139640494,
+     "endedAt": 1794139766769,
+     "missions": [
+      "shallows"
+     ],
+     "finale": false,
+     "changes": [
+      {
+       "skill": "sorting",
+       "item": "sink:łyżka",
+       "from": 0,
+       "to": 0.4
+      },
+      {
+       "skill": "sorting",
+       "item": "sink:kamień",
+       "from": 0,
+       "to": 0.4
+      }
+     ]
+    }
+   ]
+  },
+  "world": {
+   "rescuedKittens": 0,
+   "balloonsAtLookout": 0,
+   "bridgeBuilt": false,
+   "trainUnlocked": false,
+   "lookoutLights": false,
+   "treatsAtHouse": 0,
+   "trafficLight": false,
+   "roadCones": 0,
+   "parcels": 0,
+   "picnicGuests": 0,
+   "lookoutKittens": 0,
+   "garageCar": false,
+   "bunting": false,
+   "completedEvents": [],
+   "rewards": [],
+   "unseen": []
+  },
+  "visited": {}
+ }
+}

@@ -1,0 +1,26 @@
+[
+ {
+  "kind": "lighthouse",
+  "level": 1,
+  "celebrated": true,
+  "errors": []
+ },
+ {
+  "kind": "lighthouse",
+  "level": 2,
+  "celebrated": true,
+  "errors": []
+ },
+ {
+  "kind": "lighthouse",
+  "level": 3,
+  "celebrated": true,
+  "errors": []
+ },
+ {
+  "kind": "lighthouse",
+  "level": 4,
+  "celebrated": true,
+  "errors": []
+ }
+]

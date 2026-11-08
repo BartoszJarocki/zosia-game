@@ -1,0 +1,137 @@
+  18.8  ----  page loaded
+  20.7  tone  480 Hz sawtooth
+  20.7  noise 80
+  20.7  tone  500 Hz sawtooth +160ms
+  20.7  noise 80
+  30.0  SAY   Cześć, Zosiu! Czejs gotowy do akcji! Dokąd jedziemy? Ojej! Baloniki uciekają! Dotknij balonika!
+  30.6  clip  3600 ms
+  35.7  ----  island
+  36.1  clip  4240 ms
+  55.0  tone  500 Hz sine
+  55.0  SAY   Ojej! Baloniki uciekają! Dotknij balonika!
+  55.0  clip  4240 ms
+  61.8  ----  (screenshot island failed)
+  61.8  ----  starting lighthouse
+  71.7  SAY   Robi się wieczór. Łódki wracają do domu. Latarnia świeci w nocy, żeby łódki trafiły do domu.
+  73.7  SAY   Mrugnij pięć razy! Gotowe? Dotknij łódki!
+  74.4  ----  mission lighthouse started
+  74.4  ----  QUESTION r1/3 counting:5 bubble="5 💡"
+  76.4  ----  OPTIONS lamp done
+  76.4  ----  TAP lamp (lamp (0 of 5 so far))
+  76.4  tone  1318 Hz sine
+  76.4  tone  1046 Hz sine +180ms
+  78.2  ----  TAP lamp (lamp (1 of 5 so far))
+  78.3  tone  1318 Hz sine
+  78.3  tone  1046 Hz sine +180ms
+  80.1  ----  TAP lamp (lamp (2 of 5 so far))
+  80.1  tone  1318 Hz sine
+  80.1  tone  1046 Hz sine +180ms
+  81.9  ----  TAP lamp (lamp (3 of 5 so far))
+  81.9  tone  1318 Hz sine
+  81.9  tone  1046 Hz sine +180ms
+  83.7  ----  TAP lamp (lamp (4 of 5 so far))
+  83.7  tone  1318 Hz sine
+  83.7  tone  1046 Hz sine +180ms
+  87.1  ----  TAP done (done: she says she has finished)
+  87.1  tone  523 Hz triangle
+  87.1  tone  659 Hz triangle +90ms
+  87.1  tone  784 Hz triangle +180ms
+  87.1  tone  1046 Hz triangle +270ms
+  87.1  SAY   Łódka bezpiecznie wróciła do domu!
+  88.8  tone  587 Hz square
+  88.9  tone  740 Hz square
+  88.9  tone  587 Hz square +450ms
+  88.9  tone  740 Hz square +450ms
+  89.2  SAY   Jeden!
+  89.3  clip  1040 ms
+  90.3  SAY   Dwa!
+  90.4  clip  1040 ms
+  91.4  SAY   Trzy!
+  91.5  clip  1200 ms
+  92.7  SAY   Cztery!
+  92.8  clip  960 ms
+  93.7  SAY   Pięć!
+  93.8  clip  1040 ms
+  94.8  SAY   Super!
+  94.8  clip  1040 ms
+  95.9  tone  500 Hz sine
+  96.3  SAY   Każda latarnia mruga po swojemu.
+  97.6  SAY   Mrugnij dwa razy! Gotowe? Dotknij łódki!
+  98.2  ----  QUESTION r2/3 counting:2 bubble="2 💡"
+  99.4  ----  OPTIONS lamp done
+  99.4  ----  TAP lamp (wrong on purpose)
+  99.5  tone  1318 Hz sine
+  99.5  tone  1046 Hz sine +180ms
+ 100.3  ----  MOTION {"moved":0,"frames":1}
+ 104.2  ----  TAP lamp (lamp (1 of 2 so far))
+ 104.2  tone  1318 Hz sine
+ 104.2  tone  1046 Hz sine +180ms
+ 107.5  ----  TAP done (done: she says she has finished)
+ 107.5  tone  523 Hz triangle
+ 107.5  tone  659 Hz triangle +90ms
+ 107.5  tone  784 Hz triangle +180ms
+ 107.5  tone  1046 Hz triangle +270ms
+ 107.5  SAY   Łódka bezpiecznie wróciła do domu!
+ 109.1  tone  587 Hz square
+ 109.1  tone  740 Hz square
+ 109.1  tone  587 Hz square +450ms
+ 109.1  tone  740 Hz square +450ms
+ 109.4  SAY   Jeden!
+ 109.4  clip  1040 ms
+ 110.5  SAY   Dwa!
+ 110.5  clip  1040 ms
+ 111.5  SAY   Brawo!
+ 111.5  clip  1120 ms
+ 112.7  tone  500 Hz sine
+ 114.4  SAY   Mrugnij trzy razy! Gotowe? Dotknij łódki!
+ 114.9  ----  QUESTION r3/3 counting:3 bubble="3 💡"
+ 116.3  ----  OPTIONS lamp done
+ 116.3  ----  waiting 20 s like a thinking child
+ 124.9  SAY   Mrugnij trzy razy!
+ 131.9  SAY   Dotknij latarni i policz mrugnięcia!
+ 137.5  ----  TAP lamp (lamp (0 of 3 so far))
+ 137.5  tone  1318 Hz sine
+ 137.5  tone  1046 Hz sine +180ms
+ 139.3  ----  TAP lamp (lamp (1 of 3 so far))
+ 139.3  tone  1318 Hz sine
+ 139.3  tone  1046 Hz sine +180ms
+ 141.2  ----  TAP lamp (lamp (2 of 3 so far))
+ 141.2  tone  1318 Hz sine
+ 141.2  tone  1046 Hz sine +169ms
+ 144.5  ----  TAP done (done: she says she has finished)
+ 144.5  tone  523 Hz triangle
+ 144.5  tone  659 Hz triangle +90ms
+ 144.5  tone  784 Hz triangle +180ms
+ 144.5  tone  1046 Hz triangle +270ms
+ 144.5  SAY   Łódka bezpiecznie wróciła do domu!
+ 146.1  tone  587 Hz square
+ 146.1  tone  740 Hz square
+ 146.1  tone  587 Hz square +450ms
+ 146.1  tone  740 Hz square +450ms
+ 146.4  SAY   Jeden!
+ 146.4  clip  1040 ms
+ 147.5  SAY   Dwa!
+ 147.5  clip  1040 ms
+ 148.5  SAY   Trzy!
+ 148.5  clip  1200 ms
+ 149.7  SAY   Wspaniale!
+ 149.7  clip  1120 ms
+ 150.8  tone  500 Hz sine
+ 151.3  tone  523 Hz square
+ 151.3  tone  659 Hz square +140ms
+ 151.3  tone  784 Hz square +275ms
+ 151.3  tone  1046 Hz square +415ms
+ 151.3  tone  784 Hz square +560ms
+ 151.3  tone  1046 Hz square +700ms
+ 151.3  SAY   Brawo! Wszystkie łódki są w domu!
+ 151.3  ----  celebration
+ 151.3  SAY   Jeszcze raz czy płyniemy dalej?
+ 153.4  tone  700 Hz square
+ 153.4  tone  1050 Hz square +350ms
+ 153.4  tone  700 Hz square +700ms
+ 153.4  tone  1050 Hz square +1050ms
+ 162.3  SAY   Płyniemy dalej czy do domu?
+ 187.1  ----  no open question (mission over?)
+ 187.3  SAY   Może popłyniemy do latarni?
+
+errors: []

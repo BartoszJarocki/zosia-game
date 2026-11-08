@@ -1,0 +1,164 @@
+{
+ "viewport": "1180x820",
+ "quality": "medium",
+ "beats": [
+  "01-island.png",
+  "02-countdown-start.png",
+  "03-lift-off.png",
+  "04-map.png",
+  "05-visit-sun.png",
+  "06-game-mercury.png",
+  "07-back-from-mercury.png",
+  "08-game-venus.png",
+  "09-back-from-venus.png",
+  "10-game-moon.png",
+  "11-back-from-moon.png",
+  "12-game-mars.png",
+  "13-back-from-mars.png",
+  "14-game-jupiter.png",
+  "15-back-from-jupiter.png",
+  "16-game-saturn.png",
+  "17-back-from-saturn.png",
+  "18-visit-uranus.png",
+  "19-visit-neptune.png",
+  "20-game-pluto.png",
+  "21-back-from-pluto.png",
+  "22-game-blackhole.png",
+  "23-back-from-blackhole.png",
+  "24-game-comet.png",
+  "25-back-from-comet.png",
+  "26-game-stars.png",
+  "27-back-from-stars.png",
+  "28-telescope.png",
+  "29-home.png"
+ ],
+ "stops": {
+  "sun": {
+   "d": 92,
+   "x": 209,
+   "y": 587,
+   "onScreen": true,
+   "flightMs": 7211
+  },
+  "mercury": {
+   "d": 76,
+   "x": 355,
+   "y": 589,
+   "onScreen": true,
+   "flightMs": 11532,
+   "game": true
+  },
+  "venus": {
+   "d": 76,
+   "x": 491,
+   "y": 589,
+   "onScreen": true,
+   "flightMs": 11270,
+   "game": true
+  },
+  "earth": {
+   "d": 76,
+   "x": 627,
+   "y": 589,
+   "onScreen": true
+  },
+  "moon": {
+   "d": 76,
+   "x": 763,
+   "y": 589,
+   "onScreen": true,
+   "flightMs": 13034,
+   "game": true
+  },
+  "mars": {
+   "d": 76,
+   "x": 873,
+   "y": 486,
+   "onScreen": true,
+   "flightMs": 11344,
+   "game": true
+  },
+  "jupiter": {
+   "d": 85,
+   "x": 707,
+   "y": 405,
+   "onScreen": true,
+   "flightMs": 10670,
+   "game": true
+  },
+  "saturn": {
+   "d": 155,
+   "x": 509,
+   "y": 407,
+   "onScreen": true,
+   "flightMs": 13333,
+   "game": true
+  },
+  "uranus": {
+   "d": 125,
+   "x": 290,
+   "y": 359,
+   "onScreen": true,
+   "flightMs": 4226
+  },
+  "neptune": {
+   "d": 76,
+   "x": 409,
+   "y": 240,
+   "onScreen": true,
+   "flightMs": 4198
+  },
+  "pluto": {
+   "d": 76,
+   "x": 572,
+   "y": 241,
+   "onScreen": true,
+   "flightMs": 9264,
+   "game": true
+  },
+  "blackhole": {
+   "d": 98,
+   "x": 777,
+   "y": 171,
+   "onScreen": true,
+   "flightMs": 15189,
+   "game": true
+  },
+  "comet": {
+   "d": 95,
+   "x": 953,
+   "y": 206,
+   "onScreen": true,
+   "flightMs": 7549,
+   "game": true
+  },
+  "stars": {
+   "d": 91,
+   "x": 1039,
+   "y": 347,
+   "onScreen": true,
+   "flightMs": 9006,
+   "game": true
+  }
+ },
+ "errors": [],
+ "failures": [],
+ "rocket": {
+  "w": 85,
+  "h": 90
+ },
+ "toStartMs": 43881,
+ "startButton": {
+  "w": 349,
+  "h": 133
+ },
+ "toMapMs": 68398,
+ "drawCalls": [
+  "[space] renderer.info.render.calls 30"
+ ],
+ "suggested": "blackhole",
+ "telescopeButton": {
+  "w": 100,
+  "h": 100
+ }
+}

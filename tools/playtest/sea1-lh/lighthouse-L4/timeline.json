@@ -1,0 +1,1295 @@
+{
+ "kind": "lighthouse",
+ "level": 4,
+ "errors": [],
+ "timeline": [
+  {
+   "t": 19030,
+   "type": "me",
+   "text": "page loaded"
+  },
+  {
+   "t": 20981,
+   "type": "tone",
+   "hz": 480,
+   "to": 260,
+   "wave": "sawtooth",
+   "delay": 0
+  },
+  {
+   "t": 20984,
+   "type": "noise",
+   "ms": 80,
+   "ended": 21118
+  },
+  {
+   "t": 20985,
+   "type": "tone",
+   "hz": 500,
+   "to": 280,
+   "wave": "sawtooth",
+   "delay": 160
+  },
+  {
+   "t": 20986,
+   "type": "noise",
+   "ms": 80,
+   "ended": 21278
+  },
+  {
+   "t": 30321,
+   "type": "say",
+   "text": "Cześć, Zosiu! Czejs gotowy do akcji! Dokąd jedziemy? Może do Domku ze Smakołykami? Dotknij gwiazdki!"
+  },
+  {
+   "t": 30958,
+   "type": "clip",
+   "ms": 3600,
+   "ended": 35959
+  },
+  {
+   "t": 35958,
+   "type": "me",
+   "text": "island"
+  },
+  {
+   "t": 36354,
+   "type": "clip",
+   "ms": 2000,
+   "ended": 38355
+  },
+  {
+   "t": 38737,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 43109
+  },
+  {
+   "t": 55323,
+   "type": "say",
+   "text": "Może do Domku ze Smakołykami? Dotknij gwiazdki!"
+  },
+  {
+   "t": 55326,
+   "type": "clip",
+   "ms": 2000,
+   "ended": 57331
+  },
+  {
+   "t": 57681,
+   "type": "clip",
+   "ms": 1280,
+   "ended": 58952
+  },
+  {
+   "t": 60893,
+   "type": "me",
+   "text": "(screenshot island failed)"
+  },
+  {
+   "t": 60902,
+   "type": "me",
+   "text": "starting lighthouse"
+  },
+  {
+   "t": 74764,
+   "type": "say",
+   "text": "Robi się wieczór. Łódki wracają do domu. Latarnia świeci w nocy, żeby łódki trafiły do domu."
+  },
+  {
+   "t": 76674,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 76674,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 77379,
+   "type": "me",
+   "text": "mission lighthouse started"
+  },
+  {
+   "t": 78002,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 78002,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 79406,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 79407,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 80731,
+   "type": "say",
+   "text": "Mrugnij o jeden raz więcej! Gotowe? Dotknij łódki!"
+  },
+  {
+   "t": 81120,
+   "type": "me",
+   "text": "QUESTION r1/3 sequence:4 bubble=\"? 💡\""
+  },
+  {
+   "t": 83111,
+   "type": "me",
+   "text": "OPTIONS lamp done"
+  },
+  {
+   "t": 83132,
+   "type": "me",
+   "text": "TAP lamp (lamp (0 of 4 so far))"
+  },
+  {
+   "t": 83144,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 83144,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 84967,
+   "type": "me",
+   "text": "TAP lamp (lamp (1 of 4 so far))"
+  },
+  {
+   "t": 84976,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 84977,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 86797,
+   "type": "me",
+   "text": "TAP lamp (lamp (2 of 4 so far))"
+  },
+  {
+   "t": 86803,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 86804,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 88621,
+   "type": "me",
+   "text": "TAP lamp (lamp (3 of 4 so far))"
+  },
+  {
+   "t": 88627,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 88627,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 91950,
+   "type": "me",
+   "text": "TAP done (done: she says she has finished)"
+  },
+  {
+   "t": 91967,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 91967,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 91968,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 91968,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 91968,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 93635,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 93635,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 93635,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 93635,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 93986,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 94172,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 95208
+  },
+  {
+   "t": 95209,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 95230,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 96275
+  },
+  {
+   "t": 96275,
+   "type": "say",
+   "text": "Trzy!"
+  },
+  {
+   "t": 96300,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 97502
+  },
+  {
+   "t": 97502,
+   "type": "say",
+   "text": "Cztery!"
+  },
+  {
+   "t": 97524,
+   "type": "clip",
+   "ms": 960,
+   "ended": 98482
+  },
+  {
+   "t": 98485,
+   "type": "say",
+   "text": "Wspaniale!"
+  },
+  {
+   "t": 98507,
+   "type": "clip",
+   "ms": 1120,
+   "ended": 99624
+  },
+  {
+   "t": 99628,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 100080,
+   "type": "say",
+   "text": "Każda latarnia mruga po swojemu."
+  },
+  {
+   "t": 101370,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 101370,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 102726,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 102726,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 104054,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 104055,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 105391,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 105391,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 106706,
+   "type": "say",
+   "text": "Mrugnij o jeden raz więcej! Gotowe? Dotknij łódki!"
+  },
+  {
+   "t": 107120,
+   "type": "me",
+   "text": "QUESTION r2/3 sequence:5 bubble=\"? 💡\""
+  },
+  {
+   "t": 108570,
+   "type": "me",
+   "text": "OPTIONS lamp done"
+  },
+  {
+   "t": 108578,
+   "type": "me",
+   "text": "TAP lamp (wrong on purpose)"
+  },
+  {
+   "t": 108584,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 108585,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 109252,
+   "type": "me",
+   "text": "MOTION {\"moved\":0,\"frames\":1}"
+  },
+  {
+   "t": 112991,
+   "type": "me",
+   "text": "TAP lamp (lamp (1 of 5 so far))"
+  },
+  {
+   "t": 112996,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 112996,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 114818,
+   "type": "me",
+   "text": "TAP lamp (lamp (2 of 5 so far))"
+  },
+  {
+   "t": 114824,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 114825,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 116644,
+   "type": "me",
+   "text": "TAP lamp (lamp (3 of 5 so far))"
+  },
+  {
+   "t": 116652,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 116652,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 118473,
+   "type": "me",
+   "text": "TAP lamp (lamp (4 of 5 so far))"
+  },
+  {
+   "t": 118480,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 118480,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 121803,
+   "type": "me",
+   "text": "TAP done (done: she says she has finished)"
+  },
+  {
+   "t": 121810,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 121810,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 121810,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 121810,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 267
+  },
+  {
+   "t": 121810,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 123545,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 123545,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 123545,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 123545,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 123895,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 123896,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 124936
+  },
+  {
+   "t": 124936,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 124936,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 125982
+  },
+  {
+   "t": 125982,
+   "type": "say",
+   "text": "Trzy!"
+  },
+  {
+   "t": 125982,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 127186
+  },
+  {
+   "t": 127187,
+   "type": "say",
+   "text": "Cztery!"
+  },
+  {
+   "t": 127187,
+   "type": "clip",
+   "ms": 960,
+   "ended": 128147
+  },
+  {
+   "t": 128147,
+   "type": "say",
+   "text": "Pięć!"
+  },
+  {
+   "t": 128174,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 129213
+  },
+  {
+   "t": 129214,
+   "type": "say",
+   "text": "Super!"
+  },
+  {
+   "t": 129236,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 130280
+  },
+  {
+   "t": 130282,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 132050,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 132050,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 133393,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 133394,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 134738,
+   "type": "say",
+   "text": "Mrugnij o jeden raz więcej! Gotowe? Dotknij łódki!"
+  },
+  {
+   "t": 135159,
+   "type": "me",
+   "text": "QUESTION r3/3 sequence:3 bubble=\"? 💡\""
+  },
+  {
+   "t": 136148,
+   "type": "me",
+   "text": "OPTIONS lamp done"
+  },
+  {
+   "t": 136152,
+   "type": "me",
+   "text": "waiting 20 s like a thinking child"
+  },
+  {
+   "t": 145103,
+   "type": "say",
+   "text": "Mrugnij o jeden raz więcej!"
+  },
+  {
+   "t": 152160,
+   "type": "say",
+   "text": "Dotknij latarni i policz mrugnięcia!"
+  },
+  {
+   "t": 157384,
+   "type": "me",
+   "text": "TAP lamp (lamp (0 of 3 so far))"
+  },
+  {
+   "t": 157389,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 157390,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 159209,
+   "type": "me",
+   "text": "TAP lamp (lamp (1 of 3 so far))"
+  },
+  {
+   "t": 159214,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 159214,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 161036,
+   "type": "me",
+   "text": "TAP lamp (lamp (2 of 3 so far))"
+  },
+  {
+   "t": 161041,
+   "type": "tone",
+   "hz": 1318,
+   "to": 1318,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 161041,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "sine",
+   "delay": 180
+  },
+  {
+   "t": 164366,
+   "type": "me",
+   "text": "TAP done (done: she says she has finished)"
+  },
+  {
+   "t": 164373,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "triangle",
+   "delay": 0
+  },
+  {
+   "t": 164373,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "triangle",
+   "delay": 90
+  },
+  {
+   "t": 164373,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "triangle",
+   "delay": 180
+  },
+  {
+   "t": 164374,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "triangle",
+   "delay": 270
+  },
+  {
+   "t": 164374,
+   "type": "say",
+   "text": "Łódka bezpiecznie wróciła do domu!"
+  },
+  {
+   "t": 166013,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 166013,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 166013,
+   "type": "tone",
+   "hz": 587,
+   "to": 587,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 166013,
+   "type": "tone",
+   "hz": 740,
+   "to": 740,
+   "wave": "square",
+   "delay": 450
+  },
+  {
+   "t": 166364,
+   "type": "say",
+   "text": "Jeden!"
+  },
+  {
+   "t": 166364,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 167400
+  },
+  {
+   "t": 167400,
+   "type": "say",
+   "text": "Dwa!"
+  },
+  {
+   "t": 167400,
+   "type": "clip",
+   "ms": 1040,
+   "ended": 168445
+  },
+  {
+   "t": 168445,
+   "type": "say",
+   "text": "Trzy!"
+  },
+  {
+   "t": 168446,
+   "type": "clip",
+   "ms": 1200,
+   "ended": 169650
+  },
+  {
+   "t": 169651,
+   "type": "say",
+   "text": "Brawo!"
+  },
+  {
+   "t": 169675,
+   "type": "clip",
+   "ms": 1120,
+   "ended": 170792
+  },
+  {
+   "t": 170794,
+   "type": "tone",
+   "hz": 500,
+   "to": 900,
+   "wave": "sine",
+   "delay": 0
+  },
+  {
+   "t": 171251,
+   "type": "tone",
+   "hz": 523,
+   "to": 523,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 171251,
+   "type": "tone",
+   "hz": 659,
+   "to": 659,
+   "wave": "square",
+   "delay": 140
+  },
+  {
+   "t": 171251,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 280
+  },
+  {
+   "t": 171251,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 420
+  },
+  {
+   "t": 171252,
+   "type": "tone",
+   "hz": 784,
+   "to": 784,
+   "wave": "square",
+   "delay": 560
+  },
+  {
+   "t": 171252,
+   "type": "tone",
+   "hz": 1046,
+   "to": 1046,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 171254,
+   "type": "say",
+   "text": "Brawo! Wszystkie łódki są w domu!"
+  },
+  {
+   "t": 171268,
+   "type": "me",
+   "text": "celebration"
+  },
+  {
+   "t": 171269,
+   "type": "say",
+   "text": "Jeszcze raz czy płyniemy dalej?"
+  },
+  {
+   "t": 172286,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 0
+  },
+  {
+   "t": 172286,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 350
+  },
+  {
+   "t": 172286,
+   "type": "tone",
+   "hz": 700,
+   "to": 1050,
+   "wave": "square",
+   "delay": 700
+  },
+  {
+   "t": 172286,
+   "type": "tone",
+   "hz": 1050,
+   "to": 700,
+   "wave": "square",
+   "delay": 1050
+  },
+  {
+   "t": 182023,
+   "type": "say",
+   "text": "Płyniemy dalej czy do domu?"
+  },
+  {
+   "t": 207115,
+   "type": "me",
+   "text": "no open question (mission over?)"
+  },
+  {
+   "t": 207126,
+   "type": "say",
+   "text": "Może popłyniemy do latarni?"
+  }
+ ],
+ "events": [
+  {
+   "mission": "lighthouse",
+   "skill": "sequence",
+   "item": "4",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 10871,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794138093976,
+   "options": 1,
+   "chosen": "4",
+   "level": 4,
+   "round": 0
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "sequence",
+   "item": "5",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 14747,
+   "assistLevel": 0,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794138123826,
+   "options": 1,
+   "chosen": "5",
+   "level": 4,
+   "round": 1
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "sequence",
+   "item": "3",
+   "correct": false,
+   "firstTry": false,
+   "latencyMs": 17065,
+   "assistLevel": 1,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794138154176,
+   "options": 1,
+   "errorType": "timeout",
+   "level": 4,
+   "round": 2
+  },
+  {
+   "mission": "lighthouse",
+   "skill": "sequence",
+   "item": "3",
+   "correct": true,
+   "firstTry": true,
+   "latencyMs": 29278,
+   "assistLevel": 3,
+   "attempt": 1,
+   "scored": true,
+   "at": 1794138166388,
+   "options": 1,
+   "chosen": "3",
+   "level": 4,
+   "round": 2
+  }
+ ],
+ "progress": {
+  "v": 6,
+  "missions": {
+   "lighthouse": {
+    "level": 4,
+    "good": 1,
+    "lastAcc": 0.6666666666666666
+   },
+   "letters": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "balloons": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "name": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "cones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "stones": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "counting": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "lookout": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "delivery": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "picnic": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   },
+   "garage": {
+    "level": 1,
+    "good": 0,
+    "lastAcc": 1
+   }
+  },
+  "items": {},
+  "skills": {
+   "sequence": {
+    "3": {
+     "attempts": 0,
+     "correctFirstTry": 0,
+     "assisted": 0,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 1,
+     "mastery": 0,
+     "avgLatencyMs": 0,
+     "latencyN": 0,
+     "lastSeenAt": 1794138166388,
+     "confusions": {}
+    },
+    "4": {
+     "attempts": 0,
+     "correctFirstTry": 0,
+     "assisted": 0,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0,
+     "avgLatencyMs": 0,
+     "latencyN": 0,
+     "lastSeenAt": 1794138093976,
+     "confusions": {}
+    },
+    "5": {
+     "attempts": 0,
+     "correctFirstTry": 0,
+     "assisted": 0,
+     "wrong": 0,
+     "missTaps": 0,
+     "timeouts": 0,
+     "mastery": 0,
+     "avgLatencyMs": 0,
+     "latencyN": 0,
+     "lastSeenAt": 1794138123826,
+     "confusions": {}
+    }
+   }
+  },
+  "sessions": {
+   "count": 1,
+   "recent": [
+    {
+     "id": 1794138022983,
+     "startedAt": 1794138022983,
+     "endedAt": 1794138173264,
+     "missions": [
+      "lighthouse"
+     ],
+     "finale": false
+    }
+   ]
+  },
+  "world": {
+   "rescuedKittens": 0,
+   "balloonsAtLookout": 0,
+   "bridgeBuilt": false,
+   "trainUnlocked": false,
+   "lookoutLights": false,
+   "treatsAtHouse": 0,
+   "trafficLight": false,
+   "roadCones": 0,
+   "parcels": 0,
+   "picnicGuests": 0,
+   "lookoutKittens": 0,
+   "garageCar": false,
+   "bunting": false,
+   "completedEvents": [],
+   "rewards": [],
+   "unseen": []
+  },
+  "visited": {}
+ }
+}
