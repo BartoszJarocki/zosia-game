@@ -37,6 +37,7 @@ export const DOMAIN = Object.fromEntries(
  * @property {boolean} finaleTriggered    the hub has called for the finale
  * @property {boolean} finaleDone
  * @property {boolean} endedEarly         wound down because she seemed tired (Phase 6)
+ * @property {string[]} launched          the areas whose whole launch she has seen (the rocket, the boat)
  */
 export function createSession(now, { targetMissions = SESSION.targetMissions } = {}) {
   return {
@@ -44,8 +45,17 @@ export function createSession(now, { targetMissions = SESSION.targetMissions } =
     missionsCompleted: 0, targetMissions, completed: [],
     recentLatency: [], recentAssistLevels: [], recentErrors: [],
     recentQuestions: [], baseline: { latency: {}, assist: [] }, pending: blankQuestion(),
-    finaleTriggered: false, finaleDone: false, endedEarly: false,
+    finaleTriggered: false, finaleDone: false, endedEarly: false, launched: [],
   };
+}
+
+/** The first trip of a session to an area (space, sea) shows the whole launch; a later one goes straight to START. */
+export const firstTrip = (s, area) => !s.launched?.includes(area);
+
+/** She has seen this area's whole launch. */
+export function noteTrip(s, area) {
+  if (firstTrip(s, area)) (s.launched ||= []).push(area);
+  return s;
 }
 
 const blankQuestion = () => ({ wrongChoice: 0, overTap: 0, timeout: 0, missTap: 0, replays: 0 });

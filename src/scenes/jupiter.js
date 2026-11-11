@@ -7,13 +7,14 @@ import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { PLACES } from '../places.js';
 import { portrait } from '../world/portrait.js';
-import { jupiterRounds, stripeRound, biggerRound, JUPITER_COLOURS } from '../levels/jupiter.js';
+import { jupiterRounds, stripeRound, biggerRound, patternUnit, JUPITER_COLOURS } from '../levels/jupiter.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const COLOUR_HEX = { white: '#f4ecdd', orange: '#ef8b31', brown: '#8b5a35', red: '#d83a3a' };
 const BALL_R = { jupiter: 2.9, sun: 2.9, earth: 0.56 };
 const BALL_GAP = 0.95;
+const SEEN_MS = 900; // the filled stripe in view before the next round
 const BIG_LEFT_X = -2.2, BIG_RIGHT_X = 0.4;
 const BAR_W = 5.2, BAR_H = 0.44, STEP = 0.5, ROW_Z = -0.8;
 const across = (n, gap) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * gap);
@@ -165,7 +166,8 @@ export class JupiterMission extends Mission {
       this.fillStripe(blank, p.answer);
       sfx.good();
       this.success(blank.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.4, 0.5)));
-      await this.say([this.praise(), ...T.jupiterRow(p.row)]);
+      this.talk = this.say([this.praise(), ...T.jupiterRow(patternUnit(p.row))]); // the pattern once, not the whole row
+      await wait(SEEN_MS);
       resolveRound();
     };
 
@@ -187,7 +189,7 @@ export class JupiterMission extends Mission {
       simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : pots.find((pot) => pot !== right && pot.parent)),
       reveal: () => this.hint(right, () => solved),
     }, { options: pots.length });
-    this.ask(short);
+    this.askAfter(this.talk, short);
     await done;
   }
 
@@ -227,7 +229,8 @@ export class JupiterMission extends Mission {
       const bounce = this.bounceBall(ball);
       this.success(ball.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, BALL_R[ball.userData.choice], 0)));
       const fact = p.ask === 'smaller' ? T.jupiterSmall() : T.jupiterBig(p.big);
-      await this.say([this.praise(), ...fact]);
+      this.talk = this.say([this.praise(), ...(this.told?.includes(fact[0]) ? [] : fact)]); // (each fact once a visit)
+      (this.told ||= []).push(fact[0]);
       await bounce;
       resolveRound();
     };
@@ -241,7 +244,7 @@ export class JupiterMission extends Mission {
       simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : balls.find((ball) => ball !== right && ball.parent)),
       reveal: () => this.hint(right, () => solved),
     }, { options: 2 });
-    this.ask(short);
+    this.askAfter(this.talk, short);
     await done;
   }
 

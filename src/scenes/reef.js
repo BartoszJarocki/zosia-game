@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, hop, camera } from '../engine.js';
+import { animate, ease, hop, wait, camera } from '../engine.js';
 import { mat, mesh } from '../models.js';
 import { portrait } from '../world/portrait.js';
 import { texture } from '../textures.js';
@@ -10,6 +10,7 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const MINI_WIDTH = 4.8, MINI_GAP = 0.3;
+const SEEN_MS = 800; // the animal in its place, in view, before the next scene
 const MINI_AT = {
   'na:rock': { x: -1.2, y: 2.55, z: 0 },
   'na:shell': { x: 1.05, y: 1.12, z: 0.1 },
@@ -341,7 +342,7 @@ export class ReefMission extends Mission {
       const bubble = { big: '?', onTap: () => this.replay(), passthrough: true };
       if (this.L.mode === 'see') Object.assign(bubble, { big: target.word, pic: positionPicture(target.word, target.place.on) });
       ui.bubble(bubble);
-      this.ask(T.reefAsk(target.animal, target.place.word, target.place.on));
+      this.askAfter(this.talk, T.reefAsk(target.animal, target.place.word, target.place.on));
     });
   }
 
@@ -370,7 +371,8 @@ export class ReefMission extends Mission {
     await animate(420, (t) => group.userData.animal.scale.setScalar(s0 * (1 + Math.sin(t * Math.PI) * 0.2)), ease.linear);
     if (!this.alive) return;
     this.success(group.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
-    await this.say([this.praise(), ...T.reefRight(target.animal, target.place.word, target.place.on)]);
+    this.talk = this.say([this.praise(), ...T.reefRight(target.animal, target.place.word, target.place.on)]);
+    await wait(SEEN_MS);
     if (!this.alive) return;
     resolve();
   }
@@ -436,7 +438,7 @@ export class ReefMission extends Mission {
       }, { options: this.spots.length });
 
       ui.bubble({ big: '?', pic: animalPicture(target.animal), onTap: () => this.replay(), passthrough: true });
-      this.ask(T.reefPlaceAsk(target.animal, target.place.word, target.place.on));
+      this.askAfter(this.talk, T.reefPlaceAsk(target.animal, target.place.word, target.place.on));
     });
   }
 
@@ -477,7 +479,8 @@ export class ReefMission extends Mission {
     await this.swim(target.place);
     if (!this.alive) return;
     this.success(this.animalObj.position.clone().add(new THREE.Vector3(0, 0.9, 0)));
-    await this.say([this.praise(), ...T.reefRight(target.animal, target.place.word, target.place.on)]);
+    this.talk = this.say([this.praise(), ...T.reefRight(target.animal, target.place.word, target.place.on)]);
+    await wait(SEEN_MS);
     if (!this.alive) return;
     resolve();
   }

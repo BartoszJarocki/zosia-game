@@ -3,7 +3,7 @@ import { animate, ease, shakeNo, wait, hop } from '../engine.js';
 import { makeBone, makeKitten, rbox, mat, mesh } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { glyphTexture } from '../textures.js';
-import { sfx, say } from '../audio.js';
+import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
@@ -20,6 +20,7 @@ import { Mission } from './mission.js';
 
 const BLANKET_X = 3.5, BLANKET_Z = 0.6, BLANKET_W = 5.2, BLANKET_D = 3;
 const ROW = 0.95;   // treats in a lined-up row, centre to centre
+const FEAST_MS = 900; // the longest the eating of one pile takes
 const INNER = 1.6;  // a lined-up row starts this far from the middle and runs outwards (rows of five)
 const PLATE = new THREE.Vector3(0, 0, -1.75); // Chase's plate ("same")
 const NUMERAL_BG = '#2563eb';
@@ -162,8 +163,9 @@ export class PicnicMission extends Mission {
           this.success(spots[i].clone().add(new THREE.Vector3(0, 1.5, 0)), { big: true });
           // numerals: the treats appear for real
           let eat = groups[i];
-          if (numerals) { groups[i].forEach((c) => this.shrinkAway(c, 250)); eat = this.spread(counts[i], spots[i]); await wait(400 + counts[i] * 70); }
-          await say([...yes, ...T.number(counts[i])]);
+          this.talk = this.say([...yes, ...T.number(counts[i]), ...(this.thanked ? [] : T.yum())]); // ("Mniam, mniam! Dziękuję!" once a visit)
+          this.thanked = true;
+          if (numerals) { groups[i].forEach((c) => this.shrinkAway(c, 250)); eat = this.spread(counts[i], spots[i]); await wait(300 + counts[i] * 50); }
           if (!this.alive) return;
           await this.feast(eater, eat, spots[i]);
           await Promise.all([...groups.flat(), ...refItems, ...(plate ? [plate] : [])].filter((x) => x.parent).map((x) => this.shrinkAway(x, 250)));
@@ -201,7 +203,8 @@ export class PicnicMission extends Mission {
         reveal: () => groups[answer].forEach((b) => this.hint(b, () => solved)), // the right group pulses
       }, { options: 2 });
       const story = eater === this.kitten ? T.kittenTummy() : [];
-      wait(700 + Math.max(...counts) * 70).then(() => { if (this.alive) this.ask([...(r === 0 ? T.picnicStart() : []), ...story, ...ask]); });
+      const landed = wait(700 + Math.max(...counts) * 70);
+      this.askAfter(Promise.all([landed, this.talk]), [...(r === 0 ? T.picnicStart() : []), ...story, ...ask]);
     });
   }
 
@@ -212,17 +215,17 @@ export class PicnicMission extends Mission {
     who.rotation.y = Math.atan2(to.x - home.x, to.z - home.z);
     await this.jumpTo(who, to, { height: 0.6, ms: 500 });
     who.rotation.y = 0;
+    const bite = Math.min(170, FEAST_MS / items.length); // (a big pile goes down quicker)
     for (const b of items) {
       if (!this.alive) return;
       const p0 = b.position.clone(), mouth = who.position.clone().add(new THREE.Vector3(0, kitten ? 0.8 : 1.2, 0.5));
-      await animate(170, (t) => { b.position.lerpVectors(p0, mouth, t); b.scale.setScalar(Math.max(0.001, 1.15 * (1 - t))); }, ease.in);
+      await animate(bite, (t) => { b.position.lerpVectors(p0, mouth, t); b.scale.setScalar(Math.max(0.001, 1.15 * (1 - t))); }, ease.in);
       b.removeFromParent();
       sfx.crunch();
     }
     who.userData.setHappy?.(2);
     if (kitten) sfx.meow();
-    await hop(who, 0.6);
-    await say(T.yum());
+    await hop(who, 0.6, 350);
     who.rotation.y = Math.atan2(home.x - who.position.x, home.z - who.position.z);
     await this.jumpTo(who, home, { height: 0.6, ms: 500 });
     who.rotation.y = turn;
