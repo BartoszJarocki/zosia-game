@@ -52,7 +52,7 @@ export function patternRound(kind, rng = Math.random) {
   const row = Array.from({ length }, (_, i) => unit[i % unit.length]);
   const gap = kind === 'gap' ? one([2, 3], rng) : length - 1;
   const item = triple ? (unit[1] === unit[2] ? 'ABB' : 'AAB') : kind === 'gap' ? 'gap' : 'AB';
-  return { row, gap, answer: row[gap], choices: shuffle([a, b, c], rng), item };
+  return { row, gap, answer: row[gap], choices: shuffle([a, b, c], rng), item, unit };
 }
 
 /**

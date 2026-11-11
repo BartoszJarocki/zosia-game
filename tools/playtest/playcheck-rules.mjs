@@ -6,7 +6,7 @@
 //   plan       'fast' | 'wrong-first' | 'quick' | 'mash' | 'polite'
 //   taps[]     { t, label, aim: 'thing' | 'empty' | 'bubble' | 'fingers', hit, soundMs }
 //              soundMs: from the tap to the first sound it started, or null when none started within a second
-//   rounds[]   { q: 'skill:item', bubble, right, answerMs, waitNextMs,
+//   rounds[]   { q: 'skill:item', bubble, right, answerMs, waitNextMs, alongMs (of the wait, a ride or feast she tapped along with),
 //                quick?: { made, counted, what },
 //                wrongFirst?: { tapped, help, shown: [], closed } }
 //              right: the label of the right option when the question opened (null when no option is right by itself)
@@ -113,16 +113,20 @@ export function questionIsHers(runs, row) {
   return verdict(true, `bubble keeps the answer; ${tries.length} wrong taps showed nothing`);
 }
 
-/** 3. She plays more than she watches: from a right answer to the next question, middle at most 4 s, longest at most 8 s. */
+/**
+ * 3. She plays more than she watches: from a right answer to the next question, middle at most 4 s, longest at most
+ * 8 s. A ride or a feast she taps along with counts as hers (the plan's rule 3): that part of a wait is not watching.
+ */
 export function playsMoreThanWatches(runs) {
   const fast = runs.find((r) => r.plan === 'fast');
   if (!fast) return notMeasured('no fast run');
-  const answered = fast.rounds.filter((x) => x.answerMs != null && x.waitNextMs != null);
-  const waits = answered.slice(0, -1).map((x) => x.waitNextMs).sort((a, b) => a - b); // (the last one waits for the badge)
+  const answered = fast.rounds.filter((x) => x.answerMs != null && x.waitNextMs != null).slice(0, -1); // (the last one waits for the badge)
+  const waits = answered.map((x) => x.waitNextMs - (x.alongMs || 0)).sort((a, b) => a - b);
   if (!waits.length) return notMeasured('one question');
   const h = waits.length >> 1, middle = waits.length % 2 ? waits[h] : (waits[h - 1] + waits[h]) / 2, longest = waits[waits.length - 1]; // (the median pace.py takes)
   const pass = middle <= MIDDLE_WAIT_MS && longest <= LONGEST_WAIT_MS;
-  return verdict(pass, `middle ${s1(middle)}, longest ${s1(longest)}`);
+  const along = answered.reduce((ms, x) => ms + (x.alongMs || 0), 0);
+  return verdict(pass, `middle ${s1(middle)}, longest ${s1(longest)}${along ? `, not counting ${s1(along)} she tapped along` : ''}`);
 }
 
 export const RULES = [

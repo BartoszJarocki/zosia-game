@@ -14,6 +14,7 @@ import { roundOrder, DICE } from '../levels/treats.js';
 import { Mission } from './mission.js';
 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const BITE = 500, COUNTED_BITE = 1000; // ms between treats Chase eats by himself (counted: one number each)
 
 // Chase's tray: the treats he gets lie on it in rows of five (a ten-frame), cream on blue so every one shows.
 const TRAY = { x: 1.6, z: 0.75, w: 4.5, d: 1.9, top: 0.1 };
@@ -144,12 +145,30 @@ export class CountingMission extends Mission {
       .then(() => { bn.removeFromParent(); sfx.crunch(); });
   }
 
-  async gobble(bones) {
+  /**
+   * The feast: Chase eats the treats one by one, at his own pace, or as fast as she feeds them to him (she taps a
+   * treat: she counts along). counted: each one's number is said as it goes. While it lasts, this.along is the treat
+   * she can tap next (the play check counts a feast she taps along with as hers).
+   */
+  async feast(bones, { counted = false } = {}) {
     this.lookAt(this.pup.position.clone().add(new THREE.Vector3(0, 1.3, 0.6)));
-    for (const bn of bones) {
-      if (!this.alive) return;
-      await this.chomp(bn);
+    const left = [...bones], pace = counted ? COUNTED_BITE : BITE;
+    let eaten = 0, fed = null;
+    const eat = (b) => {
+      left.splice(left.indexOf(b), 1);
+      this.untap(b);
+      this.chomp(b);
+      this.pupWags();
+      if (counted) this.say(T.number(++eaten));
+    };
+    left.forEach((b) => this.tappable(b, () => { if (!left.includes(b) || !this.alive) return; eat(b); fed?.(); }));
+    this.along = () => left[0] ?? null;
+    while (left.length && this.alive) {
+      const tapped = await new Promise((resolve) => { fed = () => resolve(true); wait(pace).then(() => resolve(false)); });
+      if (!tapped && left.length && this.alive) eat(left[0]);
     }
+    this.along = null;
+    if (!this.alive) return;
     this.pup.userData.setHappy(2);
     hop(this.pup, 0.7);
   }
@@ -258,14 +277,11 @@ export class CountingMission extends Mission {
   /** Chase has the right amount: a cheer and the lines, he eats (bowl treats too), the round clears away. */
   async eatUp(f, lines, more = []) {
     await Promise.all(f.landed);
-    await wait(200);
     if (!this.alive) return;
     sfx.good();
     this.success(this.pup.position.clone().add(new THREE.Vector3(0, 2.2, 0)));
-    await say(lines);
-    if (!this.alive) return;
-    await this.gobble([...f.given, ...more]);
-    await say(T.yum());
+    this.talk = this.say([...lines, ...T.yum()]); // (as he eats)
+    await this.feast([...f.given, ...more]);
     if (!this.alive) return;
     await Promise.all([...f.rings.filter(Boolean), ...f.pile.filter((b) => !f.given.includes(b))].map((x) => this.shrinkAway(x, 250)));
   }
@@ -295,10 +311,10 @@ export class CountingMission extends Mission {
     }, { scored: !auto }); // an automatic give can't go wrong: played, not counted
 
     ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true }); // Chase sits right under it
-    wait(400).then(() => { if (this.alive) this.ask(auto ? [...T.treatsGive(n), ...T.dragTreat()] : T.giveThenTap(n)); });
+    this.askAfter(Promise.all([wait(400), this.talk]), auto ? [...T.treatsGive(n), ...T.dragTreat()] : T.giveThenTap(n));
     await f.done;
     if (!this.alive) return;
-    await this.eatUp(f, [...T.treatsDone(n), this.praise()]);
+    await this.eatUp(f, T.treatsDone(n));
   }
 
   /** A treat landed by Chase: a little hop and a happy face, every time. */
@@ -370,12 +386,10 @@ export class CountingMission extends Mission {
         this.onPup = null;
         friends.forEach((f) => { this.untap(f.plate); if (f.kitten) this.untap(f.obj); });
         await Promise.all(flights);
-        await wait(250);
         if (!this.alive) return;
         sfx.good();
         this.success(this.pup.position.clone().add(new THREE.Vector3(0, 2.2, 0)));
-        await say([...T.shareDone(), ...T.treatsDone(n), this.praise()]);
-        if (!this.alive) return;
+        this.talk = this.say([...T.shareDone(), ...T.shareYum()]); // (as they eat; each one was counted as she gave it)
         // everyone eats at once
         await Promise.all(friends.map((f) => {
           const mouth = f.obj.position.clone().add(new THREE.Vector3(0, f.kitten ? 0.9 : 1.3, 0.5));
@@ -384,7 +398,6 @@ export class CountingMission extends Mission {
             .then(() => { f.bone.removeFromParent(); sfx.crunch(); hop(f.obj, 0.5, 380); });
         }));
         this.pup.userData.setHappy(2);
-        await say(T.shareYum());
         if (!this.alive) return;
         await Promise.all(friends.flatMap((f) => (f.kitten ? [f.obj, f.plate] : [f.plate])).map((x) => this.shrinkAway(x, 300)));
         await this.showTray(true);
@@ -392,7 +405,7 @@ export class CountingMission extends Mission {
       };
 
       ui.bubble({ dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true });
-      wait(500 + n * 220).then(() => { if (this.alive) this.ask(T.shareStart(n)); });
+      this.askAfter(Promise.all([wait(500 + n * 220), this.talk]), T.shareStart(n));
     });
   }
 
@@ -493,7 +506,7 @@ export class CountingMission extends Mission {
     }, { options: blocks.length });
 
     ui.bubble({ big: '?', pic: '🦴', onTap: () => this.replay() });
-    wait(400 + n * 220).then(() => { if (this.alive) this.ask(T.howMany()); });
+    this.askAfter(Promise.all([wait(400 + n * 220), this.talk]), T.howMany());
 
     const b = await right;
     this.correct(n);
@@ -502,22 +515,12 @@ export class CountingMission extends Mission {
     bones.forEach((x) => this.untap(x));
     sfx.good();
     this.success(b.position.clone().add(new THREE.Vector3(0, 1, 0)));
-    await say(T.yes());
-    if (!this.alive) return;
     blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 300));
-    // count together as he eats: one bone, one number; the last number lands on her block
-    this.lookAt(this.pup.position.clone().add(new THREE.Vector3(0, 1.3, 0.6)));
-    for (let k = 0; k < bones.length; k++) {
-      this.chomp(bones[k]);
-      this.pupWags();
-      await say(T.number(k + 1));
-      if (!this.alive) return;
-    }
+    await this.feast(bones, { counted: true }); // count together as he eats: one bone, one number, the last one hers
+    if (!this.alive) return;
     hop(b, 0.6, 500);
     sparkle(this, b.position.clone().add(new THREE.Vector3(0, 0.9, 0)), { count: 14 });
-    this.pup.userData.setHappy(2);
-    await say([...T.treatsDone(n), ...T.yum()]);
-    if (!this.alive) return;
+    this.talk = this.say(T.yum());
     await this.shrinkAway(b, 300);
   }
 
@@ -564,8 +567,16 @@ export class CountingMission extends Mission {
     const lay = () => under.forEach((b, i) => { const [x, z] = DICE[under.length][i]; b.position.set(x, 0.18, z); b.rotation.set(0, 0, 0); });
     const onPlate = () => { const b = makeBone(1.05); dish.add(b); under.push(b); return b; };
     ui.bubble({ big: '?', pic: '🦴', onTap: () => this.replay(), passthrough: true });
-    await this.dropIn(dish, 0, 0, 600);
-    sfx.pop();
+    await Promise.all([this.dropIn(dish, 0, 0, 600).then(() => sfx.pop()), this.talk]); // (the last feast's lines first)
+    if (!this.alive) return;
+    // the question starts with what she watches: the quick look, or the treats going under the bowl
+    let f = null;
+    const ask = [...(kind === 'flash' ? T.flashAsk() : T.hiddenAsk()), ...T.sameForPup()];
+    this.question('quantity', n, {
+      short: () => (!f || f.count() === 0 ? ask : T.tapPupWhenDone()),
+      hint: () => { if (f) wait(700).then(() => show(false)); return T.lookAgain(); },
+      reveal: () => { if (f) show(true); },
+    });
     if (kind === 'flash') {
       for (let i = 0; i < n; i++) onPlate();
       lay();
@@ -612,7 +623,7 @@ export class CountingMission extends Mission {
       await bowl.userData.to('shut');
       open = false;
     };
-    const f = this.feed({
+    f = this.feed({
       n, layout: 5,
       compare: async () => { // the bowl's treats line up under hers, one each
         this.say(T.checkBowl());
@@ -622,23 +633,17 @@ export class CountingMission extends Mission {
           if (!this.alive) return;
           const p0 = b.getWorldPosition(new THREE.Vector3()), to = this.slotPos(j + 5, 10);
           this.scene.attach(b);
-          await animate(380, (t) => { b.position.lerpVectors(p0, to, t); b.position.y += Math.sin(t * Math.PI) * 0.8; b.scale.setScalar(1.05 + (ON_TRAY - 1.05) * t); }, ease.inOut);
+          await animate(260, (t) => { b.position.lerpVectors(p0, to, t); b.position.y += Math.sin(t * Math.PI) * 0.8; b.scale.setScalar(1.05 + (ON_TRAY - 1.05) * t); }, ease.inOut);
           b.rotation.set(0, LIE, 0);
           sfx.pop();
         }
-        await wait(500);
+        await wait(300);
       },
-    });
-    const ask = [...(kind === 'flash' ? T.flashAsk() : T.hiddenAsk()), ...T.sameForPup()];
-    this.question('quantity', n, {
-      short: () => (f.count() === 0 ? ask : T.tapPupWhenDone()),
-      hint: () => { wait(700).then(() => show(false)); return T.lookAgain(); },
-      reveal: () => { show(true); },
     });
     this.ask(ask);
     await f.done;
     if (!this.alive) return;
-    await this.eatUp(f, [...T.same(), ...T.treatsDone(n), this.praise()], under);
+    await this.eatUp(f, T.same(), under); // ("Tyle samo!": the treats lined up one under each of hers show it)
     if (this.alive) await this.shrinkAway(dish, 300);
   }
 }

@@ -27,6 +27,15 @@ test('pattern AB: two colours taking turns, the next one missing, and it is not 
   assert.deepEqual(new Set(rounds.map((p) => p.answer === p.row[0])), new Set([true, false]));
 });
 
+test('every pattern says its repeating unit once: the row is that unit over and over', () => {
+  for (const kind of ['AB', 'gap', 'ABB']) {
+    for (const p of runs(100, (rng) => patternRound(kind, rng))) {
+      assert.equal(p.unit.length, kind === 'ABB' ? 3 : 2);
+      assert.ok(p.row.every((c, i) => c === p.unit[i % p.unit.length]));
+    }
+  }
+});
+
 test('pattern choices: the two colours of the row and one that is not in it', () => {
   for (const kind of ['AB', 'gap', 'ABB']) {
     for (const p of runs(100, (rng) => patternRound(kind, rng))) {

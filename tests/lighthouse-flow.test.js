@@ -101,8 +101,9 @@ test('marks: a dot stays for every flash and the numeral choice scores the count
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
   const right = choices.find((o) => o.userData.num === 3);
+  const boat = s.boat;
   await right.userData.onTap();
-  assert.ok(s.boat.position.x < -4, 'the boat sailed into the harbour');
+  assert.ok(boat.position.x < -4, 'the boat sailed into the harbour');
   await round;
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].item, '3');

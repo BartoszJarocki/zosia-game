@@ -99,8 +99,9 @@ export class LookoutMission extends Mission {
       const halo = new THREE.Mesh(new THREE.CircleGeometry(r * 1.32, 40), new THREE.MeshBasicMaterial({ color: GLOW, toneMapped: false, transparent: true, opacity: 0 }));
       halo.position.set(SIGN_X, y + mid, CAR_Z + 0.065); // (between the sign and the balcony's front edge)
       halo.userData.dynamic = true;
-      Object.assign(s.userData, { halo, radius: r, base: 1 });
+      Object.assign(s.userData, { halo, radius: r, base: 1, tapHeight: 0 });
       this.scene.add(s, halo);
+      this.tappable(s, () => this.countAlong());
       this.scene.add(mesh(rbox(x1 - x0, 0.1, 0.7, 0.04), blue, { x: (x0 + x1) / 2, y: y - 0.05, z: CAR_Z - 0.3 }));
       return s;
     });
@@ -189,6 +190,13 @@ export class LookoutMission extends Mission {
     this.doorsOpen = open;
     sfx.doors();
     await animate(380, (t) => this.setDoors(open ? t : 1 - t), ease.inOut);
+  }
+
+  /** On a ride she can count along: a tap on the signs pulses the floor the car is at (with a pop). */
+  countAlong() {
+    if (!this.along || !this.floor) return;
+    this.pulse(this.floor);
+    sfx.pop();
   }
 
   /** Ride to a floor. Counting along on the way (unless count:false): each floor's sign lights, a beat, its number. */
@@ -292,13 +300,15 @@ export class LookoutMission extends Mission {
   rollDie(value, first) {
     const die = this.die;
     ui.bubble({ pic: '🎲', onTap: () => this.say(T.diceTap()) });
-    this.say(first ? [...this.startLine(), ...T.diceTap()] : T.diceTap());
+    const q = this.learn.current;
+    let done = false, quiet = 0;
+    Promise.resolve(this.talk).then(() => { if (this.alive && !done && this.learn.current === q) this.say(first ? [...this.startLine(), ...T.diceTap()] : T.diceTap()); });
     const turning = this.onUpdate((dt) => { die.rotation.y += dt * 1.2; }); // (no old number showing: it's waiting to be rolled)
     return new Promise((resolve) => {
-      let done = false, quiet = 0;
       const roll = async (byChase) => {
         if (done || !this.alive) return;
         done = true;
+        this.along = null;
         turning();
         clearInterval(nudge);
         this.untap(die);
@@ -316,6 +326,7 @@ export class LookoutMission extends Mission {
         resolve();
       };
       this.tappable(die, () => roll(false));
+      this.along = () => (done ? null : die); // (a die to roll is the thing she taps first)
       const nudge = setInterval(() => { // a hop now and then; after the third, Chase rolls it himself
         if (!this.alive || done) return clearInterval(nudge);
         if (++quiet >= 3) return roll(true);
@@ -331,12 +342,11 @@ export class LookoutMission extends Mission {
    * show() (the bubble), ask, short, hint() (optional; by default the number and its dots appear) }.
    * A dice ride waits for the die to be rolled first.
    */
-  async plan(r) {
+  plan(r) {
     const mode = this.L.mode;
-    if (mode === 'dice') {
+    if (mode === 'dice') { // (the question starts with the die she rolls)
       const target = this.pick('sequence', diceFloors(this.floor, this.N, this.rounds - r - 1, this.L.dice)), d = target - this.floor;
-      await this.rollDie(d, r === 0);
-      return { skill: 'sequence', target, kitten: 'surprise', show: () => ui.bubble({ dots: d, dice: true, pic: '⬆️', onTap: () => this.replay() }),
+      return { skill: 'sequence', target, kitten: 'surprise', roll: () => this.rollDie(d, r === 0), show: () => ui.bubble({ dots: d, dice: true, pic: '⬆️', onTap: () => this.replay() }),
         ask: T.diceUp(d), short: T.whichFloor(), hint: () => { this.countFloors(this.floor, d); return T.diceCount(); } };
     }
     if (mode === 'relative' && r > 0) {
@@ -349,13 +359,13 @@ export class LookoutMission extends Mission {
     const start = r > 0 ? [] : this.startLine();
     if (mode === 'find') {
       return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: '?', pic: '🐱', onTap: () => this.replay() }),
-        ask: [...start, ...T.kittenWhere()], short: T.whichFloor(),
+        start, ask: T.kittenWhere(), short: T.whichFloor(),
         hint: () => { this.here(target); this.pulse(target); return T.kittenLook(); } }; // only the sign beside the kitten is lit
     }
     // pickup, go, and the first ride of relative
     const dots = this.L.bubble === 'both' ? target : 0;
     return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: String(target), dots, pic: '🐱', onTap: () => this.replay() }),
-      ask: [...start, ...T.kittenAt(target)], short: T.liftPress(target) };
+      start, ask: T.kittenAt(target), short: T.liftPress(target) };
   }
 
   /** The clue on a dice ride: the floors above the car light up one by one, as many as the die says. */
@@ -372,14 +382,13 @@ export class LookoutMission extends Mission {
   async round(r) {
     // a press before the ride's question (the die still waits) or during a ride does nothing yet: ui.js answers it
     if (!this.panel) this.panel = ui.liftPanel({ floors: this.N, onPress: (f) => this.onPress?.(f) });
-    const ride = await this.plan(r);
-    if (!this.alive) return;
+    const ride = this.plan(r);
     const { target } = ride;
     this.visited.push(target);
     this.last = target;
     if (ride.kitten === 'waits') this.waiting = this.kittenOn(target);
-    ride.show();
-    let busy = false, revealed = false;
+    if (!ride.roll) ride.show();
+    let busy = !!ride.roll, revealed = false; // (a dice ride: the buttons wait for the die)
     const showNumber = () => { revealed = true; ui.bubble({ big: String(target), dots: target, pic: '🐱', onTap: () => this.replay() }); this.prompt = T.liftPress(target); };
     this.question(ride.skill, target, {
       short: () => (revealed ? T.liftPress(target) : ride.short),
@@ -399,23 +408,34 @@ export class LookoutMission extends Mission {
         this.stopIdle();
         this.panel.light(f);
         sfx.pop();
+        this.along = () => this.signs[Math.max(this.floor, 1) - 1]; // the ride is hers: she counts along on the signs
         await this.doorsTo(false);
         await this.ride(target);
         if (!this.alive) return;
         sfx.ding();
         this.here(target);
         await this.doorsTo(true);
+        this.along = null;
         this.success(this.car.position.clone().add(new THREE.Vector3(0, 1.7, 0.6)));
         const k = ride.kitten === 'waits' ? this.waiting : this.kittenOn(target); // (dice: a kitten was waiting here all along!)
-        await say([this.praise(), ...T.liftArrived(target)]);
-        if (!this.alive) return;
+        this.talk = this.say([this.praise(), ...T.liftArrived(target)]).then(() => this.alive && this.say([pick(T.kittenIn())])); // (as it hops in)
+        if (ride.kitten !== 'waits') await wait(600); // (the surprise kitten lands first)
         await this.kittenHopsIn(k);
-        await say([pick(T.kittenIn())]); // (one of the variants)
         if (!this.alive) return;
         this.panel.clear();
         resolve();
       };
-      wait(r === 0 ? 900 : 400).then(() => { if (this.alive) this.ask(ride.ask); });
+      if (ride.roll) {
+        ride.roll().then(() => {
+          if (!this.alive) return;
+          busy = false;
+          ride.show();
+          this.ask(ride.ask);
+        });
+      } else {
+        if (ride.start?.length) this.talk = this.say(ride.start); // (the story is told even when she presses at once)
+        this.askAfter(Promise.all([wait(r === 0 ? 900 : 400), this.talk]), ride.ask);
+      }
     });
   }
 

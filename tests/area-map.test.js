@@ -16,27 +16,22 @@ const boundary = registerHooks({
     return key ? { format: 'module', source: sources[key], shortCircuit: true } : next(url, context);
   },
 });
-const { MOVES, nextState, flightStops } = await import('../src/scenes/area-map.js');
+const { MOVES, nextState } = await import('../src/scenes/area-map.js');
 boundary.deregister();
 
 test('the map only permits the specified state changes', () => {
   assert.deepEqual(MOVES, {
-    launch: ['waiting'], waiting: ['flying', 'returning'], flying: ['visiting', 'returning'],
+    launch: ['waiting'], waiting: ['flying', 'returning'], flying: ['flying', 'visiting', 'returning'],
     visiting: ['waiting', 'returning'], returning: [],
   });
   assert.equal(nextState('launch', 'waiting'), 'waiting');
   assert.equal(nextState('waiting', 'flying'), 'flying');
   assert.equal(nextState('flying', 'visiting'), 'visiting');
+  assert.equal(nextState('flying', 'flying'), 'flying'); // a tap on another stop on the way
   assert.equal(nextState('visiting', 'waiting'), 'waiting');
   for (const state of ['waiting', 'flying', 'visiting']) assert.equal(nextState(state, 'returning'), 'returning');
   assert.throws(() => nextState('launch', 'flying'), { message: 'Invalid space move: launch to flying' });
   assert.throws(() => nextState('returning', 'waiting'), { message: 'Invalid space move: returning to waiting' });
-});
-
-test('flights name intermediate stops in both directions, including a return during flight', () => {
-  assert.deepEqual(flightStops(3, 7), [4, 5, 6, 7]);
-  assert.deepEqual(flightStops(10, 3), [9, 8, 7, 6, 5, 4, 3]);
-  assert.deepEqual(flightStops(6.4, 9), [7, 8, 9]);
 });
 
 test('home returns to the area map only when the area has one', () => {

@@ -74,16 +74,18 @@ async function scene(level) {
   return s;
 }
 
-test('together claps first, then each horn toot lights a block and the boat tap sails it out', async () => {
+test('together claps the name once first, each horn toot lights a block, and the boat says it once as it sails out', async () => {
   const s = await scene(1);
   s.pick = () => 'MEWA';
   const round = s.round(0);
-  await until(() => s.phase === 'asking');
+  await until(() => globalThis.__lines.includes('Zatrąb jej imię po kawałku!'));
+  assert.equal(s.phase, 'asking');
   assert.equal(s.last, 2);
   assert.equal(s.target, 2);
   assert.equal(s.count, 0);
   assert.ok(globalThis.__lines.includes('W porcie łódki odpoczywają. Każda łódka ma imię.'));
-  assert.ok(globalThis.__lines.includes('Ta łódka nazywa się Mewa.'));
+  assert.ok(!globalThis.__lines.includes('Ta łódka nazywa się Mewa.'), 'Chase claps it instead');
+  assert.deepEqual(globalThis.__lines.slice(-4), ['Me!', 'Wa!', 'Zatrąb jej imię po kawałku!', 'Gotowe? Dotknij łódki!']);
   const horn = choice(s, 'horn');
   const boat = choice(s, 'done');
   assert.ok(horn && boat);
@@ -100,7 +102,8 @@ test('together claps first, then each horn toot lights a block and the boat tap 
   assert.equal(s.answers[0].item, 'MEWA');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
-  assert.deepEqual(globalThis.__lines.slice(-4), ['Me!', 'Wa!', 'Mewa!', 'Brawo! Łódka wypływa w morze!']);
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Mewa!', 'Brawo! Łódka wypływa w morze!']);
+  assert.equal(globalThis.__lines.filter((l) => l === 'Me!').length, 1, 'no syllables sung back: the boat toots them');
   stop(s);
 });
 

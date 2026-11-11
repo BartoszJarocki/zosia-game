@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, hop } from '../engine.js';
+import { animate, ease, hop, wait } from '../engine.js';
 import { mat, mesh, rbox } from '../models.js';
 import { makePup } from '../characters.js';
 import { sfx } from '../audio.js';
@@ -14,6 +14,7 @@ const PLANET_R = 3.7, PLANET_Y = 1.15, PLANET_Z = -3.7;
 const SHAPE_Y = PLANET_Y, SHAPE_Z = 1.55;
 const WINDOW_R = 2.1, CLOUD_R = 2.25, CLOUD_Z = 2.25;
 const CLOUD_OPEN = 1.9, CLOUD_SHRINK = 0.8;
+const SEEN_MS = 1000; // the shape in view after her answer, before the next one
 const TILE_Y = -3.65, TILE_Z = 2.55;
 
 function paint(w, h, draw) {
@@ -277,7 +278,10 @@ export class VenusMission extends Mission {
           if (!this.alive) return;
           this.success(new THREE.Vector3(0, SHAPE_Y, SHAPE_Z + 0.4), { big: true });
           this.chase.userData.setHappy(3);
-          await this.say([this.praise(), ...T.venusRight(target), ...T.shapeClue(target)]);
+          const told = (this.told ||= new Set()).has(target); // ("Koło jest okrągłe!" once a visit)
+          this.told.add(target);
+          this.talk = this.say([this.praise(), ...T.venusRight(target), ...(told ? [] : T.shapeClue(target))]);
+          await wait(SEEN_MS);
           if (!this.alive) return;
           resolve();
           return;
@@ -306,7 +310,7 @@ export class VenusMission extends Mission {
         if (this.L.reveal === 'full') await this.openClouds(850);
         if (!this.alive) return;
         this.phase = 'asking';
-        this.ask(T.venusAsk());
+        this.askAfter(this.talk, T.venusAsk());
       })();
     });
   }

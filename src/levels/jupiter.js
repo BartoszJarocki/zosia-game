@@ -28,6 +28,12 @@ export const STRIPE_ROWS = {
 
 const one = (a, rng) => a[Math.floor(rng() * a.length)];
 
+/** The stripes that repeat in a row (white orange · white orange orange · …): what is said after her answer. */
+export function patternUnit(row) {
+  for (let n = 1; n < row.length; n++) if (row.every((c, i) => c === row[i % n])) return row.slice(0, n);
+  return row;
+}
+
 /** Which kind of round comes when. Extra rounds repeat stripes, away from another stripe when there is room. */
 export function jupiterRounds({ types, rounds }, random = Math.random) {
   const kinds = [...new Set(types)];

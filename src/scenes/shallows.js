@@ -487,7 +487,7 @@ export class ShallowsMission extends Mission {
     this.tappable(this.thing, () => this.tapDrop());
     this.openQuestion(task, 'drop');
     this.bubble('💧');
-    this.ask(T.shallowsDrop());
+    this.askAfter(this.talk, T.shallowsDrop());
     await new Promise((done) => { this.dropResolve = done; });
     if (!this.alive) return;
     const talk = this.say(T.shallowsThing(task));
@@ -517,7 +517,7 @@ export class ShallowsMission extends Mission {
     if (!this.alive) return;
     this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 1.8, 0)));
     sfx.good();
-    await this.say(this.praise());
+    this.talk = this.say([this.praise()]);
   }
 
   async guessRound(task) {
@@ -526,7 +526,7 @@ export class ShallowsMission extends Mission {
     this.openQuestion(task, 'guess');
     this.bubble();
     this.tapShelves();
-    this.ask(T.shallowsAsk());
+    this.askAfter(this.talk, T.shallowsAsk());
     const guess = await this.waitForShelf();
     if (!this.alive) return;
     this.untapShelves();
@@ -539,15 +539,13 @@ export class ShallowsMission extends Mission {
       this.wrong(guess, { obj: this.shelves[guess], feedback: false });
       this.stopIdle();
     }
-    const talk = this.say(right ? [...T.shallowsThing(task), ...T.shallowsSurprise(task)] : [...T.shallowsLook(task), ...T.shallowsSurprise(task)]);
+    this.talk = this.say(right ? [...T.shallowsThing(task), ...T.shallowsSurprise(task), this.praise()] : [...T.shallowsLook(task), ...T.shallowsSurprise(task)]);
     await this.dropThing(task);
-    await talk;
     if (!this.alive) return;
     await this.placeOnShelf(task);
     if (!this.alive || !right) return;
     this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 1.8, 0)));
     sfx.good();
-    await this.say(this.praise());
   }
 
   async round(r) {

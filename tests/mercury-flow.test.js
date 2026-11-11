@@ -88,19 +88,24 @@ test('a stay round keeps the craters in view and scores the number tile', async 
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
-  assert.deepEqual(globalThis.__lines.filter((l) => ['Jeden!', 'Dwa!', 'Trzy!'].includes(l)).slice(-3), ['Jeden!', 'Dwa!', 'Trzy!']);
+  assert.ok(!globalThis.__lines.some((l) => ['Jeden!', 'Dwa!', 'Trzy!'].includes(l)), 'her number once, no count through');
   assert.ok(globalThis.__lines.includes('Tak! Trzy kratery!'));
+  assert.ok(s.craterDots.every((c) => c.userData.bowl.material.color.getHexString() === 'ffd166'), 'the craters light up');
   stop(s);
 });
 
-test('a flash round hides the craters under pink dust, then counts them after a wrong tap', async () => {
+test('a flash round says "Szybkie oko!" before the look, hides the craters under pink dust, then counts them after a wrong tap', async () => {
   const s = await scene(3, 4);
+  globalThis.__lines = [];
   const round = s.craterRound();
   assert.equal(s.tappables.length, 0);
+  assert.ok(!s.craters, 'nothing to see before the cue');
+  await until(() => globalThis.__lines.includes('Szybkie oko! Patrz!'));
+  assert.equal(s.learn.current?.skill, 'quantity', 'the question starts with the look');
   await until(() => s.phase === 'choosing');
   assert.equal(s.last, 4);
   assert.equal(s.craters.visible, false);
-  assert.equal(globalThis.__lines.at(-1), 'Szybkie oko! Ile było kraterów?');
+  assert.deepEqual(globalThis.__lines, ['Szybkie oko! Patrz!', 'Ile było?']);
   const wrong = s.blocks.find((b) => b.userData.num !== s.last);
   await wrong.userData.onTap();
   assert.ok(globalThis.__lines.includes('Popatrz jeszcze raz.'));
@@ -125,8 +130,8 @@ test('right after a wrong tile the right one counts, and the count for help give
   assert.equal(s.answers.length, 1, 'the right tile was not locked by the wrong one');
   assert.equal(s.answers[0].firstTry, false);
   await round;
-  const numbers = globalThis.__lines.filter((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l));
-  assert.deepEqual(numbers, ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'], 'one count, not two at once');
+  const after = globalThis.__lines.slice(globalThis.__lines.indexOf('Tak! Cztery kratery!'));
+  assert.ok(after.length && !after.some((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l)), 'the count for help stops at her answer');
   stop(s);
 });
 

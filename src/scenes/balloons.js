@@ -148,10 +148,11 @@ export class BalloonsMission extends Mission {
           const rest = this.balloons;
           this.balloons = [];
           rest.forEach((x) => this.untap(x));
-          await Promise.all([say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]), ...rest.map((x) => {
+          this.talk = this.say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]); // (the next balloons come up meanwhile)
+          await Promise.all(rest.map((x) => {
             const y0 = x.position.y;
             return animate(900, (t) => { x.position.y = y0 + t * 12; }, ease.in).then(() => x.removeFromParent());
-          })]);
+          }));
           if (!this.alive) return;
           resolve();
         } else {
@@ -179,9 +180,7 @@ export class BalloonsMission extends Mission {
       // several balloons are right at once, so a guess is right more often than 1 in n (mastery takes that out)
       const choices = () => this.balloons.length / (this.L.targets - popped);
       this.question('letterVisual', target, hooks, { options: choices() }); // one question per balloon to find
-      wait(500).then(() => {
-        if (this.alive) this.ask(T.balloonAsk(target));
-      });
+      this.askAfter(Promise.all([wait(500), this.talk]), T.balloonAsk(target));
     });
   }
 

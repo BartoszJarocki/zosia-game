@@ -192,10 +192,7 @@ export class MarsMission extends Mission {
         reveal: () => this.hint(rc, () => solved, rc.userData.sign),
       };
       this.question(skill, target, hooks, { options: n });
-      wait(600).then(() => {
-        if (!this.alive) return;
-        this.ask(this.L.ask === 'dots' ? T.marsDots() : T.marsAsk(target));
-      });
+      this.askAfter(Promise.all([wait(600), this.talk]), this.L.ask === 'dots' ? T.marsDots() : T.marsAsk(target));
 
       const handleTap = async (rock, num) => {
         if (solved) return;
@@ -215,8 +212,7 @@ export class MarsMission extends Mission {
         this.success();
         await this.driveTo(rock);
         if (!this.alive) return;
-        await this.say(T.marsRight());
-        if (!this.alive) return;
+        this.talk = this.say(T.marsRight()); // "Brawo! Łazik dojechał!", while it scans the rock
         await this.scan(rock);
         if (!this.alive) return;
         await this.clearRocks(rocks);

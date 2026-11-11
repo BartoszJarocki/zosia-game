@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { animate, ease, wait } from '../engine.js';
 import { mesh, rbox } from '../models.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
-import { sfx } from '../audio.js';
+import { sfx, hush } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { numberChoices } from '../levels.js';
 import { moonRounds, numbersIn, countVerdict } from '../levels/moon.js';
@@ -12,6 +12,7 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const MAX = 10, INK = '#ad8dc7', LIT = '#fff2ae';
+const FALL_GAP = 400; // ms between pebbles she watches fall
 const FACE = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
 const basic = (color) => new THREE.MeshBasicMaterial({ color });
 
@@ -130,8 +131,21 @@ export class BlackHoleMission extends Mission {
     return p;
   }
 
-  say(segments) {
-    const speak = () => this.alive ? super.say(segments) : Promise.resolve();
+  /**
+   * Lines queue, so each number of her count is heard. Her count comes first: a pebble she sends cuts the line being
+   * said (praise, a question), and a question (wanted given) is dropped once she has moved on or started dropping.
+   */
+  say(segments, wanted) { return this.queue(segments, { wanted }); }
+  count(n) {
+    if (this.chatting) hush();
+    return this.queue(T.number(n), { count: true });
+  }
+  queue(segments, { wanted, count = false }) {
+    const speak = () => {
+      if (!this.alive || (wanted && (!wanted() || (this.phase === 'drop' && this.beads.length)))) return Promise.resolve();
+      this.chatting = !count;
+      return super.say(segments).finally(() => { this.chatting = false; });
+    };
     const talk = this.speech ? this.speech.then(speak) : speak();
     this.speech = talk;
     talk.then(() => { if (this.speech === talk) this.speech = null; });
@@ -220,7 +234,7 @@ export class BlackHoleMission extends Mission {
       this.untap(p); p.userData.pebble = false; delete p.userData.drag;
       this.addBead();
       const count = this.beads.length;
-      this.say(T.number(count));
+      this.count(count);
       const i = this.pebbles.indexOf(p);
       const flight = Promise.all([
         this.release(p).then(() => { p.removeFromParent(); p.geometry.dispose(); p.material.dispose(); }),
@@ -255,45 +269,53 @@ export class BlackHoleMission extends Mission {
       },
     }, { scored: !auto });
     ui.bubble({ big: String(n), pic: '✨', onTap: () => this.replay(), passthrough: true });
-    this.ask([...T.blackholeDrop(n), ...(auto ? T.blackholeHelp() : T.blackholeButton())]);
+    this.askAfter(this.talk, [...T.blackholeDrop(n), ...(auto ? T.blackholeHelp() : T.blackholeButton())]);
     await done;
-    await Promise.all([...flights, this.speech]);
     if (!this.alive) return;
-    await wait(650);
-    if (!this.alive) return;
+    const counted = this.speech; // her numbers, still being said
     this.success(); sfx.good();
-    if (!this.lampSaid) {
-      this.lampSaid = true;
-      this.brighten();
-      await this.say(T.blackholeGlow());
-    } else await this.say([this.praise()]);
+    const glow = !this.lampSaid; // (the fact once a visit)
+    this.lampSaid = true;
+    if (glow) this.brighten();
+    this.talk = this.say(glow ? T.blackholeGlow() : [this.praise()]);
+    await Promise.all([...flights, counted]); // the next question comes as she is praised
   }
 
+  /** She watches pebbles fall in, 0.4 s apart, and counts them: the question starts as they start to fall. */
   async howManyRound() {
+    await this.speech; // (her numbers and the praise first: then she can count)
+    if (!this.alive) return;
     const n = this.pick('quantity', numbersIn(this.L.howMany));
     this.last = n;
     this.phase = 'watching';
-    ui.hideBubble();
     if (this.L.slots) this.showSlots(n);
-    await this.say(T.blackholeWatch());
-    for (let i = 0; i < n; i++) {
+    let right = null, lastWrong;
+    this.question('quantity', n, {
+      short: T.blackholeHowMany(),
+      hint: () => { this.showSlots(n); return T.countTogether(); },
+      simplify: () => right && this.removeOption(lastWrong?.parent ? lastWrong : this.blocks.find((b) => b !== right && b.parent)),
+      reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
+    }, { options: 3 });
+    ui.bubble({ big: '?', pic: '✨', onTap: () => this.replay(), passthrough: true });
+    this.say(T.blackholeWatch());
+    await Promise.all(Array.from({ length: n }, (_, i) => wait(i * FALL_GAP).then(async () => {
       if (!this.alive) return;
-      const p = this.pebbles[i % this.pebbles.length];
+      const p = this.pebbles[i % this.pebbles.length].clone(); // (the one on the shelf stays: more can fall from it)
+      p.material = p.material.clone();
+      this.scene.add(p);
       await this.release(p);
-      if (!this.alive) return;
-      this.addBead();
-      p.position.copy(p.userData.home); p.scale.setScalar(1); p.material.opacity = 1;
-      await wait(220);
-    }
+      p.removeFromParent(); p.material.dispose();
+      if (this.alive) this.addBead();
+    })));
     if (!this.alive) return;
     this.phase = 'choosing';
     this.pebbles.forEach((p) => { p.visible = false; });
-    let tapped = 0, resolve, lastWrong;
+    let tapped = 0, resolve;
     const done = new Promise((r) => { resolve = r; });
     this.beads.forEach((p) => this.tappable(p, () => {
       if (this.phase !== 'choosing' || p.userData.counted) return;
       this.poke(); p.userData.counted = true; p.material.color.set(LIT).multiplyScalar(1.8);
-      this.say(T.number(++tapped));
+      this.count(++tapped);
     }));
     const max = Math.max(this.L.howMany[1] + 1, n + 1);
     this.blocks = numberChoices(n, max, 3, true).map((num, i) => {
@@ -309,28 +331,16 @@ export class BlackHoleMission extends Mission {
       });
       return b;
     });
-    const right = this.blocks.find((b) => b.userData.num === n);
-    this.question('quantity', n, {
-      short: T.blackholeHowMany(),
-      hint: () => { this.showSlots(n); return T.countTogether(); },
-      simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : this.blocks.find((b) => b !== right && b.parent)),
-      reveal: () => this.hint(right, () => this.phase !== 'choosing'),
-    }, { options: 3 });
-    ui.bubble({ big: '?', pic: '✨', onTap: () => this.replay(), passthrough: true });
+    right = this.blocks.find((b) => b.userData.num === n);
     this.ask(T.blackholeHowMany());
     const chosen = await done;
     if (!this.alive) return;
     [...this.beads, ...this.blocks].forEach((o) => this.untap(o));
     this.blocks.filter((b) => b !== chosen).forEach((b) => { b.visible = false; });
     this.success(); sfx.good();
-    await this.say(T.yes());
-    this.beads.forEach((p) => p.material.color.set('#ffffff'));
-    for (let i = 0; i < this.beads.length; i++) {
-      if (!this.alive) return;
-      this.beads[i].material.color.set(LIT).multiplyScalar(1.8);
-      await this.say(T.number(i + 1));
-    }
-    if (this.alive) await animate(350, (t) => chosen.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.15), ease.linear);
+    this.beads.forEach((p) => p.material.color.set(LIT).multiplyScalar(1.8));
+    this.talk = this.say([...T.yes(), ...T.number(n)]); // "Tak! Trzy!": the number she chose, said once
+    await animate(350, (t) => chosen.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.15), ease.linear);
   }
 
   success() { this.cheer(2); }

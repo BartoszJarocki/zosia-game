@@ -202,8 +202,8 @@ test('the name is one whole word until the clap: no syllable separators on the b
   const alone = await scene(2);
   alone.pick = () => 'MEWA';
   let splitAtSing = null;
-  const sing = alone.singBack.bind(alone);
-  alone.singBack = async (word, boat) => { await sing(word, boat); splitAtSing = boat.userData.board.userData.split; };
+  const sing = alone.tootBack.bind(alone);
+  alone.tootBack = async (word, boat) => { await sing(word, boat); splitAtSing = boat.userData.board.userData.split; };
   const aloneRound = alone.round(0);
   await until(() => alone.phase === 'asking');
   const board = alone.boats[0].userData.board;
@@ -228,8 +228,7 @@ test('the name is one whole word until the clap: no syllable separators on the b
   const together = await scene(1);
   together.pick = () => 'MEWA';
   const togetherRound = together.round(0);
-  await until(() => together.phase === 'asking');
-  assert.equal(together.boats[0].userData.board.userData.split, true);
+  await until(() => together.phase === 'asking' && together.boats[0].userData.board.userData.split); // (Chase's clap)
   assert.ok(together.boats[0].userData.board.userData.blocks.every((b) => b.visible));
   for (let i = 0; i < together.target; i++) await together.tappables.find((o) => o.userData.choice === 'horn').userData.onTap();
   await together.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
@@ -239,8 +238,8 @@ test('the name is one whole word until the clap: no syllable separators on the b
   const which = await scene(3);
   which.pick = () => 2;
   let whichSplit = null;
-  const whichSing = which.singBack.bind(which);
-  which.singBack = async (word, boat) => { await whichSing(word, boat); whichSplit = boat.userData.board.userData.split; };
+  const whichSing = which.tootBack.bind(which);
+  which.tootBack = async (word, boat) => { await whichSing(word, boat); whichSplit = boat.userData.board.userData.split; };
   const whichRound = which.round(0);
   await until(() => which.phase === 'choosing');
   for (const boat of which.boats) {

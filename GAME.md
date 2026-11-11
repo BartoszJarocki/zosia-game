@@ -29,7 +29,13 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
    - **after a wrong tap:** a low falling "no" sound, the thing she tapped shakes its head, and "Nie, to nie ten."
      ("Nie, to Em." when it only looks like the right letter); then a wrong option goes away, then the answer
      pulses. She always makes the last tap herself.
-   - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!")
+   - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!").
+     The praise plays while the next question comes: the next thing can be tapped at once, and the question is said
+     when the praise ends. Where she counted, her number is said once ("Tak! Trzy!"), not counted through again.
+     A fact (what a shape is like, how big Jupiter is) is said once a visit, not every round. A question that starts
+     with something to watch (flashes, a quick look, pebbles falling, Chase's jumps) starts after the praise.
+   - **a ride or a feast she taps along with is hers:** the Lookout's rides and Chase's eating in the Treat House
+     keep their length, and she can tap along to count (a floor sign, a treat)
    - **every tap answers:** a finger that lands again within 0.12 s and 40 px is one tap, right or wrong. A tap
      on something she can tap while the game cannot act on it yet gets a short tick and a little bounce of that
      thing: it is not an answer and cuts no voice. Taps that count ("Mrugnij trzy razy!") are never lost: each
@@ -38,14 +44,19 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
      the praise is still being said.
    - **leaving:** the house button takes her home only when held for a moment (a ring fills round it), in a
      mission and on the space and sea maps, so a stray tap does not end a trip.
-4. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
+4. **Trips** — the first rocket (or boat) trip of a session shows the whole launch: helmets (life jackets),
+   boarding, the countdown, then START (the horn). A later trip in the same session is a short drive, the crew
+   already aboard, START at once, and a short lift-off: about 6 s from the tap on the island to the map. A flight
+   goes straight to the stop she taps, with one line ("Lecimy na Marsa!"); a tap on another stop on the way
+   changes course, and the way home is one glide.
+5. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
    tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
    playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down
    compared with her first answers in the same mission, random taps, needing more and more help), nothing new is
    asked and the finale comes sooner; if she seems very tired: "Jeszcze tylko jedno!" (once a session), an easy one
    she knows, a celebration and a gentle goodnight. The goodnight never locks: the island sleeps, and a tap on a
    place wakes Chase with a yawn and starts a new session in that place.
-5. **Celebration** — badge, stars, confetti and fireworks, then "again" or "home".
+6. **Celebration** — badge, stars, confetti and fireworks, then "again" or "home".
 
 ## How levels work
 
@@ -264,7 +275,7 @@ How the voice claps each word in syllables at the end (Polish reading starts fro
 
 ### 🚧 Cone Road · `cones`
 
-Numbered cones block the road. Tap the right one and the cruiser drives on (early on, the dots are counted together).
+Numbered cones block the road. Tap the right one and the cruiser drives on (early on, the sign's dots light up one by one).
 A kitten waits at the end of the road ("Kotek czeka na końcu drogi!"); after the last cone the cruiser reaches
 it ("Droga wolna! Uratowałaś kotka!").
 
@@ -288,8 +299,8 @@ it ("Droga wolna! Uratowałaś kotka!").
 - **sign** — what the cone signs show: `both` (numeral + dots), `numeral`, or `dots`
 - **dots** — `line` (rows of five) or `dice` (dice patterns for 1–6: five is seen at a glance, without counting;
   above 6 always rows of five)
-- **count** — `yes`: after a right answer the sign's dots light up one by one as they are counted aloud, then
-  how many ("Jeden! Dwa! Trzy! Trzy kropki!"; needs dots on the sign) · `no`: just the number ("Cztery!")
+- **count** — `yes`: after a right answer the sign's dots light up one by one, quickly, and how many is said once
+  ("Super! Trzy kropki!"; needs dots on the sign) · `no`: just the number ("Cztery!")
 - **rounds** — how many cones block the road (1–8)
 
 ### 🪨 The River · `stones`
@@ -313,9 +324,10 @@ time, each row one hop nearer Chase: the next number and one or two others side 
   the gap that is already on the path (2 or 4 for "1 2 ? 4": only the order says no), `far` is past the end (5)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
   (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
-  stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)
+  stone in (drag it or tap it) and Zosia hops across by herself (3–9 stones)
 - After a rough run the next one is gentler: 2 stones a row, far foils, one stone shorter, the number in the
-  bubble (`missing` keeps its gap, with a far foil). After the last river Zosia stays with Chase for the badge.
+  bubble (`missing` keeps its gap, with a far foil). On Chase's bank the river is praised ("Policzyłaś do
+  pięciu!") as she leaps back for the next one. After the last river Zosia stays with Chase for the badge.
 
 ### 🦴 Treat House · `counting`
 
@@ -340,6 +352,7 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
   - `give` ("Daj mu trzy smakołyki!"): move the treats from the pile to Chase — drag them, or tap one and it hops over
   - `howMany` ("Ile smakołyków?"): count the bones on the tray (tapping one counts it aloud), then pick the
     numeral; wrong choices are ±1. Then Chase eats them one by one while they are counted, ending on her number
+    (she can feed them to him: a tap on a treat and he eats it, counted)
   - `share` (Chase and kittens wait at their plates, "Każdy dostaje jeden smakołyk!"): she taps whoever is
     still hungry; one treat each, counted aloud
   - `flash` ("Szybkie oko!"): Chase's bowl lifts for two seconds over a few treats laid out like a die, then
@@ -349,6 +362,9 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
 
   In `flash` and `hidden` she gives Chase the same number and taps him; the bowl lifts and its treats line
   up next to hers, one under each, so she sees whether it is the same.
+
+  When she is right Chase eats every treat, one by one ("Trzy smakołyki! Mniam, mniam! Dziękuję!"). She can tap
+  along: a treat she taps, he eats at once.
 - **give** / **howMany** / **share** / **hidden** / **flash** — the number ranges (give up to 10, howMany up to 9,
   share 2–4 friends, hidden 2–4 treats under the bowl in the end, flash 1–4; `—` if unused)
 - **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
@@ -374,13 +390,14 @@ laid out like the dots on a die, so she sees how many at once. Below it are the 
 | 5 | 3–6 | flash | numeral | 4 | 3 |
 
 - **craters** — the range of crater counts (1 to 6), laid out like a die so a small number is seen at a glance.
-- **show** — `stay` keeps the craters in view while she chooses. `flash` ("Szybkie oko!") shows them for two
-  seconds, then a soft light-pink dust cloud drifts over them and she chooses from memory.
+- **show** — `stay` keeps the craters in view while she chooses. `flash`: first "Szybkie oko! Patrz!", then the
+  craters show for two seconds, a soft light-pink dust cloud drifts over them, "Ile było?", and she chooses from
+  memory.
 - **labels** — `both` puts the numeral and its dots on each tile. `numeral` shows only the numeral.
 - **choices** — how many tiles (2 to 4). From level 2 the wrong tiles are the neighbours (±1), as on Cone Road.
 - **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
-  and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
-  one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
+  and every question is scored. Right: the dust blows away, the craters light up and her number is said once
+  ("Tak! Trzy kratery!"). Wrong: the tile bounces, the craters are counted, the right tile glows, and she
   tries again. The right tile can be tapped all the while: her answer stops the count for help.
 
 ### 🌙 Moon Jumps · `moon`
@@ -401,7 +418,7 @@ about one a second to count along; the ones she makes are quick hops, over by th
   `jump` asks "Skocz trzy razy!": she taps Chase once per jump, and each landing is counted aloud.
   A tap while he is in the air is counted too: he jumps again as soon as he lands. `howMany` asks her to watch him jump silently, then
   "Ile było skoków?": she can tap each footprint pair to count it and choose the numeral. The other
-  choices are one less and one more. The footprints then light up and are counted to her number.
+  choices are one less and one more. The footprints then light up and her number is said once ("Tak! Pięć!").
 - **jump** / **howMany**: the number ranges, up to 9; `—` when howMany is unused.
 - **auto**: `yes` finishes a jump round when the requested number of footprints is there. With `no`,
   she taps the rocket flag when she is done. Too few: "Za mało! Skacz dalej!" Too many: the extra
@@ -490,9 +507,10 @@ under the window, so she can still count what she sent. Chase stays in the rocke
 - **types**: the Moon's round order. Each kind appears, kinds alternate, and the last round is
   always `drop` with auto on. `drop` asks "Wypuść trzy kamyki!": tap a pebble or drag it towards
   the window. One floats away at a time, with each new bead counted aloud. `howMany` sends N
-  pebbles silently, then asks "Ile kamyków wpadło?" She can tap each bead to count before choosing
+  pebbles silently, 0.4 s apart, then asks "Ile kamyków wpadło?" She can tap each bead to count before choosing
   the numeral. Choices are one less and one more, using another positive number when N is 1.
-  The beads then glow one by one and are counted to her number.
+  The beads then glow and her number is said once ("Tak! Pięć!"). "Czarna dziura świeci jak lampka!" comes
+  once a visit, after her first drop.
 - **drop** / **howMany**: the number ranges, up to 9.
 - **auto**: `yes` finishes at N lit beads. With `no`, she taps the rocket's big button to check.
   Too few: "Za mało! Wypuść jeszcze!" Too many: the extra beads go dark and she hears
@@ -586,7 +604,8 @@ and the Sun with Earth.
   small on purpose; the huge ball is Jupiter or the Sun.
 - **rounds**: tasks per mission, 1 to 8, with at least one per kind. `stripes` is scored as
   `pattern` with the pattern name as its item; `bigger` is scored as `comparison` with `bigger` or
-  `smaller`. Every question counts.
+  `smaller`. Every question counts. Right: the painted row's pattern is said once ("Biały, pomarańczowy!"),
+  not the whole row; "Jowisz jest dużo większy od Ziemi!" comes once a visit.
 
 ### ☄️ Comet Catch · `comet`
 
@@ -626,7 +645,8 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 - **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
 - **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
-  a beam and the boat sails into the harbour. Wrong: the boat bobs, the dots reset, the right answer is shown and
+  a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
+  after the praise. Wrong: the boat bobs, the dots reset, the right answer is shown and
   she tries again. A boat is never lost.
 
 ### 🦆 Pływa czy tonie? · `shallows`
@@ -695,14 +715,17 @@ and she toots its name once for each syllable.
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). Too few or too many toots: Chase claps the name slowly and she tries again. Right: the boat
-  sails out happily. A boat is never lost.
+  sails out happily, saying its name once; the next boat comes in meanwhile. The name is said once before her
+  toots (Chase's clap, or the whole name) and once after. A boat is never lost.
 
 ### 🗼 The Lookout · `lookout`
 
 Ride the glass elevator up the Lookout ("Baza"). Press the floor on the elevator panel; on the way the car
 stops at each floor, its sign lights up and there is a short beat before the number is said, so she (or her
-parent) can count along first. Lost kittens wait on the floors, each right beside its floor's sign: each ride
-picks one up, and at the end everyone goes to the very top and down the slide together!
+parent) can count along first. She can tap along too: a tap on the signs while the car rides pulses the floor
+it is at, with a pop. The ride keeps its length (she loves it). Lost kittens wait on the floors, each right
+beside its floor's sign: each ride picks one up (it hops in as she is praised, and the next ride's question
+comes meanwhile), and at the end everyone goes to the very top and down the slide together!
 
 | Level | max | bubble | mode | rounds | dice |
 |---|---|---|---|---|---|
@@ -771,7 +794,8 @@ A picnic with Chase: more, less, the same — by looking, before numbers.
 - **close** — `no`: the amounts are far apart (2+ difference) · `yes`: they differ by one
 - **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
   (no < > signs). The clue lines each group up on its own blanket, one row each from the middle outwards: the
-  longer row has more. With numerals the clue puts the dots under each numeral.
+  longer row has more. With numerals the clue puts the dots under each numeral. Right: "Tak! Tu jest więcej!
+  Pięć!" as the eater trots over and eats them ("Mniam, mniam! Dziękuję!" once a visit).
 
 ### 🔧 The Garage · `garage`
 
@@ -796,7 +820,8 @@ the blocks into baskets, then the mended cruiser flashes its lights.
   stands on a corner, and the triangle is not the textbook one (a square corner, long and flat, tall and thin)
 - **pattern** — `AB`: red, blue, red, blue… which flag comes next? (two colours of the row and one other to
   choose from) · `gap`: the same kind of row with one flag missing in the middle · `ABB`: red, blue, blue (or red,
-  red, blue)… which comes next? After a right answer the whole row is said aloud, flag by flag
+  red, blue)… which comes next? After a right answer the pattern is said once, flag by flag ("Czerwona!
+  Niebieska!"), not the whole row
 - **sort** — four blocks, one at a time, into two baskets (drag the block, or tap the basket): `colour`: two
   colours, "Czerwony do czerwonego!" · `size`: a big and a small basket, "Duży do dużego!" · `switch`: a big basket
   and a small one in two colours; two blocks go by colour, then "Teraz duże i małe!" and two go by size

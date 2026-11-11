@@ -14,6 +14,7 @@ import { Mission } from './mission.js';
 
 const START = -4.9, GAP = 1.05, MAX = 10;
 const WATCH_JUMP = { ms: 900, height: 2.3 };  // Chase's own jumps, high and floaty, about one a second to count along
+const SEEN_MS = 500; // her count in view, lit, before the next round
 const TAP_JUMP = { ms: 400, height: 1.2 };    // a jump she makes: done by her next quick tap, and low enough that a tap
                                               // where he just stood still reaches him (tools/playtest/hop-reach.mjs)
 const INK = '#79648e', LIT = '#b88012';
@@ -234,13 +235,13 @@ export class MoonMission extends Mission {
       },
     }, { scored: !auto });
     ui.bubble({ big: String(n), pic: '🌙', onTap: () => this.replay(), passthrough: true });
-    this.ask([...T.moonJump(n), ...(auto ? T.moonHelp() : T.moonFlag())]);
+    this.askAfter(this.talk, [...T.moonJump(n), ...(auto ? T.moonHelp() : T.moonFlag())]);
     await done;
     if (!this.alive) return;
-    await wait(650);
     this.success(this.chase.position.clone().add(new THREE.Vector3(0, 2, 0)));
     sfx.good();
-    await this.say([this.praise()]);
+    this.talk = this.say([this.praise()]);
+    await wait(SEEN_MS);
   }
 
   /** The flag: right ends the round; too few, she jumps on; too many, the extra footprints fade. */
@@ -266,13 +267,23 @@ export class MoonMission extends Mission {
     }
   }
 
+  /** Chase jumps and she counts his footprints: the question starts with "Patrz, jak skacze!". */
   async howManyRound() {
+    await this.talk; // (the praise for her last answer first: then she can count)
+    if (!this.alive) return;
     const n = this.pick('quantity', numbersIn(this.L.howMany));
     this.last = n;
     this.phase = 'watching';
-    ui.hideBubble();
     if (this.L.slots) this.showSlots(n);
-    await this.say(T.moonWatch());
+    let right = null, lastWrong;
+    this.question('quantity', n, {
+      short: T.moonHowMany(),
+      hint: () => { this.showSlots(n); return T.countTogether(); },
+      simplify: () => right && this.removeOption(lastWrong?.parent ? lastWrong : this.blocks.find((b) => b !== right && b.parent)),
+      reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
+    }, { options: 3 });
+    ui.bubble({ big: '?', pic: '🌙', onTap: () => this.replay(), passthrough: true });
+    this.say(T.moonWatch());
     for (let i = 0; i < n; i++) {
       if (!this.alive) return;
       await this.jump();
@@ -280,7 +291,7 @@ export class MoonMission extends Mission {
     }
     if (!this.alive) return;
     this.phase = 'choosing';
-    let tapped = 0, resolve, lastWrong;
+    let tapped = 0, resolve;
     const done = new Promise((r) => { resolve = r; });
     this.prints.forEach((p) => this.tappable(p, () => {
       if (this.phase !== 'choosing' || p.userData.counted) return;
@@ -308,14 +319,7 @@ export class MoonMission extends Mission {
       });
       return b;
     });
-    const right = this.blocks.find((b) => b.userData.num === n);
-    this.question('quantity', n, {
-      short: T.moonHowMany(),
-      hint: () => { this.showSlots(n); return T.countTogether(); },
-      simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : this.blocks.find((b) => b !== right && b.parent)),
-      reveal: () => this.hint(right, () => this.phase !== 'choosing'),
-    }, { options: 3 });
-    ui.bubble({ big: '?', pic: '🌙', onTap: () => this.replay(), passthrough: true });
+    right = this.blocks.find((b) => b.userData.num === n);
     this.ask(T.moonHowMany());
     const chosen = await done;
     if (!this.alive) return;
@@ -323,10 +327,10 @@ export class MoonMission extends Mission {
     this.blocks.filter((b) => b !== chosen).forEach((b) => { b.visible = false; });
     this.success(chosen.position.clone());
     sfx.good();
-    await this.say(T.yes());
-    this.prints.forEach((p) => p.material.color.set(INK));
-    await this.countPrints();
-    if (this.alive) await animate(350, (t) => chosen.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.15), ease.linear);
+    this.prints.forEach((p) => p.material.color.set(LIT));
+    this.talk = this.say([...T.yes(), ...T.number(n)]); // "Tak! Sześć!": the number she chose, said once
+    await animate(350, (t) => chosen.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.15), ease.linear);
+    await wait(SEEN_MS);
   }
 
   doneLine() { return T.moonDone(); }

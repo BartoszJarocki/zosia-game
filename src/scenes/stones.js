@@ -15,6 +15,7 @@ import { riverRows, missingFoil, KEEP_CLEAR, START as RIVER_START, LAND } from '
 
 const START = new THREE.Vector3(RIVER_START.x, 0, RIVER_START.z);
 const FAR = new THREE.Vector3(4.5, 0, -5.9);
+const ACROSS_HOP = 240; // ms a hop across the finished river takes
 
 // "River": tap the stones 1, 2, 3... so Zosia can hop across to Chase. The stones come up a row at a time, each
 // row one hop nearer Chase (levels/river.js), so every hop goes forward and only the number says which stone.
@@ -138,7 +139,7 @@ export class StonesMission extends Mission {
         this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next, hooks, { options: this.L.choices });
         if (!seqBubble()) {
           ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
-          if (next === 1) this.ask(r === 0 ? (nextMode ? T.riverFirstNext() : T.riverFirst()) : T.riverAgain());
+          if (next === 1) this.askAfter(this.talk, r === 0 ? (nextMode ? T.riverFirstNext() : T.riverFirst()) : T.riverAgain());
           else this.ask(T.riverNext(next));
         } else {
           ui.bubble({ seq: [next - 1], onTap: () => this.replay() });
@@ -168,21 +169,19 @@ export class StonesMission extends Mission {
         this.girl.userData.setHappy(0.8);
         row.filter((x) => x !== s && x.parent).forEach((x) => this.shrinkAway(x, 300)); // the others sink: the way behind her is just her path
         path.push(s);
+        if (next === n) { // the last stone: on to Chase, where the whole river is praised ("Policzyłaś do pięciu!")
+          this.stopIdle();
+          await this.reachChase(n, path, r);
+          resolve();
+          return;
+        }
         await say([...this.yes(), ...T.number(next)]); // hear the number she landed on before the next question
         if (!this.alive) return;
         next++;
         this.last = next;
-        if (next <= n) {
-          raise(next - 1);
-          busy = false;
-          askNext();
-          return;
-        }
-        this.stopIdle();
-        await wait(500);
-        if (!this.alive) return;
-        await this.reachChase(n, path, r);
-        resolve();
+        raise(next - 1);
+        busy = false;
+        askNext();
       };
 
       raise(0);
@@ -263,23 +262,21 @@ export class StonesMission extends Mission {
         stones[missing - 1] = st;
         this.success(gapAt.clone().add(new THREE.Vector3(0, 1, 0)));
         ui.bubble({ word: seq(true), at: cell(missing), done: cell(n + 1), onTap: () => {} });
-        await say([...this.yes(), ...T.number(missing)]);
+        this.say([...this.yes(), ...T.number(missing)]);
         const rest = choices.filter((c) => c !== st);
         rest.forEach((c) => this.shrinkAway(c, 300));
-        if (!this.alive) return;
-        // and across she goes, counting
+        // and across she goes, stone by stone (the bubble shows the whole row)
         for (let i = 0; i < n; i++) {
+          if (!this.alive) return;
           const to = stones[i].position.clone(); to.y = 0.4;
           this.face(to);
           this.walking = true;
           sfx.boing();
-          await this.jumpTo(this.girl, to, { height: 1.2, ms: 420 });
+          await this.jumpTo(this.girl, to, { height: 1, ms: ACROSS_HOP });
           this.walking = false;
           sfx.splash();
-          say(T.number(i + 1));
-          if (!this.alive) return;
-          await wait(260);
         }
+        if (!this.alive) return;
         await this.reachChase(n, stones, r);
         resolve();
       };
@@ -295,7 +292,7 @@ export class StonesMission extends Mission {
         simplify: () => { const w = lastWrong || choices.find((c) => c.userData.num !== missing); if (w) this.removeOption(w); },
         reveal: () => this.hint(right(), () => solved),
       }, { options: 2 });
-      wait(900 + n * 110).then(() => { if (this.alive) this.ask(r === 0 ? T.riverMissing() : T.whichFits()); });
+      this.askAfter(Promise.all([wait(900 + n * 110), this.talk]), r === 0 ? T.riverMissing() : T.whichFits());
     });
   }
 
@@ -312,12 +309,13 @@ export class StonesMission extends Mission {
     this.success(land.clone().add(new THREE.Vector3(0, 1.5, 0)), { big: true });
     ui.hideBubble();
     const last = r === this.rounds - 1;
-    await say([...(last ? T.riverCounted(n) : T.riverDone(n)), this.praise()]); // (the badge says "Udało się!")
+    this.talk = this.say([...(last ? T.riverCounted(n) : T.riverDone(n)), this.praise()]); // (the badge says "Udało się!")
     if (!this.alive || last) return;
-    await Promise.all(path.map((x) => this.shrinkAway(x, 300)));
+    // back for the next river while she is praised
+    path.forEach((x) => this.shrinkAway(x, 300));
     this.face(START);
     this.walking = true;
-    await this.jumpTo(this.girl, START.clone(), { height: 4, ms: 900 });
+    await this.jumpTo(this.girl, START.clone(), { height: 3.5, ms: 700 });
     this.walking = false;
     dust(this, START, { count: 5 });
     this.girl.rotation.y = Math.PI;

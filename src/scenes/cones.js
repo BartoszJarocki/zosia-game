@@ -15,6 +15,7 @@ import { Mission } from './mission.js';
 
 const STEP = 14; // how far the cruiser drives after each round
 const LIT = '#fde047'; // a dot being counted
+const DOT_LIGHT = 130; // ms between the sign's dots lighting up after her answer
 
 /**
  * Where glyphTexture (textures.js) draws a sign's dots, [x, y, r] on its 512 px canvas, in counting order
@@ -186,18 +187,16 @@ export class ConesMission extends Mission {
             cones.forEach((x) => this.untap(x));
             sfx.good();
             this.success(sign.getWorldPosition(new THREE.Vector3()));
+            // her answer said once: how many dots ("Trzy kropki!"), lighting one by one where the level counts them; later she just knows: "Cztery!"
+            this.talk = this.say([this.praise(), ...(this.L.count || ask === 'dots' ? T.dots(num) : T.number(num))]);
             if (this.L.count) {
-              // count the dots together, each one lighting up as it is said, then how many ("Trzy kropki!")
-              await say([this.praise()]);
               for (let k = 1; k <= num; k++) {
                 if (!this.alive) return;
                 light(k);
                 sfx.pop();
-                await say(T.number(k));
+                await wait(DOT_LIGHT);
               }
-              if (!this.alive) return;
-              await say(T.dots(num));
-            } else await say([this.praise(), ...(ask === 'dots' ? T.dots(num) : T.number(num))]); // (later she just knows: "Cztery!")
+            }
             if (!this.alive) return;
             // cones jump off the road
             sfx.whoosh();
@@ -247,13 +246,8 @@ export class ConesMission extends Mission {
         reveal: () => this.hint(rc, () => solved, rc.userData.sign),
       };
       this.question(skill, target, hooks, { options: n });
-      wait(600).then(() => {
-        if (!this.alive) return;
-        const goal = r === 0 ? T.conesGoal() : []; // ("Kotek czeka na końcu drogi!")
-        if (ask === 'dots') this.ask([...goal, ...T.conesDots(r === 0)]);
-        else if (ask === 'name') this.ask([...goal, ...T.conesWhich(target, r === 0)]);
-        else this.ask([...goal, ...(r === 0 ? T.conesFirst(target) : T.conesMore(target))]);
-      });
+      const goal = r === 0 ? T.conesGoal() : []; // ("Kotek czeka na końcu drogi!")
+      this.askAfter(Promise.all([wait(600), this.talk]), [...goal, ...(ask === 'dots' ? T.conesDots(r === 0) : ask === 'name' ? T.conesWhich(target, r === 0) : r === 0 ? T.conesFirst(target) : T.conesMore(target))]);
     });
   }
 

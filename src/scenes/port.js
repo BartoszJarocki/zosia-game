@@ -14,6 +14,7 @@ import { shuffle } from '../util.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
+const TOOT_BACK = 300; // ms between the boat's toots back
 const BOAT_COLORS = ['#ef4444', '#2563eb', '#0ea5e9', '#f59e0b', '#14b8a6'];
 const colorFor = (word) => BOAT_COLORS[[...word].reduce((n, c) => n + c.charCodeAt(0), 0) % BOAT_COLORS.length];
 
@@ -310,21 +311,23 @@ export class PortMission extends Mission {
     this.boats = [boat];
     await this.enterBoat(boat, -1);
     if (!this.alive) return;
-    this.phase = 'clapping';
-    if (this.mode === 'together') {
-      await this.say(T.portName(this.word));
-      if (!this.alive) return;
-      await this.clapSyllables(this.word);
-      if (!this.alive) return;
-    } else {
-      boat.userData.board.userData.dots.visible = true;
-    }
+    if (this.mode !== 'together') boat.userData.board.userData.dots.visible = true;
     const prompt = [...T.portToot(), ...T.portDone()];
-    this.beginHorn(this.mode === 'together' ? prompt : [...T.portName(this.word), ...prompt]);
+    this.beginHorn();
+    // the name once before: Chase claps it ("Kacz! Ka!", she may toot along), or the voice says it whole
+    if (this.mode === 'together') {
+      const q = this.learn.current;
+      const clapped = Promise.resolve(this.talk).then(async () => {
+        if (!this.alive || this.learn.current !== q) return;
+        await this.clapSyllables(this.word);
+        this.boats[0]?.userData.board.userData.blocks.slice(0, this.count).forEach((b) => this.light(b)); // (her toots during the clap)
+      });
+      this.askAfter(clapped, prompt);
+    } else this.askAfter(this.talk, [...T.portName(this.word), ...prompt]);
     await new Promise((resolve) => { this.resolveRound = resolve; });
   }
 
-  beginHorn(prompt) {
+  beginHorn() {
     this.phase = 'asking';
     this.count = 0;
     this.last = this.target;
@@ -345,7 +348,6 @@ export class PortMission extends Mission {
       },
     }, { options: 1 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
-    this.ask(prompt);
   }
 
   toot() {
@@ -389,11 +391,10 @@ export class PortMission extends Mission {
     delete this.horn.userData.choice;
     delete boat.userData.choice;
     sfx.good();
-    await this.singBack(this.word, boat);
+    await this.tootBack(this.word, boat);
     if (!this.alive) return;
     this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
-    await this.say(T.portSuccess());
-    if (!this.alive) return;
+    this.talk = this.say([...T.spellWord(this.word), ...T.portSuccess()]); // the name once after
     await this.sailOut(boat);
     this.resolveRound?.();
     this.resolveRound = null;
@@ -437,7 +438,7 @@ export class PortMission extends Mission {
       },
     }, { options: 3 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
-    this.ask(T.portWhich(this.asked));
+    this.askAfter(this.talk, T.portWhich(this.asked));
     await new Promise((resolve) => { this.resolveRound = resolve; });
   }
 
@@ -459,12 +460,9 @@ export class PortMission extends Mission {
     for (const tick of this.tickButtons) this.untap(tick);
     for (const board of this.boards) this.untap(board);
     sfx.good();
-    await this.say(T.portRight(num));
-    if (!this.alive) return;
-    await this.singBack(boat.userData.boatName, boat);
-    if (!this.alive) return;
     this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
-    await this.say(T.portSuccess());
+    this.talk = this.say([...T.portRight(num), ...T.spellWord(boat.userData.boatName)]);
+    await this.tootBack(boat.userData.boatName, boat);
     if (!this.alive) return;
     await this.sailOut(boat);
     this.resolveRound?.();
@@ -488,17 +486,16 @@ export class PortMission extends Mission {
     await wait(220);
   }
 
-  async singBack(word, boat) {
+  /** The boat toots back once per syllable, its blocks lighting one by one. */
+  async tootBack(word, boat) {
     this.splitBoard(boat.userData.board);
     const blocks = boat.userData.board.userData.blocks;
-    for (const [i, syllable] of boatFor(word).syllables.entries()) {
+    for (const i of boatFor(word).syllables.keys()) {
       if (!this.alive) return;
       this.light(blocks[i]);
       sfx.toot();
-      await this.say(T.syllable(syllable));
-      if (!this.alive) return;
+      await wait(TOOT_BACK);
     }
-    await this.say(T.spellWord(word));
   }
 
   light(block) {
@@ -539,7 +536,7 @@ export class PortMission extends Mission {
   async enterBoat(boat, toX) {
     boat.userData.sailing = true;
     const fromX = boat.position.x;
-    await animate(900, (t) => {
+    await animate(800, (t) => {
       boat.position.x = fromX + (toX - fromX) * t;
       boat.position.y = 0.04 + Math.sin(t * Math.PI) * 0.22;
       boat.rotation.z = Math.sin(t * Math.PI) * 0.06;
@@ -552,7 +549,7 @@ export class PortMission extends Mission {
   async sailOut(boat) {
     boat.userData.sailing = true;
     const x0 = boat.position.x, z0 = boat.position.z;
-    await animate(1800, (t) => {
+    await animate(1400, (t) => {
       boat.position.x = x0 + t * t * 10;
       boat.position.z = z0 - t * 3;
       boat.position.y = 0.04 + Math.sin(t * Math.PI) * 0.35;
