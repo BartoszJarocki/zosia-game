@@ -1,8 +1,9 @@
-// playcheck.mjs [--missions a,b] [--levels 2,3] [--plans fast,quick] : the play check every unit is judged by
+// playcheck.mjs [--missions a,b] [--levels 2,3] [--plans fast,quick] [--judge] : the play check every unit is judged by
 // (docs/IMPROVEMENT-PLAN.md, unit A1). Builds the game once (unless BASE is given), serves it, plays the levels with
 // the child-like player (kid.mjs: real GPU, ?q=high, touch), judges the rules (playcheck-rules.mjs), makes a contact
 // sheet per run (sheet.sh), writes OUTDIR/playcheck.tsv (one row per mission and level) and prints the table.
 //   plans  fast and wrong-first on every level, quick on levels with counting taps, mash on each mission's first and top level
+//   --judge  plays nothing: judges the runs already in OUTDIR again (after a rule changes, or after replaying a few)
 // env: BASE, OUTDIR (default tools/playtest/playcheck-out), PORT (default 4190), CONC (browsers at once, default 2)
 // Exits 1 when a rule fails or a run breaks. Verification tooling.
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,6 +22,7 @@ const PLANS = ['fast', 'wrong-first', 'quick', 'mash'];
 
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1].split(',').filter(Boolean) : null; };
 const only = { missions: arg('missions'), levels: arg('levels')?.map(Number), plans: arg('plans') ?? PLANS };
+const JUDGE_ONLY = process.argv.includes('--judge');
 
 // levels with counting taps (something for the quick plan to tap quickly), read from GAME.md's columns
 const COUNTING_TAPS = {
@@ -53,7 +55,7 @@ let preview = null;
 const stopPreview = () => { preview?.kill(); preview = null; };
 process.on('SIGINT', () => { stopPreview(); process.exit(130); });
 let BASE = process.env.BASE;
-if (!BASE) {
+if (!BASE && !JUDGE_ONLY) {
   const vite = join(ROOT, 'node_modules/vite/bin/vite.js'), dist = join(OUT, 'dist');
   say(`building into ${dist}`);
   if (spawnSync('node', [vite, 'build', '--outDir', dist, '--emptyOutDir'], { cwd: ROOT, stdio: 'inherit' }).status !== 0) process.exit(2);
@@ -65,7 +67,7 @@ if (!BASE) {
     await new Promise((r) => setTimeout(r, 200));
   }
 }
-say(`${jobs.length} runs on ${BASE}, ${CONC} at a time, into ${OUT}`);
+if (!JUDGE_ONLY) say(`${jobs.length} runs on ${BASE}, ${CONC} at a time, into ${OUT}`);
 
 const play = (job) => new Promise((done) => {
   rmSync(job.dir, { recursive: true, force: true }); // (a run never reads an older run's summary or screenshots)
@@ -85,7 +87,7 @@ const play = (job) => new Promise((done) => {
 });
 let finished = 0, next = 0;
 const sheets = [];
-await Promise.all(Array.from({ length: Math.min(CONC, jobs.length) }, async () => { while (next < jobs.length) await play(jobs[next++]); }));
+if (!JUDGE_ONLY) await Promise.all(Array.from({ length: Math.min(CONC, jobs.length) }, async () => { while (next < jobs.length) await play(jobs[next++]); }));
 stopPreview();
 await Promise.all(sheets);
 

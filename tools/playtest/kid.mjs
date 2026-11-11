@@ -13,7 +13,7 @@
 import { chromium } from 'playwright-core';
 import { VERSION } from '../../src/progress/migrations.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { answerNamed } from './playcheck-rules.mjs';
+import { answerNamed, bubbleShowsAnswer } from './playcheck-rules.mjs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 mkdirSync(process.env.TMPDIR, { recursive: true });
 
@@ -153,16 +153,22 @@ const doneOption = async () => (await options()).find((x) => x.label === 'done')
   const p = s.pup.getWorldPosition(s.pup.position.clone()); p.y += 0.8; p.project(window.__pup.camera);
   return { label: 'done', x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight };
 }) : null);
+/** The counting thing she taps next: the lowest on screen (nothing stands in front of it), not one that ignored her. */
+const nextThing = async (ignored = new Set()) => {
+  const all = (await options()).filter((x) => x.label === COUNT_THING[kind]).sort((a, b) => b.y - a.y);
+  return all.find((x) => !ignored.has(x.id)) || all[0];
+};
 /** Tap the counting thing until the game's count is `to` (or it stops answering). */
 const countTo = async (q, rec, to, pace) => {
   let made = await count();
+  const ignored = new Set();
   for (let i = 0; i < to * 4 && made < to; i++) {
-    const o = (await options()).find((x) => x.label === COUNT_THING[kind]);
+    const o = await nextThing(ignored);
     if (!o) break;
     await tap(o, `${o.label} ${made + 1} of ${to}`); rec.taps++;
     await page.waitForTimeout(pace);
     const after = await count();
-    if (after === made) rec.ignored++;
+    if (after === made) { rec.ignored++; ignored.add(o.id); }
     made = after;
     if (!(await qState()).open) break;
   }
@@ -173,7 +179,7 @@ const quickTaps = async (q, rec, n) => {
   const before = await count(), t0 = Date.now();
   let made = 0;
   for (let i = 0; i < n; i++) {
-    const o = (await options()).find((x) => x.label === COUNT_THING[kind]);
+    const o = await nextThing();
     if (!o) break;
     await page.waitForTimeout(Math.max(0, t0 + i * QUICK_MS - Date.now()));
     await tap(o, `quick ${i + 1} of ${n}`); rec.taps++; made++;
@@ -240,7 +246,20 @@ const changeOf = (before, after) => {
     });
     return most;
   };
-  return { scale: dev('sc', true), glow: dev('gl', false), colour: dev('co', true), hinting: !b.some((x) => x.hinting) && a.some((x) => x.hinting) };
+  // a pulse swells a steady thing a little and lets it settle back. Not a pulse: a thing that shrinks away, or one that
+  // grows back in with an overshoot (a balloon that floated off the top inflates again at the bottom)
+  const pulse = () => {
+    let most = 0;
+    b[0].sc.forEach((_, j) => {
+      const was = b.map((x) => x.sc[j]), lo = Math.min(...was), hi = Math.max(...was);
+      if (hi < 1e-3 || hi - lo > 0.05 * hi) return;
+      const vs = a.map((x) => x.sc[j]).filter((v) => v !== undefined), top = vs.indexOf(Math.max(...vs)), rise = (vs[top] - hi) / hi;
+      const steady = Math.min(...vs.slice(0, top + 1)) >= 0.9 * lo, settles = Math.min(...vs.slice(top)) <= vs[top] - (vs[top] - hi) / 2;
+      if (rise > 0 && rise < 0.5 && steady && settles) most = Math.max(most, rise);
+    });
+    return most;
+  };
+  return { scale: pulse(), glow: dev('gl', false), colour: dev('co', true), hinting: !b.some((x) => x.hinting) && a.some((x) => x.hinting) };
 };
 /** Tap `wrong`, watch the right options (and the untapped wrong ones, to tell a highlight from an idle animation). */
 const watchWrong = async (q, rec, wrong, rights, others, right) => {
@@ -270,7 +289,7 @@ const watchWrong = async (q, rec, wrong, rights, others, right) => {
   const shown = [];
   if (mine.some((x) => x.hinting || (x.scale > 0.06 && x.scale > most('scale') + 0.03))) shown.push('pulsed');
   if (mine.some((x) => (x.glow > 0.15 && x.glow > most('glow') + 0.1) || (x.colour > 0.15 && x.colour > most('colour') + 0.05) || (x.cls && !theirs.some((y) => y.cls)))) shown.push('glowed');
-  if (answerNamed(right, said, prompt)) shown.push('named aloud');
+  if (!bubbleShowsAnswer(kind, rec.bubble, right) && answerNamed(right, said, prompt)) shown.push('named aloud'); // (a name the bubble already shows tells her nothing new)
   const p0 = before[0].probe;
   if (p0 && after.some((v) => v.probe?.some((x, i) => Math.abs(x - p0[i]) > 0.15))) shown.push('revealed');
   const help = Math.max(0, ...after.map((v) => v.help));
