@@ -6,4 +6,5 @@ voice-samples
 tools/playtest/out/
 tools/playtest/baseline/
 tools/playtest/after*/
+tools/playtest/playcheck-out/
 tools/playtest/*.log
