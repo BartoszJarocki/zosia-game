@@ -24,7 +24,7 @@ registerHooks({ load(url, context, next) {
   if (url.endsWith('/src/textures.js')) return { format: 'module', source: 'export const DICE = {};', shortCircuit: true };
   return next(url, context);
 } });
-const { celebrate, CELEBRATION_IDLE_MS } = await import('../src/ui.js');
+const { celebrate, CELEBRATION_IDLE_MS, starsHTML } = await import('../src/ui.js');
 
 test('space celebrations ask to fly on; island celebrations still ask about the island', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
@@ -42,4 +42,11 @@ test('space celebrations ask to fly on; island celebrations still ask about the 
   await new Promise(setImmediate);
   t.mock.timers.tick(CELEBRATION_IDLE_MS);
   assert.deepEqual(homes, ['moon']);
+});
+
+test('the stars she just earned are the ones that pop in', () => {
+  const stars = (html) => [...html.matchAll(/<span class="([^"]*)">/g)].map((m) => m[1]);
+  assert.deepEqual(stars(starsHTML(6, '', 9, 2)), ['on', 'on', 'on', 'on', 'on new', 'on new', '', '', '']);
+  assert.deepEqual(stars(starsHTML(3, '', 5, 1)), ['on', 'on', 'on new', '', '']);
+  assert.deepEqual(stars(starsHTML(3, 'small', 5)), ['on', 'on', 'on', '', ''], 'no level up: nothing pops');
 });

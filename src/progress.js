@@ -1,5 +1,6 @@
 // Tracks how Zosia is doing.
-//  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs (progress/levelup.js).
+//  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs, two levels after a
+//    perfect one (progress/levelup.js).
 //  - A rough run turns on "assist" next time, without ever taking stars away.
 //  - Skill mastery (precise): every learning event updates skills[skill][item] (see learning/mastery.js).
 // The saved shape and its upgrades live in progress/migrations.js.
@@ -54,13 +55,13 @@ export function assistFor(kind) {
   return !CONFIG.level && mission(kind).lastAcc < 0.45;
 }
 
-/** Call at the end of a mission with its { scored, clean } questions (progress/levelup.js). Returns { level, levelUp, acc }. */
+/** Call at the end of a mission with its { scored, clean } questions (progress/levelup.js). Returns { level, gained, acc }. */
 export function recordMission(kind, tally) {
   const m = mission(kind);
-  // the next level may also need a skill to be known well enough (GAME.md "needs"), not just good runs
-  const { levelUp, acc } = applyRun(m, tally, { goodRuns: CONFIG.goodRunsPerLevel, top: maxLevel(kind), opens: () => meetsNeeds(state.skills, kind, LEVELS[kind]?.[m.level]) });
+  // a level may also need a skill to be known well enough (GAME.md "needs"), not just good runs
+  const { gained, acc } = applyRun(m, tally, { goodRuns: CONFIG.goodRunsPerLevel, top: maxLevel(kind), opens: (level) => meetsNeeds(state.skills, kind, LEVELS[kind]?.[level - 1]) });
   save();
-  return { level: levelFor(kind), levelUp, acc };
+  return { level: levelFor(kind), gained, acc };
 }
 
 // recently asked items per skill (this session), so the scheduler can avoid repeats across missions too

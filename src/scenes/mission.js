@@ -112,21 +112,20 @@ export class Mission extends Stage {
   async finish() {
     ui.hideBubble();
     const got = ui.badges.add(this.kind);
-    // (a deliberately easy run, like the session finale, doesn't count towards the mission's level)
-    const { level, levelUp } = this.countsForLevel === false ? { level: this.level, levelUp: false } : recordMission(this.kind, scoreRun(this.answers));
+    const { level, gained } = recordMission(this.kind, scoreRun(this.answers));
     const { finale } = missionDone(this.kind); // the session director counts it (the hub suggests what's next)
     onMissionComplete(this.kind, { completions: got[this.kind], finale }); // Adventure Bay changes (shown in the hub)
     sfx.fanfare();
     setTimeout(() => sfx.siren(2), 900);
     this.cheer(6);
     this.pup?.userData.setHappy(8);
-    fireworks(this, this.view.look, { bursts: levelUp || this.bigFinish ? 9 : 6 });
-    const talk = say([...(this.doneLine?.() || T.done()), ...(levelUp ? T.levelUp(level) : [])]);
+    fireworks(this, this.view.look, { bursts: gained || this.bigFinish ? 9 : 6 });
+    const talk = say([...(this.doneLine?.() || T.done()), ...(gained ? T.levelUp(level) : [])]);
     ui.celebrate({
       kind: this.kind,
       level,
       total: maxLevel(this.kind),
-      levelUp,
+      gained,
       talk, // "Jeszcze raz czy na wyspę?" comes right after the badge line
       onHome: () => { hush(); this.game.home(); },
       onAgain: () => { hush(); this.game.startMission(this.kind); },
