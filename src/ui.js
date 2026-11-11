@@ -4,6 +4,7 @@ import { CONFIG } from './config.js';
 import { PLACES } from './places.js';
 import { shelfItems } from './shelf.js';
 import { DICE } from './textures.js';
+import { PAW_PARTS } from './paw.js';
 
 const ui = document.getElementById('ui');
 
@@ -13,7 +14,7 @@ export const MISSIONS = Object.fromEntries(
 const ZERO = Object.fromEntries(Object.keys(MISSIONS).map((k) => [k, 0]));
 
 // ---------- icons (crisp SVG instead of emoji) ----------
-const PAW_PATH = '<ellipse cx="50" cy="66" rx="23" ry="19"/><ellipse cx="22" cy="42" rx="10" ry="13" transform="rotate(-20 22 42)"/><ellipse cx="40" cy="25" rx="10" ry="13" transform="rotate(-6 40 25)"/><ellipse cx="60" cy="25" rx="10" ry="13" transform="rotate(6 60 25)"/><ellipse cx="78" cy="42" rx="10" ry="13" transform="rotate(20 78 42)"/>';
+const PAW_PATH = PAW_PARTS.map(([cx, cy, rx, ry, tilt]) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${tilt ? ` transform="rotate(${tilt} ${cx} ${cy})"` : ''}/>`).join('');
 export const ICON = {
   paw: (c = 'currentColor') => `<svg viewBox="0 0 100 100" fill="${c}">${PAW_PATH}</svg>`,
   home: '<svg viewBox="0 0 100 100"><path d="M50 14 L90 48 H78 V86 H22 V48 H10 Z" fill="#ef4444" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><rect x="40" y="58" width="20" height="28" rx="4" fill="#fff"/></svg>',

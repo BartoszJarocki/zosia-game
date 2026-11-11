@@ -7,9 +7,8 @@ import { animate, ease, camera } from '../engine.js';
 import { makeKitten, mat, mesh, rbox } from '../models.js';
 import { sparkle } from '../fx/particles.js';
 import { sfx } from '../audio.js';
+import { strayTarget } from '../input/stray.js';
 
-/** A tap that hit only the ground still reaches something small this close (a fraction of the screen). */
-export const NEAR = 0.07;
 const ISLAND_R = 24;
 
 /**
@@ -115,7 +114,7 @@ function peekaboo(hub, house, i) {
 
 /**
  * The ground under everything (an invisible tap zone, so any place's own zone in front of it wins).
- * Its tap: something small near the finger gets it; otherwise the grass sparkles or the sea splashes.
+ * Its tap: a real thing within the island's stray radius (the hub's `stray`) gets it; otherwise the grass sparkles or the sea splashes.
  */
 function ground(hub) {
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ visible: false }));
@@ -127,7 +126,7 @@ function ground(hub) {
   window.addEventListener('pointerdown', where, true); // (before the engine's own handler on the canvas)
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), p = new THREE.Vector3();
   hub.tappable(plane, () => {
-    const near = nearest(hub, at, Math.min(innerWidth, innerHeight) * NEAR, plane);
+    const near = strayTarget(realSpots(hub), at, Math.min(innerWidth, innerHeight), hub.stray);
     if (near) return near.userData.onTap(near);
     ndc.set((at.x / innerWidth) * 2 - 1, -(at.y / innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
@@ -138,19 +137,18 @@ function ground(hub) {
   return () => window.removeEventListener('pointerdown', where, true);
 }
 
-/** The nearest real tappable (not a zone) within maxD screen pixels of the tap, or null. */
-function nearest(hub, at, maxD, skip) {
-  let best = maxD, target = null;
+/** Where every real tappable (not a zone) is on the screen, in pixels. */
+function realSpots(hub) {
   const w = new THREE.Vector3();
+  const spots = [];
   for (const o of hub.tappables) {
-    if (o === skip || !o.visible || o.userData.zone) continue;
+    if (!o.visible || o.userData.zone) continue;
     o.getWorldPosition(w);
     w.y += (o.userData.tapHeight ?? 0.8) * o.scale.y;
     w.project(camera);
-    const d = Math.hypot((w.x + 1) / 2 * innerWidth - at.x, (1 - w.y) / 2 * innerHeight - at.y);
-    if (d < best && w.z < 1) { best = d; target = o; }
+    if (w.z < 1) spots.push({ x: (w.x + 1) / 2 * innerWidth, y: (1 - w.y) / 2 * innerHeight, target: o });
   }
-  return target;
+  return spots;
 }
 
 function sparkleGrass(hub, p) {

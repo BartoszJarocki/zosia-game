@@ -5,6 +5,7 @@ import { windTime } from './world/nature.js';
 import { optimizeScene } from './fx/optimize.js';
 import { CONFIG } from './config.js';
 import { startDrag } from './input/drag.js';
+import { strayTarget } from './input/stray.js';
 
 // ---------- renderer ----------
 export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -166,17 +167,13 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   // a real thing (kitten, train…) wins over an invisible tap zone standing in front of it
   let target = hits.find((o) => !o.userData.zone) || hits[0] || null;
   if (!target) {
-    // nearest tappable within a generous screen radius
-    const maxD = Math.min(rect.width, rect.height) * 0.14;
-    let best = maxD;
-    for (const o of live) {
+    const spots = live.map((o) => {
       o.getWorldPosition(tmp);
       tmp.y += (o.userData.tapHeight ?? 0.8) * o.scale.y;
       tmp.project(camera);
-      const sx = (tmp.x + 1) / 2 * rect.width, sy = (1 - tmp.y) / 2 * rect.height;
-      const d = Math.hypot(sx - (e.clientX - rect.left), sy - (e.clientY - rect.top));
-      if (d < best) { best = d; target = o; }
-    }
+      return { x: (tmp.x + 1) / 2 * rect.width, y: (1 - tmp.y) / 2 * rect.height, target: o };
+    });
+    target = strayTarget(spots, { x: e.clientX - rect.left, y: e.clientY - rect.top }, Math.min(rect.width, rect.height), current.stray); // (a stage sets `stray` to want a different radius)
   }
   if (target?.userData.drag) { startDrag(target, e, { camera, dom: renderer.domElement, isAlive: () => current?.alive, wake: () => (lastActive = performance.now()) }); return; }
   if (target) target.userData.onTap(target);

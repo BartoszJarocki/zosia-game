@@ -5,12 +5,11 @@ import { makePup, makeGirl } from '../characters.js';
 import { makeTree, makeBush, makeRock, makeCloud, makeHills, makeMeadowDetail, makeButterfly, makeBird, contactShadow } from '../world/nature.js';
 import { makeLookout, makeHouse, makePupHouse, makeLighthouse, makeBoat, makeWindmill, makeFence } from '../world/props.js';
 import { makeWater, makeShoreFoam } from '../world/water.js';
-import { dust, sparkle } from '../fx/particles.js';
+import { dust } from '../fx/particles.js';
 import { glyphTexture, labelTexture, discTexture } from '../textures.js';
 import { groundMat } from '../scenery.js';
 import { CONFIG } from '../config.js';
-import { levelFor, getWorld, getVisited } from '../progress.js';
-import { maxLevel } from '../levels/data.js';
+import { getWorld, getVisited } from '../progress.js';
 import { detail } from './mission.js';
 import { say, sfx, hush } from '../audio.js';
 import { pick } from '../util.js';
@@ -19,6 +18,8 @@ import { getSession, startSession, dev } from '../session/session.js';
 import { nextStep, suggestNext, callFinale, ending, sayGoodbye } from '../session/director.js';
 import { homeTaskKind } from '../session/home-task.js';
 import { confetti } from '../ui.js';
+import { PAW_PARTS } from '../paw.js';
+import { STRAY } from '../input/stray.js';
 import { takeUnseen } from '../adventure/rewards.js';
 import { addWorld, addEvent, KITTEN_LAWN } from './hub-world.js';
 import { runMicroReward } from './hub-micro.js';
@@ -36,23 +37,26 @@ import { PLACES, placesIn } from '../places.js';
 const START = new THREE.Vector3(0, 0, 0);
 const HOME_VIEW = { pos: new THREE.Vector3(0, 27, 31), look: new THREE.Vector3(0, 2.2, 1.2) };
 const portrait = () => innerHeight > innerWidth;
+// The stars glow from within, but not as much as the bloom pass needs to smear them (it starts at about 2.0 here, measured at ?q=high).
+const STAR_GLOW = 1;
+const PAW_BASE = 1.5; // the paw is this much bigger than its star
 
 // Letter games on the left, number games on the right.
 const LAYOUT = {
   rocket: { at: [-6, -19], via: [[-2.6, -1.8], [-5, -4.6], [-6.6, -10]], marker: [-6, 7, -19], starSize: 2, hit: [3.2, 5.5] },
   harbour: { at: [10.8, -23.1], via: [[2.6, -1.8], [5.2, -5.2], [7.6, -10.4], [9.4, -16.5]], marker: [10.8, 6.4, -23.1], starSize: 2, hit: [4.2, 4] },
   letters: { at: [-15, -3] },
-  balloons: { at: [-13.5, 8] },
+  balloons: { at: [-13.5, 8], pawAt: [3, -0.7] },
   name: { at: [-5.5, 14.5] },
   cones: { at: [5.5, 14.5] },
-  stones: { at: [13.5, 8] },
+  stones: { at: [13.5, 8], pawAt: [-3, -0.7] },
   counting: { at: [15, -3] },
   // the Lookout itself: drive round the sandy circle and up to its door
   // behind, either side of the Lookout (roads curve back to them)
   delivery: { at: [-9.5, -8.5], via: [[-2.6, -1.8], [-5, -4.6]] },
-  picnic: { at: [9.5, -8.5], via: [[2.6, -1.8], [5, -4.6]] },
-  garage: { at: [0, 12.4] }, // shapes and patterns: in front, between the letter and the number games
-  lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14],
+  picnic: { at: [9.5, -8.5], via: [[2.6, -1.8], [5, -4.6]], pawAt: [2.8, 0.2] },
+  garage: { at: [0, 12.4], pawAt: [2.4, 0.8] }, // shapes and patterns: in front, between the letter and the number games (the paw sits aside: above it, in portrait, it would hide the cruiser)
+  lookout: { at: [0, -10.5], marker: [2.9, 7.9, -5.9], hit: [3.8, 14], pawAt: [1.5, 2.6],
     drive: [[0, 0], [1.7, 1.1], [2.0, -1.6], [0.5, -3.7], [0, -6.1]], road: [[0, -2.6], [0, -6.4]] },
 };
 for (const kind of placesIn('island')) {
@@ -70,9 +74,10 @@ export class Hub extends Stage {
     this.greet = greet;
     this.silent = silent; // behind the start screen: slow orbit, no talking
     this.invite = []; // what the hub is offering ("Może do Kociego Parku? Dotknij gwiazdki!"), until she picks a place
-    // portrait: frame closer (the sides of the beach go, every place stays in view)
-    this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), get minWidth() { return portrait() ? 36.5 : 40; } };
-    this.post = { tilt: 0.75, focus: 0.4, band: 0.34 }; // sharp where the places are, dreamy sea on top
+    // portrait: a little wider than landscape, so the places at the sides (Kitty Park, the balloons, the river, the Treat House) are not cut
+    this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), get minWidth() { return portrait() ? 42 : 40; } };
+    this.post = { tilt: 0.6, focus: 0.5, band: 0.42 }; // the rocket, the harbour and the lighthouse reach the top edge: only the very edges soften
+    this.stray = STRAY.island; // a tap on the sea or the grass starts no drive
     this.drift = 0.25;
   }
 
@@ -322,24 +327,23 @@ export class Hub extends Stage {
     }, 25000);
   }
 
-  /** The suggested place: its star is well over twice the size, glows, pulses and sparkles, and Chase keeps looking at it. */
+  /** The suggested place: Chase's paw print bounces by its star, and Chase keeps looking at it. */
   highlight(kind) {
     const m = this.markers?.[kind];
     if (!m) return;
-    m.big.position.y = 0.9; // (clear of the level stars under it)
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture(), color: '#ffd23f', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-    halo.position.y = 0.9;
-    m.marker.add(halo);
+    const paw = new THREE.Sprite(new THREE.SpriteMaterial({ map: pawTexture(), transparent: true, depthTest: false, depthWrite: false }));
+    paw.scale.setScalar(m.paw.size);
+    paw.renderOrder = 6; // (always whole: nothing on the island stands in front of it)
+    m.marker.add(paw);
+    const [pawX, pawY] = m.paw.at;
     const at = new THREE.Vector3();
     let next = 0.6;
     this.onUpdate((dt, t) => {
-      m.big.scale.setScalar(2.4 + Math.sin(t * 4) * 0.2);
-      halo.scale.setScalar(5.2 + Math.sin(t * 4) * 0.5);
-      halo.material.opacity = this.asleep ? 0 : 0.75;
+      paw.position.set(pawX, pawY + Math.abs(Math.sin(t * 4.5)) * 0.9, 0);
+      paw.material.opacity = this.asleep ? 0 : 1;
       if (t < next || this.busy) return;
       next = t + 2.4;
       m.marker.getWorldPosition(at);
-      sparkle(this, at, { count: 10, size: 0.26, speed: 1.6 });
       this.pup.userData.lookAt(at, 2.6);
     });
   }
@@ -358,23 +362,16 @@ export class Hub extends Stage {
       this.scene.add(group);
     }
     const [mx, my, mz] = p.marker || [p.pos.x, 5.4, p.pos.z];
-    // bouncing glowing star says "tap me!", with this mission's level stars under it
+    // a bouncing star says "tap me!" (its level stars are on the mission screen, not here)
     const marker = new THREE.Group();
     marker.position.set(mx, my, mz);
-    const big = star('#fde047', p.starSize || 0.95, 0.28);
-    big.material = (this.starMat ||= new THREE.MeshStandardMaterial({ color: '#ffe066', emissive: '#ffcc00', emissiveIntensity: 2.6, roughness: 0.3, metalness: 0.2 }));
-    big.userData.dynamic = true; // grows when the place is suggested
+    const size = p.starSize || 0.95;
+    const big = star('#fde047', size, 0.28);
+    big.material = (this.starMat ||= new THREE.MeshStandardMaterial({ color: '#ffe14a', emissive: '#ffcc00', emissiveIntensity: STAR_GLOW, roughness: 0.5 }));
+    big.userData.dynamic = true;
     marker.add(big);
-    (this.markers ||= {})[kind] = { marker, big };
-    const level = PLACES[kind].game ? levelFor(kind) : 0;
-    const total = PLACES[kind].game ? maxLevel(kind) : 0;
-    for (let i = 0; i < total; i++) {
-      const lit = i < level;
-      const st = star(lit ? '#fde047' : '#cbd5e1', 0.32, 0.1);
-      if (lit) st.material = mat('#ffe066', { emissive: '#ffb800', emissiveIntensity: 2.2, roughness: 0.3 });
-      st.position.set((i - (total - 1) / 2) * 0.8, -1.35, 0);
-      marker.add(st);
-    }
+    const pawSize = PAW_BASE + size;
+    (this.markers ||= {})[kind] = { marker, big, paw: { size: pawSize, at: p.pawAt || [0, size * 0.85 + pawSize / 2 + 0.15] } };
     this.scene.add(marker);
     this.onUpdate((dt, t) => {
       if (!this.asleep) { // (they rest while the island sleeps)
@@ -517,7 +514,7 @@ export class Hub extends Stage {
       s.environmentIntensity = from.env * (1 - 0.5 * k);
       glass.emissive.lerpColors(from.glow, to.glow, k);
       glass.emissiveIntensity = from.glowI + (1.4 - from.glowI) * k;
-      this.starMat.emissiveIntensity = 2.6 - 1.9 * k;
+      this.starMat.emissiveIntensity = STAR_GLOW * (1 - 0.7 * k);
     };
     // the sea and the grass fill the picture, not the sky, so an evening tint over the canvas is what says "night" (style.css)
     const picture = document.getElementById('game');
@@ -657,18 +654,21 @@ function seeded(a) {
   };
 }
 
-let haloTex = null;
-/** A soft round glow (drawn once). */
-function haloTexture() {
-  if (haloTex) return haloTex;
+let pawTex = null;
+/** Chase's paw print, blue with a white edge so it shows on the sea and on the grass (drawn once). */
+function pawTexture() {
+  if (pawTex) return pawTex;
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  c.width = c.height = 256;
   const g = c.getContext('2d');
-  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.35, 'rgba(255,255,255,0.45)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
-  haloTex = new THREE.CanvasTexture(c);
-  return haloTex;
+  g.scale(2.56, 2.56);
+  const trace = ([cx, cy, rx, ry, tilt]) => { g.beginPath(); g.ellipse(cx, cy, rx, ry, (tilt * Math.PI) / 180, 0, Math.PI * 2); };
+  g.lineWidth = 9; g.strokeStyle = '#ffffff'; g.fillStyle = '#1e4fbf';
+  for (const part of PAW_PARTS) { trace(part); g.stroke(); } // (every edge first, so the toes and the pad share one white rim)
+  for (const part of PAW_PARTS) { trace(part); g.fill(); }
+  pawTex = new THREE.CanvasTexture(c);
+  pawTex.colorSpace = THREE.SRGBColorSpace;
+  return pawTex;
 }
 
 let zTex = null;

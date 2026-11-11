@@ -1,5 +1,5 @@
 // tour.mjs <island|space|sea> : walks the island and the maps by touch on the real GPU and films every transition
-// (verification tooling, written for the November review). env: BASE, OUTDIR, W, H, Q
+// (verification tooling, written for the November review). env: BASE, OUTDIR, W, H, Q, SUGGEST (a game place Chase suggests, e.g. counting)
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
@@ -39,6 +39,7 @@ await page.goto(`${BASE}/?q=${process.env.Q || 'high'}`);
 await page.waitForSelector('.start .play', { timeout: 30000 });
 await page.waitForTimeout(1500);
 await snap('start-screen');
+if (process.env.SUGGEST) await st((k) => { window.__pup.dev.suggestOnce = k; }, process.env.SUGGEST);
 const pb = await page.locator('.play').boundingBox();
 await tap(pb.x + pb.width / 2, pb.y + pb.height / 2, 'play');
 await film('greet', 7, 900);
@@ -72,7 +73,7 @@ if (what === 'island') {
   const places = await st(() => { const { getStage, camera } = window.__pup; const s = getStage(); return Object.entries(s.markers).map(([kind, { marker }]) => { const p = marker.getWorldPosition(marker.position.clone()); p.project(camera); return { kind, x: Math.round((p.x + 1) / 2 * innerWidth), y: Math.round((1 - p.y) / 2 * innerHeight) }; }); });
   await note(`markers: ${JSON.stringify(places)}`);
   // pokes at the heroes, the cruiser, the sea, the lighthouse, the shelf
-  for (const [x, y, why] of [[W / 2, H * 0.55, 'the cruiser'], [W * 0.1, H * 0.9, 'the sea, bottom left'], [W * 0.9, H * 0.25, 'the lighthouse side'], [70, 70, 'the badge shelf']]) { await tap(x, y, why); await page.waitForTimeout(900); await snap(`poke-${why.replace(/[^a-z]+/g, '-')}`); }
+  for (const [x, y, why] of [[W / 2, H * 0.55, 'the cruiser'], [W * 0.1, H * 0.9, 'the sea, bottom left'], [W * 0.9, H * 0.25, 'the lighthouse side'], [70, 70, 'the badge shelf']]) { await tap(x, y, why); await page.waitForTimeout(900); await snap(`poke-${why.replace(/[^a-z]+/g, '-')}`); const after = await stage(); await note(`after the tap on ${why}: ${after.ctor}, ${after.busy ? 'BUSY (a drive started)' : 'idle (no drive)'}`); if (after.busy) await waitFor((s) => s.ctor !== 'Hub' || !s.busy, 20000); }
 }
 
 const visitMap = async (area, entry, startSel) => {
