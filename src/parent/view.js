@@ -1,11 +1,11 @@
 // The grown-ups' page: what she knows (from play), her sessions, and developer tools. Opened with #parent or a
 // 3-second press on the badge shelf; never shown during normal play. Anything that erases needs a long press.
-import { getSkills, getSessions, levelFor, assistFor, dev as progressDev } from '../progress.js';
+import { getSkills, getSessions, levelFor, assistFor, getAge, setAge, startFor, dev as progressDev } from '../progress.js';
 import { SKILLS } from '../learning/events.js';
 import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
-import { LEVELS, ALL_LETTERS, MISSION_INFO, maxLevel } from '../levels/data.js';
+import { LEVELS, ALL_LETTERS, MISSION_INFO, STARTS, maxLevel } from '../levels/data.js';
 import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, POSITION_SKILLS, POSITION_ITEMS, SYLLABLE_SKILLS, SYLLABLE_ITEMS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
@@ -16,6 +16,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const pct = (x) => `${Math.round(x * 100)}%`;
 const secs = (s) => (s == null ? '–' : `${s.toFixed(1)} s`);
 const label = (item) => (/^\d+$/.test(item) ? item : showLetter(item));
+const ageLabel = (age) => String(age).replace('.5', '½');
 const SAVE_KEY = 'pup-patrol-progress';
 /** The missions that exist in GAME.md (a badge kind can be ready before its levels are). */
 const KINDS = () => Object.keys(MISSIONS).filter((k) => LEVELS[k]);
@@ -47,7 +48,7 @@ function missionCards(got) {
     const m = missionStatus({ level: levelFor(k), max: maxLevel(k), good: saved[k]?.good ?? 0, lastAcc: saved[k]?.lastAcc ?? null, runs: got[k] || 0, need: CONFIG.goodRunsPerLevel, gentle: assistFor(k) });
     return `<div class="pv-mission"><span>${esc(MISSION_INFO[k]?.title || k)}</span>
       <span class="pv-stars">${'★'.repeat(m.level)}<i>${'★'.repeat(Math.max(0, m.max - m.level))}</i></span>
-      <small>Level ${m.level} of ${m.max} · ${esc(m.next)}</small>
+      <small>Level ${m.level} of ${m.max} · starts at ${startFor(k)} · ${esc(m.next)}</small>
       <small>${esc(m.last)} · ${m.gentle ? '<b class="pv-gentle">gentle mode on</b> (the last run was hard)' : 'gentle mode off'} · ${got[k] || 0} badge${got[k] === 1 ? '' : 's'}</small></div>`;
   }).join('');
 }
@@ -220,7 +221,11 @@ export function showParentView({ onClose }) {
 
     <section><h2>This week, try at home</h2>${homeTasks(sessions)}</section>
 
-    <section><h2>Missions</h2><div class="pv-missions">${missionCards(got)}</div></section>
+    <section><h2>Missions</h2>
+      <div class="pv-age"><b>${name} ma lat</b>${STARTS.ages.map((a) => `<button class="pv-chip${a === getAge() ? ' on' : ''}" data-age="${a}">${ageLabel(a)}</button>`).join('')}</div>
+      <p class="pv-never">A place she has not played yet starts at the level for her age. An older age moves the places below
+        their new start up to it; a younger age takes no stars away. One place can be lowered in Developer tools.</p>
+      <div class="pv-missions">${missionCards(got)}</div></section>
 
     <section class="pv-two">
       <div><h2>Worth practising</h2><div class="pv-chips">${chips(o.difficult)}</div></div>
@@ -253,8 +258,13 @@ export function showParentView({ onClose }) {
   });
   const tools = page.querySelector('.pv-dev');
   page.querySelector('.pv-link').addEventListener('click', () => { tools.hidden = !tools.hidden; if (!tools.hidden) tools.scrollIntoView({ behavior: 'smooth' }); });
-  // after a developer action: redraw the page, keeping the tools open
-  wireDevTools(page, () => { const open = !tools.hidden; page.remove(); const p = showParentView({ onClose }); if (open) p.querySelector('.pv-dev').hidden = false; p.scrollTop = p.scrollHeight; });
+  // after a change: redraw the page, keeping the tools open (and, for her age, the place on the page)
+  const redraw = (scrollTop) => { const open = !tools.hidden; page.remove(); const p = showParentView({ onClose }); if (open) p.querySelector('.pv-dev').hidden = false; p.scrollTop = scrollTop ?? p.scrollHeight; };
+  wireDevTools(page, () => redraw());
+  page.querySelector('.pv-age').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-age]');
+    if (b) { setAge(Number(b.dataset.age)); redraw(page.scrollTop); }
+  });
   document.body.appendChild(page);
   return page;
 }

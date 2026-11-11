@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migrate, seedSkills, rescaleMastery, VERSION } from '../../src/progress/migrations.js';
+import { migrate, seedSkills, rescaleMastery, placeForAge, VERSION } from '../../src/progress/migrations.js';
 
 const v1 = {
   v: 1,
@@ -88,7 +88,7 @@ test('v4 → v5: mastery moves to the scale that takes guessing out, counts kept
   const stat = (mastery, attempts) => ({ attempts, correctFirstTry: attempts, assisted: 0, wrong: 2, mastery, confusions: { P: 1 } });
   const v4 = { v: 4, missions: {}, skills: { letterAudio: { B: stat(0.98, 10), M: stat(0.85, 40), A: stat(0.72, 40) }, numeral: { 3: stat(0.2, 1) } }, sessions: { count: 0, recent: [] } };
   const { state } = migrate(v4);
-  assert.equal(state.v, 6);
+  assert.equal(state.v, VERSION);
   assert.deepEqual([state.skills.letterAudio.B.mastery, state.skills.letterAudio.M.mastery, state.skills.letterAudio.A.mastery, state.skills.numeral[3].mastery], [0.898, 0.464, 0, 0.4]);
   assert.deepEqual({ ...state.skills.letterAudio.B, mastery: 0.98 }, v4.skills.letterAudio.B, 'only mastery changes');
 });
@@ -114,18 +114,65 @@ test('rescaleMastery: nothing seen stays nothing', () => {
 test('v5 save keeps every old field and adds empty visits in v6', () => {
   const v5 = { ...migrate(v1).state, v: 5, extra: { keep: ['this'] } };
   delete v5.visited;
+  delete v5.age;
   const before = structuredClone(v5);
   const { state, changed } = migrate(v5);
-  assert.equal(state.v, 6);
+  assert.equal(state.v, VERSION);
   assert.equal(changed, true);
-  assert.deepEqual(state, { ...before, v: 6, visited: {} });
+  assert.deepEqual(state, { ...before, v: VERSION, visited: {}, age: null });
   assert.deepEqual(v5, before);
 });
 
-test('v6 save is unchanged, including visit counts', () => {
-  const v6 = { ...migrate(v1).state, visited: { moon: 3, mars: 1 }, extra: ['kept'] };
-  const { state, changed } = migrate(v6);
-  assert.equal(state.v, 6);
+// where each mission starts for her age (GAME.md "Starting levels" looks like this)
+const START = { 3: { letters: 2, cones: 3 }, 3.5: { letters: 4, cones: 4 }, 4: { letters: 6, cones: 6 } };
+const start = (kind, age) => START[age]?.[kind] ?? 1;
+
+test('v6 → v7: her age comes in, and each mission below its start for that age moves up to it', () => {
+  const v6 = { ...migrate(v1).state, v: 6, visited: { moon: 3 }, missions: {
+    letters: { level: 1, good: 1, lastAcc: 0.3 },
+    cones: { level: 7, good: 1, lastAcc: 0.9 },
+  } };
+  delete v6.age;
+  const { state, changed } = migrate(v6, { age: 3.5, start });
+  assert.equal(changed, true);
+  assert.equal(state.v, VERSION);
+  assert.equal(state.age, 3.5);
+  assert.deepEqual(state.missions.letters, { level: 4, good: 0, lastAcc: 0.3 }, 'moved up to the start; her last rough run still makes the next one gentler');
+  assert.deepEqual(state.missions.cones, v6.missions.cones, 'above the start: kept as it was');
+  assert.deepEqual(state.visited, { moon: 3 });
+  assert.equal(migrate(state, { age: 3.5, start }).changed, false, 'and it happens once');
+});
+
+test('no save yet: her age sets the start, a level rebuilt from badges counts when it is higher', () => {
+  const { state } = migrate(null, { badges: { letters: 11, cones: 1 }, maxLevel: () => 10, age: 3.5, start });
+  assert.equal(state.age, 3.5);
+  assert.equal(state.missions.letters.level, 6, '11 badges: level 6, above the start');
+  assert.equal(state.missions.cones.level, 4, 'one badge: level 1, so the start');
+});
+
+test('a save already on v7 keeps its levels as written, even below the start (a play-check seed)', () => {
+  const seed = { v: VERSION, missions: { letters: { level: 1, good: 0, lastAcc: 1 } }, skills: {}, sessions: { count: 0, recent: [] } };
+  const { state } = migrate(seed, { age: 3.5, start });
+  assert.equal(state.missions.letters.level, 1);
+  assert.equal(state.age, 3.5, 'the age it was missing is filled in, nothing moves');
+});
+
+test('placeForAge: an older age moves missions below the new start up; the same or a younger age moves nothing', () => {
+  const s = { age: 3.5, missions: { letters: { level: 1, good: 1, lastAcc: 1 }, cones: { level: 8, good: 1, lastAcc: 1 } } };
+  placeForAge(s, 3.5, start);
+  assert.equal(s.missions.letters.level, 1, 'a level a grown-up lowered stays lowered when the same age is chosen again');
+  placeForAge(s, 3, start);
+  assert.deepEqual([s.age, s.missions.letters.level, s.missions.cones.level], [3, 1, 8], 'a younger age takes no stars away');
+  placeForAge(s, 4, start);
+  assert.deepEqual(s.missions.letters, { level: 6, good: 0, lastAcc: 1 });
+  assert.deepEqual(s.missions.cones, { level: 8, good: 1, lastAcc: 1 });
+  assert.equal(s.age, 4);
+});
+
+test('v7 save is unchanged, including visit counts and her age', () => {
+  const v7 = { ...migrate(v1, { age: 4, start }).state, visited: { moon: 3, mars: 1 }, extra: ['kept'] };
+  const { state, changed } = migrate(v7, { age: 3.5, start });
+  assert.equal(state.v, VERSION);
   assert.equal(changed, false);
-  assert.deepEqual(state, v6);
+  assert.deepEqual(state, v7);
 });

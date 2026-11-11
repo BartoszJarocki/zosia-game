@@ -2,13 +2,15 @@
 //  - Mission levels (coarse): a mission levels up after CONFIG.goodRunsPerLevel "good" runs, two levels after a
 //    perfect one (progress/levelup.js).
 //  - A rough run turns on "assist" next time, without ever taking stars away.
+//  - A mission she has never played starts at the level for her age (GAME.md "Starting levels").
 //  - Skill mastery (precise): every learning event updates skills[skill][item] (see learning/mastery.js).
 // The saved shape and its upgrades live in progress/migrations.js.
 import { CONFIG } from './config.js';
 import { badges } from './ui.js';
-import { maxLevel, LEVELS } from './levels/data.js';
+import { maxLevel, LEVELS, STARTS } from './levels/data.js';
+import { startLevel } from './levels/parse.js';
 import { meetsNeeds } from './levels/gate.js';
-import { migrate } from './progress/migrations.js';
+import { migrate, placeForAge } from './progress/migrations.js';
 import { applyRun } from './progress/levelup.js';
 import { applyEvent, emptyStat } from './learning/mastery.js';
 import { emptyWorld } from './adventure/world.js';
@@ -16,11 +18,12 @@ import { learning } from './learning/events.js';
 import { pickLearningItem } from './learning/scheduler.js';
 
 const KEY = 'pup-patrol-progress';
+const start = (kind, age) => startLevel(STARTS, kind, age);
 
 function load() {
   let raw = null;
   try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
-  return migrate(raw, { badges: badges.get(), maxLevel });
+  return migrate(raw, { badges: badges.get(), maxLevel, age: CONFIG.childAge, start });
 }
 const loaded = load();
 let state = loaded.state;
@@ -44,15 +47,28 @@ export function recordVisit(kind) {
   save();
 }
 
-const mission = (kind) => (state.missions[kind] ||= { level: 1, good: 0, lastAcc: 1 });
+// A mission is saved once she plays it or a grown-up sets its level; until then it follows her age.
+const fresh = (kind) => ({ level: start(kind, state.age), good: 0, lastAcc: 1 });
+const saved = (kind) => state.missions[kind] ?? fresh(kind);
+const mission = (kind) => (state.missions[kind] ||= fresh(kind));
 
 export function levelFor(kind) {
-  return Math.min(maxLevel(kind), CONFIG.level || mission(kind).level);
+  return Math.min(maxLevel(kind), CONFIG.level || saved(kind).level);
 }
 
 /** Last run went badly: make this one a bit gentler. */
 export function assistFor(kind) {
-  return !CONFIG.level && mission(kind).lastAcc < 0.45;
+  return !CONFIG.level && saved(kind).lastAcc < 0.45;
+}
+
+/** Her age band ("Zosia ma lat" on the grown-ups' page). */
+export const getAge = () => state.age;
+/** Where a mission starts at her age (GAME.md "Starting levels"). */
+export const startFor = (kind) => start(kind, state.age);
+/** An older age moves missions below their new start up to it; a younger one takes no stars away. */
+export function setAge(age) {
+  placeForAge(state, age, start);
+  save();
 }
 
 /** Call at the end of a mission with its { scored, clean } questions (progress/levelup.js). Returns { level, gained, acc }. */
@@ -93,7 +109,7 @@ export function recordSession(sum) {
 /** { count, recent: [{ id, startedAt, endedAt, missions, finale }] } (read-only use please). */
 export const getSessions = () => state.sessions;
 
-export function resetProgress() { state = migrate(null).state; save(); }
+export function resetProgress() { state = migrate(null, { maxLevel, age: CONFIG.childAge, start }).state; save(); }
 
 /** Developer tools (the grown-ups' page). Everything saves at once. */
 export const dev = {

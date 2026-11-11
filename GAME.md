@@ -50,8 +50,57 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 - **A rough run (under 45%)** makes the next run gentler ("assist": fewer choices, answer shown).
   Stars are never taken away.
 - **Letters and numbers she misses come up more often**; ones she knows come up less.
+- **A place she has never played starts at the level for her age** (the table below), not at level 1.
 - Levels are per mission and saved on the device. Open the game with `#reset` at the end of the
   address to start over. To force a level everywhere for testing, set `level` in `src/config.js`.
+
+## Starting levels
+
+Where each place starts, for her age. The grown-ups' page sets the age ("Zosia ma lat"); a new save starts
+at `childAge` in `src/config.js` (3.5).
+
+| Mission | 3 | 3.5 | 4 | 5 |
+|---|---|---|---|---|
+| Kitty Park · `letters` | 2 | 4 | 6 | 7 |
+| Balloon Hill · `balloons` | 1 | 3 | 5 | 6 |
+| Name Train · `name` | 3 | 4 | 6 | 8 |
+| Cone Road · `cones` | 3 | 4 | 6 | 8 |
+| The River · `stones` | 3 | 4 | 6 | 6 |
+| Treat House · `counting` | 3 | 4 | 7 | 7 |
+| The Lookout · `lookout` | 2 | 3 | 5 | 7 |
+| Pup Delivery · `delivery` | 1 | 2 | 4 | 4 |
+| Pup Picnic · `picnic` | 2 | 3 | 5 | 5 |
+| The Garage · `garage` | 1 | 2 | 3 | 6 |
+| Mercury's Craters · `mercury` | 2 | 3 | 4 | 4 |
+| Venus's Clouds · `venus` | 2 | 3 | 3 | 3 |
+| Moon Jumps · `moon` | 2 | 3 | 3 | 3 |
+| The Mars Rover · `mars` | 2 | 3 | 4 | 4 |
+| Jupiter's Stripes · `jupiter` | 1 | 2 | 3 | 3 |
+| Saturn's Rings · `saturn` | 2 | 3 | 3 | 3 |
+| Pluto's Heart · `pluto` | 2 | 3 | 3 | 3 |
+| The Black Hole · `blackhole` | 2 | 3 | 3 | 3 |
+| Comet Catch · `comet` | 1 | 2 | 3 | 3 |
+| Star Pictures · `stars` | 2 | 3 | 3 | 3 |
+| The Telescope · `telescope` | 1 | 2 | 3 | 5 |
+| The Lighthouse · `lighthouse` | 1 | 2 | 3 | 3 |
+| Pływa czy tonie? · `shallows` | 1 | 2 | 2 | 2 |
+| The Reef · `reef` | 1 | 2 | 3 | 3 |
+| The Port · `port` | 1 | 2 | 2 | 2 |
+
+Each level changes one thing, so half a year is about one level: 3 starts one level below 3.5 and keeps to
+the letters of her name, MAMA and TATA; 4 starts at the first level with letters from the whole alphabet or
+numbers past 5 (one level above 3.5 where a place has neither); 5 starts one level below the top, so there is
+always a star to earn.
+
+- **Columns** are ages. An age between two columns uses the younger one (4½ starts like 4); younger than
+  every column starts at level 1.
+- **A start** is one of the mission's levels, below any level with a `needs` gate (a start never skips a
+  gate), and never lower for an older age. `npm run check` checks all three, and that every mission has a row.
+- **Choosing an older age** moves every place below its new start up to it. A younger age takes no stars
+  away: a place she has played (or a grown-up set) keeps its level; only places she has never played start lower. Once she
+  plays a place its level is her own: it goes up as she plays, and a grown-up can still lower it (Developer
+  tools on the grown-ups' page). A start that is too high meets the usual net: after a rough run the next
+  one is gentler.
 
 ---
 
@@ -757,7 +806,8 @@ the island in `src/scenes/hub.js`.
 
 ## Other settings
 
-`src/config.js`: child's name and its Polish forms, `goodRunsPerLevel`, help timings (`assistSeconds`),
+`src/config.js`: child's name and its Polish forms, her age for a new save (`childAge`, see
+[Starting levels](#starting-levels); afterwards the grown-ups' page sets it), `goodRunsPerLevel`, help timings (`assistSeconds`),
 session length (`session`), picture words for letters, voice and graphics quality. Spoken lines live in `src/lang/pl.js`.
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
 (e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.

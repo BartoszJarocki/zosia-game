@@ -280,7 +280,45 @@ export function parseGame(md, { childName = '' } = {}) {
     });
   });
   for (const k of Object.keys(SCHEMA)) if (!levels[k]) errors.push(`GAME.md: no level table for mission "${k}"`);
-  return { levels, letterSets, missions, errors };
+  const starts = parseStarts(lines, levels, missions, errors);
+  return { levels, letterSets, missions, starts, errors };
+}
+
+/** "## Starting levels" → { ages: [3, 3.5, …], levels: { [kind]: [a level per age] } }. */
+function parseStarts(lines, levels, missions, errors) {
+  const starts = { ages: [], levels: {} };
+  const at = lines.findIndex((l) => /^##\s+Starting levels/i.test(l));
+  const t = at < 0 ? null : tableAfter(lines, at);
+  if (!t) { errors.push('GAME.md: missing the "## Starting levels" table'); return starts; }
+  const cols = t.header.slice(1);
+  starts.ages = cols.map(Number);
+  if (!cols.length || starts.ages.some((a, i) => !(a > 0) || (i > 0 && a <= starts.ages[i - 1]))) {
+    errors.push(`GAME.md line ${t.line} (Starting levels): the columns after Mission are ages, youngest first, like | 3 | 3.5 | 4 | (got | ${cols.join(' | ')} |)`);
+  }
+  for (const r of t.rows) {
+    const kind = r.cells[t.header[0]].split('·').pop().trim();
+    const where = `GAME.md line ${r.line} (Starting levels, ${kind})`;
+    if (!levels[kind]) { errors.push(`${where}: unknown mission (write it as in its heading, like Kitty Park · \`letters\`)`); continue; }
+    if (starts.levels[kind]) { errors.push(`${where}: has two rows`); continue; }
+    const top = levels[kind].length;
+    const gate = levels[kind].findIndex((l) => l.needs) + 1;
+    const most = gate ? gate - 1 : top;
+    const row = cols.map((age) => {
+      const n = Number(r.cells[age]);
+      if (!Number.isInteger(n) || n < 1 || n > most) errors.push(`${where}: age ${age} must start at level 1–${most}${gate ? ` (level ${gate} opens on "needs", so a start stays below it)` : ''} (got "${r.cells[age]}")`);
+      return n;
+    });
+    if (row.some((n, i) => i > 0 && n < row[i - 1])) errors.push(`${where}: an older age never starts lower (got ${row.join(', ')})`);
+    starts.levels[kind] = row;
+  }
+  for (const kind of Object.keys(levels)) if (!starts.levels[kind]) errors.push(`GAME.md line ${t.line} (Starting levels): add a row for ${missions[kind].title} · \`${kind}\``);
+  return starts;
+}
+
+/** Where a place starts at this age: the oldest age column at or below it (younger than every column: level 1). */
+export function startLevel(starts, kind, age) {
+  const i = starts.ages.findLastIndex((a) => a <= age);
+  return (i >= 0 && starts.levels[kind]?.[i]) || 1;
 }
 
 function value(raw, spec, ctx) {
