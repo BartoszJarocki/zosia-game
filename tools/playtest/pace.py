@@ -3,20 +3,22 @@
 #   wait    seconds from her right answer to the next question she can answer (the game's time, not hers)
 #   intro   seconds from the mission opening to the first question
 #   ending  seconds from her last answer to the badge
-import json, glob, statistics, sys
+# SEEN=1 reads each wait as the player saw it (waitSeenMs, after its own pauses: how the November review measured)
+import json, glob, os, statistics, sys
+WAIT = 'waitSeenMs' if os.environ.get('SEEN') else 'waitNextMs'
 ORDER = ['letters','balloons','name','cones','stones','counting','lookout','delivery','picnic','garage','mercury','venus','moon','mars','jupiter','saturn','pluto','blackhole','comet','stars','telescope','lighthouse','shallows','reef','port']
 NAMES = {'letters':'Kitty Park','balloons':'Balloon Hill','name':'Name Train','cones':'Cone Road','stones':'The River','counting':'Treat House','lookout':'The Lookout','delivery':'Pup Delivery','picnic':'Pup Picnic','garage':'The Garage','mercury':'Mercury','venus':'Venus','moon':'Moon','mars':'Mars','jupiter':'Jupiter','saturn':'Saturn','pluto':'Pluto','blackhole':'Black Hole','comet':'Comet','stars':'Star Pictures','telescope':'Telescope','lighthouse':'Lighthouse','shallows':'Floats or sinks','reef':'Reef','port':'Port'}
 def load():
     by = {}
     for f in sorted(glob.glob('fast/*-fast/summary.json')):
         d = json.load(open(f))
-        r = [x for x in d['rounds'] if x.get('answerMs') is not None and x.get('waitNextMs') is not None]
+        r = [x for x in d['rounds'] if x.get('answerMs') is not None and x.get(WAIT) is not None]
         if not d.get('missionSeconds') or not r: continue
-        end = r[-1]['tSolved'] + r[-1]['waitNextMs']
+        end = r[-1]['tSolved'] + r[-1]['waitNextMs']  # (the badge, by either measure)
         start = end - d['missionSeconds'] * 1000
         by.setdefault(d['kind'], []).append({
             'level': d['level'], 'secs': d['missionSeconds'], 'q': len(r),
-            'waits': [x['waitNextMs'] / 1000 for x in r[:-1]], 'ending': r[-1]['waitNextMs'] / 1000,
+            'waits': [x[WAIT] / 1000 for x in r[:-1]], 'ending': r[-1][WAIT] / 1000,
             'intro': (r[0]['tOpen'] - start) / 1000, 'hers': sum(x['answerMs'] for x in r) / 1000,
             'ignored': sum(x.get('ignored', 0) for x in r), 'ok': d['celebrated'] and not d['errors'] and not any(x.get('stuck') for x in d['rounds'])})
     return by

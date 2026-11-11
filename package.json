@@ -10,7 +10,8 @@
     "voices": "node scripts/voices.mjs",
     "check": "node scripts/check-levels.mjs",
     "test": "node --test tests/",
-    "playtest": "tools/playtest/batch.sh"
+    "playtest": "tools/playtest/batch.sh",
+    "playcheck": "node tools/playtest/playcheck.mjs"
   },
   "dependencies": {
     "@fontsource/fredoka": "^5.3.0",
