@@ -4,6 +4,7 @@
 export const CONFIG = {
   pupName: 'Chase',
   childName: 'Zosia',        // letters, words and levels are in GAME.md
+  childAge: 3.5,             // where places start in a new save (GAME.md "Starting levels"); the grown-ups' page changes it
   childVocative: 'Zosiu',     // "Cześć, Zosiu!"
   childDative: 'Zosi',        // "Pomóż Zosi"
   pupNameSpoken: 'Czejs',     // how the Polish voice should say "Chase"

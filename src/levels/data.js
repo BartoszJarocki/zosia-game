@@ -10,6 +10,8 @@ export const LEVELS = parsed.levels;
 /** { [kind]: { title } } from the GAME.md headings. */
 export const MISSION_INFO = parsed.missions;
 export const LETTER_SETS = parsed.letterSets;
+/** Where each place starts for her age (GAME.md "Starting levels"; look one up with startLevel in parse.js). */
+export const STARTS = parsed.starts;
 export const ALL_LETTERS = parsed.letterSets.ALL || 'ABCDEFGHIJKLMNOPRSTUWZ';
 /** How many levels a mission has (= rows in its table). */
 export const maxLevel = (kind) => Math.max(1, LEVELS[kind]?.length || 1);
