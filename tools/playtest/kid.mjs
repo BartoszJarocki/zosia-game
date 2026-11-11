@@ -6,6 +6,7 @@
 // env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
 //   FINALE=1 makes the session's finale due first (play it with `lookout`)
 import { chromium } from 'playwright-core';
+import { VERSION } from '../../src/progress/migrations.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 mkdirSync(process.env.TMPDIR, { recursive: true });
@@ -25,7 +26,7 @@ const errors = [], consoleErrors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
 
-await page.addInitScript(([kind, level]) => {
+await page.addInitScript(([kind, level, v]) => {
   const t0 = performance.now();
   const T = () => Math.round(performance.now() - t0);
   const log = (window.__timeline = []);
@@ -54,10 +55,10 @@ await page.addInitScript(([kind, level]) => {
   let n = 0, mark = performance.now();
   const frame = () => { n++; const now = performance.now(); if (now - mark >= 1000) { fps.push(Math.round(n * 1000 / (now - mark))); n = 0; mark = now; } requestAnimationFrame(frame); };
   requestAnimationFrame(frame);
-  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v: 4, missions: { [kind]: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
+  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { [kind]: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
   window.__mark = (text) => log.push({ t: T(), type: 'me', text });
   window.__T = T;
-}, [kind, level]);
+}, [kind, level, VERSION]); // (the current save version: an older one is migrated and may move the level)
 
 await page.goto(`${BASE}/?q=${process.env.Q || 'high'}`);
 const st = (fn, a) => page.evaluate(fn, a);
@@ -110,6 +111,8 @@ await page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.
 await page.waitForTimeout(2500);
 if (process.env.FINALE) await st(() => { const s = window.__pup.session(); s.missionsCompleted = s.targetMissions; });
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
+const played = await st(() => window.__pup.getStage()?.level);
+if (played !== level) { console.error(`${kind}: asked for level ${level} but the game plays level ${played}`); process.exit(2); }
 const tStart = await now();
 await mark(`mission ${kind} L${level} started, plan ${plan}`);
 await page.waitForTimeout(600);

@@ -1,6 +1,7 @@
 // probes.mjs <name> : one short scenario each, reproducing a defect the way she would meet it (verification tooling).
 // names: lamp, guess, asleep, maphome, farflight, windmill
 import { chromium } from 'playwright-core';
+import { VERSION } from '../../src/progress/migrations.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 const [name] = process.argv.slice(2);
@@ -13,15 +14,15 @@ const page = await context.newPage();
 const errors = [], out = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const seed = { lamp: { lighthouse: 3 }, guess: { shallows: 2 } }[name] || {};
-await page.addInitScript((seed) => {
+await page.addInitScript(([seed, v]) => {
   const t0 = performance.now();
   const log = (window.__said = []);
   const say = (window.__sayLog = []);
   say.push = (text) => { log.push(`${((performance.now() - t0) / 1000).toFixed(1)} ${text}`); return Array.prototype.push.call(say, text); };
   window.__T = () => (performance.now() - t0) / 1000;
   const missions = Object.fromEntries(Object.entries(seed).map(([k, level]) => [k, { level, good: 0, lastAcc: 1 }]));
-  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v: 4, missions, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
-}, seed);
+  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
+}, [seed, VERSION]);
 const st = (fn, a) => page.evaluate(fn, a);
 const T = () => st(() => window.__T());
 let n = 0;

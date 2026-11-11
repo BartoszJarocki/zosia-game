@@ -54,7 +54,7 @@ test('the grown-ups can lower one place below its start, and it stays lowered', 
 test('an older age moves places below the new start up; a younger one takes no stars away', async () => {
   seed(null);
   let p = await open();
-  p.recordMission('stones', { scored: 2, clean: 2 });
+  p.recordMission('stones', { scored: 2, clean: 1 }); // (played, not good enough to move up)
   assert.equal(p.levelFor('stones'), start('stones', 3.5));
   p.dev.setLevel('cones', 9);
   p.setAge(4);
@@ -75,8 +75,8 @@ test('a rough run at a start that is too high makes the next run gentler, withou
   const p = await open();
   const at = p.levelFor('mercury');
   assert.equal(p.assistFor('mercury'), false);
-  const { level, levelUp } = p.recordMission('mercury', { scored: 3, clean: 0 });
-  assert.deepEqual([level, levelUp], [at, false]);
+  const { level, gained } = p.recordMission('mercury', { scored: 3, clean: 0 });
+  assert.deepEqual([level, gained], [at, 0]);
   assert.equal(p.assistFor('mercury'), true);
 });
 
