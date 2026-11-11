@@ -758,6 +758,12 @@ the island in `src/scenes/hub.js`.
 session length (`session`), picture words for letters, voice and graphics quality. Spoken lines live in `src/lang/pl.js`.
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
 (e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.
+The page's title shows which version is running (the same small label as at the bottom right of the start screen).
+
+**New versions.** The installed app is suspended, not closed, so it can sit on an old build for days. Each time it
+comes back to the front it asks for a new version, and switches to it only on the start screen or on the island with
+nothing happening (`mayUpdateNow` in `src/app-update.js`). Inside a mission, a celebration or a trip it waits and
+switches the next time she is back on the island; the switch reloads to the start screen.
 
 ## Commands
 
