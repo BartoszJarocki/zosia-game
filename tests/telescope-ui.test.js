@@ -83,7 +83,7 @@ test('the mission router returns from the telescope and replay to the same parke
       let source;
       if (url.endsWith('.css')) source = 'export default {};';
       if (url.endsWith('/src/engine.js')) source = 'let stage; export const setStage = (s) => { stage = s; }; export const getStage = () => stage; export const camera = {};';
-      if (url.endsWith('/src/fx/transition.js')) source = 'export const pawWipe = async (fn) => fn();';
+      if (url.endsWith('/src/fx/transition.js')) source = 'export const pawWipe = async (fn) => fn(); export const wiping = () => false;';
       const kind = url.match(/\/src\/scenes\/([a-z]+)\.js$/)?.[1];
       if (scenes[kind]) source = `export class ${scenes[kind]} {
         constructor(game, { at = 'earth' } = {}) {

@@ -1,7 +1,8 @@
 import './style.css';
 import { setStage, getStage, camera } from './engine.js';
 import { unlockAudio, sfx, hush } from './audio.js';
-import { pawWipe } from './fx/transition.js';
+import { pawWipe, wiping } from './fx/transition.js';
+import { mayUpdateNow } from './app-update.js';
 import * as ui from './ui.js';
 import { Hub } from './scenes/hub.js';
 import { LettersMission } from './scenes/letters.js';
@@ -53,14 +54,20 @@ async function openParentPage() {
 }
 import { registerSW } from 'virtual:pwa-register';
 
-// Offline + installable. A new version is switched in only while the start screen is showing, never in the
-// middle of a mission. She taps play at once, often before the browser has even looked for a new version, so
-// the app looks at launch and the paw waits while a new version downloads (once per update, at most 20 s).
-let started = false, waitForUpdate = null;
+// Offline + installable. A new version is switched in only where it cannot interrupt her (see mayUpdateNow).
+// She taps play at once, often before the browser has even looked for a new version, so the app looks at launch
+// and the paw waits while a new version downloads (once per update, at most 20 s). The home-screen app is
+// suspended rather than closed, so it also looks every time it comes back to the front.
+let started = false, waitForUpdate = null, registration = null, newVersionWaiting = false;
 const updateSW = registerSW({
   immediate: true,
-  onNeedRefresh() { if (!started) updateSW(true); }, // (reloads into it)
+  onNeedRefresh() { // (one that arrived mid-mission goes in once she is back on the island)
+    if (!newVersionWaiting) setInterval(switchWhenSafe, 2000);
+    newVersionWaiting = true;
+    switchWhenSafe();
+  },
   onRegisteredSW(_, r) {
+    registration = r;
     if (!r || !navigator.serviceWorker.controller) return; // (the very first install never holds her up)
     const check = r.update().then(() => {
       const w = r.installing;
@@ -70,6 +77,16 @@ const updateSW = registerSW({
     check.then(() => { waitForUpdate = null; });
   },
 });
+
+function switchWhenSafe() {
+  const stage = getStage();
+  const busy = wiping() || !!stage?.busy || !!document.querySelector('.parent-view');
+  if (newVersionWaiting && mayUpdateNow({ started, onIsland: stage instanceof Hub, busy })) updateSW(true); // (reloads into it)
+}
+
+function lookForNewVersion() { if (!document.hidden) registration?.update().catch(() => {}); }
+document.addEventListener('visibilitychange', lookForNewVersion);
+window.addEventListener('pageshow', lookForNewVersion);
 
 const MISSIONS = {
   letters: LettersMission, balloons: BalloonsMission, name: NameMission,
