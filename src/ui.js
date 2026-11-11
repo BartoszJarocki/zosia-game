@@ -22,8 +22,9 @@ export const ICON = {
   speaker: '<svg viewBox="0 0 100 100"><path d="M18 38 H36 L58 20 V80 L36 62 H18 Z" fill="#1e4fbf"/><path d="M70 34 Q82 50 70 66 M78 24 Q98 50 78 76" fill="none" stroke="#1e4fbf" stroke-width="8" stroke-linecap="round"/></svg>',
 };
 
-export const starsHTML = (level, cls = '', total = 3) =>
-  `<div class="stars ${cls}">${Array.from({ length: total }, (_, i) => `<span class="${i < level ? 'on' : ''}">★</span>`).join('')}</div>`;
+/** gained: how many of the lit stars are new (they pop in). */
+export const starsHTML = (level, cls = '', total = 3, gained = 0) =>
+  `<div class="stars ${cls}">${Array.from({ length: total }, (_, i) => `<span class="${i < level ? (i >= level - gained ? 'on new' : 'on') : ''}">★</span>`).join('')}</div>`;
 
 export function badgeSVG(kind, badge = MISSIONS[kind]) {
   const m = badge;
@@ -260,10 +261,10 @@ export const CELEBRATION_IDLE_MS = 10000;
  * talk: resolves when the badge line has been said (until a mission passes it, a guess at its length);
  * then Chase asks "Jeszcze raz czy na wyspę?", and with no tap for a while it is the island.
  */
-export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome, onAgain, talk = null }) {
+export function celebrate({ kind, level = 1, total = 3, gained = 0, onHome, onAgain, talk = null }) {
   const c = el(`<div class="celebrate">
       <div class="rays"></div>
-      <div class="big-badge"><div class="flip">${badgeSVG(kind)}</div>${starsHTML(level, levelUp ? 'levelup' : '', total)}</div>
+      <div class="big-badge"><div class="flip">${badgeSVG(kind)}</div>${starsHTML(level, '', total, gained)}</div>
       <div class="actions">
         <button class="round-btn huge again" aria-label="Play again">${ICON.again}</button>
         <button class="round-btn huge home" aria-label="Home">${ICON.home}</button>
@@ -278,7 +279,7 @@ export function celebrate({ kind, level = 1, total = 3, levelUp = false, onHome,
   press(c.querySelector('.home'), () => leave(onHome));
   ui.append(c);
   confetti();
-  (talk || later(levelUp ? 8500 : 5500))
+  (talk || later(gained ? 8500 : 5500))
     .then(() => { if (!live()) return; c.classList.add('asking'); return say(PLACES[kind].area === 'space' ? T.againOrSpace() : PLACES[kind].area === 'sea' ? T.againOrSea() : T.againOrIsland()); })
     .then(() => { if (!live()) return; arm(); window.addEventListener('pointerdown', rearm, true); });
 }

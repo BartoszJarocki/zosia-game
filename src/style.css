@@ -185,7 +185,8 @@ svg { display: block; }
 .stars span { color: rgba(255,255,255,.6); text-shadow: 0 2px 0 rgba(0,0,0,.2); }
 .stars span.on { color: #fde047; text-shadow: 0 3px 0 #ca8a04, 0 0 14px rgba(253,224,71,.8); }
 .stars.small { font-size: min(4.5vw, 4vh, 34px, calc(28vw / var(--stars, 3))); margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.stars.levelup span.on:last-of-type { animation: starPop .8s 1.2s both; }
+.stars span.new { animation: starPop .8s 1.2s both; }
+.stars span.new + span.new { animation-delay: 1.7s; }
 
 /* ---------- confetti ---------- */
 .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }

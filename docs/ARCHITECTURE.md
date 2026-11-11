@@ -74,8 +74,9 @@ Item prefixes in use: `L:` letters (Kitty Park, Balloon Hill, Name Train), `N:` 
 
 ## Progression and adaptivity (today)
 
-- **Mission level** (`progress.js`): a run is "good" at ≥ 70% first-try rounds; `goodRunsPerLevel` (2) good runs → next level
-  (up to the number of rows in GAME.md). Never goes down.
+- **Mission level** (`progress.js`, `progress/levelup.js`): a run is "good" at ≥ 65% first-try questions; `goodRunsPerLevel` (1)
+  good run → next level, a perfect run of 3+ questions → two levels (up to the number of rows in GAME.md, and each level's
+  `needs` gate must be open). Never goes down.
 - **Assist** (`levels.js` ASSIST): if the last run was < 45% first-try, the next run uses gentler settings
   (fewer choices, answer shown…). Per mission, coarse.
 - **Item selection** (`progress.pickTarget`): weighted random over the pool; weight 1.6 for new (seen < 2),
@@ -261,9 +262,9 @@ Hub.enter() ─▶ addWorld(hub, world, takeUnseen())                          s
 director says it is due (the hub's alarm called her there; playing the Lookout earlier is the normal mission).
 
 Finale: alarm on (red beacon on the tower, the car's light flashes red, siren, Chase barks) → "Alarm w Bazie! Szybko,
-wsiadamy do windy!" → **one easy kitten** (floors 1–3, numeral + dots, a number she knows: `EASY_MIX`) → floors counted
-along → the kitten hops in → the very top (siren, all signs light up, the beacon flashes faster) → the slide → big celebration
-("Hura! Psi Patrol uratował dzień!"). About 30 s. It doesn't count towards the Lookout's level (`countsForLevel = false`).
+wsiadamy do windy!" → **her rides at her Lookout level** (the usual mode and rounds, or the gentler run after a rough one)
+→ floors counted along → the kittens hop in → the very top (siren, all signs light up, the beacon flashes faster) → the slide
+→ big celebration ("Hura! Psi Patrol uratował dzień!"). It counts towards the Lookout's level like any visit.
 
 ## Micro-play rewards (Phase 10)
 

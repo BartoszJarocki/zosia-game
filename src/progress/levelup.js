@@ -18,19 +18,24 @@ export function scoreRun(events) {
   return { scored, clean };
 }
 
+/** A run with at least this many questions, every one clean, moves her up two levels instead of one. */
+export const LEAP_RUN = 3;
+
 /**
  * Fold a run into the mission's saved record { level, good, lastAcc } (mutated). A run without a scored
- * question doesn't count. opens(): may she move up from m.level (the next level's gate, GAME.md "needs")?
- * @returns {{ levelUp: boolean, acc: number|null }}
+ * question doesn't count. opens(level): may she move up to that level (its gate, GAME.md "needs")?
+ * Each level of a leap must open, so a closed gate stops her below it.
+ * @returns {{ gained: number, acc: number|null }} gained: levels she moved up (0, 1 or 2)
  */
 export function applyRun(m, { scored, clean }, { goodRuns, top, opens = () => true }) {
-  if (!scored) return { levelUp: false, acc: null };
+  if (!scored) return { gained: 0, acc: null };
   const acc = clean / scored;
   m.lastAcc = acc;
-  if (acc < GOOD_RUN) return { levelUp: false, acc };
+  if (acc < GOOD_RUN) return { gained: 0, acc };
   m.good++;
-  if (m.good < goodRuns || m.level >= top || !opens()) return { levelUp: false, acc };
-  m.level++;
-  m.good = 0;
-  return { levelUp: true, acc };
+  if (m.good < goodRuns) return { gained: 0, acc };
+  const from = m.level, steps = clean === scored && scored >= LEAP_RUN ? 2 : 1;
+  while (m.level - from < steps && m.level < top && opens(m.level + 1)) m.level++;
+  if (m.level > from) m.good = 0;
+  return { gained: m.level - from, acc };
 }

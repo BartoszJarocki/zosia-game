@@ -89,21 +89,20 @@ function emit(child, mission, skill, item, res, level, options) {
 }
 
 /** One run of a mission: returns { events, asked } (an event per solved question) — mirrors each scene's round()/question() calls. */
-function playRun(child, kind, S, { finale = false } = {}) {
+function playRun(child, kind, S) {
   const rng = child.rng, lvl = child.missions[kind].level;
-  const mix = finale ? { familiar: 1, learning: 0.15 } : undefined;
   const rounds = S.rounds ?? 3;
   const events = [], asked = [];
   const q = (skill, item, choices, opts = {}) => { const r = answer(child, choices, rng, opts); events.push(emit(child, kind, skill, item, r, lvl, opts.production ? undefined : choices)); asked.push(skill + ':' + item); };
   switch (kind) {
     case 'letters': {
       const skill = { match: 'letterVisual', name: 'letterVisual', audio: 'letterAudio', word: 'letterAudio', sound: 'letterSound' }[S.ask];
-      for (let r = 0; r < rounds; r++) q(skill, pick(child, skill, [...S.pool], mix), Math.min(S.choices, S.pool.length));
+      for (let r = 0; r < rounds; r++) q(skill, pick(child, skill, [...S.pool]), Math.min(S.choices, S.pool.length));
       break;
     }
     case 'balloons': {
       for (let r = 0; r < rounds; r++) {
-        const it = pick(child, 'letterVisual', [...S.pool], mix);
+        const it = pick(child, 'letterVisual', [...S.pool]);
         for (let t = 0; t < S.targets; t++) q('letterVisual', it, Math.round((S.total - t) / (S.targets - t)));
       }
       break;
@@ -117,12 +116,12 @@ function playRun(child, kind, S, { finale = false } = {}) {
     }
     case 'cones': {
       const skill = S.bubble === 'dots' || S.bubble === 'name' ? 'quantity' : 'numeral';
-      for (let r = 0; r < rounds; r++) q(skill, pick(child, skill, range(1, S.max), mix), Math.min(S.choices, S.max));
+      for (let r = 0; r < rounds; r++) q(skill, pick(child, skill, range(1, S.max)), Math.min(S.choices, S.max));
       break;
     }
     case 'stones': {
       for (let r = 0; r < S.rounds; r++) {
-        if (S.bubble === 'missing') { q('sequence', pick(child, 'sequence', range(2, S.n), mix), 2); continue; }
+        if (S.bubble === 'missing') { q('sequence', pick(child, 'sequence', range(2, S.n)), 2); continue; }
         for (let k = 1; k <= S.n; k++) q(S.bubble === 'next' && k > 1 ? 'sequence' : 'numeral', k, S.choices); // each stone is its own question
       }
       break;
@@ -130,9 +129,9 @@ function playRun(child, kind, S, { finale = false } = {}) {
     case 'counting': {
       for (let r = 0; r < rounds; r++) {
         const type = S.types[r % S.types.length];
-        if (type === 'give') q('counting', pick(child, 'counting', range(...S.give), mix), 1, { free: S.auto, production: true });
-        else if (type === 'share') { const n = pick(child, 'counting', range(...S.share), mix); const fine = rng() < 0.95; events.push(emit(child, kind, 'counting', n, { firstTry: fine, wrongs: fine ? 0 : 1, assistLevel: 0 }, lvl)); }
-        else q('quantity', pick(child, 'quantity', range(...S.howMany), mix), 3);
+        if (type === 'give') q('counting', pick(child, 'counting', range(...S.give)), 1, { free: S.auto, production: true });
+        else if (type === 'share') { const n = pick(child, 'counting', range(...S.share)); const fine = rng() < 0.95; events.push(emit(child, kind, 'counting', n, { firstTry: fine, wrongs: fine ? 0 : 1, assistLevel: 0 }, lvl)); }
+        else q('quantity', pick(child, 'quantity', range(...S.howMany)), 3);
       }
       break;
     }
@@ -141,15 +140,15 @@ function playRun(child, kind, S, { finale = false } = {}) {
       for (let r = 0; r < rounds; r++) {
         let skill = 'numeral', target;
         if (S.mode === 'relative' && r > 0) { skill = 'sequence'; const up = floor <= 1 ? true : floor >= S.max ? false : rng() < 0.6; target = floor + (up ? 1 : -1); }
-        else if (S.mode === 'pickup' || S.mode === 'find') { target = Number(pick(child, 'numeral', range(1, S.max).filter((f) => f !== floor && !visited.includes(f)), mix)); visited.push(target); }
-        else target = Number(pick(child, 'numeral', finale ? range(1, Math.min(3, S.max)) : S.mode === 'relative' ? range(2, S.max - 1) : range(1, S.max), mix));
+        else if (S.mode === 'pickup' || S.mode === 'find') { target = Number(pick(child, 'numeral', range(1, S.max).filter((f) => f !== floor && !visited.includes(f)))); visited.push(target); }
+        else target = Number(pick(child, 'numeral', S.mode === 'go' ? range(1, Math.min(3, S.max)) : S.mode === 'relative' ? range(2, S.max - 1) : range(1, S.max)));
         q(skill, target, S.max);
         floor = S.mode === 'relative' || S.mode === 'pickup' || S.mode === 'find' ? target : 0;
       }
       break;
     }
     case 'delivery': {
-      for (let r = 0; r < rounds; r++) q('letterSound', pick(child, 'letterSound', [...S.pool], mix), Math.min(S.choices, S.pool.length));
+      for (let r = 0; r < rounds; r++) q('letterSound', pick(child, 'letterSound', [...S.pool]), Math.min(S.choices, S.pool.length));
       break;
     }
     case 'picnic': {
@@ -163,20 +162,21 @@ function playRun(child, kind, S, { finale = false } = {}) {
 /** progress.js recordMission: the real scoring and level-up rule. */
 function record(child, kind, events) {
   const m = child.missions[kind];
-  const opens = () => Boolean(process.env.NOGATE) || meetsNeeds(child.skills, kind, LEVELS[kind][m.level]);
-  const { levelUp } = applyRun(m, scoreRun(events), { goodRuns: CONFIG.goodRunsPerLevel, top: LEVELS[kind].length, opens });
-  if (levelUp) (child.levelAt ||= {})[kind + m.level] = child.runs[kind];
+  const opens = (level) => Boolean(process.env.NOGATE) || meetsNeeds(child.skills, kind, LEVELS[kind][level - 1]);
+  const { gained } = applyRun(m, scoreRun(events), { goodRuns: CONFIG.goodRunsPerLevel, top: LEVELS[kind].length, opens });
+  if (gained) (child.levelAt ||= {})[kind + m.level] = child.runs[kind];
 }
 
-function runMission(child, kind, { finale = false, session } = {}) {
+/** One visit. The session's Lookout finale is a visit like any other (scenes/lookout.js). */
+function runMission(child, kind, { session } = {}) {
   const m = child.missions[kind];
   let S = LEVELS[kind][m.level - 1];
-  if (finale) S = { ...S, mode: 'go', bubble: 'both', rounds: 1 };
-  else if (m.lastAcc < 0.45) S = { ...ASSIST[kind](S), assist: true };
-  const res = playRun(child, kind, S, { finale });
-  if (!finale) { child.runs[kind]++; record(child, kind, res.events); }
+  if (m.lastAcc < 0.45) S = { ...ASSIST[kind](S), assist: true };
+  const res = playRun(child, kind, S);
+  child.runs[kind]++;
+  record(child, kind, res.events);
   if (m.level === LEVELS[kind].length && !child.reachedTop[kind]) child.reachedTop[kind] = { runs: child.runs[kind], session };
-  if (child.reachedTop[kind] && !finale) { (child.topLog[kind] ||= []).push(res.asked.join(' ')); }
+  if (child.reachedTop[kind]) (child.topLog[kind] ||= []).push(res.asked.join(' '));
   return res;
 }
 
@@ -198,7 +198,7 @@ function simulateChild(p, seed) {
       runMission(child, kind, { session: sIdx });
       D.completeMission(s, kind, child.now);
     }
-    if (D.nextStep(s) === 'finale') { runMission(child, 'lookout', { finale: true, session: sIdx }); D.completeMission(s, 'lookout', child.now); }
+    if (D.nextStep(s) === 'finale') { runMission(child, 'lookout', { session: sIdx }); D.completeMission(s, 'lookout', child.now); }
     if (SCEN === 'free') for (let i = 0; i < 2; i++) runMission(child, freePick(child.rng), { session: sIdx });
     if (KINDS.every((k) => child.reachedTop[k])) break;
   }

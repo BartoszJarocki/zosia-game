@@ -11,7 +11,7 @@ export const CONFIG = {
   pupGenitive: 'Czejsa',      // "dotknij Czejsa"
   lowercase: false,         // true = show lowercase letters instead
   level: null,              // force every mission to level 1, 2 or 3 (null = earn levels with badges)
-  goodRunsPerLevel: 2,      // runs with most answers right first time needed to unlock the next level
+  goodRunsPerLevel: 1,      // runs with most answers right first time needed to unlock the next level
   // help when she goes quiet: the bubble bounces → short prompt → clue → answer pulses, then silence
   assistSeconds: { nudge: 6, shortPrompt: 10, hint: 17, reveal: 25 },
   // a play session: this many missions, then the Lookout as the finale, then free play (nothing is ever locked)

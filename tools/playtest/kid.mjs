@@ -3,7 +3,8 @@
 //   plan fast   answers right the moment an answer can be tapped, without waiting for the voice
 //   plan mash   pokes everything quickly while the voice talks, then answers
 //   plan polite waits for the voice to finish (the old walker's manners)
-// env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none)
+// env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
+//   FINALE=1 makes the session's finale due first (play it with `lookout`)
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
@@ -12,7 +13,7 @@ mkdirSync(process.env.TMPDIR, { recursive: true });
 const [kind, levelArg = '1', plan = 'fast'] = process.argv.slice(2);
 const level = Number(levelArg);
 const W = Number(process.env.W || 1180), H = Number(process.env.H || 820);
-const OUT = `${process.env.OUTDIR || 'out'}/${kind}-L${level}-${plan}/`;
+const OUT = `${process.env.OUTDIR || 'out'}/${kind}-L${level}-${plan}${process.env.FINALE ? '-finale' : ''}/`;
 mkdirSync(`${OUT}film`, { recursive: true });
 const BASE = process.env.BASE || 'http://localhost:4190';
 const FILM = Number(process.env.FILM ?? 3);
@@ -107,6 +108,7 @@ const pb = await page.locator('.play').boundingBox();
 await page.touchscreen.tap(pb.x + pb.width / 2, pb.y + pb.height / 2);
 await page.waitForFunction(() => { const s = window.__pup.getStage(); return s?.markers && !s.silent; }, null, { timeout: 30000 });
 await page.waitForTimeout(2500);
+if (process.env.FINALE) await st(() => { const s = window.__pup.session(); s.missionsCompleted = s.targetMissions; });
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
 const tStart = await now();
 await mark(`mission ${kind} L${level} started, plan ${plan}`);
@@ -214,11 +216,12 @@ const events = await st(() => window.__pup.learning.recent(80));
 const fps = await st(() => window.__fps);
 const tier = await st(() => localStorage.getItem('pup-patrol-quality-v2'));
 const celebratedAt = await st(() => window.__celebrated || null);
+const savedLevel = await st((k) => JSON.parse(localStorage.getItem('pup-patrol-progress') || 'null')?.missions?.[k]?.level ?? null, kind);
 // each round: when she could first answer, how long the game then took to ask the next thing
 for (let i = 0; i < rounds.length; i++) { const a = rounds[i], b = rounds[i + 1]; a.answerMs = a.tSolved != null ? a.tSolved - a.tOpen : null; a.waitNextMs = a.tSolved != null ? ((b?.tOpen ?? celebratedAt ?? tEnd) - a.tSolved) : null; }
 const sorted = [...fps].sort((x, y) => x - y);
 const summary = {
-  kind, level, plan, viewport: `${W}x${H}`, celebrated: Boolean(done), missionSeconds: celebratedAt ? Math.round((celebratedAt - tStart) / 100) / 10 : null,
+  kind, level, savedLevel, plan, viewport: `${W}x${H}`, celebrated: Boolean(done), missionSeconds: celebratedAt ? Math.round((celebratedAt - tStart) / 100) / 10 : null,
   rounds, errors, consoleErrors: consoleErrors.slice(0, 10), fps: { min: sorted[0], median: sorted[sorted.length >> 1], n: fps.length }, tier,
   cutClips: timeline.filter((e) => e.type === 'clip' && e.cut).length, clips: timeline.filter((e) => e.type === 'clip').length,
   wrongEvents: events.filter((e) => !e.correct).map((e) => e.errorType).reduce((m, k) => ({ ...m, [k]: (m[k] || 0) + 1 }), {}),
@@ -232,5 +235,5 @@ const lines = timeline.map((e) => {
   return `${t}  ${e.type}`;
 });
 writeFileSync(`${OUT}transcript.txt`, lines.join('\n') + `\n\nerrors: ${JSON.stringify(errors)}\nconsole: ${JSON.stringify(consoleErrors.slice(0, 10))}\n`);
-console.log(`${kind} L${level} ${plan}: ${done ? 'celebrated' : 'NO CELEBRATION'} in ${summary.missionSeconds}s, ${rounds.length} rounds, ignored taps ${rounds.reduce((n, x) => n + (x.ignored || 0), 0)}, stuck ${rounds.some((x) => x.stuck)}, errors ${errors.length}, fps median ${summary.fps.median}`);
+console.log(`${kind} L${level} ${plan}: ${done ? 'celebrated' : 'NO CELEBRATION'} in ${summary.missionSeconds}s, saved level ${savedLevel}, ${rounds.length} rounds, ignored taps ${rounds.reduce((n, x) => n + (x.ignored || 0), 0)}, stuck ${rounds.some((x) => x.stuck)}, errors ${errors.length}, fps median ${summary.fps.median}`);
 await browser.close();

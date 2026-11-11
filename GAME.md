@@ -37,10 +37,13 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 
 - Every mission goes from **match what you see → recognise what you hear → think for yourself**.
   Each level changes one thing, so it feels natural but a little bit challenging.
-- **Levelling up follows skill, not time:** a mission's next level unlocks after
-  `goodRunsPerLevel` (2) runs where at least two thirds of the questions were answered right first time,
-  without the clue or the answer being shown (hearing the question again is fine). Every question counts:
-  each River stone, each balloon.
+- **Levelling up follows skill, not time:** one good run moves her up a level (`goodRunsPerLevel`, 1). A run
+  is good when at least two thirds of its questions were answered right first time, without the clue or the
+  answer being shown (hearing the question again is fine). Every question counts: each River stone, each balloon.
+- **A perfect run moves her up two levels:** three or more questions, every one right first time without help.
+  Never past the top, and never past a level whose `needs` gate is still closed: she stops just below it.
+- **The Lookout finale counts too:** the ride at the end of a session is at her Lookout level and counts like
+  any visit to the Lookout.
 - **A rough run (under 45%)** makes the next run gentler ("assist": fewer choices, answer shown).
   Stars are never taken away.
 - **Letters and numbers she misses come up more often**; ones she knows come up less.
@@ -656,7 +659,7 @@ picks one up, and at the end everyone goes to the very top and down the slide to
   floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
   ("Dwa piętra w górę! Na które piętro?") and she presses the floor they land on, counting on from where the
   car is; the kitten is a surprise on that floor (age 4+) · `go`: one easy kitten on floors 1–3, numeral and
-  dots (the session finale, and the gentler run after a rough one)
+  dots (the gentler run after a rough one)
 - **rounds** — how many elevator trips (1–3: the car seats 3 kittens); `pickup` and `find` need more floors than
   trips (each kitten waits on a floor of its own). After the last trip everyone goes to the top and down the
   slide, kittens too.

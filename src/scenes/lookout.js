@@ -9,7 +9,7 @@ import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { T } from '../lang/pl.js';
 import { pick } from '../util.js';
-import { Mission, EASY_MIX } from './mission.js';
+import { Mission } from './mission.js';
 import { getSession } from '../session/session.js';
 import { nextStep } from '../session/director.js';
 import { kittenFloors, nextDoor, diceFloors } from '../levels/lookout.js';
@@ -35,20 +35,16 @@ const FRAME = { land: { x: 0.3, top: 0.13, bottom: 0.96, minWidth: 6.6 }, port: 
 //  pickup: a kitten waits on a floor ("Kotek czeka na piętrze dwa!") · find: only the kitten in the bubble, she reads
 //  the sign beside it · relative: after a pickup, "one floor up/down" from where we are · dice: she taps a big die,
 //  it says how many floors up, she presses where that lands (counting on); the kitten is a surprise there ·
-//  go: one easy kitten, floors 1–3 with numeral + dots (the finale, and the gentler run after a rough one)
+//  go: one easy kitten, floors 1–3 with numeral + dots (the gentler run after a rough one)
 //
 // Session finale (when the session director says the finale is due — the hub's alarm called her here):
-// the alarm is on, ONE easy kitten ride, floors counted, up to the top with the siren and lights, down the slide,
-// a big celebration. Not another quiz (~30–45 s).
+// the alarm is on, her usual rides at her Lookout level (they count like any visit), up to the top with the siren
+// and lights, down the slide, a big celebration.
 export class LookoutMission extends Mission {
   constructor(game) {
     super(game, 'lookout');
     this.finale = nextStep(getSession()) === 'finale';
     if (this.finale) {
-      this.L = { ...this.L, mode: 'go', bubble: 'both' };
-      this.rounds = 1;
-      this.easyMix = EASY_MIX;
-      this.countsForLevel = false;
       this.bigFinish = true;
       this.doneLine = T.finaleDone;
     }
@@ -67,6 +63,9 @@ export class LookoutMission extends Mission {
   }
 
   floorY(f) { return Y0 + (YTOP - Y0) * (f / this.N); }
+
+  /** The first ride's opening line: the alarm in the finale, the lost kittens otherwise. */
+  startLine() { return this.finale ? T.finaleStart() : T.kittensStart(); }
 
   /**
    * A floor's landing, sized to the floor height: its sign and a waiting kitten sit level with each other on the
@@ -293,7 +292,7 @@ export class LookoutMission extends Mission {
   rollDie(value, first) {
     const die = this.die;
     ui.bubble({ pic: '🎲', onTap: () => this.say(T.diceTap()) });
-    this.say(first ? [...T.kittensStart(), ...T.diceTap()] : T.diceTap());
+    this.say(first ? [...this.startLine(), ...T.diceTap()] : T.diceTap());
     const turning = this.onUpdate((dt) => { die.rotation.y += dt * 1.2; }); // (no old number showing: it's waiting to be rolled)
     return new Promise((resolve) => {
       let done = false, quiet = 0;
@@ -347,15 +346,16 @@ export class LookoutMission extends Mission {
     }
     const pool = mode === 'go' ? range(1, Math.min(3, this.N)) : range(1, this.N);
     const target = this.pick('numeral', kittenFloors(pool, this.floor, this.visited));
+    const start = r > 0 ? [] : this.startLine();
     if (mode === 'find') {
       return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: '?', pic: '🐱', onTap: () => this.replay() }),
-        ask: [...(r === 0 ? T.kittensStart() : []), ...T.kittenWhere()], short: T.whichFloor(),
+        ask: [...start, ...T.kittenWhere()], short: T.whichFloor(),
         hint: () => { this.here(target); this.pulse(target); return T.kittenLook(); } }; // only the sign beside the kitten is lit
     }
     // pickup, go, and the first ride of relative
     const dots = this.L.bubble === 'both' ? target : 0;
     return { skill: 'numeral', target, kitten: 'waits', show: () => ui.bubble({ big: String(target), dots, pic: '🐱', onTap: () => this.replay() }),
-      ask: [...(this.finale ? T.finaleStart() : r === 0 ? T.kittensStart() : []), ...T.kittenAt(target)], short: T.liftPress(target) };
+      ask: [...start, ...T.kittenAt(target)], short: T.liftPress(target) };
   }
 
   /** The clue on a dice ride: the floors above the car light up one by one, as many as the die says. */
