@@ -246,8 +246,8 @@ export class Mission extends Stage {
   }
   /** Help was shown: 1 question repeated · 2 clue · 3 answer revealed. */
   helped(level) { this.learn.assist(level); }
-  /** She tapped the speech bubble to hear the question again. */
-  replay() { this.helped(1); replayed(); if (this.aid) onActivity(this.aid.state); this.ask(this.prompt); }
+  /** She tapped the speech bubble to hear the question again (between questions there is nothing to repeat: the praise plays on). */
+  replay() { if (!this.aid) return; this.helped(1); replayed(); onActivity(this.aid.state); this.ask(this.prompt); }
   /** A tap on the game that hit nothing (reported by the engine). Motor slip, not a wrong answer. */
   onMissTap() { this.learn.missTap(); }
   cheer(seconds = 1.5) { this.cheerUntil = performance.now() / 1000 + seconds; }

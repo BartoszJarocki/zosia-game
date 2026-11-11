@@ -80,9 +80,57 @@ test('per-question records: what happened before each answer', () => {
   const s = createSession(0);
   err(s, 'wrongChoice'); err(s, 'missTap'); noteReplay(s); ok(s, 1234, 1);
   ok(s, 999);
-  assert.deepEqual(s.recentQuestions[0], { wrongChoice: 1, overTap: 0, timeout: 0, missTap: 1, replays: 1, latencyMs: 1234, assist: 1 });
+  assert.deepEqual(s.recentQuestions[0], { wrongChoice: 1, overTap: 0, timeout: 0, missTap: 1, replays: 1, mission: undefined, latencyMs: 1234, assist: 1 });
   assert.equal(s.recentQuestions[1].replays, 0);
-  assert.deepEqual(s.baseline, { latency: [1234, 999], assist: [1, 0] });
+});
+
+// The November review's cases (tools/playtest/attention-sim.mjs): Kitty Park is one tap an answer, Treat House many.
+const play = (s, mission, answers) => {
+  for (const a of answers) {
+    for (let i = 0; i < (a.replays || 0); i++) noteReplay(s);
+    for (let i = 0; i < (a.timeouts || 0); i++) noteEvent(s, { mission, correct: false, errorType: 'timeout', at: ++t });
+    for (let i = 0; i < (a.overTaps || 0); i++) noteEvent(s, { mission, correct: false, errorType: 'overTap', at: ++t });
+    noteEvent(s, { mission, correct: true, latencyMs: a.ms, assistLevel: a.assist || 0, at: ++t });
+  }
+  return attention(s);
+};
+const kittyThenTreats = (treats) => {
+  const s = createSession(0);
+  play(s, 'letters', Array.from({ length: 4 }, () => ({ ms: 1500 })));
+  return play(s, 'counting', treats.map((a) => ({ ms: 9000, ...a })));
+};
+
+test('no mistakes stays at 1 across a change of mission (a Treat House answer is many taps)', () => {
+  const a = kittyThenTreats([{}, {}, {}, {}, {}]);
+  assert.equal(a.score, 1, JSON.stringify(a));
+  assert.equal(a.state, 'ok');
+});
+
+test('one bubble tap a round and one look away is not tiredness', () => {
+  const a = kittyThenTreats([{ replays: 1 }, { replays: 1 }, { replays: 1, timeouts: 1, assist: 2 }, { replays: 1 }, { replays: 1 }]);
+  assert.equal(a.state, 'ok', JSON.stringify(a));
+});
+
+test('excited: two bursts of taps and one look away does not end the session', () => {
+  const a = kittyThenTreats([{}, { overTaps: 2, assist: 2 }, {}, { overTaps: 2, assist: 2 }, { timeouts: 1 }]);
+  assert.equal(a.state, 'ok', JSON.stringify(a));
+});
+
+test('in short missions, looking away, tap bursts and the clue on every answer still read as tired', () => {
+  const s = createSession(0);
+  play(s, 'letters', Array.from({ length: 4 }, () => ({ ms: 2000 })));
+  const lost = { ms: 8000, timeouts: 1, overTaps: 1, assist: 2 };
+  for (const mission of ['counting', 'cones']) play(s, mission, [lost, lost, lost]);
+  const a = attention(s);
+  assert.notEqual(a.state, 'ok', JSON.stringify(a));
+});
+
+test('slowing down within one mission still counts', () => {
+  const s = createSession(0);
+  play(s, 'letters', Array.from({ length: 4 }, () => ({ ms: 1500 })));
+  const a = play(s, 'letters', Array.from({ length: 5 }, () => ({ ms: 4500, assist: 2 })));
+  assert.equal(a.factors.slow, 1);
+  assert.equal(a.state, 'tired', JSON.stringify(a));
 });
 
 test('shorten: the finale comes after the current mission', () => {
