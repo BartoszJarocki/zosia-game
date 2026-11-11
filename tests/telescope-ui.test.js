@@ -31,7 +31,7 @@ globalThis.localStorage = { getItem: (k) => saved.get(k), setItem: (k, v) => sav
 registerHooks({ load(url, context, next) {
   let source;
   if (url.endsWith('?raw')) source = `export default ${JSON.stringify(readFileSync(new URL(url), 'utf8'))};`;
-  if (url.endsWith('/src/audio.js')) source = 'export const say = async () => {}; export const hush = () => {}; export const unlockAudio = () => {}; export const sfx = { pop() {} };';
+  if (url.endsWith('/src/audio.js')) source = 'export const say = async () => {}; export const hush = () => {}; export const unlockAudio = () => {}; export const sfx = { pop() {} }; export const soundsStarted = () => 0;';
   if (url.endsWith('/src/textures.js')) source = 'export const DICE = {};';
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });

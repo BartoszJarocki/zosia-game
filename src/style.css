@@ -247,7 +247,6 @@ svg { display: block; }
 .lift-btn.lit { color: #fff; background: radial-gradient(circle at 35% 30%, #fff6c2, #fbbf24 55%, #d97706); border-color: #fde68a; box-shadow: 0 6px 0 #b45309, 0 0 22px rgba(251,191,36,.9); }
 .lift-btn.hint { animation: breathe 1s ease-in-out infinite; border-color: #fbbf24; }
 .lift-btn.nope { animation: nope .45s; }
-.lift.locked .lift-btn { pointer-events: none; }
 @keyframes nope { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } } /* a soft wobble, no red */
 
 /* ---------- #parent: read-only progress page for grown-ups ---------- */

@@ -13,6 +13,9 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const START = -4.9, GAP = 1.05, MAX = 10;
+const WATCH_JUMP = { ms: 900, height: 2.3 };  // Chase's own jumps, high and floaty, about one a second to count along
+const TAP_JUMP = { ms: 400, height: 1.2 };    // a jump she makes: done by her next quick tap, and low enough that a tap
+                                              // where he just stood still reaches him (tools/playtest/hop-reach.mjs)
 const INK = '#79648e', LIT = '#b88012';
 const slot = (i) => new THREE.Vector3(START + (i + 1) * GAP, 0.025, 0.45);
 
@@ -142,19 +145,16 @@ export class MoonMission extends Mission {
     for (let i = this.ghosts.length; i < n; i++) this.ghosts.push(this.makePrint(i, true));
   }
 
-  async jump() {
-    if (this.airborne) return;
-    this.airborne = true;
+  async jump({ ms, height } = WATCH_JUMP) {
     const from = this.chase.position.clone(), to = slot(this.prints.length).setY(0).setZ(-0.7);
-    await animate(1400, (t) => {
+    await animate(ms, (t) => {
       this.chase.position.lerpVectors(from, to, t);
-      this.chase.position.y = Math.sin(t * Math.PI) * 2.3;
+      this.chase.position.y = Math.sin(t * Math.PI) * height;
     }, ease.linear);
     if (!this.alive) return;
     this.chase.position.copy(to);
     const i = this.prints.length;
     this.prints.push(this.makePrint(i));
-    this.airborne = false;
     this.chase.userData.setHappy(0.8);
     this.dust.position.copy(to).setZ(0.1);
     animate(450, (t) => {
@@ -204,30 +204,24 @@ export class MoonMission extends Mission {
       await talk;
       resolve();
     };
-    this.onJump = async () => {
-      if (this.phase !== 'jump' || this.airborne || this.prints.length >= MAX) return;
+    // her taps jump one after another, every one counted; the flag is judged once he has landed
+    this.onJump = () => {
+      if (this.phase !== 'jump') return;
       this.poke();
-      await this.jump();
-      if (!this.alive) return;
-      const count = this.prints.length;
-      const talk = this.say(T.number(count));
-      if (auto && count === n) await finish(talk);
+      return this.inTurn(async () => {
+        if ((this.phase !== 'jump' && this.phase !== 'checking') || this.prints.length >= MAX) return;
+        await this.jump(TAP_JUMP);
+        if (!this.alive) return;
+        const count = this.prints.length;
+        const talk = this.say(T.number(count));
+        if (auto && count === n) await finish(talk);
+      });
     };
-    this.onFlag = async () => {
-      if (this.phase !== 'jump' || this.airborne) return;
+    this.onFlag = () => {
+      if (this.phase !== 'jump') return;
       this.poke();
-      const count = this.prints.length, verdict = countVerdict(count, n);
-      if (verdict === 'right') { finish(); return; }
-      this.wrong(count, { obj: this.flag, feedback: false });
-      if (verdict === 'few') { this.say(T.moonTooFew()); return; }
       this.phase = 'checking';
-      const extras = this.prints.splice(n);
-      await animate(650, (t) => extras.forEach((p) => { p.material.opacity = 1 - t; }), ease.linear);
-      extras.forEach((p) => { p.removeFromParent(); p.geometry.dispose(); p.material.dispose(); });
-      if (!this.alive) return;
-      this.chase.position.x = slot(n - 1).x;
-      this.phase = 'jump';
-      this.say(T.moonTooMany());
+      return this.inTurn(() => this.checkJumps(n, finish));
     };
     this.question('counting', n, {
       short: () => !auto && this.prints.length ? T.moonFlag() : T.moonJumpShort(n),
@@ -247,6 +241,21 @@ export class MoonMission extends Mission {
     this.success(this.chase.position.clone().add(new THREE.Vector3(0, 2, 0)));
     sfx.good();
     await this.say([this.praise()]);
+  }
+
+  /** The flag: right ends the round; too few, she jumps on; too many, the extra footprints fade. */
+  async checkJumps(n, finish) {
+    const count = this.prints.length, verdict = countVerdict(count, n);
+    if (verdict === 'right') { finish(); return; }
+    this.wrong(count, { obj: this.flag, feedback: false });
+    if (verdict === 'few') { this.phase = 'jump'; this.say(T.moonTooFew()); return; }
+    const extras = this.prints.splice(n);
+    await animate(650, (t) => extras.forEach((p) => { p.material.opacity = 1 - t; }), ease.linear);
+    extras.forEach((p) => { p.removeFromParent(); p.geometry.dispose(); p.material.dispose(); });
+    if (!this.alive) return;
+    this.chase.position.x = slot(n - 1).x;
+    this.phase = 'jump';
+    this.say(T.moonTooMany());
   }
 
   async countPrints() {

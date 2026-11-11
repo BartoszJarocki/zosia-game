@@ -1,4 +1,6 @@
-import { sfx, say } from './audio.js';
+import { sfx, say, soundsStarted } from './audio.js';
+import { freshTap } from './input/bounce.js';
+import { answer } from './input/answer.js';
 import { T } from './lang/pl.js';
 import { CONFIG } from './config.js';
 import { PLACES } from './places.js';
@@ -73,7 +75,7 @@ const later = (ms) => new Promise((r) => setTimeout(r, ms));
 const RING = '<svg class="hold-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg>';
 /**
  * Hold to leave: the ring fills in ms, then fn runs. Letting go (or sliding off) earlier does nothing, so a
- * stray tap near the speech bubble never ends the mission.
+ * stray tap near the speech bubble never ends the mission, and a stray tap on a map never ends the trip.
  */
 function holdToLeave(btn, fn, ms = 800) {
   let t = null;
@@ -132,12 +134,12 @@ export function hubHud() {
 export function spaceHud({ onHome, onBack, onTelescope, visiting = false, suggested = false, backIcon = '🚀' }) {
   clear();
   const hud = el(`<div class="space-hud">
-    <div class="topbar"><button class="round-btn space-home" aria-label="Do domu">${ICON.home}</button>
+    <div class="topbar"><button class="round-btn space-home hold" aria-label="Do domu (przytrzymaj)">${ICON.home}${RING}</button>
     <button class="round-btn space-parent" aria-label="Dla rodzica, przytrzymaj">${ICON.paw()}</button></div>
     ${visiting ? `<button class="round-btn space-back" aria-label="Wróć do mapy">${backIcon}</button>`
       : onTelescope ? `<button class="round-btn space-telescope${suggested ? ' suggested' : ''}" aria-label="Teleskop">${ICON.telescope}</button>` : ''}
   </div>`);
-  press(hud.querySelector('.space-home'), onHome);
+  holdToLeave(hud.querySelector('.space-home'), onHome); // (as in a mission: a stray tap does not end the trip)
   holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), 3000);
   if (visiting) press(hud.querySelector('.space-back'), onBack);
   else if (onTelescope) press(hud.querySelector('.space-telescope'), onTelescope);
@@ -313,7 +315,11 @@ export function liftPanel({ floors, onPress }) {
       <div class="lift-display"><span class="arrow"></span><b>0</b></div>
       <div class="lift-buttons">${order.map((f) => `<button class="lift-btn" data-floor="${f}" aria-label="${f}">${f}</button>`).join('')}</div>
     </div>`);
-  p.querySelectorAll('.lift-btn').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); onPress(Number(b.dataset.floor), b); }));
+  const pressed = (b) => b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], 180); // (leaves no class behind)
+  p.querySelectorAll('.lift-btn').forEach((b) => b.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (freshTap(e)) answer(() => onPress(Number(b.dataset.floor), b), { sounds: soundsStarted, tick: sfx.tick, bounce: () => pressed(b) });
+  }));
   ui.append(p);
   const btn = (f) => p.querySelector(`.lift-btn[data-floor="${f}"]`);
   return {
@@ -322,7 +328,6 @@ export function liftPanel({ floors, onPress }) {
     show(f, dir = 0) { p.querySelector('.lift-display b').textContent = f; p.querySelector('.arrow').textContent = dir > 0 ? '▲' : dir < 0 ? '▼' : ''; },
     nope(f) { const b = btn(f); if (!b) return; b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); },
     hint(f) { btn(f)?.classList.add('hint'); },
-    lock(on) { p.classList.toggle('locked', on); },
     remove() { p.remove(); },
   };
 }

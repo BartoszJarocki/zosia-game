@@ -199,10 +199,11 @@ export class MercuryMission extends Mission {
     crater.userData.rim.material.color.set(on ? LIT_RIM : RIM);
   }
 
-  async countCraters({ keep = false } = {}) {
+  /** Light and count the craters, for as long as still() holds (a count for help stops when she answers). */
+  async countCraters({ keep = false, still = () => this.alive } = {}) {
     const craters = this.craterDots || [];
     for (let i = 0; i < craters.length; i++) {
-      if (!this.alive) return;
+      if (!still()) return;
       const crater = craters[i];
       this.lightCrater(crater, true);
       sparkle(this, crater.getWorldPosition(new THREE.Vector3()), { count: 5, size: 0.1, speed: 1.4 });
@@ -212,28 +213,27 @@ export class MercuryMission extends Mission {
   }
 
   async tapTile(b) {
-    if (this.phase !== 'choosing' || this.busy) return;
+    if (this.phase !== 'choosing') return;
     this.poke();
     this.lookAt(b.position);
     const num = b.userData.num;
-    if (num !== this.last) {
-      this.busy = true;
+    if (num !== this.last) { // the right tile can be tapped all along
       this.lastWrong = b;
       this.wrong(num, { obj: b, feedback: false });
       hop(b, 0.3, 300);
+      const show = (this.shows = (this.shows || 0) + 1); // (a newer wrong tap takes the count over)
+      const still = () => this.alive && this.phase === 'choosing' && this.shows === show;
       await this.say(T.mercuryWrong());
-      if (!this.alive) return;
+      if (!still()) return;
       await this.revealCraters();
-      if (!this.alive) return;
-      await this.countCraters();
-      if (!this.alive) return;
+      if (!still()) return;
+      await this.countCraters({ still });
+      if (!still()) return;
       const right = this.blocks.find((x) => x.userData.num === this.last);
       if (right) this.hint(right, () => this.phase !== 'choosing');
-      this.busy = false;
       return;
     }
     this.phase = 'solved';
-    this.busy = true;
     this.correct(num);
     this.stopIdle();
     this.blocks.forEach((x) => this.untap(x));
@@ -253,7 +253,6 @@ export class MercuryMission extends Mission {
     const n = this.pick('quantity', numbersIn(this.L.craters));
     this.last = n;
     this.phase = 'looking';
-    this.busy = false;
     this.lastWrong = null;
     this.makeCraters(n);
     const flash = this.L.show === 'flash';
@@ -272,7 +271,7 @@ export class MercuryMission extends Mission {
       short: ask,
       hint: async () => {
         await this.revealCraters();
-        if (this.alive) await this.countCraters();
+        if (this.alive) await this.countCraters({ still: () => this.alive && this.phase === 'choosing' });
       },
       simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.blocks.find((b) => b !== right && b.parent)),
       reveal: () => this.hint(right, () => this.phase !== 'choosing'),

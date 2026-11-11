@@ -25,7 +25,7 @@ export function pointOnPlane(e, camera, dom, height) {
 }
 
 /** Begin dragging obj from this pointerdown. */
-export function startDrag(obj, e, { camera, dom, isAlive, wake = () => {} }) {
+export function startDrag(obj, e, { camera, dom, isAlive, wake = () => {}, answer = (handle) => handle() }) {
   if (active) return;
   const d = obj.userData.drag;
   const start = { x: e.clientX, y: e.clientY };
@@ -52,7 +52,7 @@ export function startDrag(obj, e, { camera, dom, isAlive, wake = () => {} }) {
     window.removeEventListener('pointercancel', up);
     active = null;
     if (!isAlive()) return;
-    if (!moved) { d.onTap?.(obj); return; }
+    if (!moved) { answer(() => d.onTap?.(obj)); return; }
     const accepted = d.onDrop?.(obj, obj.position.clone().setY(height));
     if (!accepted) back(obj, from);
   };

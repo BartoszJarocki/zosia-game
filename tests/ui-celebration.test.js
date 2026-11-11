@@ -20,7 +20,7 @@ globalThis.document = {
 };
 globalThis.__celebrationLines = [];
 registerHooks({ load(url, context, next) {
-  if (url.endsWith('/src/audio.js')) return { format: 'module', source: 'export const say = async (lines) => { globalThis.__celebrationLines.push(...lines); }; export const sfx = { pop() {} };', shortCircuit: true };
+  if (url.endsWith('/src/audio.js')) return { format: 'module', source: 'export const say = async (lines) => { globalThis.__celebrationLines.push(...lines); }; export const sfx = { pop() {} }; export const soundsStarted = () => 0;', shortCircuit: true };
   if (url.endsWith('/src/textures.js')) return { format: 'module', source: 'export const DICE = {};', shortCircuit: true };
   return next(url, context);
 } });

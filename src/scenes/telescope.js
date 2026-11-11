@@ -92,7 +92,6 @@ export class TelescopeMission extends Mission {
           this.correct(kind);
           this.stopIdle();
           this.choices.forEach((choice) => this.untap(choice));
-          obj.userData.hopping = true;
           sfx.good();
           this.success(obj.position.clone(), { big: true });
           await Promise.all([hop(obj, 0.5, 600), this.say(T.telescopeRight(kind))]);

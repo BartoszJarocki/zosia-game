@@ -24,7 +24,6 @@ import { maxLevel } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { pick } from '../util.js';
 import { PLACES } from '../places.js';
-import { isBounce } from '../input/bounce.js';
 
 /** How much grass the device can take. */
 export const detail = () => ({ low: 0.3, medium: 0.6, high: 1 }[post.tier] ?? 0.6);
@@ -181,9 +180,6 @@ export class Mission extends Stage {
    * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
    */
   wrong(chosen, { obj = null, said = null, feedback = true, quiet = false } = {}) {
-    const at = performance.now();
-    if (isBounce(this.lastWrong, chosen, at)) return; // the same finger landing twice: no sound, no count, no help
-    this.lastWrong = { chosen, at };
     this.miss();
     this.learn.wrong({ chosen });
     if (!quiet) { // quiet: it still counts, but the scene answers in its own gentle way (no tone, no head shakes)
@@ -203,6 +199,19 @@ export class Mission extends Stage {
   }
   /** A step done right: a bright chime, and "Tak!" to say before what it was ("Tak! Dwa!"). */
   yes() { sfx.yes(); return T.yesStep(); }
+
+  /**
+   * Taps that count ("make it flash three times") play in turn: each step waits for the one before, so a quick tap
+   * is counted, never dropped. A tap that has to wait is answered at once by the engine (input/answer.js). The tap
+   * that ends the count (the boat, the flag) goes in the same line, so it is judged after every step has played.
+   * step() may return a promise; inTurn resolves when the step has played.
+   */
+  inTurn(step) {
+    const go = () => (this.alive ? step() : undefined);
+    const turn = Promise.resolve(this.turn ? this.turn.then(go) : go()).finally(() => { if (this.turn === turn) this.turn = null; });
+    this.turn = turn;
+    return turn;
+  }
 
   // ----- help driver -----
   assistTiming() {
@@ -290,6 +299,13 @@ export class Mission extends Stage {
       this.learn.promptEnded();                         // latency counts from here…
       if (this.aid) this.aid.quietFrom = performance.now(); // …and so does the quiet-time help
     });
+  }
+  /** The question is open now, so she can answer at once; it is said when talk (the line for her last answer) ends. */
+  askAfter(talk, segments) {
+    if (!talk) return this.ask(segments);
+    this.prompt = segments;
+    const q = this.learn.current;
+    Promise.resolve(talk).then(() => { if (this.alive && this.learn.current === q) this.ask(segments); });
   }
   /** She did something (a tap): the quiet-time help restarts from now. */
   poke() { if (this.aid) this.aid.quietFrom = performance.now(); }
