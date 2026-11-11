@@ -117,15 +117,21 @@ test('gap asks which stripe is missing and scores the pattern name', async () =>
   stop(s);
 });
 
-test('bigger: a wrong ball gets a promise to look again and the huge one is named', async () => {
+test('bigger: a wrong ball gets a "no" and the question again, the right one does not light, and the huge one is named', async () => {
   const s = await scene(1, () => 0.9);
   s.L = { ...s.L, bigger: 'big' };
   const round = s.sizeRound();
   assert.equal(s.last, 'sun');
   const earth = s.tappables.find((o) => o.userData.choice === 'earth');
   const sun = s.tappables.find((o) => o.userData.choice === 'sun');
+  const before = globalThis.__lines.length;
   await earth.userData.onTap();
-  assert.ok(globalThis.__lines.includes('Popatrz jeszcze raz. Ta jest większa.'));
+  const said = globalThis.__lines.slice(before);
+  assert.ok(/^Nie/.test(said[0]), said.join(' '));
+  assert.equal(said.at(-1), 'Która jest większa?');
+  assert.equal(sun.userData.halo.visible, false, 'the right ball does not glow');
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   assert.equal(s.answers.length, 0);
   await sun.userData.onTap();
   await round;

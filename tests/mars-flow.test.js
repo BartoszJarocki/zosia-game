@@ -91,13 +91,18 @@ test('a right rock scores, the rover drives over and the rock is scanned', async
   stop(s);
 });
 
-test('a wrong rock wobbles, the right one glows and she tries again', async () => {
+test('a wrong rock gets a "no" and the question again, the right one does not glow, and she tries again', async () => {
   const s = await scene(2, 3);
   const round = s.round(0);
   await until(() => s.learn.isOpen && s.prompt.length);
+  const before = globalThis.__lines.length;
   rocks(s).find((o) => o.userData.num === 2).userData.onTap();
-  assert.ok(globalThis.__lines.includes('To nie ten kamień. Szukamy numeru trzy.'));
+  assert.ok(/^Nie/.test(globalThis.__lines[before]), globalThis.__lines.slice(before).join(' '));
   assert.equal(globalThis.__lines.at(-1), 'Gdzie jest numer trzy?');
+  for (let i = 0; i < 10; i++) { s.update(0.1, i * 0.1); await flush(); }
+  assert.equal(rocks(s).find((o) => o.userData.num === 3).userData.rockMat.emissiveIntensity, 0);
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
   assert.equal(s.last, 3);
@@ -118,6 +123,9 @@ test('the dots level asks for an amount and keeps the answer hidden in the bubbl
   assert.equal(globalThis.__bubble.pic, '🚙');
   s.runAssist('hint');
   assert.equal(globalThis.__lines.at(-1), 'Policz kropki!');
+  const before = globalThis.__lines.length;
+  rocks(s).find((o) => o.userData.num !== 3).userData.onTap();
+  assert.deepEqual(globalThis.__lines.slice(before + 1), ['Policz kropki! Do którego kamienia jedziemy?'], 'a wrong rock: no number is said');
   rocks(s).find((o) => o.userData.num === 3).userData.onTap();
   await round;
   assert.equal(s.answers[0].skill, 'quantity');

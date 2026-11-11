@@ -116,7 +116,6 @@ export class VenusMission extends Mission {
     this.tiles = [];
     this.roundGeometries = new Set();
     this.roundMaterials = [];
-    this.roundOffs = [];
     this.maps = [];
     this.ownedMaterials = [];
     this.builtGeometries = [];
@@ -287,20 +286,16 @@ export class VenusMission extends Mission {
           return;
         }
         lastWrong = tile; // (the right tile can be tapped all along)
-        this.wrong(tile.userData.choice, { obj: tile, feedback: false });
+        this.wrong(tile.userData.choice, { obj: tile });
         hop(tile, 0.35);
-        await this.openClouds();
-        if (!this.alive || solved) return;
-        this.glowTile(right, () => solved);
-        this.chase.userData.setHappy(1);
-        this.say(T.venusWrong(target));
       };
       for (const tile of this.tiles) this.tappable(tile, () => choose(tile));
+      const openUp = () => { this.openClouds(); }; // a part level's first help: the whole shape shows ("Chmury się rozsuwają…")
 
       this.question('shape', target, {
         short: T.venusAsk(),
-        hint: () => T.shapeClue(target),
-        simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : this.tiles.find((tile) => tile !== right && tile.parent)),
+        hint: () => (this.clouds.userData.open ? T.shapeClue(target) : openUp()),
+        simplify: () => (this.clouds.userData.open ? this.removeOption(lastWrong?.parent ? lastWrong : this.tiles.find((tile) => tile !== right && tile.parent)) : openUp()),
         reveal: () => this.hint(right, () => solved),
       }, { options: this.tiles.length });
 
@@ -363,22 +358,7 @@ export class VenusMission extends Mission {
     }, ease.inOut);
   }
 
-  glowTile(tile, isDone) {
-    const material = tile.userData.body.material;
-    material.emissive.set('#f59e0b');
-    const off = this.onUpdate((dt, t) => {
-      if (isDone() || !tile.parent) {
-        off();
-        material.emissiveIntensity = 0;
-        return;
-      }
-      material.emissiveIntensity = 0.6 + 0.45 * Math.sin(t * 6);
-    });
-    this.roundOffs.push(off);
-  }
-
   clearRound() {
-    this.roundOffs.splice(0).forEach((off) => off());
     this.tiles.forEach((tile) => this.untap(tile));
     const roots = [this.roundRoot, ...this.tiles].filter(Boolean);
     for (const root of roots) root.traverse((o) => { if (o.geometry) this.roundGeometries.add(o.geometry); });

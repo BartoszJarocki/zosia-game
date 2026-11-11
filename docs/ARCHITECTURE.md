@@ -170,22 +170,24 @@ this.wrong(chosen, T.thatsLetter(chosen));   // the base says it, then the next 
 
 | Wrong pick | Action | Level |
 |---|---|---|
-| 1st | "To jest X. Spróbuj jeszcze raz!" | 1 |
-| 2nd | simplify + short prompt | 2 |
-| 3rd+ | reveal + short prompt | 3 |
+| 1st | "Nie, to nie ten." (or the scene's own "no") + short prompt, nothing else | 1 |
+| 2nd | simplify + short prompt (with two or fewer options: the hint instead) | 2 |
+| 3rd+ | reveal + "Tutaj!" | 3 |
 
+- Only reveal shows the answer. A scene's wrong-tap branch says no and stops; the hooks below do the rest.
 - Steps already covered by wrong taps are skipped (help never steps back down); no help fires while the game is speaking.
+- `Mission.pointAlong(things, light)` is the shared "count along" clue: the dots, craters, floors or stars light one by one, a pop each, no number said.
 - Timings: `CONFIG.assistSeconds`. Wrong taps play a soft "hm?" (`sfx.oops`) and a wobble; nothing red.
 
 | Mission | hint | simplify | reveal |
 |---|---|---|---|
 | Kitty Park | letter shown in the bubble + "Be jak banan!" | the block she picked leaves | block pulses |
 | Balloon Hill | balloons slow down + "Be jak banan!" | a wrong balloon floats away | target balloons pulse |
-| Name Train | ghost letter on the wagon + "Zet jak Zosia!" (`whose`: the name in the bubble, its train toots) | an extra block leaves (or the right one steps forward; `whose`: a wrong train drives off) | block pulses (`whose`: "To pociąg Zosi!") |
+| Name Train | ghost letter on the wagon + "Zet jak Zosia!" (`whose`: the name in the bubble) | an extra block leaves (or the hint; `whose`: a wrong train drives off) | block pulses (`whose`: "To pociąg Zosi!") |
 | Cone Road | bubble shows numeral + dots, "Trzy kropki!" | a wrong cone leaves | sign pulses |
-| River | number shown (in "what's next?" mode) or "Trzy kropki!" | number shown | stone pulses |
-| Treat House | give: the N spots light up · how many: count together | how many: a wrong block leaves + count together | box pulses / block pulses |
-| Lookout | number + dots in the bubble, "Trzy kropki!" (find: the sign beside the kitten lights up; dice: the floors light up one by one, "Policz piętra!") | number shown | button pulses |
+| River | the stones so far are counted, "Jeden! Dwa!" (in "what's next?" and missing modes) or "Trzy kropki!" | a wrong stone sinks (or the hint) | stone pulses |
+| Treat House | give: the N spots light up · how many: count together · flash/hidden: the bowl lifts for a moment | how many: a wrong block leaves + count together | box pulses / block pulses / the bowl lifts |
+| Lookout | number + dots in the bubble, "Trzy kropki!" (find: the sign beside the kitten lights up; relative: the floors up to the car light one by one; dice: as many floors as the die says, "Policz piętra!") | as the hint (pickup: the number with its dots) | button pulses |
 
 Tests: `tests/learning/assist.test.js` (state machine). `window.__sayLog = []` collects every spoken line, for browser tests.
 

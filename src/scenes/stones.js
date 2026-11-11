@@ -100,7 +100,7 @@ export class StonesMission extends Mission {
       const colors = shuffle(TILE_COLORS);
       const path = []; // the stones she has landed on
       let row = [];
-      let next = 1, busy = false, revealed = false;
+      let next = 1, busy = false;
       this.last = next;
       const raise = (k) => {
         row = rows[k].stones.map((at, i) => {
@@ -118,24 +118,16 @@ export class StonesMission extends Mission {
         });
       };
       const nextMode = this.L.bubble === 'next';
-      const seqBubble = () => nextMode && next > 1 && !revealed; // only "what comes next?" on screen
-      const showNumber = () => { // help: tell her the number
-        revealed = true;
-        ui.bubble({ big: String(next), dots: next, onTap: () => this.replay() });
-        this.prompt = T.riverNext(next);
-      };
+      const seqBubble = () => nextMode && next > 1; // only "what comes next?" on screen
       const hooks = {
         short: () => (seqBubble() ? T.riverAfter(next - 1) : next === 1 ? T.whereNumber(1) : T.riverNext(next)), // ("Trzy… i co dalej?")
-        hint: () => { if (seqBubble()) { showNumber(); return T.riverNext(next); } return T.dots(next); },
-        simplify: () => { // "what comes next" shows the number; otherwise one of the other stones sinks
-          if (seqBubble()) return showNumber();
-          this.removeOption(row.find((x) => x.userData.num !== next && !x.userData.gone));
-        },
+        hint: (said) => (seqBubble() ? this.countSoFar(path, T.riverWhatNext(), said) : T.dots(next)),
+        simplify: (said) => (seqBubble() ? hooks.hint(said) : this.removeOption(row.find((x) => x.userData.num !== next && !x.userData.gone))),
         reveal: () => { const right = row.find((x) => x.userData.num === next), want = next; if (right) this.hint(right, () => next !== want); },
       };
 
       const askNext = () => {
-        // "what comes next?" (after the first stone, until help shows it) tests order; otherwise the numeral
+        // "what comes next?" (after the first stone) tests order; otherwise the numeral
         this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next, hooks, { options: this.L.choices });
         if (!seqBubble()) {
           ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
@@ -154,7 +146,6 @@ export class StonesMission extends Mission {
         if (s.userData.num !== next) { this.wrong(s.userData.num, { obj: s }); return; }
         busy = true;
         this.correct(next);
-        revealed = false;
         row.forEach((x) => this.untap(x));
         s.userData.top.emissive = new THREE.Color('#fde047');
         s.userData.top.emissiveIntensity = 0.35;
@@ -218,7 +209,7 @@ export class StonesMission extends Mission {
       const offRing = this.onUpdate((dt, t) => { ring.material.opacity = 0.35 + Math.sin(t * 4) * 0.25; ring.scale.setScalar(1 + Math.sin(t * 4) * 0.05); });
       // two stones to choose from on this bank: the missing number and one that could almost fit (levels/river.js)
       const other = missingFoil(missing, n, this.L.foils);
-      let solved = false, lastWrong = null;
+      let solved = false;
       const choices = shuffle([missing, other]).map((num, i) => {
         const s = makeStone(discTexture(String(num), colors[(num + 3) % colors.length]));
         const home = new THREE.Vector3(i ? 2.6 : -2.6, 0.18, START.z - 0.2);
@@ -235,7 +226,6 @@ export class StonesMission extends Mission {
           this.lookAt(st);
           if (st.userData.num === missing) place(st);
           else {
-            lastWrong = st;
             this.wrong(st.userData.num);
             this.jumpTo(st, st.userData.home, { height: 0.6, ms: 350 }).then(() => shakeNo(st));
           }
@@ -288,12 +278,27 @@ export class StonesMission extends Mission {
       const right = () => choices.find((c) => c.userData.num === missing);
       this.question('sequence', missing, {
         short: T.whichFits(),
-        hint: () => { ui.bubble({ word: seq(true), at: cell(missing), onTap: () => this.replay() }); return T.whereNumber(missing); }, // the number shows in the gap
-        simplify: () => { const w = lastWrong || choices.find((c) => c.userData.num !== missing); if (w) this.removeOption(w); },
+        hint: (said) => this.countSoFar(stones.slice(0, missing - 1), T.whichFits(), said),
         reveal: () => this.hint(right(), () => solved),
       }, { options: 2 });
       this.askAfter(Promise.all([wait(900 + n * 110), this.talk]), r === 0 ? T.riverMissing() : T.whichFits());
     });
+  }
+
+  /**
+   * The River's clue: the stones so far sparkle in turn and are counted ("Jeden! Dwa!"), stopping before the one
+   * she needs, then the question (ask). said: the "no" before it, after a wrong stone.
+   */
+  async countSoFar(stones, ask, said = []) {
+    const q = this.learn.current, still = () => this.alive && this.learn.current === q;
+    if (said.length) await this.say(said);
+    for (const [i, s] of stones.entries()) {
+      if (!still()) return;
+      sparkle(this, s.position.clone().add(new THREE.Vector3(0, 0.4, 0)), { count: 6, size: 0.1, speed: 1.4 });
+      sfx.pop();
+      await this.say(T.number(i + 1));
+    }
+    if (still()) this.say(ask);
   }
 
   /** The last hop, onto Chase's bank. Then a big leap back for the next river; after the last one she stays with him. */

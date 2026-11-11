@@ -94,7 +94,7 @@ test('a stay round keeps the craters in view and scores the number tile', async 
   stop(s);
 });
 
-test('a flash round says "Szybkie oko!" before the look, hides the craters under pink dust, then counts them after a wrong tap', async () => {
+test('a flash round says "Szybkie oko!" before the look and hides the craters; a wrong tap only asks again, and the clue shows them without a number', async () => {
   const s = await scene(3, 4);
   globalThis.__lines = [];
   const round = s.craterRound();
@@ -107,10 +107,18 @@ test('a flash round says "Szybkie oko!" before the look, hides the craters under
   assert.equal(s.craters.visible, false);
   assert.deepEqual(globalThis.__lines, ['Szybkie oko! Patrz!', 'Ile było?']);
   const wrong = s.blocks.find((b) => b.userData.num !== s.last);
+  const before = globalThis.__lines.length;
   await wrong.userData.onTap();
-  assert.ok(globalThis.__lines.includes('Popatrz jeszcze raz.'));
-  assert.deepEqual(globalThis.__lines.filter((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l)).slice(-4), ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!']);
-  assert.equal(s.craters.visible, true);
+  for (let i = 0; i < 20; i++) await flush();
+  assert.deepEqual(globalThis.__lines.slice(before), ['Popatrz jeszcze raz.', 'Ile było?']);
+  assert.equal(s.craters.visible, false, 'one wrong tap does not show the craters again');
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
+  s.runAssist('hint');
+  await until(() => globalThis.__lines.at(-1) === 'Ile jest kraterów?');
+  for (let i = 0; i < 20; i++) await flush();
+  assert.equal(s.craters.visible, true, 'the clue blows the dust away');
+  assert.ok(!globalThis.__lines.slice(before).some((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l)), 'no number is said before her answer');
   assert.equal(s.answers.length, 0);
   s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
   await round;

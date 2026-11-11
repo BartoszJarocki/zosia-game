@@ -130,7 +130,7 @@ test('flashes: no dots, three choices, and the bubble replays the flashes', asyn
   stop(s);
 });
 
-test('make: the boat waits, too few resets the dots, and the right count sails it home', async () => {
+test('make: the boat waits, too few resets the dots and asks again without flashing the answer, and the right count sails it home', async () => {
   const s = await scene(3, 3);
   const round = s.round(0);
   await until(() => s.phase === 'making');
@@ -144,7 +144,11 @@ test('make: the boat waits, too few resets the dots, and the right count sails i
   await s.lamp.userData.onTap();
   assert.equal(s.dots.length, 2);
   assert.equal(s.last, 3);
+  const dings = globalThis.__sfx.filter((x) => x === 'ding').length, before = globalThis.__lines.length;
   await s.boat.userData.onTap();
+  for (let i = 0; i < 20; i++) await flush();
+  assert.deepEqual(globalThis.__lines.slice(before), ['Za mało! Policz jeszcze raz!', 'Mrugnij trzy razy!']);
+  assert.equal(globalThis.__sfx.filter((x) => x === 'ding').length, dings, 'the lamp does not flash the answer');
   assert.equal(s.answers.length, 0);
   assert.equal(s.dots.length, 0);
   assert.equal(s.phase, 'making');

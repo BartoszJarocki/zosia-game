@@ -337,14 +337,19 @@ export class PortMission extends Mission {
     this.tappable(this.horn, () => this.toot());
     this.tappable(this.boats[0], () => this.checkBoat());
     this.question('syllables', this.word, {
-      short: T.portToot,
-      hint: async () => {
-        await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
-        return T.portToot();
-      },
-      reveal: () => {
-        this.hint(this.horn, () => this.phase !== 'asking');
+      short: () => [...T.portName(this.word), ...T.portToot()],
+      hint: () => { // the horn to toot, once a piece; the pieces themselves only when the answer is shown
+        this.pulseUntil(this.horn, () => this.phase !== 'asking' || this.count > 0);
         return T.portHelp();
+      },
+      reveal: async (said = []) => { // Chase claps the name slowly ("Fo! Ka!"); she toots it herself
+        this.phase = 'helping';
+        this.resetHorn();
+        if (said.length) await this.say(said);
+        if (this.alive) await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
+        if (!this.alive) return;
+        this.phase = 'asking';
+        this.ask(T.portToot());
       },
     }, { options: 1 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
@@ -365,20 +370,18 @@ export class PortMission extends Mission {
   async checkBoat() {
     if (this.phase !== 'asking') return;
     this.poke();
-    const verdict = countVerdict(this.count, this.target);
+    const made = this.count, verdict = countVerdict(made, this.target);
     if (verdict === 'right') { await this.solveHorn(); return; }
-    this.wrong(this.count, { obj: this.boats[0], feedback: false });
-    await this.say(verdict === 'few' ? T.portTooFew() : T.portTooMany());
-    if (!this.alive) return;
+    this.resetHorn();
+    this.wrong(made, { obj: this.boats[0], said: verdict === 'few' ? T.portTooFew() : T.portTooMany() }); // "Za mało! Posłuchaj jeszcze raz." and the name again
+  }
+
+  /** She toots it again from the start: no toots, no lit pieces. */
+  resetHorn() {
     this.count = 0;
     this.last = this.target;
     this.unlight(this.boats[0]);
     this.resetDots(this.boats[0].userData.board);
-    this.phase = 'helping';
-    await this.clapSyllables(this.word, { merge: this.mode !== 'together' });
-    if (!this.alive) return;
-    this.phase = 'asking';
-    this.ask(T.portToot());
   }
 
   async solveHorn() {
@@ -431,6 +434,13 @@ export class PortMission extends Mission {
     this.question('syllables', this.asked, {
       short: () => T.portWhich(this.asked),
       hint: () => T.portWhich(this.asked),
+      simplify: () => {
+        const wrongs = this.boats.filter((b) => b.userData.num !== this.asked && !b.userData.gone);
+        const boat = wrongs.includes(this.lastWrong) ? this.lastWrong : wrongs[0];
+        if (!boat) return;
+        boat.traverse((o) => this.untap(o));
+        this.removeOption(boat);
+      },
       reveal: () => {
         const right = this.boats.find((b) => b.userData.num === this.asked);
         if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
@@ -448,10 +458,8 @@ export class PortMission extends Mission {
     this.poke();
     this.lookAt(boat);
     if (num !== this.last) {
-      this.wrong(num, { obj: boat });
-      const right = this.boats.find((b) => b.userData.num === this.asked);
-      if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
-      await this.say(T.portHas(num));
+      this.lastWrong = boat;
+      this.wrong(num, { obj: boat, said: T.portHas(num) }); // "Ta łódka ma trzy kawałki." and the question again
       return;
     }
     this.phase = 'solved';

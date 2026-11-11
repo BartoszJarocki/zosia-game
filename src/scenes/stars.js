@@ -176,14 +176,8 @@ export class StarsMission extends Mission {
     const asked = this.last;
     this.poke();
     if (n !== asked) {
-      this.wrong(n, { obj: s, feedback: false });
-      this.say(T.starsWrong(n, asked));
+      this.wrong(n, { obj: s });
       this.twinkle(s);
-      wait(700).then(() => {
-        if (!this.alive || this.last !== asked || this.phase !== 'choosing') return;
-        const right = this.stars[asked - 1];
-        this.hint(right, () => this.last !== asked || this.phase !== 'choosing');
-      });
       return;
     }
     this.correct(n);
@@ -200,9 +194,14 @@ export class StarsMission extends Mission {
     const soFar = this.stars.slice(0, n - 1).map((s) => s.userData.num);
     this.last = n;
     this.phase = 'choosing';
+    const soFarAlong = (said = []) => {
+      this.say([...said, ...T.starsAsk(soFar)]);
+      return this.pointAlong(this.stars.slice(0, n - 1), (s) => this.twinkle(s), 450);
+    };
     this.question('sequence', n, {
       short: () => T.starsAsk(soFar),
-      hint: () => { this.hint(right, () => this.last !== n || this.phase !== 'choosing'); return T.starsHelp(n); },
+      hint: soFarAlong,
+      simplify: soFarAlong,
       reveal: () => { this.hint(right, () => this.last !== n || this.phase !== 'choosing'); return T.starsHelp(n); },
     }, { options: this.stars.filter((s) => !s.userData.lit).length });
     ui.bubble({ big: String(n), pic: '⭐', onTap: () => this.replay(), passthrough: true });

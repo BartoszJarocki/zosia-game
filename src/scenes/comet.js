@@ -214,8 +214,6 @@ export class CometMission extends Mission {
           lastWrong = c;
           this.wrong(c.userData.letter, { obj: c.userData.body, said: this.lookalikeNo(target, c.userData.letter) });
           c.userData.wobble = 1;
-          const right = this.comets.find((x) => x.userData.letter === target && x.userData.wait <= 0);
-          if (right) this.hint(right, () => done || right.userData.popped || right.userData.wait > 0);
           return;
         }
         c.userData.popped = true;

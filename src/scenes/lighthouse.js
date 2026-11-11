@@ -380,10 +380,10 @@ export class LighthouseMission extends Mission {
     let right = null;
     this.question('quantity', n, {
       short: T.lighthouseHowMany,
-      hint: async () => {
-        if (this.dots.length) await this.countDots();
+      hint: async () => { // marks: the dots light one by one, no number said; flashes: the flashes again
+        if (this.dots.length) await this.pointAlong(this.dots, (dot) => { dot.material.color.set('#fff1a8'); return () => dot.material.color.set('#fde047'); });
         else await this.showFlashes(n);
-        if (this.alive) await this.say(T.lighthouseHowMany());
+        if (this.alive && this.phase === 'choosing') await this.say(T.lighthouseHowMany());
       },
       simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.choices.find((b) => b !== right && b.parent)),
       reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
@@ -443,22 +443,21 @@ export class LighthouseMission extends Mission {
     this.last = n;
     this.mode = mode;
     this.phase = 'watching';
+    const short = () => (mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n));
+    const showing = async (flashes, said, line) => {
+      this.phase = 'helping';
+      this.resetCount();
+      if (said.length) await this.say(said);
+      if (this.alive) await this.showFlashes(flashes);
+      if (!this.alive) return;
+      this.phase = 'making';
+      await this.say(line);
+    };
+    const lamp = () => { this.pulseUntil(this.lamp, () => this.phase !== 'making' || this.count > 0); return T.lighthouseCountHelp(); };
     this.question(mode === 'more' ? 'sequence' : 'counting', n, {
-      short: () => (mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n)),
-      hint: () => {
-        this.hint(this.lamp, () => this.phase !== 'making');
-        return T.lighthouseCountHelp();
-      },
-      reveal: async () => {
-        this.phase = 'helping';
-        this.clearDots();
-        this.count = 0;
-        this.last = n;
-        await this.showFlashes(n);
-        if (!this.alive) return;
-        this.phase = 'making';
-        await this.say(mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n));
-      },
+      short,
+      hint: mode === 'more' ? (said = []) => showing(n - 1, said, short()) : lamp, // more: the flashes she saw, again
+      reveal: (said = []) => showing(n, said, T.lighthouseMake(n)), // the answer: as many flashes as she makes
     }, { options: 1 });
     ui.bubble({ big: mode === 'more' ? '?' : String(n), dots: mode === 'more' ? 0 : n, pic: '💡', onTap: () => this.replay(), passthrough: true });
     if (show) await show();
@@ -471,6 +470,14 @@ export class LighthouseMission extends Mission {
     this.tappable(this.boat, this.onDone);
     const prompt = [...(mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n)), ...T.lighthouseDoneTap()];
     if (show) this.ask(prompt); else this.askAfter(this.talk, prompt);
+  }
+
+  /** She makes the flashes again from the start: no dots, nothing counted. */
+  resetCount() {
+    this.clearDots();
+    this.count = 0;
+    this.last = this.target;
+    this.lamp.userData.choice = 'lamp';
   }
 
   /** One flash she makes, with its dot. Quick taps flash one after another, every one counted. */
@@ -496,21 +503,12 @@ export class LighthouseMission extends Mission {
   }
 
   async checkCount() {
-    const verdict = countVerdict(this.count, this.target);
+    const made = this.count, verdict = countVerdict(made, this.target);
     if (verdict !== 'right') {
       this.bobBoat();
-      this.wrong(this.count, { obj: this.boat, feedback: false });
-      await this.say(verdict === 'few' ? T.lighthouseTooFew() : T.lighthouseTooMany());
-      if (!this.alive) return;
-      this.clearDots();
-      this.count = 0;
-      this.last = this.target;
-      this.lamp.userData.choice = 'lamp';
-      this.phase = 'helping';
-      await this.showFlashes(this.target);
-      if (!this.alive) return;
+      this.resetCount();
       this.phase = 'making';
-      this.ask([...(this.mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(this.target)), ...T.lighthouseDoneTap()]);
+      this.wrong(made, { obj: this.boat, said: verdict === 'few' ? T.lighthouseTooFew() : T.lighthouseTooMany() }); // "Za mało! Policz jeszcze raz!" and the question again
       return;
     }
     this.phase = 'solved';

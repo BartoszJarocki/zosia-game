@@ -155,7 +155,6 @@ export class JupiterMission extends Mission {
       if (pot !== right) {
         lastWrong = pot;
         this.wrong(pot.userData.choice, { obj: pot, said: T.jupiterTryAgain() });
-        this.glowPot(right);
         return;
       }
       solved = true;
@@ -205,7 +204,7 @@ export class JupiterMission extends Mission {
     const xs = bigLeft ? [bigX, bigX + sep] : [bigX - sep, bigX];
     const balls = [p.left, p.right].map((kind, i) => this.makeBall(kind, xs[i]));
     const right = balls.find((ball) => ball.userData.choice === p.answer);
-    let solved = false, lastWrong = null, resolveRound;
+    let solved = false, resolveRound;
     const done = new Promise((resolve) => { resolveRound = resolve; });
     this.last = p.answer;
     this.phase = 'bigger';
@@ -215,9 +214,7 @@ export class JupiterMission extends Mission {
       this.poke();
       this.lookAt(ball);
       if (ball !== right) {
-        lastWrong = ball;
-        this.wrong(ball.userData.choice, { obj: ball, said: T.jupiterLook(p.ask) });
-        this.glowBall(right);
+        this.wrong(ball.userData.choice, { obj: ball });
         return;
       }
       solved = true;
@@ -240,8 +237,7 @@ export class JupiterMission extends Mission {
     ui.bubble({ big: '?', pic: PLACES.jupiter.badge.label, onTap: () => this.replay() });
     this.question('comparison', p.ask, {
       short,
-      hint: () => T.lookCarefully(),
-      simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : balls.find((ball) => ball !== right && ball.parent)),
+      hint: () => T.lookCarefully(), // (two balls: the clue is also the middle step)
       reveal: () => this.hint(right, () => solved),
     }, { options: 2 });
     this.askAfter(this.talk, short);
@@ -325,27 +321,6 @@ export class JupiterMission extends Mission {
     return animate(420, (t) => {
       inner.scale.set(s0.x * (1 + Math.sin(t * Math.PI) * 0.06), s0.y * (1 + Math.sin(t * Math.PI) * 0.14), s0.z);
     }, ease.out);
-  }
-
-  glowPot(pot) {
-    const halo = pot?.userData.halo;
-    if (!halo) return;
-    halo.visible = true;
-    animate(900, (t) => { halo.material.opacity = 0.75 * (1 - t); halo.scale.setScalar(1 + t * 0.55); }, ease.linear).then(() => {
-      halo.visible = false;
-      halo.material.opacity = 0;
-      halo.scale.setScalar(1);
-    });
-  }
-
-  glowBall(ball) {
-    const halo = ball?.userData.halo;
-    if (!halo) return;
-    halo.visible = true;
-    animate(900, (t) => { halo.material.opacity = 0.5 * (1 - t); }, ease.linear).then(() => {
-      halo.visible = false;
-      halo.material.opacity = 0;
-    });
   }
 
   bounceBall(ball) {

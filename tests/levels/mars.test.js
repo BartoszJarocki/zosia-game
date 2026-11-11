@@ -61,7 +61,6 @@ test('Mars instructions are full Polish sentences and every new line reaches rec
   assert.deepEqual(T.marsDots(), ['Policz kropki! Do którego kamienia jedziemy?']);
   assert.deepEqual(T.marsRepeat(3), ['Gdzie jest numer trzy?']);
   assert.deepEqual(T.marsRight(), ['Brawo! Łazik dojechał!']);
-  assert.deepEqual(T.marsWrong(3), ['To nie ten kamień. Szukamy numeru trzy.']);
   assert.deepEqual(T.marsDone(), ['Brawo! Łazik zbadał wszystkie kamienie!']);
   assert.deepEqual(T.marsFact(), ['Mars ma dwa małe księżyce.']);
   assert.equal(HOME_TASKS.mars, 'Znajdź z mamą na spacerze czerwony kamyk!');
@@ -72,7 +71,6 @@ test('Mars instructions are full Polish sentences and every new line reaches rec
     'Brawo! Łazik zbadał wszystkie kamienie!', 'Mars ma dwa małe księżyce.',
     'Znajdź z mamą na spacerze czerwony kamyk!',
     ...Array.from({ length: 9 }, (_, i) => [`Jedziemy do kamienia z numerem ${['jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć'][i]}!`,
-      `Gdzie jest numer ${['jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć'][i]}?`,
-      `To nie ten kamień. Szukamy numeru ${['jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć'][i]}.`]).flat(),
+      `Gdzie jest numer ${['jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć'][i]}?`]).flat(),
   ]) assert.ok(recorded.includes(line), line);
 });

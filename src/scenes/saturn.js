@@ -227,8 +227,7 @@ export class SaturnMission extends Mission {
         if (solved || this.phase !== 'asking') return;
         this.poke();
         if (kind !== piece.kind) {
-          this.glowRing(piece.kind);
-          this.wrong(kind, { obj: this.rings[kind].tap, said: T.saturnWrong(piece.kind) });
+          this.wrong(kind, { obj: this.rings[kind].tap });
           await this.jumpTo(obj, home, { height: 0.5, ms: 420 });
           return;
         }
@@ -277,8 +276,7 @@ export class SaturnMission extends Mission {
         this.last = piece.kind;
         this.question('sorting', piece.kind, {
           short: prompt,
-          hint: () => (this.L.named ? T.saturnRight(piece.kind) : T.saturnHint(piece.kind)),
-          simplify: () => { this.glowRing(piece.kind); return T.saturnRight(piece.kind); },
+          hint: () => (this.L.named ? T.saturnRight(piece.kind) : T.saturnHint(piece.kind)), // (two rings: also the middle step)
           reveal: () => this.hint(this.rings[piece.kind].mesh, () => solved),
         }, { options: 2 });
         this.ask(prompt);
@@ -310,17 +308,6 @@ export class SaturnMission extends Mission {
     const radius = Math.hypot(at.x, at.z - this.saturn.position.z);
     if (radius < INNER[0] - 0.4 || radius > OUTER[1] + 0.6) return null;
     return Math.abs(radius - mid(INNER)) <= Math.abs(radius - mid(OUTER)) ? 'ice' : 'rock';
-  }
-
-  glowRing(kind) {
-    const material = this.rings[kind].mesh.material;
-    const id = (material.userData.glow = (material.userData.glow || 0) + 1);
-    animate(1500, (t) => {
-      if (material.userData.glow !== id) return;
-      material.emissiveIntensity = Math.sin(t * Math.PI) * 0.9;
-    }, ease.linear)?.then?.(() => {
-      if (material.userData.glow === id) material.emissiveIntensity = 0;
-    });
   }
 
   fillGap(kind) {

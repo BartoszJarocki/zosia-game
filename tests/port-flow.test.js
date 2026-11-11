@@ -107,15 +107,16 @@ test('together claps the name once first, each horn toot lights a block, and the
   stop(s);
 });
 
-test('too few toots get the slow clap and a fresh try, then count as not first time', async () => {
+test('too few toots get "Za mało!" and the name again, not the clap, then a fresh try counts as not first time', async () => {
   const s = await scene(2);
   s.pick = () => 'FOKA';
   const round = s.round(0);
   await until(() => s.phase === 'asking');
   assert.equal(s.last, 2);
+  const before = globalThis.__lines.length;
   await choice(s, 'done').userData.onTap();
   await until(() => s.phase === 'asking');
-  assert.ok(globalThis.__lines.includes('Za mało! Posłuchaj jeszcze raz.'));
+  assert.deepEqual(globalThis.__lines.slice(before), ['Za mało! Posłuchaj jeszcze raz.', 'Ta łódka nazywa się Foka.', 'Zatrąb jej imię po kawałku!']);
   assert.equal(s.count, 0);
   assert.equal(s.last, 2);
   assert.equal(s.answers.length, 0);
