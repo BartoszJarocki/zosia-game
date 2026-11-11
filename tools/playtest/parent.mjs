@@ -4,7 +4,7 @@ process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: 1180, height: 820 }, hasTouch: true });
 const page = await context.newPage();
-await page.goto('http://localhost:4190/?q=high');
+await page.goto(`${process.env.BASE || 'http://localhost:4190'}/?q=high`);
 await page.waitForSelector('.start .play');
 await page.waitForTimeout(1200);
 const b = await page.locator('.play').boundingBox();

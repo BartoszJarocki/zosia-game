@@ -4,7 +4,7 @@ import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 const [name] = process.argv.slice(2);
-const OUT = `probes/${name}/`;
+const OUT = `${process.env.OUTDIR || 'probes'}/${name}/`;
 mkdirSync(OUT, { recursive: true });
 const W = 1180, H = 820;
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
@@ -34,7 +34,7 @@ const at = (fn, a) => st(fn, a);
 const project = (expr) => st(new Function('arg', `const { getStage, camera } = window.__pup; const s = getStage(); const o = (${expr})(s); if (!o) return null; const p = o.getWorldPosition(o.position.clone()); p.y += (o.userData.tapHeight ?? 0.3); p.project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight };`));
 const marker = (kind) => st((kind) => { const { getStage, camera } = window.__pup; const m = getStage().markers?.[kind]?.marker; if (!m) return null; const p = m.getWorldPosition(m.position.clone()); p.project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight }; }, kind);
 
-await page.goto('http://localhost:4190/?q=high');
+await page.goto(`${process.env.BASE || 'http://localhost:4190'}/?q=high`);
 await page.waitForSelector('.start .play');
 await page.waitForTimeout(1200);
 const pb = await page.locator('.play').boundingBox();
