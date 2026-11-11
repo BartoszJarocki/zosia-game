@@ -14,8 +14,11 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 
 1. **Start screen** — a big paw button (the tap also switches sound on, which iPads require).
 2. **Adventure Bay** — an island with the Lookout in the middle. Zosia and Chase sit in the police
-   cruiser. Tapping a place (or its bouncing star) drives them there. Each place shows its
-   level stars; the badge shelf in the corner shows what she has earned.
+   cruiser. Tapping a place (or its bouncing star) drives them there. A tap on the sea or the grass
+   drives nowhere unless it lands within 5% of the screen's short side of something she can tap (a
+   mission forgives 14%). Every place has one plain gold star; Chase's blue paw print bounces by the star
+   of the place he suggests. The level stars are on the mission screen and the celebration, not on the island.
+   The badge shelf in the corner shows what she has earned.
 3. **A mission** — short: a few rounds (the `rounds` column below; paw prints at the top fill in).
    The speech bubble shows what to look for, and tapping it repeats the question.
    Help comes step by step and is the same in every mission:
