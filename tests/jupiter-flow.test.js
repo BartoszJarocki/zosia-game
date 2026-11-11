@@ -97,7 +97,7 @@ test('a wrong pot wiggles back, the right one glows, then the row is said aloud'
   assert.equal(s.answers[0].options, 3);
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
-  assert.equal(globalThis.__lines.at(-1), 'Biały, pomarańczowy, biały, pomarańczowy, biały, pomarańczowy!');
+  assert.equal(globalThis.__lines.at(-1), 'Biały, pomarańczowy!', 'the pattern once');
   const blank = s.roundObjects.find((o) => o.userData.blank);
   assert.equal(blank.userData.inner.material.color.getHexString(), 'ef8b31');
   stop(s);

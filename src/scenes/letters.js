@@ -5,7 +5,7 @@ import { makeBush } from '../world/nature.js';
 import { makeFence, makeBench, makeLamp } from '../world/props.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
 import { letterWord, showLetter } from '../config.js';
-import { say, sfx } from '../audio.js';
+import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
@@ -156,7 +156,8 @@ export class LettersMission extends Mission {
             // the first time "Znalazłaś kotka! Es jak ser!" (that is the praise); then shorter, "Brawo! Es jak ser!",
             // so she gets the next one sooner. Letter sounds: "Brawo! Mmmm… to Em!" (she knows the story by then)
             const lines = ask === 'sound' ? [this.praise(), ...T.soundIs(target)] : r === 0 ? T.kittyFound(target) : [this.praise(), ...T.letterLike(target)];
-            await Promise.all([say(lines), this.toSeat(kitten)]);
+            this.talk = this.say(lines);
+            await this.toSeat(kitten);
             if (!this.alive) return;
             offKitten();
             b.removeFromParent();
@@ -200,9 +201,7 @@ export class LettersMission extends Mission {
           kitten.visible = true;
         },
       });
-      wait(500).then(() => {
-        if (this.alive) this.ask(prompt);
-      });
+      this.askAfter(Promise.all([wait(500), this.talk]), prompt);
     });
   }
 }

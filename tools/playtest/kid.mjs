@@ -7,6 +7,8 @@
 //                    does in the next 4 s (help level, whether the answer pulsed, glowed, was named or shown), then answers
 //   plan quick       taps the counting things (lamp, jumps, pebbles, horn, treats) once every 300 ms, as many times as
 //                    asked, and records how many the game counted
+// On a ride or a feast she can tap along with (the scene's along() names the thing), every plan but polite taps along
+// every 600 ms, and a die to roll is tapped before the answer. rounds[].alongMs: the part of the wait she tapped along.
 // Every plan logs each tap and the first sound after it (summary.json taps[]). tools/playtest/playcheck.mjs judges them.
 // env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
 //   FINALE=1 makes the session's finale due first (play it with `lookout`)
@@ -24,7 +26,7 @@ const OUT = `${process.env.OUTDIR || 'out'}/${kind}-L${level}-${plan}${process.e
 mkdirSync(`${OUT}film`, { recursive: true });
 const BASE = process.env.BASE || 'http://localhost:4190';
 const FILM = Number(process.env.FILM ?? 3);
-const QUICK_MS = 300, WATCH_MS = 4000; // (the first idle help comes 6 s after a tap)
+const QUICK_MS = 300, WATCH_MS = 4000, ALONG_MS = 600; // (the first idle help comes 6 s after a tap)
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: Number(process.env.DSF || 1), hasTouch: true, isMobile: false });
@@ -70,6 +72,9 @@ await page.addInitScript(([kind, level, v]) => {
   // every finger that lands, with what the player meant to tap (window.__aim, set before each tap)
   const taps = (window.__taps = []);
   window.addEventListener('pointerdown', (e) => taps.push({ t: T(), canvas: e.target?.tagName === 'CANVAS', ...window.__aim }), true);
+  // a ride or a feast she can tap along with: when it starts and ends
+  let along = false;
+  setInterval(() => { const now = Boolean(window.__pup?.getStage?.()?.along?.()); if (now !== along) { along = now; log.push({ t: T(), type: 'along', on: now }); } }, 50);
   // frames per second, one sample a second
   const fps = (window.__fps = []);
   let n = 0, mark = performance.now();
@@ -135,9 +140,39 @@ const tap = async (o, why, aim = 'thing') => {
   await mark(`TAP ${o.label} (${why}) at ${Math.round(o.x)},${Math.round(o.y)}`);
   await page.touchscreen.tap(Math.max(2, Math.min(W - 2, o.x)), Math.max(2, Math.min(H - 2, o.y)));
 };
-const qState = () => st(() => { const s = window.__pup.getStage(); const q = s?.learn?.current; return { kind: s?.kind, open: Boolean(q), id: q ? `${q.skill}:${q.item}:${q.round}:${q.openedAt}` : null, skill: q?.skill, item: q?.item, round: s?.roundIndex, rounds: s?.rounds, speaking: Boolean(s?.speaking), celebrated: Boolean(window.__celebrated), t: window.__T(), opened: q ? Math.round(q.openedAt - window.__t0) : null, bubble: document.querySelector('.bubble')?.innerText.replace(/\s+/g, ' ').trim() }; });
+const qState = () => st(() => { const s = window.__pup.getStage(); const q = s?.learn?.current; return { kind: s?.kind, open: Boolean(q), along: Boolean(s?.along?.()), id: q ? `${q.skill}:${q.item}:${q.round}:${q.openedAt}` : null, skill: q?.skill, item: q?.item, round: s?.roundIndex, rounds: s?.rounds, speaking: Boolean(s?.speaking), celebrated: Boolean(window.__celebrated), t: window.__T(), opened: q ? Math.round(q.openedAt - window.__t0) : null, bubble: document.querySelector('.bubble')?.innerText.replace(/\s+/g, ' ').trim() }; });
 const waitFor = async (pred, ms, every = 100) => { const end = Date.now() + ms; for (;;) { const s = await qState(); if (pred(s)) return s; if (Date.now() > end) return null; await page.waitForTimeout(every); } };
 const solved = (id) => (s) => s.celebrated || s.id !== id;
+/** What she can tap along with now (the lit floor sign, the next treat, the die), on screen. */
+const alongThing = () => st(() => {
+  const s = window.__pup.getStage(), o = s?.along?.();
+  if (!o) return null;
+  const p = o.getWorldPosition(new o.position.constructor()); p.y += o.userData.tapHeight ?? 0.3; p.project(window.__pup.camera);
+  return { label: 'along', x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight };
+});
+/** A question can start with something to watch (a quick look, pebbles falling): wait for something to answer with. */
+const answerable = async (q) => {
+  for (const end = Date.now() + 20000; Date.now() < end; await page.waitForTimeout(200)) {
+    const s = await qState();
+    if (s.celebrated || s.id !== q.id) return;
+    if ((await options()).some((o) => o.right || ['plate', 'left', COUNT_THING[kind]].includes(o.label))) return;
+  }
+};
+/** Between questions: wait for the next one, tapping along on a ride or a feast. */
+const nextQuestion = async () => {
+  const end = Date.now() + 45000;
+  let last = 0;
+  for (;;) {
+    const s = await qState();
+    if (s.open || s.celebrated) return s;
+    if (Date.now() > end) return null;
+    if (s.along && plan !== 'polite' && Date.now() - last > ALONG_MS) {
+      const o = await alongThing();
+      if (o) { await tap(o, 'tap along'); last = Date.now(); }
+    }
+    await page.waitForTimeout(100);
+  }
+};
 
 // the counting games: what she taps to make the count, and the game's own count (Treat House: the treats that left the pile)
 const COUNT_THING = { moon: 'Chase', blackhole: 'pebble', lighthouse: 'lamp', port: 'horn', counting: 'bone' };
@@ -319,7 +354,7 @@ await snap('mission-open');
 const rounds = [];
 const rand = (a, b) => a + Math.random() * (b - a);
 for (let r = 0; r < 24; r++) {
-  const s0 = await waitFor((s) => s.open || s.celebrated, 45000);
+  const s0 = await nextQuestion();
   if (!s0) { await mark('STUCK: no open question and no celebration for 45 s'); await snap(`r${r + 1}-stuck`); rounds.push({ r: r + 1, stuck: true }); break; }
   if (s0.celebrated) break;
   if (plan === 'polite') await waitFor((s) => !s.speaking || s.celebrated, 30000);
@@ -327,6 +362,7 @@ for (let r = 0; r < 24; r++) {
   // times are the game's own: when the question opened and when her answer counted (the player's screenshots take no part)
   const rec = { r: r + 1, q: `${q.skill}:${q.item}`, bubble: q.bubble, tOpen: q.opened ?? q.t, tSeen: q.t, spokeWhenOpen: q.speaking, taps: 0, ignored: 0 };
   await mark(`QUESTION ${rec.q} bubble="${q.bubble}" speaking=${q.speaking}`);
+  await answerable(q);
   await page.waitForTimeout(350);
   await snap(`r${r + 1}-asked`);
   let opts = await options();
@@ -388,6 +424,10 @@ for (let r = 0; r < 24; r++) {
   while (Date.now() < deadline) {
     const cur = await qState();
     if (cur.celebrated || cur.id !== q.id) { last = cur; break; }
+    if (cur.along && plan !== 'polite') { // (a die to roll first)
+      const o = await alongThing();
+      if (o) { await tap(o, 'first'); rec.taps++; await page.waitForTimeout(ALONG_MS); continue; }
+    }
     opts = await options();
     if (kind === 'picnic') {
       const sides = opts.filter((o) => o.label === 'left' || o.label === 'right');
@@ -400,6 +440,7 @@ for (let r = 0; r < 24; r++) {
       if (p) { await tap(p, 'hungry plate'); rec.taps++; }
       await page.waitForTimeout(500);
     } else if (multi) {
+      if (!(await nextThing())) { await page.waitForTimeout(300); continue; } // (nothing to count with yet: she watches)
       if (plan === 'quick' && !rec.quick) {
         rec.quick = await quickTaps(q, rec, target);
         await mark(`QUICK ${rec.quick.what}: ${rec.quick.counted} of ${rec.quick.made} counted`);
@@ -427,6 +468,7 @@ for (let r = 0; r < 24; r++) {
     return e ? Math.round(e.at - window.__epoch0) : null;
   }, [q.skill, String(q.item), rec.tOpen])) ?? last.t;
   rec.tSolvedSeen = last.t;
+  if (plan !== 'polite') { const o = await alongThing(); if (o) await tap(o, 'tap along'); } // (at once: a feast can be short)
   await page.waitForTimeout(500);
   await snap(`r${r + 1}-answered`);
   rounds.push(rec);
@@ -444,11 +486,19 @@ const celebratedAt = await st(() => window.__celebrated || null);
 const savedLevel = await st((k) => JSON.parse(localStorage.getItem('pup-patrol-progress') || 'null')?.missions?.[k]?.level ?? null, kind);
 // each round: when she could first answer, how long the game then took to ask the next thing
 // (waitSeenMs: the same wait as the player saw it, after its own pauses and screenshots: how the November review measured it)
+// alongMs: the part of that wait spent on a ride or a feast she tapped along with (a tap there that got a sound)
+const allTaps = await st(() => window.__taps), allSounds = await st(() => window.__sounds);
+const alongSpans = timeline.filter((e) => e.type === 'along').reduce((spans, e) => (e.on ? [...spans, { from: e.t, to: Infinity }] : (spans.length && (spans.at(-1).to = e.t), spans)), []);
+const tappedAlong = (span) => allTaps.some((t) => t.label === 'along' && t.t >= span.from && t.t < span.to && allSounds.some((x) => x.t >= t.t && x.at - t.t <= 1000));
 for (let i = 0; i < rounds.length; i++) {
   const a = rounds[i], b = rounds[i + 1];
   a.answerMs = a.tSolved != null ? a.tSolved - a.tOpen : null;
   a.waitNextMs = a.tSolved != null ? ((b?.tOpen ?? celebratedAt ?? tEnd) - a.tSolved) : null;
   a.waitSeenMs = a.tSolvedSeen != null ? ((b?.tSeen ?? celebratedAt ?? tEnd) - a.tSolvedSeen) : null;
+  if (a.waitNextMs != null) {
+    const from = a.tSolved, to = a.tSolved + a.waitNextMs;
+    a.alongMs = alongSpans.filter(tappedAlong).reduce((ms, sp) => ms + Math.max(0, Math.min(to, sp.to) - Math.max(from, sp.from)), 0);
+  }
 }
 // each tap: the first sound heard after it. A voice clip answers it only when its line was asked for after the tap
 // (a line already being spoken just goes on).
@@ -472,6 +522,7 @@ const lines = timeline.map((e) => {
   if (e.type === 'say') return `${t}  SAY   ${e.text}`;
   if (e.type === 'me') return `${t}  ----  ${e.text}${/^TAP /.test(e.text) && silent.some((x) => x.t >= e.t && x.t - e.t < 300) ? '  (no sound)' : ''}`;
   if (e.type === 'clip') return `${t}  clip  ${e.ms} ms${e.cut ? `  CUT OFF after ${e.stoppedAt - e.t} ms` : ''}`;
+  if (e.type === 'along') return `${t}  ----  (${e.on ? 'a ride or a feast to tap along with starts' : 'it ends'})`;
   return `${t}  ${e.type}`;
 });
 writeFileSync(`${OUT}transcript.txt`, lines.join('\n') + `\n\nerrors: ${JSON.stringify(errors)}\nconsole: ${JSON.stringify(consoleErrors.slice(0, 10))}\n`);

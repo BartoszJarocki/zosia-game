@@ -85,6 +85,16 @@ test('rule 3 fails a middle wait over 4 s, or a longest wait over 8 s', () => {
   assert.equal(playsMoreThanWatches([run('river', 'fast', { rounds: waits(2000, 3000, 9000, 1000) })]).pass, false);
 });
 
+test('rule 3 counts a ride or a feast she tapped along with as hers, not as watching', () => {
+  const ride = (ms, along) => ({ q: 'numeral:3', answerMs: 1500, waitNextMs: ms, alongMs: along });
+  const rounds = [ride(12000, 9000), ride(11000, 8000), ride(3000, 0), ride(5000, 0)];
+  const v = playsMoreThanWatches([run('lookout', 'fast', { rounds })]);
+  assert.equal(v.pass, true);
+  assert.match(v.why, /middle 3\.0 s, longest 3\.0 s, not counting 17\.0 s she tapped along/);
+  const watched = rounds.map((x) => ({ ...x, alongMs: 0 }));
+  assert.equal(playsMoreThanWatches([run('lookout', 'fast', { rounds: watched })]).pass, false, 'the same rides watched');
+});
+
 test('rule 3 reads the fast run only', () => {
   const v = playsMoreThanWatches([run('moon', 'mash', { rounds: waits(20000, 20000, 1000) }), run('moon', 'fast', { rounds: waits(2000, 2000, 1000) })]);
   assert.equal(v.pass, true);

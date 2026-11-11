@@ -6,12 +6,12 @@ import { makeCloud } from '../world/nature.js';
 import { makeRocket, makeLaunchPad } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { say, sfx, hush, unlockAudio } from '../audio.js';
-import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS } from '../lang/pl.js';
+import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_FACTS } from '../lang/pl.js';
 import { PLACES, placesIn } from '../places.js';
 import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, launchHud } from '../ui.js';
-import { AreaMap, fitView } from './area-map.js';
-export { MOVES, nextState, flightStops } from './area-map.js';
+import { AreaMap, fitView, WIPE_MS } from './area-map.js';
+export { MOVES, nextState, flightMs } from './area-map.js';
 
 const rand = (seed) => () => {
   seed = (seed + 0x6d2b79f5) | 0;
@@ -453,7 +453,6 @@ const SPACE = {
   layout: LAYOUT,
   lines: SPACE_LINES,
   to: SPACE_TO,
-  pass: SPACE_PASS,
   facts: SPACE_FACTS,
   invite: SPACE_INVITE,
   decide: mapDecision,
@@ -503,10 +502,13 @@ export class Space extends AreaMap {
     this.rocket.userData.window.material.needsUpdate = true;
   }
 
-  startLaunch() {
+  /** The first trip of the session: helmets, boarding and the countdown. A later one: the crew is aboard, START is there. */
+  startLaunch(first) {
     this.map.visible = false;
     this.buildPad();
-    this.prepareLaunch();
+    this.quick = !first;
+    if (first) this.prepareLaunch();
+    else { this.board(); wait(WIPE_MS).then(() => { if (this.alive) this.offerStart(); }); }
   }
 
   padView() { return PAD_VIEW; }
@@ -669,16 +671,25 @@ export class Space extends AreaMap {
       });
     })]);
     if (!this.alive) return;
-    this.crew.visible = false;
-    this.rocket.userData.window.material.map = this.portraits[0].texture;
-    this.rocket.userData.window.material.color.set('#ffffff');
-    this.rocket.userData.window.material.needsUpdate = true;
+    this.board();
     let numeral = null;
     await Promise.all([say(SPACE_LINES.countdown), animate(6200, (t) => {
       const n = Math.max(1, 5 - Math.floor(Math.max(0, t * 6.2 - 1.2)));
       if (n !== numeral) { numeral = n; this.launchUi.number(n); }
     }, ease.linear)]);
     if (!this.alive) return;
+    this.offerStart();
+  }
+
+  /** The crew is in the rocket: their faces in its window. */
+  board() {
+    this.crew.visible = false;
+    this.rocket.userData.window.material.map = this.portraits[0].texture;
+    this.rocket.userData.window.material.color.set('#ffffff');
+    this.rocket.userData.window.material.needsUpdate = true;
+  }
+
+  offerStart() {
     this.launchUi.start(() => {
       if (!this.alive || this.state !== 'launch') return;
       unlockAudio();
@@ -695,7 +706,7 @@ export class Space extends AreaMap {
     sfx.whoosh();
     this.rocket.userData.flame.visible = true;
     const blue = new THREE.Color('#9cddff'), violet = new THREE.Color('#8260c7');
-    await animate(5200, (t) => {
+    await animate(this.quick ? 2400 : 5200, (t) => {
       this.rocket.position.y = 2.8 + t * 27;
       this.scene.background.copy(blue).lerp(violet, t);
       this.view.look.lerpVectors(PAD_VIEW.look, new THREE.Vector3(-1, 27, 0), t);
@@ -704,9 +715,11 @@ export class Space extends AreaMap {
       this.launchEarth.scale.setScalar(Math.max(0.01, (t - 0.45) / 0.55));
     }, ease.inOut);
     if (!this.alive) return;
-    await say(SPACE_LINES.earth);
-    await wait(700);
-    if (!this.alive) return;
+    if (!this.quick) {
+      await say(SPACE_LINES.earth);
+      await wait(700);
+      if (!this.alive) return;
+    }
     const { pawWipe } = await import('../fx/transition.js');
     await pawWipe(() => {
       if (!this.alive) return;

@@ -133,14 +133,13 @@ test('five taps 100 ms apart light five beads immediately and queue all five num
   assert.deepEqual(globalThis.__lines.filter((line) => /^(Jeden|Dwa|Trzy|Cztery|Pięć)!$/.test(line)), ['Jeden!']);
   globalThis.__holdLine = null; globalThis.__finishLine();
   await flush();
-  assert.deepEqual(globalThis.__lines.slice(-5), ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!', 'Pięć!']);
+  assert.deepEqual(globalThis.__lines.slice(-6), ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!', 'Pięć!', 'Czarna dziura świeci jak lampka!'], 'praised while the pebbles fly');
   await advance(2399);
   assert.equal(finished, false);
   assert.ok(launched.at(-1).parent);
-  assert.ok(!globalThis.__lines.includes('Czarna dziura świeci jak lampka!'));
-  await advance(651); await round;
+  await advance(1); await round;
   assert.ok(launched.every((p) => !p.parent));
-  assert.equal(finished, true);
+  assert.equal(finished, true, 'the round ends when her last pebble is in');
 });
 
 test('the manual button judges the lit beads while pebbles are still flying', async (t) => {
@@ -218,23 +217,21 @@ test('too many darkens the extra beads during flights and arrivals do not religh
   assert.equal(extra.material.opacity, 0.6);
 });
 
-test('auto finishes after the last spoken number and does not score', async () => {
+test('auto finishes with the last pebble, praises after its number and does not score', async () => {
   const s = await scene(1);
-  let finished = false;
-  const round = s.dropRound(true).then(() => { finished = true; });
+  const round = s.dropRound(true);
   assert.equal(s.button.visible, false);
   globalThis.__holdLine = 'Jeden!';
   const tap = s.pebbles[0].userData.onTap();
   await until(() => globalThis.__finishLine);
   assert.equal(s.beads.length, 1);
-  assert.equal(finished, false);
   await s.pebbles[1].userData.onTap();
   assert.equal(s.beads.length, 1);
   globalThis.__holdLine = null; globalThis.__finishLine();
-  await tap; await round;
+  await tap; await round; await s.talk;
   assert.equal(s.answers[0].scored, false);
   assert.deepEqual(scoreRun(s.answers), { scored: 0, clean: 0 });
-  assert.equal(globalThis.__lines.at(-1), 'Czarna dziura świeci jak lampka!');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Jeden!', 'Czarna dziura świeci jak lampka!']);
   stop(s);
 });
 
@@ -262,14 +259,14 @@ test('howMany flights are silent; each bead can be counted once before the score
   assert.deepEqual(s.blocks.map((b) => b.userData.num).sort(), [2, 3, 4]);
   assert.ok(s.pebbles.every((p) => !p.visible));
   s.beads[1].userData.onTap(); s.beads[1].userData.onTap(); s.beads[0].userData.onTap();
-  await flush();
+  await until(() => globalThis.__lines.includes('Dwa!'));
   assert.deepEqual(globalThis.__lines.slice(-2), ['Jeden!', 'Dwa!']);
   s.blocks.find((b) => b.userData.num === 2).userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
   s.blocks.find((b) => b.userData.num === 3).userData.onTap();
-  await round;
-  assert.deepEqual(globalThis.__lines.slice(-3), ['Jeden!', 'Dwa!', 'Trzy!']);
+  await round; await s.talk;
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Tak!', 'Trzy!'], 'her number, once: no count through');
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].options, 3);
@@ -279,26 +276,26 @@ test('howMany flights are silent; each bead can be counted once before the score
   stop(s);
 });
 
-test('howMany still flies one pebble at a time and counts only on arrival', async (t) => {
+test('howMany pebbles fall 0.4 s apart, each counts on arrival, and the question is open as they start', async (t) => {
   const s = await scene(), advance = clock(t);
   t.after(() => stop(s));
   const pebbles = [...s.pebbles];
   globalThis.__animations = [];
   const round = s.howManyRound();
+  await flush();
+  assert.equal(s.learn.current?.skill, 'quantity');
   await advance(2399);
   assert.equal(s.beads.length, 0);
-  assert.equal(globalThis.__animations.filter((ms) => ms === 2400).length, 1);
+  assert.equal(globalThis.__animations.filter((ms) => ms === 2400).length, 3);
   await advance(1);
   assert.equal(s.beads.length, 1);
-  assert.deepEqual(pebbles[0].position, pebbles[0].userData.home);
-  await advance(220);
-  assert.equal(globalThis.__animations.filter((ms) => ms === 2400).length, 2);
-  await advance(2400);
+  await advance(400);
   assert.equal(s.beads.length, 2);
-  await advance(2840);
+  await advance(400);
   assert.equal(s.beads.length, 3);
   assert.equal(s.phase, 'choosing');
   assert.deepEqual(s.pebbles, pebbles);
+  assert.ok(pebbles.every((p) => p.position.equals(p.userData.home)), 'the shelf keeps its pebbles');
   s.blocks.find((b) => b.userData.num === 3).userData.onTap();
   await advance(350); await round;
 });

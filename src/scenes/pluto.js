@@ -14,6 +14,7 @@ import { Mission } from './mission.js';
 
 const PIECE = '#f9a8d4'; // one colour for every piece: colour never gives the answer
 const DIM = '#b67f9c', BRIGHT = '#ffd9ec';
+const SEEN_MS = 600; // the heart lit, in view, before the next pieces
 const GROUND_Y = 0.025, PIECE_Y = 0.72, PIECE_Z = 2.8, GAP = 2.55;
 const across = (n) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * GAP);
 
@@ -165,7 +166,8 @@ export class PlutoMission extends Mission {
           this.brightenHeart();
           sparkle(this, this.heart.getWorldPosition(new THREE.Vector3()), { count: 12 });
           this.success();
-          await this.say(T.plutoRight());
+          this.talk = this.say(T.plutoRight());
+          await wait(SEEN_MS);
           resolve();
         } else {
           lastWrong = o;
@@ -180,7 +182,7 @@ export class PlutoMission extends Mission {
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : objs.find((o) => o !== right && o.parent)),
         reveal: () => this.hint(right, () => solved),
       }, { options: objs.length });
-      this.ask(T.plutoAsk());
+      this.askAfter(this.talk, T.plutoAsk());
     });
   }
 

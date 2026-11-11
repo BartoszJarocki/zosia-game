@@ -5,11 +5,12 @@ import { say, hush } from '../audio.js';
 import { PLACES, placesIn } from '../places.js';
 import { getVisited, recordVisit } from '../progress.js';
 import { getSession, checkAttention } from '../session/session.js';
+import { firstTrip, noteTrip } from '../session/director.js';
 
 export const MOVES = {
   launch: ['waiting'],
   waiting: ['flying', 'returning'],
-  flying: ['visiting', 'returning'],
+  flying: ['flying', 'visiting', 'returning'], // (flying again: she tapped another stop on the way, the course changes)
   visiting: ['waiting', 'returning'],
   returning: [],
 };
@@ -19,14 +20,12 @@ export function nextState(state, next) {
   return next;
 }
 
-export function flightStops(from, to) {
-  const out = [];
-  const direction = Math.sign(to - from);
-  if (!direction) return out;
-  for (let i = direction > 0 ? Math.floor(from) + 1 : Math.ceil(from) - 1;
-    direction > 0 ? i <= to : i >= to; i += direction) out.push(i);
-  return out;
-}
+/** A later trip offers START once the paw wipe has opened (while it opens, it takes the taps). */
+export const WIPE_MS = 800;
+
+/** A flight glides along the road straight to its stop, without stopping on the way: longer for a farther stop, never long. */
+export const FLIGHT = { baseMs: 1000, perStopMs: 250, maxMs: 3000 };
+export const flightMs = (from, to) => Math.min(FLIGHT.maxMs, FLIGHT.baseMs + FLIGHT.perStopMs * Math.abs(to - from));
 
 const copyView = (view) => ({ pos: view.pos.clone(), look: view.look.clone(), minWidth: view.minWidth });
 
@@ -56,7 +55,6 @@ export class AreaMap extends Stage {
     this.layout = config.layout;
     this.lines = config.lines;
     this.to = config.to;
-    this.pass = config.pass;
     this.facts = config.facts;
     this.invite = config.invite;
     this.decide = config.decide;
@@ -118,7 +116,9 @@ export class AreaMap extends Stage {
     };
     window.addEventListener('resize', this.resize);
     if (this.state === 'launch') {
-      this.startLaunch();
+      const first = firstTrip(getSession(), this.area);
+      noteTrip(getSession(), this.area);
+      this.startLaunch(first);
     } else {
       this.parkVehicle();
       this.showHud();
@@ -172,9 +172,12 @@ export class AreaMap extends Stage {
       if (kind === this.visiting) this.fact();
       return;
     }
-    if (this.state !== 'waiting') return;
+    if (this.state === 'flying' && kind === this.heading) return;
+    if (!['waiting', 'flying'].includes(this.state)) return;
     if (kind === this.home) return this.returnHome();
+    if (this.state === 'flying') hush(); // a new course: the line for the old stop stops
     this.changeState('flying');
+    this.heading = kind;
     const revision = this.revision;
     this.suggestion.visible = false;
     await this.flyTo(kind, this.to[kind]);
@@ -182,35 +185,25 @@ export class AreaMap extends Stage {
     await this.visit(kind);
   }
 
+  /** Straight to the stop, from wherever the vehicle is now, with one line. Resolves when it has parked there. */
   async flyTo(kind, line) {
     const revision = this.revision;
-    const target = this.order.indexOf(kind);
-    const stops = flightStops(this.routeIndex, target);
+    const from = this.routeIndex, to = this.order.indexOf(kind), dir = Math.sign(to - from);
     this.startFlight();
-    let talk = say(line);
-    for (const index of stops) {
-      if (!this.alive || revision !== this.revision) return;
-      const from = this.routeIndex;
-      const far = this.layout[this.order[index]].far && !this.layout[this.order[Math.floor(from)]].far;
-      if (far) {
-        await talk;
-        if (!this.alive || revision !== this.revision) return;
-        talk = say(this.lines.far);
-      }
-      const a = this.curve.getPoint(from / (this.order.length - 1));
-      const b = this.curve.getPoint(index / (this.order.length - 1));
-      const dir = b.clone().sub(a);
-      const angle = Math.atan2(-dir.dot(this.right), dir.dot(this.up));
-      await Promise.all([talk, animate(Math.max(1100, a.distanceTo(b) * (far ? 190 : 105)), (t) => {
-        if (revision !== this.revision) return;
-        this.positionVehicle(from + (index - from) * t);
-        this.rotateVehicle(angle);
-      }, ease.inOut)]);
-      if (!this.alive || revision !== this.revision) return;
-      talk = index !== target && this.pass[this.order[index]] ? say(this.pass[this.order[index]]) : Promise.resolve();
-    }
-    await talk;
+    const talk = say(line);
+    await Promise.all([talk, animate(flightMs(from, to), (t) => {
+      if (revision !== this.revision) return;
+      const at = from + (to - from) * t;
+      this.positionVehicle(at);
+      if (dir) this.rotateVehicle(this.headingAt(at, dir));
+    }, ease.inOut)]);
     if (this.alive && revision === this.revision) this.parkVehicle();
+  }
+
+  /** The way the vehicle faces at a point of the road, flying towards higher stops (dir 1) or lower ones (-1). */
+  headingAt(index, dir) {
+    const d = this.curve.getTangent(Math.min(1, Math.max(0, index / (this.order.length - 1)))).multiplyScalar(dir);
+    return Math.atan2(-d.dot(this.right), d.dot(this.up));
   }
 
   async moveView(to, ms = 1100) {
@@ -284,8 +277,7 @@ export class AreaMap extends Stage {
     const talk = say(line);
     await this.moveView(this.mapView, 800);
     if (!this.alive) return;
-    await talk;
-    await this.flyTo(this.home, []);
+    await Promise.all([talk, this.flyTo(this.home, [])]);
     if (!this.alive) return;
     await animate(650, (t) => this.shrinkVehicle(t));
     if (this.alive) this.game.hub();

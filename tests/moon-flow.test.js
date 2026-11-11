@@ -157,7 +157,7 @@ test('howMany watches silently, touch-counts once per pair and scores the numera
   assert.ok(s.ghosts.every((p) => p.visible));
   s.blocks.find((b) => b.userData.num === 3).userData.onTap();
   await round;
-  assert.deepEqual(globalThis.__lines.slice(-3), ['Jeden!', 'Dwa!', 'Trzy!']);
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Tak!', 'Trzy!'], 'her number, once: no count through');
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);

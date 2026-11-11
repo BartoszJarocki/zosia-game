@@ -3,7 +3,7 @@ import { animate, ease, wait, hop } from '../engine.js';
 import { mesh, mat, rbox } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { sparkle } from '../fx/particles.js';
-import { say, sfx } from '../audio.js';
+import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
@@ -82,20 +82,20 @@ export class GarageMission extends Mission {
       return o;
     });
     await wait(700);
-    for (let k = 0; k < asks.length && this.alive; k++) await this.askShape(asks[k], { board, objs, mode, intro: first && k === 0 });
+    // the piece no one asks for has only one place left: it hops in by itself after the last answer ("I kwadrat!")
+    const leftover = mode === 'shown' ? null : pieces.find((p) => !asks.includes(p.shape))?.shape;
+    for (let k = 0; k < asks.length && this.alive; k++) {
+      const after = k === asks.length - 1 ? [...(leftover ? T.shapeLast(leftover) : []), ...T.doorFixed()] : [];
+      await this.askShape(asks[k], { board, objs, mode, intro: first && k === 0, after });
+    }
     if (!this.alive) return;
     const last = objs.find((o) => !o.userData.placed);
-    if (mode !== 'shown' && last) { // the last piece has only one place left: it hops in by itself
-      await say(T.shapeLast(last.userData.choice));
-      if (!this.alive) return;
-      await this.fitPiece(last, board);
-    }
+    if (leftover && last) await this.fitPiece(last, board);
+    if (!this.alive) return;
     objs.filter((o) => !o.userData.placed).forEach((o) => this.shrinkAway(o, 350));
     sfx.good();
     sparkle(this, board.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.6, 0.5)), { count: 26 });
     this.cheer(2);
-    await say(T.doorFixed());
-    if (!this.alive) return;
     // the mended door goes back onto the cruiser
     const from = board.position.clone(), to = this.cruiser.position.clone().add(new THREE.Vector3(0, 1.1, 1.2));
     sfx.whoosh();
@@ -112,7 +112,7 @@ export class GarageMission extends Mission {
   }
 
   /** One question: "Gdzie jest kwadrat?" (or, with one hole, "Który kształt pasuje? Koło!"). Resolves when it fits. */
-  askShape(target, { board, objs, mode, intro }) {
+  askShape(target, { board, objs, mode, intro, after = [] }) {
     return new Promise((resolve) => {
       const shown = mode === 'shown';
       const hole = board.userData.holes.find((h) => h.shape === target);
@@ -134,7 +134,7 @@ export class GarageMission extends Mission {
           await this.fitPiece(o, board);
           if (!this.alive) return;
           this.success(board.localToWorld(hole.at.clone()).add(new THREE.Vector3(0, 0.4, 0.4)));
-          await say([this.praise(), ...T.shape(target)]); // "Brawo! Koło!"
+          this.talk = this.say([this.praise(), ...T.shape(target), ...after]); // "Brawo! Koło!"
           resolve();
         } else {
           lastWrong = o;
@@ -162,7 +162,7 @@ export class GarageMission extends Mission {
         simplify: () => (shown ? this.removeOption(lastWrong?.parent ? lastWrong : live().find((o) => o !== right)) : clue()),
         reveal: () => this.hint(right, () => solved),
       }, { options: live().length });
-      this.ask(intro ? [...T.doorBroken(), ...prompt] : prompt);
+      this.askAfter(this.talk, intro ? [...T.doorBroken(), ...prompt] : prompt);
     });
   }
 
@@ -261,10 +261,8 @@ export class GarageMission extends Mission {
           sfx.ding();
           this.success(line.localToWorld(to.clone()).add(new THREE.Vector3(0, -0.4, 0.3)));
           stands.forEach((x) => this.shrinkAway(x, 300));
-          await say([this.praise(), ...T.flag(p.answer)]);
-          if (!this.alive) return;
-          await this.chant(p.row, hung); // the whole row, flag by flag: "Czerwona! Niebieska! Czerwona!…"
-          if (!this.alive) return;
+          // the pattern once, flag by flag ("Brawo! Czerwona! Niebieska!"), while the line goes up over the door
+          this.talk = this.say([this.praise()]).then(() => this.alive && this.chant(p.unit, hung));
           await this.hangOnGarage(bunting);
           resolve();
         } else {
@@ -292,7 +290,7 @@ export class GarageMission extends Mission {
         simplify: () => this.removeOption(lastWrong?.parent && lastWrong !== right ? lastWrong : foil),
         reveal: () => this.hint(right, () => solved, right.userData.flag),
       }, { options: stands.length });
-      wait(1500).then(() => { if (this.alive) this.ask(first ? [...T.flagsStart(), ...short] : short); });
+      this.askAfter(Promise.all([wait(1500), this.talk]), first ? [...T.flagsStart(), ...short] : short);
     });
   }
 
@@ -344,20 +342,21 @@ export class GarageMission extends Mission {
     });
     await wait(900);
     for (let k = 0; k < blocks.length && this.alive; k++) {
-      if (k > 0 && s.blocks[k].rule !== s.blocks[k - 1].rule) await this.switchRule(baskets, s.baskets);
-      if (!this.alive) return;
-      await this.sortBlock(s.blocks[k], blocks[k], { baskets, kinds: s.baskets, intro: first && k === 0, firstBlock: k === 0 });
+      const switched = k > 0 && s.blocks[k].rule !== s.blocks[k - 1].rule;
+      if (switched) this.switchRule(baskets, s.baskets);
+      await this.sortBlock(s.blocks[k], blocks[k], { baskets, kinds: s.baskets, intro: first && k === 0, firstBlock: k === 0, switched });
     }
     if (!this.alive) return;
     sfx.good();
     this.cheer(2);
     baskets.forEach((b, i) => wait(i * 120).then(() => hop(b, 0.3)));
-    await say(T.tidied());
+    this.talk = Promise.resolve(this.talk).then(() => this.alive && this.say(T.tidied()));
+    await wait(600);
     await Promise.all([pallet, ...baskets].map((o) => this.shrinkAway(o, 400)));
   }
 
   /** One block: it comes to the front, is named ("Czerwony klocek!"), and goes into a basket. */
-  sortBlock(block, obj, { baskets, kinds, intro, firstBlock }) {
+  sortBlock(block, obj, { baskets, kinds, intro, firstBlock, switched }) {
     return new Promise((resolve) => {
       const value = block[block.rule];
       const right = basketFor(block, kinds);
@@ -390,7 +389,7 @@ export class GarageMission extends Mission {
           sfx.crunch();
           hop(b, 0.2, 300);
           this.success(to.clone().add(new THREE.Vector3(0, 0.6, 0)));
-          await say([...this.yes(), ...T.into(block.rule, value)]); // "Tak! Czerwony do czerwonego!"
+          this.talk = this.say([...this.yes(), ...T.into(block.rule, value)]); // "Tak! Czerwony do czerwonego!"
           resolve();
         } else {
           lastWrong = i;
@@ -421,17 +420,16 @@ export class GarageMission extends Mission {
         hint: () => T.into(block.rule, value), // the rule is the clue: "Duży do dużego!"
         reveal: () => this.hint(baskets[right], () => solved),
       }, { options: baskets.length });
-      wait(500).then(() => { if (this.alive) this.ask([...(intro ? T.blocksStart() : []), ...named, ...(firstBlock ? T.whichBasket() : [])]); });
+      this.askAfter(Promise.all([wait(500), this.talk]), [...(intro ? T.blocksStart() : []), ...(switched ? T.sortSwitch() : []), ...named, ...(firstBlock ? T.whichBasket() : [])]);
     });
   }
 
-  /** The switch: Chase barks, the baskets bob big and small, "Teraz duże i małe! Duży do dużego, mały do małego!" */
-  async switchRule(baskets, kinds) {
+  /** The switch: Chase barks, the baskets bob big and small; the next block's question starts "Teraz duże i małe! …" */
+  switchRule(baskets, kinds) {
     sfx.bark();
     hop(this.pup, 0.6);
     this.pup.userData.setHappy(2);
     kinds.forEach((k, i) => wait(k.size === 'big' ? 300 : 900).then(() => hop(baskets[i], k.size === 'big' ? 0.5 : 0.3, 450)));
-    await this.say(T.sortSwitch());
   }
 }
 

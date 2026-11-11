@@ -15,7 +15,7 @@ import { say, sfx, hush } from '../audio.js';
 import { pick } from '../util.js';
 import { T, HOME_TASKS } from '../lang/pl.js';
 import { getSession, startSession, dev } from '../session/session.js';
-import { nextStep, suggestNext, callFinale, ending, sayGoodbye } from '../session/director.js';
+import { nextStep, suggestNext, callFinale, ending, sayGoodbye, firstTrip } from '../session/director.js';
 import { homeTaskKind } from '../session/home-task.js';
 import { confetti } from '../ui.js';
 import { PAW_PARTS } from '../paw.js';
@@ -435,8 +435,9 @@ export class Hub extends Stage {
     this.girl.userData.lookAt(p.pos.clone().add(new THREE.Vector3(0, 1, 0)), 3);
     this.pup.userData.lookAt(p.pos.clone().add(new THREE.Vector3(0, 1, 0)), 3);
     say(T.go(kind));
-    await this.drive(p);
-    await wait(200);
+    const again = PLACES[kind].leadsTo && !firstTrip(getSession(), PLACES[kind].leadsTo); // (she has seen this launch today)
+    await this.drive(p, again ? { ms: 600 } : undefined);
+    if (!again) await wait(200);
     if (this.alive) {
       if (PLACES[kind].leadsTo) this.game.map(PLACES[kind].leadsTo, { launch: true });
       else this.game.startMission(kind);

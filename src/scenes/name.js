@@ -529,13 +529,14 @@ class WhoseTrain extends Mission {
           this.success(t.userData.board.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.6, 0.3)));
           if (asked === NAME) { this.cheer(2); this.girl.userData.setHappy(3); hop(this.girl, 0.5); }
           ui.bubble({ word: [...asked].map(showLetter).join(''), done: [...asked].map((_, i) => i), onTap: () => {} });
-          await say([...this.yes(), ...T.whoseIs(whose)]);
+          this.talk = this.say([...this.yes(), ...T.whoseIs(whose)]);
+          await wait(400);
           if (!this.alive) return;
-          await this.leave(this.trains.filter((x) => x.parent));
+          this.leave(this.trains.filter((x) => x.parent)); // (off to the left as the next ones roll in from the right)
           resolve();
         };
         this.trains.forEach((t) => this.tappable(t, onTap));
-        this.ask(r === 0 ? [...T.trainsCame(), ...T.whoseAsk(whose)] : T.whoseAsk(whose));
+        this.askAfter(this.talk, r === 0 ? [...T.trainsCame(), ...T.whoseAsk(whose)] : T.whoseAsk(whose));
       });
     });
   }

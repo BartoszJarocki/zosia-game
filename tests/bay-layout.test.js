@@ -4,7 +4,7 @@ import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { PLACES, placesIn, homeArea } from '../src/places.js';
 import { shelfItems, BOAT_BADGE } from '../src/shelf.js';
-import { SEA_LINES, SEA_TO, SEA_PASS, SEA_INVITE, SEA_FACTS, allSegments } from '../src/lang/pl.js';
+import { SEA_LINES, SEA_TO, SEA_INVITE, SEA_FACTS, allSegments } from '../src/lang/pl.js';
 import { SEA_ORDER, BAY_LAYOUT, checkLayout } from '../src/levels/sea.js';
 
 registerHooks({ load(url, context, next) {
@@ -38,7 +38,7 @@ test('every sea place has a layout entry and the layout has no stray places', ()
   assert.throws(() => checkLayout(['missing']), { message: 'Missing sea layout for missing' });
 });
 
-test('every sea stop has its facts and every stop but home has to, pass and invite lines', () => {
+test('every sea stop has its facts and every stop but home has to and invite lines', () => {
   assert.deepEqual(Object.keys(SEA_FACTS).sort(), SEA_STOPS.slice().sort());
   for (const kind of SEA_STOPS) {
     assert.ok(SEA_FACTS[kind].length > 0, kind);
@@ -47,7 +47,7 @@ test('every sea stop has its facts and every stop but home has to, pass and invi
       assert.ok(line.includes(' '), `${kind}: full sentence`);
     }
     if (kind === 'island') continue;
-    for (const table of [SEA_TO, SEA_PASS, SEA_INVITE]) {
+    for (const table of [SEA_TO, SEA_INVITE]) {
       assert.ok([table[kind]].flat().length > 0, `${kind}: line`);
       for (const line of [table[kind]].flat()) assert.match(line, /^[A-ZĄĆĘŁŃÓŚŹŻ].*[.!?]$/, `${kind}: ${line}`);
     }
@@ -63,7 +63,7 @@ test('the sea has its own map, launch and home lines, all ready to record', () =
   assert.equal(SEA_LINES.goodnight[0], 'Robi się późno. Wracamy na wyspę.');
   assert.equal(SEA_LINES.inviteHome[0], 'Czas wracać na wyspę!');
   const segments = allSegments(LEVELS, ALL_LETTERS);
-  for (const line of [...Object.values(SEA_LINES).flat(), ...Object.values(SEA_FACTS).flat(), ...Object.values(SEA_TO), ...Object.values(SEA_PASS), ...Object.values(SEA_INVITE).flat()]) {
+  for (const line of [...Object.values(SEA_LINES).flat(), ...Object.values(SEA_FACTS).flat(), ...Object.values(SEA_TO), ...Object.values(SEA_INVITE).flat()]) {
     assert.ok(segments.includes(line), line);
   }
 });

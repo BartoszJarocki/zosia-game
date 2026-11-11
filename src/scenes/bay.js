@@ -5,13 +5,13 @@ import { makeGirl, makePup } from '../characters.js';
 import { makeCloud, makeHills } from '../world/nature.js';
 import { makeWater } from '../world/water.js';
 import { say, sfx, hush, unlockAudio } from '../audio.js';
-import { SEA_LINES, SEA_TO, SEA_PASS, SEA_INVITE, SEA_FACTS } from '../lang/pl.js';
+import { SEA_LINES, SEA_TO, SEA_INVITE, SEA_FACTS } from '../lang/pl.js';
 import { PLACES, placesIn } from '../places.js';
 import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, boatHud } from '../ui.js';
-import { AreaMap, fitView } from './area-map.js';
+import { AreaMap, fitView, WIPE_MS } from './area-map.js';
 import { BAY_LAYOUT, SEA_ORDER, checkLayout } from '../levels/sea.js';
-export { MOVES, nextState, flightStops } from './area-map.js';
+export { MOVES, nextState, flightMs } from './area-map.js';
 export { BAY_LAYOUT as LAYOUT, SEA_ORDER as ROAD_ORDER, checkLayout } from '../levels/sea.js';
 
 const TAU = Math.PI * 2;
@@ -337,7 +337,6 @@ const SEA = {
   layout: BAY_LAYOUT,
   lines: SEA_LINES,
   to: SEA_TO,
-  pass: SEA_PASS,
   facts: SEA_FACTS,
   invite: SEA_INVITE,
   decide: mapDecision,
@@ -411,10 +410,13 @@ export class Bay extends AreaMap {
     this.cruiser.userData.window.material.needsUpdate = true;
   }
 
-  startLaunch() {
+  /** The first trip of the session: life jackets and boarding. A later one: the crew is aboard, the horn is there. */
+  startLaunch(first) {
     this.map.visible = false;
     this.buildLaunch();
-    this.prepareBoarding();
+    this.quick = !first;
+    if (first) this.prepareBoarding();
+    else { this.board(); wait(WIPE_MS).then(() => { if (this.alive) this.offerHorn(); }); }
   }
 
   padView() { return PAD_VIEW; }
@@ -605,10 +607,19 @@ export class Bay extends AreaMap {
       });
     })]);
     if (!this.alive) return;
+    this.board();
+    this.offerHorn();
+  }
+
+  /** The crew is in the boat: their faces in its window. */
+  board() {
     this.crew.visible = false;
     this.cruiser.userData.window.material.map = this.crewTex;
     this.cruiser.userData.window.material.color.set('#ffffff');
     this.cruiser.userData.window.material.needsUpdate = true;
+  }
+
+  offerHorn() {
     this.launchUi.start(() => {
       if (!this.alive || this.state !== 'launch') return;
       unlockAudio();
@@ -624,7 +635,7 @@ export class Bay extends AreaMap {
     say(SEA_LINES.cast);
     sfx.toot();
     const sky = new THREE.Color('#9fe8ff'), bay = new THREE.Color('#8fdcff');
-    await animate(4200, (t) => {
+    await animate(this.quick ? 2400 : 4200, (t) => {
       this.cruiser.position.z = LAUNCH.boat.z + t * 17;
       this.cruiser.position.y = LAUNCH.boat.y + t * 0.9 + Math.sin(t * Math.PI) * 1.4;
       this.view.look.lerpVectors(PAD_VIEW.look, new THREE.Vector3(0, 7, -9), t);
@@ -632,7 +643,7 @@ export class Bay extends AreaMap {
       this.scene.background.copy(sky).lerp(bay, t);
     }, ease.inOut);
     if (!this.alive) return;
-    await wait(500);
+    if (!this.quick) await wait(500);
     if (!this.alive) return;
     const { pawWipe } = await import('../fx/transition.js');
     await pawWipe(() => {

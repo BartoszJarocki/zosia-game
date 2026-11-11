@@ -253,7 +253,7 @@ export class LighthouseMission extends Mission {
     const boat = this.boat;
     const from = boat.position.clone(), to = BOAT_START.clone();
     boat.userData.sailing = true;
-    await animate(1100, (t) => {
+    await animate(900, (t) => {
       boat.position.lerpVectors(from, to, t);
       boat.position.y = 0.04 + Math.sin(t * Math.PI) * 0.16;
     }, ease.out);
@@ -366,25 +366,18 @@ export class LighthouseMission extends Mission {
     boat.rotation.z = 0;
     boat.userData.sailing = false;
     sfx.toot();
-    await wait(350);
-    if (!this.alive) return;
-    animate(700, (t) => { this.beamMat.opacity = 0.36 * (1 - t); }, ease.in).then(() => { this.beam.visible = false; });
+    wait(350).then(() => {
+      if (this.alive) animate(700, (t) => { this.beamMat.opacity = 0.36 * (1 - t); }, ease.in).then(() => { this.beam.visible = false; });
+    });
   }
 
-  async choose(n) {
-    this.phase = 'choosing';
+  /** "How many times did it flash?": the question starts with the flashes she counts (show), then the buoys come. */
+  async choose(n, show) {
+    this.phase = 'watching';
     this.last = n;
     const max = Math.max(this.L.numbers[1] + 1, n + 1);
     const nums = lighthouseChoices(n, max, this.L.choices);
-    const colors = shuffle(TILE_COLORS);
-    this.choices = nums.map((num, i) => {
-      const buoy = this.makeBuoy(num, colors[i]);
-      buoy.position.set((i - (nums.length - 1) / 2) * 3.3, 0, 3.5);
-      this.scene.add(buoy);
-      return buoy;
-    });
-    for (const buoy of this.choices) this.tappable(buoy, () => this.tapChoice(buoy));
-    const right = this.choices.find((b) => b.userData.num === n);
+    let right = null;
     this.question('quantity', n, {
       short: T.lighthouseHowMany,
       hint: async () => { // marks: the dots light one by one, no number said; flashes: the flashes again
@@ -393,11 +386,35 @@ export class LighthouseMission extends Mission {
         if (this.alive && this.phase === 'choosing') await this.say(T.lighthouseHowMany());
       },
       simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.choices.find((b) => b !== right && b.parent)),
-      reveal: () => this.hint(right, () => this.phase !== 'choosing'),
-    }, { options: this.choices.length });
+      reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
+    }, { options: nums.length });
     ui.bubble({ big: '?', pic: '💡', onTap: () => this.replay(), passthrough: true });
+    await show();
+    if (!this.alive) return;
+    this.phase = 'choosing';
+    const colors = shuffle(TILE_COLORS);
+    this.choices = nums.map((num, i) => {
+      const buoy = this.makeBuoy(num, colors[i]);
+      buoy.position.set((i - (nums.length - 1) / 2) * 3.3, 0, 3.5);
+      this.scene.add(buoy);
+      return buoy;
+    });
+    for (const buoy of this.choices) this.tappable(buoy, () => this.tapChoice(buoy));
+    right = this.choices.find((b) => b.userData.num === n);
     this.ask(T.lighthouseHowMany());
     await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  /** Home she sails, praised, as the dots she counted light up; the next boat comes in while the praise goes on. */
+  async sailHome() {
+    sfx.good();
+    this.dots.forEach((dot) => dot.material.color.set('#fff1a8'));
+    this.talk = this.say([...T.lighthouseHome(), this.praise()]);
+    await this.arriveBoat();
+    if (!this.alive) return;
+    this.success(this.boat.position.clone().add(new THREE.Vector3(0, 1.6, 0)));
+    this.resolveRound?.();
+    this.resolveRound = null;
   }
 
   async tapChoice(buoy) {
@@ -416,27 +433,16 @@ export class LighthouseMission extends Mission {
     this.stopIdle();
     this.choices.forEach((b) => this.untap(b));
     this.choices.filter((b) => b !== buoy).forEach((b) => { b.visible = false; });
-    sfx.good();
-    const talk = this.say(T.lighthouseHome());
-    await Promise.all([this.arriveBoat(), talk]);
-    if (!this.alive) return;
-    this.success(this.boat.position.clone().add(new THREE.Vector3(0, 1.6, 0)));
-    await this.say(this.praise());
-    this.resolveRound?.();
-    this.resolveRound = null;
+    await this.sailHome();
   }
 
-  beginMaking(n, mode) {
+  /** She makes the flashes. At "one more" the question starts with the flashes she adds one to (show). */
+  async beginMaking(n, mode, show = null) {
     this.target = n;
     this.count = 0;
     this.last = n;
     this.mode = mode;
-    this.phase = 'making';
-    this.lamp.userData.choice = 'lamp';
-    this.onLamp = () => this.tapLamp();
-    this.onDone = () => this.tapBoat();
-    this.tappable(this.lamp, this.onLamp);
-    this.tappable(this.boat, this.onDone);
+    this.phase = 'watching';
     const short = () => (mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n));
     const showing = async (flashes, said, line) => {
       this.phase = 'helping';
@@ -454,7 +460,16 @@ export class LighthouseMission extends Mission {
       reveal: (said = []) => showing(n, said, T.lighthouseMake(n)), // the answer: as many flashes as she makes
     }, { options: 1 });
     ui.bubble({ big: mode === 'more' ? '?' : String(n), dots: mode === 'more' ? 0 : n, pic: '💡', onTap: () => this.replay(), passthrough: true });
-    this.ask([...(mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n)), ...T.lighthouseDoneTap()]);
+    if (show) await show();
+    if (!this.alive) return;
+    this.phase = 'making';
+    this.lamp.userData.choice = 'lamp';
+    this.onLamp = () => this.tapLamp();
+    this.onDone = () => this.tapBoat();
+    this.tappable(this.lamp, this.onLamp);
+    this.tappable(this.boat, this.onDone);
+    const prompt = [...(mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n)), ...T.lighthouseDoneTap()];
+    if (show) this.ask(prompt); else this.askAfter(this.talk, prompt);
   }
 
   /** She makes the flashes again from the start: no dots, nothing counted. */
@@ -502,23 +517,14 @@ export class LighthouseMission extends Mission {
     this.untap(this.lamp);
     this.untap(this.boat);
     this.onLamp = this.onDone = null;
-    sfx.good();
-    const talk = this.say(T.lighthouseHome());
-    await Promise.all([this.arriveBoat(), talk]);
-    if (!this.alive) return;
-    await this.countDots();
-    if (!this.alive) return;
-    this.success(this.boat.position.clone().add(new THREE.Vector3(0, 1.6, 0)));
-    await this.say(this.praise());
-    this.resolveRound?.();
-    this.resolveRound = null;
+    await this.sailHome();
   }
 
   async round(r) {
     if (r === 0) {
       await this.say([...T.lighthouseStart(), ...T.lighthouseWhy()]);
-    } else if (r === 1) {
-      await this.say(T.lighthouseEach());
+      if (!this.alive) return;
+      this.talk = this.say(T.lighthouseEach()); // (the fact once a visit, as the first boat comes in)
     }
     if (!this.alive) return;
     this.clearRound();
@@ -531,22 +537,14 @@ export class LighthouseMission extends Mission {
     this.makeBoat(this.mode === 'make' ? n : null, this.mode === 'make' || this.mode === 'more');
     await this.enterBoat();
     if (!this.alive) return;
-    if (this.mode === 'marks') {
-      await this.showFlashes(task.flashes, { dots: true });
-      if (!this.alive) return;
-      await this.choose(n);
-    } else if (this.mode === 'flashes') {
-      await this.showFlashes(task.flashes);
-      if (!this.alive) return;
-      await this.choose(n);
-    } else if (this.mode === 'make') {
-      this.beginMaking(task.target, 'make');
-      await new Promise((resolve) => { this.resolveRound = resolve; });
-    } else {
-      await this.showFlashes(task.flashes);
-      if (!this.alive) return;
-      this.beginMaking(task.target, 'more');
-      await new Promise((resolve) => { this.resolveRound = resolve; });
+    if (this.mode !== 'make') await this.talk; // the flashes she watches come after the praise, so she can count them
+    if (!this.alive) return;
+    const flashes = (dots) => () => this.showFlashes(task.flashes, { dots });
+    if (this.mode === 'marks' || this.mode === 'flashes') await this.choose(n, flashes(this.mode === 'marks'));
+    else {
+      const made = new Promise((resolve) => { this.resolveRound = resolve; });
+      await this.beginMaking(task.target, this.mode, this.mode === 'more' ? flashes(false) : null);
+      await made;
     }
     if (!this.alive) return;
     this.phase = 'clearing';

@@ -146,6 +146,19 @@ if (name === 'maphome' || name === 'farflight') {
     const home = await until((s) => s.ctor && s.area === 'island' && !s.busy && s.state === undefined, 60000);
     await note(`back on the island ${((await T()) - t1).toFixed(1)} s later: ${Boolean(home)}`);
     await snap('island-again');
+    // the second trip of the session
+    await page.waitForTimeout(1500);
+    const m2 = await marker('rocket');
+    const t2 = await T();
+    await tap(m2.x, m2.y);
+    const again = await page.waitForSelector('.rocket-start', { timeout: 60000 });
+    const ab = await again.boundingBox();
+    await note(`second trip: START appeared ${((await T()) - t2).toFixed(1)} s after the tap on the rocket`);
+    await snap('second-start');
+    await tap(ab.x + ab.width / 2, ab.y + ab.height / 2);
+    await until((s) => s.area === 'space' && s.state === 'waiting', 60000);
+    await note(`second trip: the space map could be tapped ${((await T()) - t2).toFixed(1)} s after the tap on the rocket`);
+    await snap('second-map');
   } else {
     const stops = await st(() => window.__pup.getStage().stopsOnScreen());
     const far = stops.find((s) => s.kind === 'stars');

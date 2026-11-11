@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { PLACES, placesIn } from '../src/places.js';
-import { allSegments, SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_PASS, SPACE_FACTS, PLACE_LINES } from '../src/lang/pl.js';
+import { allSegments, SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_FACTS, PLACE_LINES } from '../src/lang/pl.js';
 import { parseGame } from '../src/levels/parse.js';
 import * as THREE from 'three';
 import { CONFIG } from '../src/config.js';
@@ -22,7 +22,7 @@ const boundary = registerHooks({
     return key ? { format: 'module', source: sources[key], shortCircuit: true } : next(url, context);
   },
 });
-const { Space, LAYOUT, ROAD_ORDER, MOVES, checkLayout, nextState, flightStops, mapView, mapPoints } = await import('../src/scenes/space.js');
+const { Space, LAYOUT, ROAD_ORDER, MOVES, checkLayout, nextState, mapView, mapPoints } = await import('../src/scenes/space.js');
 boundary.deregister();
 
 test('the road puts the Moon next to Earth and distant stops after Pluto', () => {
@@ -34,17 +34,9 @@ test('the road puts the Moon next to Earth and distant stops after Pluto', () =>
   assert.throws(() => checkLayout(['moon'], {}), { message: 'Missing space layout for moon' });
 });
 
-test('flights name intermediate stops in both directions, including a return during flight', () => {
-  assert.deepEqual(flightStops(3, 7), [4, 5, 6, 7]);
-  assert.deepEqual(flightStops(10, 3), [9, 8, 7, 6, 5, 4, 3]);
-  assert.deepEqual(flightStops(6.4, 3), [6, 5, 4, 3]);
-  assert.deepEqual(flightStops(6.4, 9), [7, 8, 9]);
-  assert.deepEqual(flightStops(3, 3), []);
-});
-
 test('space only permits the specified state changes', () => {
   assert.deepEqual(MOVES, {
-    launch: ['waiting'], waiting: ['flying', 'returning'], flying: ['visiting', 'returning'],
+    launch: ['waiting'], waiting: ['flying', 'returning'], flying: ['flying', 'visiting', 'returning'],
     visiting: ['waiting', 'returning'], returning: [],
   });
   assert.equal(nextState('launch', 'waiting'), 'waiting');
@@ -79,7 +71,7 @@ test('every launch, flight and fact line reaches the voice recorder as a sentenc
   const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
   const { levels, letterSets } = parseGame(md, { childName: CONFIG.childName });
   const segments = allSegments(levels, letterSets.ALL);
-  const lines = [...Object.values(SPACE_LINES).flat(), ...Object.values(SPACE_INVITE).flat(), ...Object.values(SPACE_TO), ...Object.values(SPACE_PASS), ...Object.values(SPACE_FACTS).flat(), PLACE_LINES.rocket];
+  const lines = [...Object.values(SPACE_LINES).flat(), ...Object.values(SPACE_INVITE).flat(), ...Object.values(SPACE_TO), ...Object.values(SPACE_FACTS).flat(), PLACE_LINES.rocket];
   for (const line of lines) {
     assert.ok(segments.includes(line), line);
     assert.match(line, /[.!?]$/, line);

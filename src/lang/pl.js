@@ -3,7 +3,7 @@
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
-import { STRIPE_ROWS } from '../levels/jupiter.js';
+import { STRIPE_ROWS, patternUnit } from '../levels/jupiter.js';
 import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
 import { BOATS } from '../levels/port.js';
 
@@ -142,7 +142,6 @@ export const SPACE_LINES = {
   home: ['Wracamy do domu!'],
   goodnight: ['Robi się późno. Wracamy do domu!'],
   inviteHome: ['Czas wracać do domu! Polecimy na Ziemię?'],
-  far: ['Lecimy daleko, daleko!'],
   sunglasses: [`${pup} zakłada okulary przeciwsłoneczne!`],
 };
 
@@ -179,13 +178,6 @@ const STAR_PICTURE_LINES = {
   dipper: 'To Wielki Wóz! Wielki Wóz to siedem gwiazd.',
 };
 
-export const SPACE_PASS = {
-  sun: 'Mijamy Słońce!', mercury: 'Mijamy Merkurego!', venus: 'Mijamy Wenus!',
-  earth: 'Mijamy Ziemię!', moon: 'Mijamy Księżyc!', mars: 'Mijamy Marsa!',
-  jupiter: 'Mijamy Jowisza!', saturn: 'Mijamy Saturna!', uranus: 'Mijamy Urana!',
-  neptune: 'Mijamy Neptuna!', pluto: 'Mijamy Plutona!',
-};
-
 export const SPACE_FACTS = {
   sun: ['To jest Słońce.', 'Słońce to gwiazda.', 'Nie patrzymy prosto na Słońce.'],
   mercury: ['To jest Merkury.', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
@@ -214,7 +206,6 @@ export const SEA_LINES = {
   home: ['Wracamy na wyspę!'],
   goodnight: ['Robi się późno. Wracamy na wyspę.'],
   inviteHome: ['Czas wracać na wyspę!'],
-  far: ['Płyniemy daleko, daleko!'],
 };
 
 const SEA_DESTINATIONS = {
@@ -224,11 +215,6 @@ const SEA_DESTINATIONS = {
 
 export const SEA_INVITE = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, [`Może popłyniemy ${to}?`]]));
 export const SEA_TO = Object.fromEntries(Object.entries(SEA_DESTINATIONS).map(([kind, to]) => [kind, `Płyniemy ${to}!`]));
-
-export const SEA_PASS = {
-  buoy: 'Mijamy boję!', shallows: 'Mijamy plażę!', seal: 'Mijamy fokę!',
-  lighthouse: 'Mijamy latarnię!', gulls: 'Mijamy mewy!', reef: 'Mijamy rafę!', port: 'Mijamy port!',
-};
 
 export const SEA_FACTS = {
   island: ['To nasza wyspa.'],
@@ -368,7 +354,6 @@ export const T = {
   saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
   mercuryStart: () => ['Jesteśmy na Merkurym!', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
   mercuryStayAsk: () => ['Ile jest kraterów?'],
-  mercuryFlashAsk: () => ['Szybkie oko! Ile było kraterów?'],
   mercuryRight: (n) => [`Tak! ${cap(NUM[n])} ${craterWord(n)}!`],
   mercuryWrong: () => ['Popatrz jeszcze raz.'],
   mercuryDone: () => ['Brawo! Policzyłaś kratery na Merkurym!'],
@@ -651,12 +636,10 @@ export function allSegments(levels, allLetters) {
   add(Object.values(SPACE_LINES).flat());
   add(Object.values(SPACE_INVITE).flat());
   add(Object.values(SPACE_TO));
-  add(Object.values(SPACE_PASS));
   add(Object.values(SPACE_FACTS).flat());
   add(Object.values(SEA_LINES).flat());
   add(Object.values(SEA_INVITE).flat());
   add(Object.values(SEA_TO));
-  add(Object.values(SEA_PASS));
   add(Object.values(SEA_FACTS).flat());
   nums.slice(0, 9).forEach((n) => { add(T.moonJump(n)); add(T.moonJumpShort(n)); });
   [T.againOrSpace, T.againOrSea, T.moonStart, T.moonHelp, T.moonFlag, T.moonTooFew, T.moonTooMany, T.moonWatch, T.moonHowMany, T.moonDone, T.cometStart, T.cometRoundDone, T.cometDone, T.cometFact].forEach((f) => add(f()));
@@ -690,16 +673,16 @@ export function allSegments(levels, allLetters) {
   Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); });
   [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
-  [T.mercuryStart, T.mercuryStayAsk, T.mercuryFlashAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
+  [T.mercuryStart, T.mercuryStayAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
   Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); });
   [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
   Object.keys(TELESCOPE_AFTER).forEach((kind) => add(T.telescopeOrder(kind)));
-  // Jupiter: every stripe row, said aloud and as a help prefix
+  // Jupiter: every stripe row's repeating stripes, said aloud, and the row as a help prefix
   Object.values(STRIPE_ROWS).flat().forEach((row) => {
-    add(T.jupiterRow(row));
+    add(T.jupiterRow(patternUnit(row)));
     const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
     gaps.forEach((gap) => add(T.jupiterHelp(row, gap)));
   });

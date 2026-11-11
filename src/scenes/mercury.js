@@ -14,6 +14,7 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const TILE = 1.55, TILE_Z = 3.8, TILE_GAP = 2.2;
+const LOOK_MS = 2000, SEEN_MS = 900; // the quick look; how long the counted craters stay lit after her answer
 const CRATER_AT = new THREE.Vector3(0.8, 3, 0);
 const CRATER_CELL = 1.9, CRATER_R = 0.8, PATCH_R = 2.7;
 const BOWL = '#6f6f78', RIM = '#b9b9c2', LIT = '#ffd166', LIT_RIM = '#fff1b8';
@@ -148,8 +149,7 @@ export class MercuryMission extends Mission {
     return group;
   }
 
-  async makeTiles(n) {
-    const nums = craterChoices(n, this.L.craters, this.L.choices, nearFromLevel(this.level));
+  async makeTiles(nums) {
     const colors = shuffle(TILE_COLORS);
     const blocks = nums.map((num, i) => {
       const map = glyphTexture(String(num), { bg: colors[i], dots: this.L.labels === 'both' ? num : 0 });
@@ -228,39 +228,32 @@ export class MercuryMission extends Mission {
     this.stopIdle();
     this.blocks.forEach((x) => this.untap(x));
     sfx.good();
-    await this.revealCraters();
-    if (!this.alive) return;
-    await this.countCraters({ keep: true });
-    if (!this.alive) return;
     this.success(b.position.clone().add(new THREE.Vector3(0, 1, 0)));
-    await this.say([...T.mercuryRight(num), this.praise()]);
-    if (!this.alive) return;
+    this.talk = this.say(T.mercuryRight(num)); // "Tak! Dwa kratery!": her number, once
     this.blocks.filter((x) => x !== b && x.parent).forEach((x) => this.shrinkAway(x, 250));
+    await this.revealCraters();
+    (this.craterDots || []).forEach((crater) => this.lightCrater(crater, true));
+    await wait(SEEN_MS);
     this.resolveRound?.();
   }
 
+  /** Craters to count; at the flash levels a quick look ("Szybkie oko! Patrz!", 2 s), and the question starts with it. */
   async craterRound() {
     const n = this.pick('quantity', numbersIn(this.L.craters));
     this.last = n;
     this.phase = 'looking';
     this.lastWrong = null;
-    this.makeCraters(n);
     const flash = this.L.show === 'flash';
-    if (flash) {
-      await wait(2000);
-      if (!this.alive) return;
-      await this.hideCraters();
-      if (!this.alive) return;
-    }
-    const done = new Promise((resolve) => { this.resolveRound = resolve; });
-    await this.makeTiles(n);
+    if (flash) await this.talk; // (the praise for her last answer first: the look is short)
     if (!this.alive) return;
-    const ask = flash ? T.mercuryFlashAsk() : T.mercuryStayAsk();
-    const right = this.blocks.find((b) => b.userData.num === n);
-    const short = () => (this.craters.visible ? T.mercuryStayAsk() : ask);
+    const nums = craterChoices(n, this.L.craters, this.L.choices, nearFromLevel(this.level));
+    const ask = flash ? T.flashAsk() : T.mercuryStayAsk();
+    const short = () => (this.craters?.visible ? T.mercuryStayAsk() : ask);
+    let right = null;
     this.question('quantity', n, {
       short,
       hint: async (said = []) => { // she counts them: no number is said before her answer
+        if (!this.craters) return;
         await this.revealCraters();
         if (!this.alive || this.phase !== 'choosing') return;
         this.say([...said, ...short()]);
@@ -268,10 +261,23 @@ export class MercuryMission extends Mission {
         if (this.phase === 'choosing') this.craterDots.forEach((c) => this.lightCrater(c, false)); // (her answer counts them lit)
       },
       simplify: () => { this.revealCraters(); this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.blocks.find((b) => b !== right && b.parent)); },
-      reveal: () => this.hint(right, () => this.phase !== 'choosing'),
-    }, { options: this.blocks.length });
+      reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
+    }, { options: nums.length });
     ui.bubble({ big: '?', pic: '🪨', onTap: () => this.replay(), passthrough: true });
-    this.ask(ask);
+    if (flash) {
+      await this.say(T.flashStart());
+      if (!this.alive) return;
+      this.makeCraters(n);
+      await wait(LOOK_MS);
+      if (!this.alive) return;
+      await this.hideCraters();
+      if (!this.alive) return;
+    } else this.makeCraters(n);
+    const done = new Promise((resolve) => { this.resolveRound = resolve; });
+    await this.makeTiles(nums);
+    if (!this.alive) return;
+    right = this.blocks.find((b) => b.userData.num === n);
+    if (flash) this.ask(ask); else this.askAfter(this.talk, ask);
     this.phase = 'choosing';
     await done;
     if (!this.alive) return;

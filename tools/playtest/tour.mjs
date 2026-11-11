@@ -102,7 +102,7 @@ const visitMap = async (area, entry, startSel) => {
     await snap(`${kind}-arrived`);
     await note(`${kind}: ${JSON.stringify(after)}`);
     if (!after) continue;
-    if (after.area === 'island' && after.ctor === 'Hub') { await note(`${kind} took her home to the island`); return; }
+    if (after.area === 'island' && after.state === undefined) { await note(`${kind} took her home to the island`); return; } // (the island has no map state; class names are minified)
     if (after.state === 'visiting') {
       const shown = (await stops()).find((x) => x.kind === kind);
       if (shown) { await tap(shown.x, shown.y, `${kind} itself`); await page.waitForTimeout(1200); await snap(`${kind}-react`); }

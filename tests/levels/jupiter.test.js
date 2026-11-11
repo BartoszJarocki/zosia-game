@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
-import { jupiterRounds, stripeRound, biggerRound, STRIPE_ROWS, EXTRA_POT, JUPITER_COLOURS } from '../../src/levels/jupiter.js';
+import { jupiterRounds, stripeRound, biggerRound, patternUnit, STRIPE_ROWS, EXTRA_POT, JUPITER_COLOURS } from '../../src/levels/jupiter.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
 
@@ -57,6 +57,13 @@ test('AB and ABB rows repeat their unit, with the blank at the end', () => {
     assert.equal(p.row[1] === p.row[2], p.item === 'ABB');
   }
   assert.deepEqual(new Set(rounds.map((p) => p.item)), new Set(['ABB', 'AAB']));
+});
+
+test('the stripes said after her answer are the row\'s repeating unit, once', () => {
+  assert.deepEqual(patternUnit(STRIPE_ROWS.AB[0]), ['white', 'orange']);
+  assert.deepEqual(STRIPE_ROWS.ABB.map(patternUnit), [['white', 'orange', 'orange'], ['white', 'orange', 'orange'], ['white', 'white', 'orange'], ['white', 'white', 'orange']]);
+  assert.deepEqual(STRIPE_ROWS.ABC.map(patternUnit), [['white', 'orange', 'brown'], ['white', 'orange', 'brown']]);
+  assert.deepEqual(T.jupiterRow(patternUnit(STRIPE_ROWS.ABB[0])), ['Biały, pomarańczowy, pomarańczowy!']);
 });
 
 test('gap rows miss a stripe in the middle of an AB or ABB row', () => {
@@ -136,7 +143,7 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
   assert.deepEqual(T.jupiterWhich(), ['Który kolor teraz?']);
   assert.deepEqual(T.jupiterGap(), ['Którego paska brakuje?']);
   assert.deepEqual(T.jupiterHelp(STRIPE_ROWS.AB[0], 3), ['Biały, pomarańczowy, biały, i...?']);
-  assert.deepEqual(T.jupiterRow(STRIPE_ROWS.AB[0]), ['Biały, pomarańczowy, biały, pomarańczowy, biały, pomarańczowy!']);
+  assert.deepEqual(T.jupiterRow(patternUnit(STRIPE_ROWS.AB[0])), ['Biały, pomarańczowy!']);
   assert.deepEqual(T.jupiterTryAgain(), ['Ojej! Spróbuj jeszcze raz.']);
   assert.deepEqual(T.jupiterBigger(), ['Która jest większa?']);
   assert.deepEqual(T.jupiterSmaller(), ['Która jest mniejsza?']);
@@ -155,7 +162,7 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
     HOME_TASKS.jupiter,
   ];
   Object.values(STRIPE_ROWS).flat().forEach((row) => {
-    lines.push(...T.jupiterRow(row));
+    lines.push(...T.jupiterRow(patternUnit(row)));
     const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
     gaps.forEach((gap) => lines.push(...T.jupiterHelp(row, gap)));
   });

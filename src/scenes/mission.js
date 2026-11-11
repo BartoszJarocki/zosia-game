@@ -84,6 +84,8 @@ export class Mission extends Stage {
       if (this.alive) await this.checkAttention(r);
     }
     if (!this.alive) return;
+    await this.talk; // (the praise for her last answer is heard before the ending)
+    if (!this.alive) return;
     await this.outro();
     if (this.alive) this.finish();
   }
@@ -294,11 +296,11 @@ export class Mission extends Stage {
     }, ease.inOut).then(() => { this.view.pos.copy(base); this.pushing = false; });
   }
 
-  /** Say the question now, and again whenever she goes quiet. */
+  /** Say the question now, and again whenever she goes quiet. (A scene that queues its lines drops it once she has moved on.) */
   ask(segments) {
     this.prompt = segments;
     const q = this.learn.current;
-    this.say(segments).then(() => {
+    this.say(segments, () => this.learn.current === q).then(() => {
       if (this.learn.current !== q) return;
       this.learn.promptEnded();                         // latency counts from here…
       if (this.aid) this.aid.quietFrom = performance.now(); // …and so does the quiet-time help

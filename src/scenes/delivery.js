@@ -6,7 +6,7 @@ import { makeBush } from '../world/nature.js';
 import { makeHouse, makeFence, makeLamp } from '../world/props.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
 import { WORDS, showLetter } from '../config.js';
-import { say, sfx } from '../audio.js';
+import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
@@ -19,6 +19,7 @@ import { Mission } from './mission.js';
 // The pictures are the letters' picture words (config WORDS: K → kot 🐱, kaczka 🦆…), taking turns.
 
 /** Letters that sound alike at the start of a word (kept apart unless GAME.md "similar" says otherwise). */
+const SEEN_MS = 700; // the parcel in its mailbox, in view, before the boxes go
 const SOUNDALIKE = { B: 'P', P: 'B', D: 'T', T: 'D', G: 'K', K: 'G', S: 'Z', Z: 'S', W: 'F', F: 'W', M: 'N', N: 'M' };
 
 const pictureCache = new Map();
@@ -145,8 +146,7 @@ export class DeliveryMission extends Mission {
             sfx.good();
             this.success(p.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
             parcels.filter((x) => x !== p && x.parent).forEach((x) => this.shrinkAway(x, 400));
-            await say([this.praise(), ...T.letterLike(l, said)]); // "Ka jak kot!"
-            if (!this.alive) return;
+            this.talk = this.say([this.praise(), ...T.letterLike(l, said)]); // "Ka jak kot!", while Chase takes the parcel
             await this.deliver(p);
             resolve();
           } else {
@@ -164,7 +164,7 @@ export class DeliveryMission extends Mission {
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : parcels.find((p) => p !== right && p.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      wait(500).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.startsWith(target)] : T.startsWith(target)); });
+      this.askAfter(Promise.all([wait(500), this.talk]), r === 0 ? [...T.deliveryStart(), ...T.startsWith(target)] : T.startsWith(target));
     });
   }
 
@@ -258,7 +258,8 @@ export class DeliveryMission extends Mission {
           sfx.ding();
           hop(b, 0.35);
           this.success(to.clone().add(new THREE.Vector3(0, 0.6, 0)), { big: true });
-          await say([this.praise(), ...T.letterLike(target, said)]);
+          this.talk = this.say([this.praise(), ...T.letterLike(target, said)]);
+          await wait(SEEN_MS);
           if (!this.alive) return;
           await Promise.all(boxes.map((x) => this.shrinkAway(x, 350)));
           offDrag();
@@ -279,7 +280,7 @@ export class DeliveryMission extends Mission {
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : boxes.find((b) => b !== right && b.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      wait(700 + n * 140).then(() => { if (this.alive) this.ask(r === 0 ? [...T.deliveryStart(), ...T.whichBox(said)] : T.whichBox(said)); });
+      this.askAfter(Promise.all([wait(700 + n * 140), this.talk]), r === 0 ? [...T.deliveryStart(), ...T.whichBox(said)] : T.whichBox(said));
     });
   }
 

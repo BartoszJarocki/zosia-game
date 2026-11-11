@@ -170,7 +170,7 @@ test('howMany jumps are silent, touch counting is distinct, and a numeral answer
   const answerAt = globalThis.__moonLines.length;
   s.tappables.find(o => o.userData.num === 3).userData.onTap();
   await task;
-  assert.deepEqual(globalThis.__moonLines.slice(answerAt).filter(line => ['Jeden!', 'Dwa!', 'Trzy!'].includes(line)), ['Jeden!', 'Dwa!', 'Trzy!']);
+  assert.deepEqual(globalThis.__moonLines.slice(answerAt).filter(line => ['Jeden!', 'Dwa!', 'Trzy!'].includes(line)), ['Trzy!'], 'her number, once');
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
