@@ -217,20 +217,10 @@ export class MercuryMission extends Mission {
     this.poke();
     this.lookAt(b.position);
     const num = b.userData.num;
-    if (num !== this.last) { // the right tile can be tapped all along
+    if (num !== this.last) {
       this.lastWrong = b;
-      this.wrong(num, { obj: b, feedback: false });
+      this.wrong(num, { obj: b, said: T.mercuryWrong() });
       hop(b, 0.3, 300);
-      const show = (this.shows = (this.shows || 0) + 1); // (a newer wrong tap takes the count over)
-      const still = () => this.alive && this.phase === 'choosing' && this.shows === show;
-      await this.say(T.mercuryWrong());
-      if (!still()) return;
-      await this.revealCraters();
-      if (!still()) return;
-      await this.countCraters({ still });
-      if (!still()) return;
-      const right = this.blocks.find((x) => x.userData.num === this.last);
-      if (right) this.hint(right, () => this.phase !== 'choosing');
       return;
     }
     this.phase = 'solved';
@@ -267,13 +257,17 @@ export class MercuryMission extends Mission {
     if (!this.alive) return;
     const ask = flash ? T.mercuryFlashAsk() : T.mercuryStayAsk();
     const right = this.blocks.find((b) => b.userData.num === n);
+    const short = () => (this.craters.visible ? T.mercuryStayAsk() : ask);
     this.question('quantity', n, {
-      short: ask,
-      hint: async () => {
+      short,
+      hint: async (said = []) => { // she counts them: no number is said before her answer
         await this.revealCraters();
-        if (this.alive) await this.countCraters({ still: () => this.alive && this.phase === 'choosing' });
+        if (!this.alive || this.phase !== 'choosing') return;
+        this.say([...said, ...short()]);
+        await this.pointAlong(this.craterDots, (c) => this.lightCrater(c, true));
+        if (this.phase === 'choosing') this.craterDots.forEach((c) => this.lightCrater(c, false)); // (her answer counts them lit)
       },
-      simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.blocks.find((b) => b !== right && b.parent)),
+      simplify: () => { this.revealCraters(); this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.blocks.find((b) => b !== right && b.parent)); },
       reveal: () => this.hint(right, () => this.phase !== 'choosing'),
     }, { options: this.blocks.length });
     ui.bubble({ big: '?', pic: '🪨', onTap: () => this.replay(), passthrough: true });

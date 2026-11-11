@@ -171,17 +171,10 @@ export class MarsMission extends Mission {
       bubble(...marsBubble(this.L.ask, target));
       const rc = rocks.find((x) => x.userData.num === target);
 
-      const pointAtDots = async () => {
-        for (const dot of document.querySelectorAll?.('.bubble .dots i') || []) {
-          if (!this.alive || solved) return;
-          Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' });
-          sfx.pop();
-          await wait(650);
-        }
-      };
+      const pointAtDots = () => this.pointAlong(document.querySelectorAll?.('.bubble .dots i') || [], (dot) => { Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' }); });
       const simplify = () => this.removeOption(lastWrong?.parent ? lastWrong : rocks.find((x) => x !== rc && x.parent));
       const hooks = this.L.ask === 'dots' ? {
-        short: T.marsRepeat(target),
+        short: T.marsDots(), // (she counts the dots: the number is said only when the answer is shown)
         hint: (said = []) => this.say([...said, ...T.countDots()]).then(pointAtDots),
         simplify,
         reveal: () => { this.hint(rc, () => solved, rc.userData.sign); return T.dots(target); },
@@ -203,8 +196,7 @@ export class MarsMission extends Mission {
         this.lookAt(rock);
         if (num !== target) {
           lastWrong = rock;
-          this.wrong(num, { obj: rock, said: T.marsWrong(target) });
-          this.glow(rc);
+          this.wrong(num, { obj: rock });
           return;
         }
         solved = true;
@@ -223,12 +215,6 @@ export class MarsMission extends Mission {
         if (this.alive) resolve();
       };
     });
-  }
-
-  glow(rock) {
-    const m = rock?.userData.rockMat;
-    if (!m) return;
-    animate(900, (t) => { m.emissiveIntensity = Math.sin(t * Math.PI) * 0.7; }, ease.linear);
   }
 
   async driveTo(rock) {

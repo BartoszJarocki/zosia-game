@@ -47,8 +47,8 @@ const SHALLOWS_SURPRISE = {
   moneta: 'Taka mała, a tonie!',
 };
 const SATURN = {
-  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', wrong: 'Ojej! To jest lód. Lód jest tutaj.' },
-  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', wrong: 'Ojej! To jest skała. Skały są tutaj.' },
+  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!' },
+  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!' },
 };
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
@@ -274,7 +274,6 @@ export const T = {
   starsStart: () => ['Jesteśmy wśród gwiazd! Połączymy gwiazdki i zobaczymy obrazek.'],
   starsAsk: (nums) => [`${nums.map((n, i) => i ? NUM[n] : cap(NUM[n])).join(', ')}, a co dalej?`],
   starsHelp: (n) => [`Teraz numer ${NUM[n]}!`],
-  starsWrong: (chosen, target) => [`To jest ${NUM[chosen]}. Szukamy numeru ${NUM[target]}.`],
   starsPicture: (id) => [STAR_PICTURE_LINES[id]],
   starsDone: () => ['Brawo! Gwiazdy świecą obrazki!'],
   number: (n) => [`${cap(NUM[n])}!`],
@@ -330,7 +329,6 @@ export const T = {
   reefStart: (i) => ['Jesteśmy na rafie!', 'Zaglądamy przez szklaną podłogę łódki!', REEF_FACTS[i % REEF_FACTS.length]],
   reefAsk: (animal, word, on) => [`${REEF_ANIMALS[animal].which} ${REEF_ANIMALS[animal].nom} jest ${reefPlace(word, on)}?`],
   reefRight: (animal, word, on) => [`Tak! ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
-  reefWrong: (animal, word, on) => [`Popatrz jeszcze raz. ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
   reefPlaceAsk: (animal, word, on) => [`Połóż ${REEF_ANIMALS[animal].acc} ${reefPlace(word, on)}.`],
   reefLook: () => ['Popatrz na wszystkie obrazki.'],
   reefPlaceLook: () => ['Popatrz na wszystkie miejsca.'],
@@ -350,7 +348,6 @@ export const T = {
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
   plutoAsk: () => ['Gdzie jest serduszko?'],
   plutoRight: () => ['Tak! To jest serduszko!'],
-  plutoWrong: (s) => [`To jest ${SHAPE[s]}. Serduszko jest tutaj.`],
   plutoDone: () => ['Brawo! Serduszko Plutona świeci!'],
   blackholeStart: () => ['Patrzymy przez okno rakiety. Czarna dziura jest bardzo daleko.'],
   blackholeDrop: (n) => [`Wypuść ${NUM[n]} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
@@ -368,7 +365,6 @@ export const T = {
   saturnWhich: () => ['Lód czy skała? Gdzie to pasuje?'],
   saturnHint: (kind) => [SATURN[kind].name, SATURN[kind].ring],
   saturnRight: (kind) => [SATURN[kind].right],
-  saturnWrong: (kind) => [SATURN[kind].wrong],
   saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
   mercuryStart: () => ['Jesteśmy na Merkurym!', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
   mercuryStayAsk: () => ['Ile jest kraterów?'],
@@ -379,7 +375,6 @@ export const T = {
   venusStart: () => ['Jesteśmy przy Wenus! Wenus to najgorętsza planeta. Jest cała w chmurach.'],
   venusAsk: () => ['Chmury się rozsuwają. Jaki to kształt?'],
   venusRight: (s) => [`To jest ${SHAPE[s]}!`],
-  venusWrong: (s) => [`Popatrz jeszcze raz. To jest ${SHAPE[s]}.`],
   venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
   jupiterStart: () => ['Jesteśmy przy Jowiszu! To największa planeta. Pomalujemy jej paski!'],
   jupiterWhich: () => ['Który kolor teraz?'],
@@ -391,7 +386,6 @@ export const T = {
   jupiterSmaller: () => ['Która jest mniejsza?'],
   jupiterBig: (big) => [big === 'sun' ? 'Słońce jest dużo większe od Ziemi!' : 'Jowisz jest dużo większy od Ziemi!'],
   jupiterSmall: () => ['Ziemia jest dużo mniejsza!'],
-  jupiterLook: (ask) => [ask === 'smaller' ? 'Popatrz jeszcze raz. Ta jest mniejsza.' : 'Popatrz jeszcze raz. Ta jest większa.'],
   jupiterSpot: () => ['Czerwona plama to wielka burza.'],
   jupiterDone: () => ['Brawo! Jowisz ma piękne paski!'],
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
@@ -498,7 +492,6 @@ export const T = {
   marsDots: () => ['Policz kropki! Do którego kamienia jedziemy?'],
   marsRepeat: (n) => [`Gdzie jest numer ${NUM[n]}?`],
   marsRight: () => ['Brawo! Łazik dojechał!'],
-  marsWrong: (n) => [`To nie ten kamień. Szukamy numeru ${NUM[n]}.`],
   marsDone: () => ['Brawo! Łazik zbadał wszystkie kamienie!'],
   marsFact: () => ['Mars ma dwa małe księżyce.'],
   dots: (n) => [`${cap(NUM_F[n])} ${n === 1 ? 'kropka' : n <= 4 ? 'kropki' : 'kropek'}!`],
@@ -648,7 +641,7 @@ export function allSegments(levels, allLetters) {
   Object.keys(HOME_TASKS).forEach((k) => add(T.homeTask(k)));
   add(T.conesDots(true)); add(T.conesDots(false)); add(T.countDots()); add(T.conesGoal()); add(T.conesSaved());
   const marsMax = Math.max(...levels.mars.map((l) => l.max));
-  nums.slice(0, marsMax).forEach((n) => { add(T.marsAsk(n)); add(T.marsRepeat(n)); add(T.marsWrong(n)); });
+  nums.slice(0, marsMax).forEach((n) => { add(T.marsAsk(n)); add(T.marsRepeat(n)); });
   [T.marsStart, T.marsDots, T.marsRight, T.marsDone, T.marsFact].forEach((f) => add(f()));
   // the Garage
   Object.keys(SHAPE).filter((sh) => sh !== 'heart').forEach((sh) => { add(T.shape(sh)); add(T.whereShape(sh)); add(T.shapeClue(sh)); add(T.noShape(sh)); add(T.shapeLast(sh)); });
@@ -676,7 +669,6 @@ export function allSegments(levels, allLetters) {
     Object.keys(REEF_ANIMALS).forEach((animal) => {
       add(T.reefAsk(animal, word, on));
       add(T.reefRight(animal, word, on));
-      add(T.reefWrong(animal, word, on));
       add(T.reefPlaceAsk(animal, word, on));
     });
   });
@@ -690,18 +682,16 @@ export function allSegments(levels, allLetters) {
   [T.portStart, T.portToot, T.portDone, T.portTooFew, T.portTooMany, T.portHelp, T.portSuccess, T.portFinished].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
-  for (const target of nums.slice(1, 7)) for (const chosen of nums.slice(0, 7)) if (chosen !== target) add(T.starsWrong(chosen, target));
   Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
   [T.starsStart, T.starsDone].forEach((f) => add(f()));
   [T.plutoStart, T.plutoAsk, T.plutoRight, T.plutoDone].forEach((f) => add(f()));
-  ['circle', 'square', 'triangle'].forEach((sh) => add(T.plutoWrong(sh)));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
   [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
-  Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); add(T.saturnWrong(kind)); });
+  Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); });
   [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
   [T.mercuryStart, T.mercuryStayAsk, T.mercuryFlashAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
-  Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); add(T.venusWrong(sh)); });
+  Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); });
   [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
@@ -714,6 +704,6 @@ export function allSegments(levels, allLetters) {
     gaps.forEach((gap) => add(T.jupiterHelp(row, gap)));
   });
   [T.jupiterStart, T.jupiterWhich, T.jupiterGap, T.jupiterTryAgain, T.jupiterBigger, T.jupiterSmaller, T.jupiterSmall, T.jupiterSpot, T.jupiterDone].forEach((f) => add(f()));
-  [T.jupiterLook('bigger'), T.jupiterLook('smaller'), T.jupiterBig('jupiter'), T.jupiterBig('sun')].forEach(add);
+  [T.jupiterBig('jupiter'), T.jupiterBig('sun')].forEach(add);
   return [...new Set(out)];
 }

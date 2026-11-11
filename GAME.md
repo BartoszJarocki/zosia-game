@@ -27,8 +27,12 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
      prompt ("Gdzie jest Be?") after ~10 s, a clue ("Be jak banan!") after ~17 s, the answer pulses after ~25 s,
      then quiet (no endless nagging)
    - **after a wrong tap:** a low falling "no" sound, the thing she tapped shakes its head, and "Nie, to nie ten."
-     ("Nie, to Em." when it only looks like the right letter); then a wrong option goes away, then the answer
-     pulses. She always makes the last tap herself.
+     ("Nie, to Em." when it only looks like the right letter; "Za mało!" for a count), then the question again,
+     and nothing more: one wrong tap never shows the answer. A second wrong tap brings a step that is still not
+     the answer: a wrong option goes away, or a clue (the dots, craters or floors light one by one without a
+     number said, the stones so far are counted). With only two to choose from the clue comes instead, since
+     taking one away would leave the answer. A third wrong tap, or a long wait, shows the answer: it pulses
+     ("Tutaj!"). She always makes the last tap herself.
    - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!")
    - **every tap answers:** a finger that lands again within 0.12 s and 40 px is one tap, right or wrong. A tap
      on something she can tap while the game cannot act on it yet gets a short tick and a little bounce of that
@@ -210,8 +214,9 @@ hops onto the last wagon, DOM a little house pops up, MAMA, TATA and the family 
 in `src/lang/pl.js`).
 
 The `whose` levels are about whole names: three trains roll in with name boards and she finds the one asked for
-("Który pociąg jest Zosi?"): her own name first, then MAMA or TATA, then a family name. A miss never gets a
-"no": the right train just toots.
+("Który pociąg jest Zosi?"): her own name first, then MAMA or TATA, then a family name. A miss gets "Nie, to
+nie ten." and the question again; help shows the name in the bubble so she can match it, then a wrong train
+drives off, and last the right train's board pulses ("To pociąg Zosi!").
 
 | Level | words | mode | gaps | extras | similar |
 |---|---|---|---|---|---|
@@ -312,8 +317,9 @@ time, each row one hop nearer Chase: the next number and one or two others side 
   apart (1 next to 3), `near` ones are the neighbours (3 next to 4). With `missing`, `near` is a neighbour of
   the gap that is already on the path (2 or 4 for "1 2 ? 4": only the order says no), `far` is past the end (5)
 - **bubble** — `numeral`: shows the next number · `next`: shows "3 ➜ ?", she has to know what comes next
-  (help shows the number) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
-  stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones)
+  (help counts the stones so far, "Jeden! Dwa!", and asks again; the stone pulses last) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
+  stone in (drag it or tap it) and Zosia hops across by herself, counting (3–9 stones; help counts the stones
+  up to the gap)
 - After a rough run the next one is gentler: 2 stones a row, far foils, one stone shorter, the number in the
   bubble (`missing` keeps its gap, with a far foil). After the last river Zosia stays with Chase for the badge.
 
@@ -347,8 +353,9 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
   - `hidden` ("Schowane smakołyki"): treats go under the bowl, then one more slides in: "Ile jest pod
     miską? Daj Czejsowi tyle samo!" (adding without words)
 
-  In `flash` and `hidden` she gives Chase the same number and taps him; the bowl lifts and its treats line
-  up next to hers, one under each, so she sees whether it is the same.
+  In `flash` and `hidden` she gives Chase the same number and taps him. When it is right, the bowl lifts and
+  its treats line up next to hers, one under each, so she sees it is the same. Too few: "Za mało! Jeszcze!"
+  and the bowl stays shut.
 - **give** / **howMany** / **share** / **hidden** / **flash** — the number ranges (give up to 10, howMany up to 9,
   share 2–4 friends, hidden 2–4 treats under the bowl in the end, flash 1–4; `—` if unused)
 - **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
@@ -380,8 +387,9 @@ laid out like the dots on a die, so she sees how many at once. Below it are the 
 - **choices** — how many tiles (2 to 4). From level 2 the wrong tiles are the neighbours (±1), as on Cone Road.
 - **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
   and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
-  one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
-  tries again. The right tile can be tapped all the while: her answer stops the count for help.
+  one and ending on her number. Wrong: the tile bounces, "Popatrz jeszcze raz." and the question again. Help:
+  the dust blows away and the craters light one by one without a number said, then a wrong tile goes away,
+  then the right tile pulses. The right tile can be tapped all the while: her answer stops the help.
 
 ### 🌙 Moon Jumps · `moon`
 
@@ -626,8 +634,11 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 - **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
 - **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
-  a beam and the boat sails into the harbour. Wrong: the boat bobs, the dots reset, the right answer is shown and
-  she tries again. A boat is never lost.
+  a beam and the boat sails into the harbour. Wrong: the boat bobs, "Nie, to nie ten." (`make` and `more`:
+  "Za mało! Policz jeszcze raz!" and the dots reset) and the question again. Help: the dots light one by one
+  (`marks`), or the flashes again (`flashes`, and `more`: the ones she saw), or the lamp shows itself
+  (`make`); last the right buoy pulses, or the lamp flashes the answer ("Mrugnij trzy razy!") and she makes it
+  herself. A boat is never lost.
 
 ### 🦆 Pływa czy tonie? · `shallows`
 
@@ -673,8 +684,8 @@ in and next to them.
   in the shell, and next to the rock or shell.
 - **choices**: how many small scenes side by side (2 to 4), or how many glowing spots in `place`.
 - **rounds**: questions per mission (1 to 8). Each is one scored question, skill `position`, item the word.
-  Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, the right
-  scene or spot is shown, and she tries again. The right word is never the same three times in a row.
+  Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, "Nie, to nie
+  ten." and the question again; the right scene or spot pulses only at the end of the help. The right word is never the same three times in a row.
 
 ### 📯 The Port · `port`
 
@@ -694,8 +705,11 @@ and she toots its name once for each syllable.
 - **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
-  count in `which`). Too few or too many toots: Chase claps the name slowly and she tries again. Right: the boat
-  sails out happily. A boat is never lost.
+  count in `which`). Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the boat's name again, and
+  she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
+  kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
+  pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right name pulses. Right:
+  the boat sails out happily. A boat is never lost.
 
 ### 🗼 The Lookout · `lookout`
 
@@ -725,7 +739,10 @@ picks one up, and at the end everyone goes to the very top and down the slide to
   floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
   ("Dwa piętra w górę! Na które piętro?") and she presses the floor they land on, counting on from where the
   car is; the kitten is a surprise on that floor (age 4+) · `go`: one easy kitten on floors 1–3, numeral and
-  dots (the gentler run after a rough one)
+  dots (the gentler run after a rough one). A wrong floor: "Nie, to nie ten." and the question again. Help
+  lights the floors one by one without saying the number (`find`: the sign beside the kitten; `relative`: the
+  floors up to the car; `dice`: as many floors as the die says); `pickup` adds the dots to the number in the
+  bubble; last the right button pulses
 - **rounds** — how many elevator trips (1–3: the car seats 3 kittens); `pickup` and `find` need more floors than
   trips (each kitten waits on a floor of its own). After the last trip everyone goes to the top and down the
   slide, kittens too.

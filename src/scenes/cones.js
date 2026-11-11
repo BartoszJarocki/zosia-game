@@ -225,14 +225,7 @@ export class ConesMission extends Mission {
       bubble(...shown);
       const rc = cones.find((x) => x.userData.num === target);
       // the bubble's dots light up one at a time, a pop each, so she can count along (no number said)
-      const pointAtDots = async () => {
-        for (const dot of document.querySelectorAll('.bubble .dots i')) {
-          if (!this.alive || solved) return;
-          Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' });
-          sfx.pop();
-          await wait(650);
-        }
-      };
+      const pointAtDots = () => this.pointAlong(document.querySelectorAll('.bubble .dots i'), (dot) => { Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' }); });
       const simplify = () => this.removeOption(lastWrong?.parent ? lastWrong : cones.find((x) => x !== rc && x.parent));
       // "dots": she counts and finds the numeral, so no help names the number before the reveal
       const hooks = ask === 'dots' ? {

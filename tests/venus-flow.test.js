@@ -72,7 +72,7 @@ async function scene(level = 1) {
   return s;
 }
 
-test('a full round opens the clouds, a wrong tile is not punished and the right tile scores', async () => {
+test('a full round opens the clouds; a wrong tile gets a "no" and the question, the right one does not glow, and it scores', async () => {
   const s = await scene(1);
   globalThis.__lines = [];
   const round = s.round(0);
@@ -81,13 +81,19 @@ test('a full round opens the clouds, a wrong tile is not punished and the right 
   assert.ok(tiles(s).some((tile) => tile.userData.choice === s.last));
   assert.equal(s.clouds.userData.open, true);
   const wrong = tiles(s).find((tile) => tile.userData.choice !== s.last);
+  const right = tiles(s).find((tile) => tile.userData.choice === s.last);
+  const glow = () => [right.userData.body.material.emissive.getHex(), right.userData.body.material.emissiveIntensity];
+  const unlit = glow(), before = globalThis.__lines.length;
   wrong.userData.onTap();
-  await until(() => globalThis.__lines.at(-1) === T.venusWrong(s.last)[0]);
+  await until(() => globalThis.__lines.at(-1) === T.venusAsk()[0]);
+  assert.match(globalThis.__lines[before], /^Nie/);
+  assert.ok(!globalThis.__lines.slice(before).includes(T.venusRight(s.last)[0]), 'the shape is not named');
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
-  const right = tiles(s).find((tile) => tile.userData.choice === s.last);
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   s.update(0.016, 1);
-  assert.ok(right.userData.body.material.emissiveIntensity > 0);
+  assert.deepEqual(glow(), unlit, 'the right tile does not glow');
   right.userData.onTap();
   await round;
   assert.equal(s.answers[0].skill, 'shape');

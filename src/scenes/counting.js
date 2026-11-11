@@ -240,10 +240,12 @@ export class CountingMission extends Mission {
       f.state = 'checking';
       await Promise.all(f.landed); // (a tap while a treat is still flying counts it)
       const c = f.count();
-      if (c === n) right(); // her answer is the tap; the bowl only shows it
-      if (compare && !f.compared) { f.compared = true; await compare(f); }
-      if (!this.alive) return;
-      if (c === n) { finish(); return; }
+      if (c === n) { // her answer is the tap; the bowl only shows it was right
+        right();
+        if (compare) { f.compared = true; await compare(f); }
+        if (this.alive) finish();
+        return;
+      }
       this.wrong(c, { feedback: false }); // a wrong amount: answered here, in words
       if (c < n) { f.state = 'giving'; this.say(T.tooFew()); return; }
       await this.say(T.tooManyBack(c - n));

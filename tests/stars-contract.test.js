@@ -98,7 +98,7 @@ test('the picture name is spoken after the last star, and the mission has its ow
   s.alive = false; s.exit();
 });
 
-test('a wrong star never scores or draws, and the right star is revealed afterwards', async () => {
+test('a wrong star never scores or draws, gets a "no", and the right star is not shown', async () => {
   const s = build(1);
   s.plan = [3];
   s.makePicture(3);
@@ -110,9 +110,11 @@ test('a wrong star never scores or draws, and the right star is revealed afterwa
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
   assert.equal(s.lines.length, 0);
-  assert.equal(globalThis.__starLines.at(-1), 'To jest trzy. Szukamy numeru dwa.');
+  assert.match(globalThis.__starLines.at(-1), /^Nie/);
   await flush();
-  assert.equal(right.userData.hinting, true);
+  assert.ok(!right.userData.hinting);
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   await s.tapStar(right);
   assert.equal(s.answers.length, 1);
   assert.equal(s.answers[0].skill, 'sequence');

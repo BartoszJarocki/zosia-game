@@ -153,9 +153,11 @@ export class Mission extends Stage {
    * What this round (or step) is asking. skill: one of SKILLS; item: e.g. 'B' or 4.
    * hooks (all optional) say how this mission helps (src/learning/assist.js):
    *   short     segments for the short prompt ("Gdzie jest Be?"), or a function returning them
-   *   hint()    show a clue; may return segments to say ("Be jak banan!")
-   *   simplify() make it easier (e.g. one wrong option leaves)
+   *   hint()    show a clue that is not the answer; may return segments to say ("Be jak banan!")
+   *   simplify() make it easier without showing the answer (e.g. one wrong option leaves). With two or fewer to
+   *             pick from, one leaving would leave the answer, so the clue (hint) comes instead
    *   reveal()  show the answer (e.g. this.hint(obj) pulses it); she still taps it herself
+   *   Only reveal shows the answer: a wrong tap gets "no" and the question again (this.wrong), nothing more.
    * opts:
    *   scored: false  it can't really be got wrong (an automatic give): it doesn't count for levelling or mastery
    *   options: n     how many things she can pick from, so mastery can tell knowing from guessing
@@ -177,7 +179,8 @@ export class Mission extends Stage {
   /**
    * She picked something else. A clear, kind "no" (a falling tone, the thing she tapped shakes its head and so
    * does Chase, "Nie, to nie ten."), then the question again or the next step of help.
-   * said: a different "no" line (it must start with "Nie"). feedback:false when the scene answers in words itself.
+   * said: the scene's own "no" instead ("Nie, to Em.", "Za mało!"); it never names the answer.
+   * feedback:false when the scene answers in words itself.
    */
   wrong(chosen, { obj = null, said = null, feedback = true, quiet = false } = {}) {
     this.miss();
@@ -242,7 +245,8 @@ export class Mission extends Stage {
     const h = aid.hooks;
     const short = (typeof h.short === 'function' ? h.short() : h.short) || this.prompt || [];
     if (action !== 'retry') this.helped(aid.state.level);
-    const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[action]?.(said);
+    const step = action === 'simplify' && (this.learn.current?.options ?? 3) <= 2 ? 'hint' : action;
+    const out = { hint: h.hint, simplify: h.simplify, reveal: h.reveal }[step]?.(said);
     if (out && typeof out.then === 'function') return;
     const plain = action === 'reveal' && h.reveal ? T.here() : short; // the answer pulses: point, don't ask again
     this.say([...said, ...(Array.isArray(out) ? out : plain)]);
@@ -386,6 +390,22 @@ export class Mission extends Stage {
     return wait(delay).then(() => animate(ms, (t) => { obj.position.y = y0 + (y - y0) * t; }, ease.bounce));
   }
 
+  /**
+   * A clue that walks her eye along things one at a time, a pop each, without saying how many (the dots, the
+   * craters, the floors, the stars so far). light(x) shows one; it may return a function that puts it back after
+   * its turn. Stops when the question is answered.
+   */
+  async pointAlong(things, light, ms = 650) {
+    const q = this.learn.current;
+    for (const x of things) {
+      if (!this.alive || this.learn.current !== q) return;
+      const off = light(x);
+      sfx.pop();
+      await wait(ms);
+      off?.();
+    }
+  }
+
   /** Help: take one wrong option away (it can't be tapped any more). */
   removeOption(obj) {
     if (!obj?.parent || obj.userData.gone) return;
@@ -409,9 +429,14 @@ export class Mission extends Stage {
     }, ease.linear);
   }
 
-  /** Pulse an object's scale after repeated misses. */
+  /** The answer pulses (the last step of help). */
   hint(obj, isDone, target = obj) {
-    this.helped(3); // the right answer pulses
+    this.helped(3);
+    this.pulseUntil(obj, isDone, target);
+  }
+
+  /** Pulse an object's scale until isDone(): the answer (this.hint), or the thing to tap (the lamp, the horn). */
+  pulseUntil(obj, isDone, target = obj) {
     if (obj.userData.hinting) return;
     obj.userData.hinting = true;
     const base = target.scale.clone();

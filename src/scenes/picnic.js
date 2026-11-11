@@ -197,7 +197,6 @@ export class PicnicMission extends Mission {
       this.question('comparison', item, {
         short: ask,
         hint: () => { clue(); return T.lookCarefully(); },
-        simplify: () => clue(),
         reveal: () => groups[answer].forEach((b) => this.hint(b, () => solved)), // the right group pulses
       }, { options: 2 });
       const story = eater === this.kitten ? T.kittenTummy() : [];

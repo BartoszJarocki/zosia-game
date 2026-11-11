@@ -419,7 +419,6 @@ export class GarageMission extends Mission {
       this.question('sorting', value, {
         short: [...named, ...T.whichBasket()],
         hint: () => T.into(block.rule, value), // the rule is the clue: "Duży do dużego!"
-        simplify: () => { hop(baskets[right], 0.35); return T.into(block.rule, value); },
         reveal: () => this.hint(baskets[right], () => solved),
       }, { options: baskets.length });
       wait(500).then(() => { if (this.alive) this.ask([...(intro ? T.blocksStart() : []), ...named, ...(firstBlock ? T.whichBasket() : [])]); });

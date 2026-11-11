@@ -68,14 +68,10 @@ test('Pluto lines are full Polish sentences and every one reaches recording', ()
   assert.deepEqual(T.plutoAsk(), ['Gdzie jest serduszko?']);
   assert.deepEqual(T.plutoRight(), ['Tak! To jest serduszko!']);
   assert.deepEqual(T.plutoDone(), ['Brawo! Serduszko Plutona świeci!']);
-  assert.deepEqual(T.plutoWrong('circle'), ['To jest koło. Serduszko jest tutaj.']);
-  assert.deepEqual(T.plutoWrong('square'), ['To jest kwadrat. Serduszko jest tutaj.']);
-  assert.deepEqual(T.plutoWrong('triangle'), ['To jest trójkąt. Serduszko jest tutaj.']);
   const recorded = allSegments(levels, letterSets.ALL);
   for (const line of [
     'Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.',
     'Gdzie jest serduszko?', 'Tak! To jest serduszko!', 'Brawo! Serduszko Plutona świeci!',
-    'To jest koło. Serduszko jest tutaj.', 'To jest kwadrat. Serduszko jest tutaj.',
-    'To jest trójkąt. Serduszko jest tutaj.', 'Narysuj z mamą serduszko!',
+    'Narysuj z mamą serduszko!',
   ]) assert.ok(recorded.includes(line), line);
 });

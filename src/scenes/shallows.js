@@ -374,10 +374,6 @@ export class ShallowsMission extends Mission {
         pulse();
         return step === 'drop' ? T.shallowsDrop() : answer();
       },
-      simplify: () => {
-        if (step !== 'drop') pulse();
-        return step === 'drop' ? T.shallowsDrop() : answer();
-      },
       reveal: pulse,
     }, { options: 2 });
   }

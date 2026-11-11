@@ -224,13 +224,13 @@ class LetterTrain extends Mission {
           ghostOn();
           return this.mode === 'missing' || !WORDS[target] ? T.findLetter(target) : T.letterLike(target);
         },
-        simplify: () => { // an extra letter (not in the word) leaves, keeping one for the last letter; otherwise the right block steps forward
+        simplify: () => { // an extra letter (not in the word) leaves, keeping one for the last letter; otherwise the clue
           const later = this.open().slice(1).map((i) => this.word[i]);
           const spare = this.blocks.filter((x) => x.userData.letter && x.userData.letter !== target && !later.includes(x.userData.letter) && x.parent);
           const extra = spare.length > 1 || r === this.rounds - 1 ? spare[0] : null;
-          if (extra) { this.removeOption(extra); extra.userData.letter = null; return; }
-          const b = right();
-          if (b && !b.userData.forward) { b.userData.forward = true; this.jumpTo(b, b.position.clone().add(new THREE.Vector3(0, 0, 0.7)), { height: 0.6, ms: 400 }); }
+          if (!extra) return hooks.hint();
+          this.removeOption(extra);
+          extra.userData.letter = null;
         },
         reveal: () => { const b = right(); if (b) this.hint(b, () => solved); },
       };
@@ -511,7 +511,7 @@ class WhoseTrain extends Mission {
         const right = () => this.trains.find((t) => t.userData.word === asked);
         this.question('wordVisual', asked, {
           short: T.whoseAsk(whose),
-          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); this.honk(right()); return Promise.resolve(); }, // the name in the bubble (now she can match it) and a toot, no words
+          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); ui.nudgeBubble(); return Promise.resolve(); }, // the name in the bubble (now she can match it), no words
           simplify: () => { const t = this.trains.find((x) => x.userData.word !== asked && x.parent && x.userData.onTap); if (t && this.trains.filter((x) => x.userData.onTap).length > 2) this.leave([t]); },
           reveal: () => { this.hint(right(), () => solved, right().userData.board); return T.whoseIs(whose); },
         }, { options: this.trains.length });
@@ -520,7 +520,7 @@ class WhoseTrain extends Mission {
           if (solved) return;
           this.poke();
           this.lookAt(t.userData.board);
-          if (t.userData.word !== asked) { this.wrong(t.userData.word, { feedback: false, quiet: true }); this.honk(right()); return; } // (no "no" near her name: just the right train toots)
+          if (t.userData.word !== asked) { this.wrong(t.userData.word, { obj: t }); return; }
           solved = true;
           this.correct(asked);
           this.stopIdle();

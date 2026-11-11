@@ -342,7 +342,7 @@ export class LookoutMission extends Mission {
     if (mode === 'relative' && r > 0) {
       const from = this.floor, target = this.pick('sequence', nextDoor(from, this.N)), up = target > from;
       return { skill: 'sequence', target, kitten: 'waits', show: () => ui.bubble({ seq: [from, up ? '⬆' : '⬇'], pic: '🐱', onTap: () => this.replay() }),
-        ask: [...T.liftHere(from), ...T.kittenNext(up)], short: T.oneFloor(up) };
+        ask: [...T.liftHere(from), ...T.kittenNext(up)], short: T.oneFloor(up), hint: () => { this.countFloors(0, from); return T.oneFloor(up); } }; // the floors up to the car light one by one
     }
     const pool = mode === 'go' ? range(1, Math.min(3, this.N)) : range(1, this.N);
     const target = this.pick('numeral', kittenFloors(pool, this.floor, this.visited));
@@ -358,15 +358,9 @@ export class LookoutMission extends Mission {
       ask: [...start, ...T.kittenAt(target)], short: T.liftPress(target) };
   }
 
-  /** The clue on a dice ride: the floors above the car light up one by one, as many as the die says. */
-  async countFloors(from, d) {
-    for (let f = from + 1; f <= from + d && this.alive; f++) {
-      this.glow(f, true);
-      this.pulse(f);
-      sfx.pop();
-      await wait(550);
-      this.glow(f, false);
-    }
+  /** A ride's clue: the floors above `from` light up one by one, d of them (a dice ride: as many as the die says). */
+  countFloors(from, d) {
+    return this.pointAlong(range(from + 1, from + d), (f) => { this.glow(f, true); this.pulse(f); return () => this.glow(f, false); }, 550);
   }
 
   async round(r) {
@@ -384,7 +378,7 @@ export class LookoutMission extends Mission {
     this.question(ride.skill, target, {
       short: () => (revealed ? T.liftPress(target) : ride.short),
       hint: () => (ride.hint ? ride.hint() : (showNumber(), T.dots(target))), // "Trzy kropki!"
-      simplify: () => showNumber(),
+      simplify: () => (ride.hint ? ride.hint() : showNumber()), // (where the bubble already shows the number, it gets its dots)
       reveal: () => this.panel.hint(target),
     }, { options: this.N });
 

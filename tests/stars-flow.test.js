@@ -70,7 +70,7 @@ async function scene(n = 3) {
   return s;
 }
 
-test('joining a picture in order scores each star and shows the right one after a wrong tap', async () => {
+test('joining a picture in order scores each star; a wrong tap gets a "no" and the question again, not the answer', async () => {
   const s = await scene();
   s.plan = [3];
   const round = s.round(0);
@@ -82,12 +82,15 @@ test('joining a picture in order scores each star and shows the right one after 
   assert.equal(globalThis.__lines.at(-1), 'Jeden, a co dalej?');
 
   const wrong = s.stars.find((x) => x.userData.num === 3);
+  const before = globalThis.__lines.length;
   await wrong.userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(s.lines.length, 0);
-  assert.equal(globalThis.__lines.at(-1), 'To jest trzy. Szukamy numeru dwa.');
+  assert.match(globalThis.__lines[before], /^Nie/);
+  assert.equal(globalThis.__lines.at(-1), 'Jeden, a co dalej?');
   const right = s.stars.find((x) => x.userData.num === 2);
-  await until(() => right.userData.hinting);
+  for (let i = 0; i < 20; i++) { s.update(0.05, i * 0.05); await flush(); }
+  assert.ok(!right.userData.hinting, 'the right star does not pulse after one wrong tap');
 
   await right.userData.onTap();
   assert.equal(s.answers.length, 1);

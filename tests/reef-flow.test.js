@@ -53,6 +53,7 @@ const { ReefMission } = await import('../src/scenes/reef.js');
 const { CONFIG } = await import('../src/config.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { learning } = await import('../src/learning/events.js');
+const { T } = await import('../src/lang/pl.js');
 const { startSession, getSession } = await import('../src/session/session.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const { scoreRun } = await import('../src/progress/levelup.js');
@@ -74,7 +75,7 @@ async function scene(level) {
   return s;
 }
 
-test('see shows the word and a little position picture, then a wrong tap teaches before the right one', async () => {
+test('see shows the word and a little position picture; a wrong tap gets a "no" and the question, not the answer', async () => {
   const s = await scene(1);
   const round = s.round(0);
   await until(() => s.phase === 'asking');
@@ -88,7 +89,9 @@ test('see shows the word and a little position picture, then a wrong tap teaches
   assert.equal(s.learn.current.wrong, 1);
   assert.equal(s.phase, 'asking');
   const right = pick(s, s.last);
-  assert.equal(right.userData.hinting, true);
+  assert.ok(!right.userData.hinting, 'the right scene does not pulse after one wrong tap');
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   await right.userData.onTap();
   await round;
   assert.equal(s.answers[0].skill, 'position');
@@ -128,7 +131,8 @@ test('place shows three glowing spots and the animal swims to the right one', as
   assert.equal(s.answers.length, 0);
   assert.equal(s.phase, 'asking');
   const rightSpot = s.spots.find((o) => o.userData.choice === target.word);
-  assert.equal(rightSpot.userData.hinting, true);
+  assert.ok(!rightSpot.userData.hinting, 'the right spot does not pulse after one wrong tap');
+  assert.equal(globalThis.__lines.at(-1), T.reefPlaceAsk('crab', 'pod', 'rock')[0]);
   await rightSpot.userData.onTap();
   await round;
   assert.equal(s.answers[0].skill, 'position');

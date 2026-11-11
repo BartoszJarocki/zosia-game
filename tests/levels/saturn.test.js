@@ -81,8 +81,6 @@ test('Saturn lines are full Polish sentences and every one reaches recording', (
   assert.deepEqual(T.saturnHint('ice'), ['To jest lód.', 'Gdzie jest lodowy pierścień?']);
   assert.deepEqual(T.saturnRight('ice'), ['Lód do lodu!']);
   assert.deepEqual(T.saturnRight('rock'), ['Skała do skał!']);
-  assert.deepEqual(T.saturnWrong('ice'), ['Ojej! To jest lód. Lód jest tutaj.']);
-  assert.deepEqual(T.saturnWrong('rock'), ['Ojej! To jest skała. Skały są tutaj.']);
   assert.deepEqual(T.saturnDone(), ['Brawo! Pierścienie Saturna są naprawione!']);
   assert.equal(HOME_TASKS.saturn, 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?');
   const recorded = allSegments(levels, letterSets.ALL);
@@ -90,7 +88,6 @@ test('Saturn lines are full Polish sentences and every one reaches recording', (
     'Jesteśmy przy Saturnie! Pierścienie się rozsypały. Pomożesz je naprawić?',
     'To jest lód.', 'Gdzie jest lodowy pierścień?', 'To jest skała.', 'Gdzie jest skalny pierścień?',
     'Lód czy skała? Gdzie to pasuje?', 'Lód do lodu!', 'Skała do skał!',
-    'Ojej! To jest lód. Lód jest tutaj.', 'Ojej! To jest skała. Skały są tutaj.',
     'Brawo! Pierścienie Saturna są naprawione!', 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
   ]) assert.ok(recorded.includes(line), line);
 });

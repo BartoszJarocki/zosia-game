@@ -102,19 +102,26 @@ test('a tap on the right ring flies the piece into its gap and scores the piece'
   stop(s);
 });
 
-test('the wrong ring answers gently, shows the right ring, then she tries again', async () => {
+test('the wrong ring gets a gentle "no" and the question again, the right ring does not light, then she tries again', async () => {
   const s = await scene(1, [{ kind: 'rock', size: 'same' }]);
   s.rounds = 1;
   const task = s.round(0);
   await until(() => s.phase === 'asking');
   const home = s.pieceObj.userData.home.clone();
+  const before = globalThis.__lines.length;
   ring(s, 'ice').userData.onTap();
   await until(() => s.pieceObj.position.distanceTo(home) < 0.02);
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
   assert.equal(s.phase, 'asking');
   assert.equal(s.last, 'rock');
-  assert.ok(globalThis.__lines.includes('Ojej! To jest skała. Skały są tutaj.'));
+  const said = globalThis.__lines.slice(before);
+  assert.ok(/^Nie/.test(said[0]), said.join(' '));
+  assert.ok(!said.some((l) => /tutaj/.test(l)), said.join(' '));
+  for (let i = 0; i < 10; i++) { s.update(0.1, i * 0.1); await flush(); }
+  assert.equal(s.rings.rock.mesh.material.emissiveIntensity, 0, 'the right ring does not light');
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   ring(s, 'rock').userData.onTap();
   await task;
   assert.equal(s.answers[0].item, 'rock');

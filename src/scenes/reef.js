@@ -350,15 +350,9 @@ export class ReefMission extends Mission {
     this.poke();
     this.lookAt(group);
     if (group.userData.choice !== target.word) {
-      this.phase = 'checking';
       this.lastWrong = group;
-      this.wrong(group.userData.choice, { obj: group, feedback: false });
+      this.wrong(group.userData.choice, { obj: group });
       hop(group, 0.22);
-      await this.say(T.reefWrong(target.animal, target.place.word, target.place.on));
-      if (!this.alive) return;
-      const right = this.choices.find((choice) => choice.userData.choice === target.word);
-      this.phase = 'asking';
-      this.hint(right, () => this.phase !== 'asking');
       return;
     }
     this.phase = 'solved';
@@ -458,15 +452,9 @@ export class ReefMission extends Mission {
     this.poke();
     this.lookAt(spot);
     if (spot.userData.choice !== target.word) {
-      this.phase = 'checking';
       this.lastWrong = spot;
-      this.wrong(spot.userData.choice, { obj: spot, feedback: false });
+      this.wrong(spot.userData.choice, { obj: spot });
       hop(spot, 0.15);
-      await this.say(T.reefWrong(target.animal, target.place.word, target.place.on));
-      if (!this.alive) return;
-      const right = this.spots.find((choice) => choice.userData.choice === target.word);
-      this.phase = 'asking';
-      this.hint(right, () => this.phase !== 'asking');
       return;
     }
     this.phase = 'solved';

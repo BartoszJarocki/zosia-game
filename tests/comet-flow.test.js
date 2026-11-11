@@ -76,7 +76,7 @@ async function scene(level = 1) {
   return s;
 }
 
-test('a right tap catches and counts; a wrong letter only wobbles and shows the answer', async () => {
+test('a right tap catches and counts; a wrong letter wobbles and gets a "no", and the answer is not shown', async () => {
   const s = await scene(2);
   globalThis.__lines = [];
   const round = s.round(0);
@@ -94,7 +94,9 @@ test('a right tap catches and counts; a wrong letter only wobbles and shows the 
   assert.equal(s.answers.length, 0);
   assert.equal(wrong.userData.wobble, 1);
   assert.ok(globalThis.__lines.slice(linesBefore).some((line) => /^Nie/.test(line)));
-  assert.ok(all.find((o) => o.userData.letter === target && o.userData.hinting));
+  assert.ok(!all.some((o) => o.userData.hinting), 'no comet pulses after one wrong tap');
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   await right.userData.onTap();
   assert.equal(s.answers.length, 1);
   assert.equal(s.answers[0].skill, 'letterVisual');

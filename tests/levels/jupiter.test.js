@@ -143,8 +143,6 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
   assert.deepEqual(T.jupiterBig('jupiter'), ['Jowisz jest dużo większy od Ziemi!']);
   assert.deepEqual(T.jupiterBig('sun'), ['Słońce jest dużo większe od Ziemi!']);
   assert.deepEqual(T.jupiterSmall(), ['Ziemia jest dużo mniejsza!']);
-  assert.deepEqual(T.jupiterLook('bigger'), ['Popatrz jeszcze raz. Ta jest większa.']);
-  assert.deepEqual(T.jupiterLook('smaller'), ['Popatrz jeszcze raz. Ta jest mniejsza.']);
   assert.deepEqual(T.jupiterSpot(), ['Czerwona plama to wielka burza.']);
   assert.deepEqual(T.jupiterDone(), ['Brawo! Jowisz ma piękne paski!']);
   assert.equal(HOME_TASKS.jupiter, 'Znajdź w domu coś w paski!');
@@ -153,7 +151,7 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
   const lines = [
     ...T.jupiterStart(), ...T.jupiterWhich(), ...T.jupiterGap(), ...T.jupiterTryAgain(), ...T.jupiterBigger(),
     ...T.jupiterSmaller(), ...T.jupiterBig('jupiter'), ...T.jupiterBig('sun'), ...T.jupiterSmall(),
-    ...T.jupiterLook('bigger'), ...T.jupiterLook('smaller'), ...T.jupiterSpot(), ...T.jupiterDone(),
+    ...T.jupiterSpot(), ...T.jupiterDone(),
     HOME_TASKS.jupiter,
   ];
   Object.values(STRIPE_ROWS).flat().forEach((row) => {

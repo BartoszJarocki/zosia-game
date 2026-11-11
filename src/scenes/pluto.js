@@ -169,15 +169,14 @@ export class PlutoMission extends Mission {
           resolve();
         } else {
           lastWrong = o;
-          this.wrong(o.userData.choice, { obj: o, said: T.plutoWrong(o.userData.choice) });
-          this.pulseHeart();
+          this.wrong(o.userData.choice, { obj: o });
         }
       };
       objs.forEach((o) => this.tappable(o, () => choose(o)));
       ui.bubble({ big: shapeSVG('heart', PIECE), pic: '🤍', onTap: () => this.replay() });
       this.question('shape', 'heart', {
         short: T.plutoAsk(),
-        hint: () => { this.pulseHeart(); return T.plutoAsk(); },
+        hint: () => { ui.nudgeBubble(); return T.plutoAsk(); }, // the heart to find is in the bubble (Pluto's own heart cannot be tapped)
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : objs.find((o) => o !== right && o.parent)),
         reveal: () => this.hint(right, () => solved),
       }, { options: objs.length });
@@ -212,18 +211,6 @@ export class PlutoMission extends Mission {
       this.heartBody.material.emissiveIntensity = fromGlow + (k * 1.2 - fromGlow) * t;
       this.heartGlow.material.opacity = fromHalo + (0.12 + k * 0.72 - fromHalo) * t;
     }, ease.out);
-  }
-
-  pulseHeart() {
-    if (this.heartPulsing) return;
-    this.heartPulsing = true;
-    const base = this.heartBody.material.emissiveIntensity;
-    animate(650, (t) => {
-      this.heartBody.material.emissiveIntensity = base + Math.sin(t * Math.PI) * 0.55;
-    }, ease.linear).then(() => {
-      this.heartPulsing = false;
-      this.heartBody.material.emissiveIntensity = base;
-    });
   }
 
   disposePiece(o) {

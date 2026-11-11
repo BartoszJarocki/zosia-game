@@ -76,7 +76,7 @@ async function scene(level = 1) {
   return s;
 }
 
-test('one wrong tap names the shape and does not score or fill the heart', async () => {
+test('one wrong tap gets a "no" and the question again, and does not score or fill the heart', async () => {
   const s = await scene(1);
   const task = s.round(0);
   await until(() => s.phase === 'choosing' && s.tappables.length >= 2);
@@ -84,11 +84,18 @@ test('one wrong tap names the shape and does not score or fill the heart', async
   assert.equal(s.tappables.length, 2);
   assert.ok(heart(s));
   const wrong = s.tappables.find((o) => o.userData.choice !== 'heart');
+  const before = globalThis.__lines.length, glow = s.heartBody.material.emissiveIntensity;
   await wrong.userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
+  assert.equal(s.aid.state.level, 1, 'help is at "try again"');
+  assert.ok(s.learn.current.assist <= 1);
   assert.equal(s.heartLevel, 0);
-  assert.ok(globalThis.__lines.includes(T.plutoWrong(wrong.userData.choice)[0]));
+  const said = globalThis.__lines.slice(before);
+  assert.ok(/^Nie/.test(said[0]), said.join(' '));
+  assert.equal(said.at(-1), T.plutoAsk()[0]);
+  assert.equal(s.heartBody.material.emissiveIntensity, glow, "Pluto's own heart, which she cannot tap, does not light");
+  assert.ok(!heart(s).userData.hinting);
   await heart(s).userData.onTap();
   await task;
   stop(s);
