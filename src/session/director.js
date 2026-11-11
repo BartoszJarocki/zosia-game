@@ -30,9 +30,10 @@ export const DOMAIN = Object.fromEntries(
  * @property {number[]} recentLatency     ms, correct answers
  * @property {number[]} recentAssistLevels  help level of correct answers
  * @property {string[]} recentErrors      errorType of the other events
- * @property {Array<object>} recentQuestions  one record per solved question: latencyMs, assist, and what
+ * @property {Array<object>} recentQuestions  one record per solved question: mission, latencyMs, assist, and what
  *                                     happened before it (wrongChoice, overTap, timeout, missTap, replays)
- * @property {{ latency: number[], assist: number[] }} baseline  the first few answers of the session
+ * @property {{ latency: Record<string, number[]>, assist: number[] }} baseline  how she started: the latency of her
+ *                                     first few answers in each mission, the help of her first few in the session
  * @property {boolean} finaleTriggered    the hub has called for the finale
  * @property {boolean} finaleDone
  * @property {boolean} endedEarly         wound down because she seemed tired (Phase 6)
@@ -42,7 +43,7 @@ export function createSession(now, { targetMissions = SESSION.targetMissions } =
     id: now, startedAt: now, lastActiveAt: now,
     missionsCompleted: 0, targetMissions, completed: [],
     recentLatency: [], recentAssistLevels: [], recentErrors: [],
-    recentQuestions: [], baseline: { latency: [], assist: [] }, pending: blankQuestion(),
+    recentQuestions: [], baseline: { latency: {}, assist: [] }, pending: blankQuestion(),
     finaleTriggered: false, finaleDone: false, endedEarly: false,
   };
 }
@@ -64,8 +65,10 @@ export function noteEvent(s, ev, { limit = SESSION.recentLimit } = {}) {
   if (ev.correct) {
     push(s.recentLatency, ev.latencyMs, limit);
     push(s.recentAssistLevels, ev.assistLevel, limit);
-    push(s.recentQuestions, { ...s.pending, latencyMs: ev.latencyMs, assist: ev.assistLevel }, limit);
-    if (s.baseline.latency.length < BASELINE) { s.baseline.latency.push(ev.latencyMs); s.baseline.assist.push(ev.assistLevel); }
+    push(s.recentQuestions, { ...s.pending, mission: ev.mission, latencyMs: ev.latencyMs, assist: ev.assistLevel }, limit);
+    const latency = (s.baseline.latency[ev.mission] ||= []);
+    if (latency.length < BASELINE) latency.push(ev.latencyMs);
+    if (s.baseline.assist.length < BASELINE) s.baseline.assist.push(ev.assistLevel);
     s.pending = blankQuestion();
   } else if (ev.errorType) {
     push(s.recentErrors, ev.errorType, limit);
@@ -96,7 +99,7 @@ export function windDown(s) {
  * How the session ends on the island (asked on every visit; a new session starts fresh):
  *   'thanks'     the finale is done: thank her once (and a "Misja w domu"), then free play
  *   'goodnight'  wound down early: a goodnight at the Lookout, once
- *   'asleep'     after the goodnight: the island sleeps (a tap gets "Czejs śpi… Do jutra!")
+ *   'asleep'     after the goodnight: the island sleeps until she taps a place (that starts a new session)
  *   null         no ending yet, or free play after the thanks
  */
 export function ending(s) {

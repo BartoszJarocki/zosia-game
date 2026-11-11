@@ -35,7 +35,7 @@ const project = (expr) => st(new Function('arg', `const { getStage, camera } = w
 const marker = (kind) => st((kind) => { const { getStage, camera } = window.__pup; const m = getStage().markers?.[kind]?.marker; if (!m) return null; const p = m.getWorldPosition(m.position.clone()); p.project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight }; }, kind);
 
 await page.goto(`${process.env.BASE || 'http://localhost:4190'}/?q=high`);
-await page.waitForSelector('.start .play');
+await page.waitForSelector('.start .play', { timeout: 90000 }); // (slow when the GPU is shared)
 await page.waitForTimeout(1200);
 const pb = await page.locator('.play').boundingBox();
 await tap(pb.x + pb.width / 2, pb.y + pb.height / 2);
@@ -88,17 +88,34 @@ if (name === 'guess') {
 }
 
 if (name === 'asleep') {
-  // The session winds down (as after a distracted spell): what the island looks like and what a tap gets.
+  // The session winds down (forced here, as after a distracted spell): the goodnight, then she taps Chase and a place.
+  const session = () => st(() => window.__pup.session().id);
+  const first = await session();
   await st(() => { const s = window.__pup.session(); s.endedEarly = true; });
   await st(() => window.__pup.game.hub());
+  const t0 = await T();
   await page.waitForTimeout(3000);
   await snap('goodnight-starts');
   await until((s) => s.asleep, 60000);
+  await note(`the goodnight took ${((await T()) - t0).toFixed(1)} s; asleep: ${(await stageInfo()).asleep}`);
   await page.waitForTimeout(1500);
   await snap('island-asleep');
-  await note(`asleep: ${(await stageInfo()).asleep}`);
-  for (const kind of ['counting', 'letters', 'rocket']) { const m = await marker(kind); await tap(m.x, m.y); await page.waitForTimeout(3300); await note(`tap on ${kind}: stage is still ${(await stageInfo()).ctor}; she hears: ${(await st(() => window.__said.slice(-1)))[0]}`); }
-  await snap('after-taps');
+  const chase = await project('(s) => s.pup');
+  await tap(chase.x, chase.y);
+  await page.waitForTimeout(2500);
+  await note(`tap on Chase: still asleep ${(await stageInfo()).asleep}; she hears: ${(await st(() => window.__said.slice(-1)))[0]}`);
+  const m = await marker('counting');
+  const t1 = await T();
+  await tap(m.x, m.y);
+  await page.waitForTimeout(200);
+  await note(`200 ms after a tap on the Treat House star: drowsy ${(await st(() => window.__pup.getStage().drowsy)).toFixed(2)} (1 = asleep)`);
+  await page.waitForTimeout(500);
+  await snap('waking');
+  const opened = await until((s) => s.kind === 'counting', 20000);
+  await note(`${((await T()) - t1).toFixed(1)} s after the tap: ${opened ? 'the Treat House is open' : 'NOTHING OPENED'}; she heard: ${(await st(() => window.__said.slice(-2))).join(' | ')}`);
+  await note(`a new session: ${(await session()) !== first}; night tint gone: ${!(await st(() => document.getElementById('game').classList.contains('night')))}`);
+  await page.waitForTimeout(2500);
+  await snap('mission-open');
 }
 
 if (name === 'maphome' || name === 'farflight') {

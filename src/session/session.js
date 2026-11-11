@@ -47,11 +47,12 @@ export function replayed() { noteReplay(getSession()); }
 
 /**
  * How is she doing? Applies it to the session (tired → finale next; finish → wind down) and returns
- * 'ok' | 'tired' | 'finish'. Once winding down, it stays that way for the session.
+ * 'ok' | 'tired' | 'finish'. 'finish' comes once a session, when it winds down ("Jeszcze tylko jedno!");
+ * after that she plays on as if tired (nothing new), and the mission is not cut short again.
  */
 export function checkAttention(now = Date.now()) {
   const s = getSession(now);
-  if (s.endedEarly) return 'finish';
+  if (s.endedEarly) return 'tired';
   const a = (s.attention = attention(s, CONFIG.attention));
   if (a.state === 'finish') windDown(s);
   else if (a.state === 'tired') shorten(s);

@@ -69,6 +69,7 @@ export class Hub extends Stage {
     this.area = 'island';
     this.greet = greet;
     this.silent = silent; // behind the start screen: slow orbit, no talking
+    this.invite = []; // what the hub is offering ("Może do Kociego Parku? Dotknij gwiazdki!"), until she picks a place
     // portrait: frame closer (the sides of the beach go, every place stays in view)
     this.view = { pos: HOME_VIEW.pos.clone(), look: HOME_VIEW.look.clone(), get minWidth() { return portrait() ? 36.5 : 40; } };
     this.post = { tilt: 0.75, focus: 0.4, band: 0.34 }; // sharp where the places are, dreamy sea on top
@@ -283,7 +284,7 @@ export class Hub extends Stage {
     const event = pickEvent({ step, suggested: this.suggested });
     session.pendingEvent = event?.id || null;
     const shown = event && addEvent(this, event);
-    const invite = (event && T[event.line]()) || (step === 'finale' ? T.finaleCall() : this.suggested ? [...T.suggest(this.suggested), ...T.tapStar()] : []);
+    const invite = (this.invite = (event && T[event.line]()) || (step === 'finale' ? T.finaleCall() : this.suggested ? [...T.suggest(this.suggested), ...T.tapStar()] : []));
     if (end === 'goodnight') { sayGoodbye(session); this.goodnight(this.worldLines); return; }
     let line = [];
     if (end === 'thanks') {
@@ -346,7 +347,6 @@ export class Hub extends Stage {
   exit() {
     this.dropToys?.();
     clearInterval(this.idleTimer);
-    clearTimeout(this.holdTimer);
     this.night?.restore(); // (the windows' glass is shared with every scene)
   }
 
@@ -396,19 +396,19 @@ export class Hub extends Stage {
     this.tappable(marker, () => this.tapPlace(kind));
   }
 
-  tapPlace(kind) { return this.asleep ? this.sleepyTap(kind) : this.go(kind); }
+  tapPlace(kind) { return this.asleep ? this.wake(kind) : this.go(kind); }
 
   tapGirl() {
-    if (this.night) return this.asleep && this.shush(T.goodnight());
+    if (this.night) return this.asleep && this.sleepy(T.goodnight());
     sfx.pop();
     this.cheerUntil = performance.now() / 1000 + 1.5;
     this.girl.userData.setHappy(1.5);
     hop(this.girl, 0.4);
-    say(pick(T.tapGirl()));
+    say([pick(T.tapGirl()), ...this.invite]);
   }
 
   tapTruck() {
-    if (this.night) return this.asleep && this.shush(T.asleep()); // (no honking at bedtime)
+    if (this.night) return this.asleep && this.sleepy(T.asleep()); // (no honking at bedtime)
     if (this.busy) return;
     if (this.micro?.active() && this.micro.onTruck) return this.micro.onTruck();
     sfx.honk();
@@ -416,18 +416,19 @@ export class Hub extends Stage {
   }
 
   tapPup() {
-    if (this.night) return this.asleep && this.shush(T.asleep());
+    if (this.night) return this.asleep && this.sleepy(T.asleep());
     if (this.micro?.active() && this.micro.onPup) return this.micro.onPup();
     sfx.bark();
     this.pup.userData.setHappy(1.5);
     hop(this.pup, 0.5);
-    say(pick(T.tapPup()));
+    say([pick(T.tapPup()), ...this.invite]); // (his line cuts the invitation, so it comes again)
   }
 
   async go(kind) {
     if (this.arriving) await this.arriving;
     if (!this.alive || this.busy) return;
     this.busy = true;
+    this.invite = [];
     const p = LAYOUT[kind];
     hush();
     sfx.siren(3);
@@ -586,7 +587,7 @@ export class Hub extends Stage {
     this.lighthouseBeamGroup = null;
   }
 
-  /** The island sleeps: stars rest, little z's float over Chase, and places answer "Czejs śpi… Do jutra!". */
+  /** The island sleeps: stars rest and little z's float over Chase until she taps a place. */
   sleep({ now = false } = {}) {
     if (now) { // back on an island that is already asleep
       this.dusk(0);
@@ -602,7 +603,7 @@ export class Hub extends Stage {
     const head = new THREE.Vector3();
     let next = 0;
     this.onUpdate((dt, t) => {
-      if (t < next) return;
+      if (t < next || !this.asleep) return;
       next = t + 1.5;
       this.pup.userData.parts.head.getWorldPosition(head);
       const z = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTexture(), transparent: true, depthTest: false }));
@@ -619,28 +620,28 @@ export class Hub extends Stage {
     });
   }
 
-  /** A tap while the island sleeps: "Czejs śpi… Do jutra!" Holding a place for 1.5 s (a grown-up) still starts it. */
-  sleepyTap(kind) {
+  /** A tap on Chase, the girl or the cruiser while the island sleeps: a sleepy answer, at most once every few seconds. */
+  sleepy(line) {
     if (getSession() !== this.session) return this.game.hub({ greet: true }); // a long break: it's a new day
-    clearTimeout(this.holdTimer);
-    const up = () => clearTimeout(this.holdTimer);
-    window.addEventListener('pointerup', up, { once: true });
-    this.holdTimer = setTimeout(() => { window.removeEventListener('pointerup', up); this.wake(kind); }, 1500);
-    this.shush(T.asleep());
-  }
-
-  /** A sleepy answer, at most once every few seconds. */
-  shush(line) {
     const now = performance.now();
     if (now - (this.shushedAt || 0) < 3000) return;
     this.shushedAt = now;
     say(line);
   }
 
-  /** A grown-up wants one more: a fresh session, straight into the mission. */
-  wake(kind) {
+  /** The goodnight never locks: a tap on a place wakes Chase with a yawn, and a new session opens that place. */
+  async wake(kind) {
+    if (this.busy) return;
+    this.busy = true;
+    this.asleep = false;
     startSession();
     hush();
+    sfx.siren(2);
+    this.truck.userData.setFlashing(true);
+    this.yawnAt = performance.now() / 1000;
+    animate(1500, (k) => (this.drowsy = 1 - k), ease.inOut);
+    await say(T.go(kind));
+    if (!this.alive) return;
     if (PLACES[kind].leadsTo) this.game.map(PLACES[kind].leadsTo, { launch: true });
     else this.game.startMission(kind);
   }

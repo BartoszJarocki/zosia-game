@@ -1,6 +1,8 @@
 // Attention / tiredness: simple heuristics from how play is going. No AI, no labels about the child —
 // just gameplay patterns, compared with how she played at the start of this session:
 //   answers getting slower · bursts of random taps · long silences · asking to hear it again · needing more help
+// Speed is compared within each mission only: a Treat House answer is many taps, a Kitty Park answer one, so a
+// change of mission is never slowing down. Help is the same ladder in every mission, so it is compared session-wide.
 // Pure (no timers, no DOM), so it is testable. Thresholds live in CONFIG.attention.
 
 export const ATTENTION = Object.freeze({
@@ -21,8 +23,8 @@ function median(xs) {
 }
 
 /**
- * @param {{ recentQuestions: Array<{ latencyMs: number, assist: number, overTap: number, timeout: number, replays: number }>,
- *           baseline: { latency: number[], assist: number[] } }} s   session (see director.js)
+ * @param {{ recentQuestions: Array<{ mission: string, latencyMs: number, assist: number, overTap: number, timeout: number, replays: number }>,
+ *           baseline: { latency: Record<string, number[]>, assist: number[] } }} s   session (see director.js)
  * @returns {{ score: number, state: 'ok'|'tired'|'finish', factors: Record<string, number>, enough: boolean }}
  */
 export function attention(s, opts = {}) {
@@ -30,11 +32,11 @@ export function attention(s, opts = {}) {
   const qs = s.recentQuestions || [];
   if (qs.length < o.minQuestions) return { score: 1, state: 'ok', factors: {}, enough: false };
   const recent = qs.slice(-o.window);
+  const slowdown = (q) => { const base = median(s.baseline?.latency?.[q.mission] || []); return base > 0 ? q.latencyMs / base : 1; };
 
-  const base = median(s.baseline?.latency || []);
   const factors = {
     // answers taking longer than at the start (30% slower counts a little, 2.5× counts fully)
-    slow: base > 0 ? clamp01((median(recent.map((q) => q.latencyMs)) / base - 1.3) / 1.2) : 0,
+    slow: clamp01((median(recent.map(slowdown)) - 1.3) / 1.2),
     randomTaps: clamp01(sum(recent.map((q) => q.overTap || 0)) / 3),
     timeouts: clamp01(sum(recent.map((q) => q.timeout || 0)) / 3),
     replays: clamp01(sum(recent.map((q) => q.replays || 0)) / 4),

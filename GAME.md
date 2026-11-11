@@ -17,7 +17,8 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
    cruiser. Tapping a place (or its bouncing star) drives them there. Each place shows its
    level stars; the badge shelf in the corner shows what she has earned.
 3. **A mission** — short: a few rounds (the `rounds` column below; paw prints at the top fill in).
-   The speech bubble shows what to look for, and tapping it repeats the question.
+   The speech bubble shows what to look for, and tapping it repeats the question (once the question is
+   answered, a tap on it does nothing, so the praise plays on).
    Help comes step by step and is the same in every mission:
    - **if she goes quiet:** the speech bubble bounces after ~6 s (no words: she may just be looking), a short
      prompt ("Gdzie jest Be?") after ~10 s, a clue ("Be jak banan!") after ~17 s, the answer pulses after ~25 s,
@@ -28,9 +29,11 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
    - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!")
 4. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
    tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
-   playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down,
-   random taps, needing more and more help), nothing new is asked and the finale comes sooner; if she seems
-   very tired: "Jeszcze tylko jedno!", an easy one she knows, a celebration and a gentle goodbye.
+   playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down
+   compared with her first answers in the same mission, random taps, needing more and more help), nothing new is
+   asked and the finale comes sooner; if she seems very tired: "Jeszcze tylko jedno!" (once a session), an easy one
+   she knows, a celebration and a gentle goodnight. The goodnight never locks: the island sleeps, and a tap on a
+   place wakes Chase with a yawn and starts a new session in that place.
 5. **Celebration** — badge, stars, confetti and fireworks, then "again" or "home".
 
 ## How levels work

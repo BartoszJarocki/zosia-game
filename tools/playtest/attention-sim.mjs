@@ -6,9 +6,10 @@ const run = (name, steps) => {
   const out = [];
   for (const st of steps) {
     for (let i = 0; i < (st.replays || 0); i++) noteReplay(s);
-    for (let i = 0; i < (st.timeouts || 0); i++) noteEvent(s, { correct: false, errorType: 'timeout' });
-    for (let i = 0; i < (st.overTaps || 0); i++) noteEvent(s, { correct: false, errorType: 'overTap' });
-    noteEvent(s, { correct: true, latencyMs: st.ms, assistLevel: st.assist || 0 });
+    const mission = { kitty: 'letters', treats: 'counting' }[st.label];
+    for (let i = 0; i < (st.timeouts || 0); i++) noteEvent(s, { mission, correct: false, errorType: 'timeout' });
+    for (let i = 0; i < (st.overTaps || 0); i++) noteEvent(s, { mission, correct: false, errorType: 'overTap' });
+    noteEvent(s, { mission, correct: true, latencyMs: st.ms, assistLevel: st.assist || 0 });
     const a = attention(s, { tired: 0.6, finish: 0.35 });
     out.push(`${st.label}:${a.score}${a.state === 'ok' ? '' : ' ' + a.state.toUpperCase()}`);
   }
