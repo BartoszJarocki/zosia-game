@@ -30,6 +30,14 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
      ("Nie, to Em." when it only looks like the right letter); then a wrong option goes away, then the answer
      pulses. She always makes the last tap herself.
    - **after a right tap:** a bright rising chime and "Tak!" / "Brawo!" / "Super!" before what it was ("Super! Dwa!")
+   - **every tap answers:** a finger that lands again within 0.12 s and 40 px is one tap, right or wrong. A tap
+     on something she can tap while the game cannot act on it yet gets a short tick and a little bounce of that
+     thing: it is not an answer and cuts no voice. Taps that count ("Mrugnij trzy razy!") are never lost: each
+     plays after the one before, and the tap that says "done" is judged after them. The next thing (the next
+     star, the next letter, the right tile after a wrong one) can be tapped as soon as her answer lands, while
+     the praise is still being said.
+   - **leaving:** the house button takes her home only when held for a moment (a ring fills round it), in a
+     mission and on the space and sea maps, so a stray tap does not end a trip.
 4. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
    tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
    playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down
@@ -373,12 +381,13 @@ laid out like the dots on a die, so she sees how many at once. Below it are the 
 - **rounds** — crater patches per mission (1 to 6). Each is one question, skill `quantity`, item the number,
   and every question is scored. Right: the dust blows away and the craters are counted aloud, lighting one by
   one and ending on her number. Wrong: the tile bounces, the craters are counted, the right tile glows, and she
-  tries again.
+  tries again. The right tile can be tapped all the while: her answer stops the count for help.
 
 ### 🌙 Moon Jumps · `moon`
 
-Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each slow, floaty
-jump leaves a pair of footprints in a row, so she can count the jumps afterwards.
+Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each jump leaves a pair of
+footprints in a row, so she can count the jumps afterwards. The jumps he does by himself are high and floaty,
+about one a second to count along; the ones she makes are quick hops, over by the time she taps again.
 
 | Level | types | jump | howMany | auto | slots | rounds |
 |---|---|---|---|---|---|---|
@@ -390,7 +399,7 @@ jump leaves a pair of footprints in a row, so she can count the jumps afterwards
 - **types**: each kind comes up at least once, with extra rounds repeating one. Kinds alternate when
   there are two, and the last round is always `jump` with auto on, including levels 3 and 4.
   `jump` asks "Skocz trzy razy!": she taps Chase once per jump, and each landing is counted aloud.
-  Taps while he is in the air are ignored. `howMany` asks her to watch him jump silently, then
+  A tap while he is in the air is counted too: he jumps again as soon as he lands. `howMany` asks her to watch him jump silently, then
   "Ile było skoków?": she can tap each footprint pair to count it and choose the numeral. The other
   choices are one less and one more. The footprints then light up and are counted to her number.
 - **jump** / **howMany**: the number ranges, up to 9; `—` when howMany is unused.
@@ -612,6 +621,8 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 - **mode**: `marks` keeps a yellow dot on the board for every flash (things that stay); `flashes` has no dots, so
   she counts what she saw, and tapping the bubble replays the flashes; `make` puts the number on the boat's sail,
   she taps the lamp that many times and then the boat; `more` flashes a number and she makes one flash more.
+  The flashes she makes are quick and each leaves a dot; quick taps flash one after another, every one counted,
+  and the boat is judged once they have all played.
 - **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
 - **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines

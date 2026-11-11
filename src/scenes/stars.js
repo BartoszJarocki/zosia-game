@@ -170,7 +170,7 @@ export class StarsMission extends Mission {
     line.position.copy(from).addScaledVector(step, length / 2);
   }
 
-  async tapStar(s) {
+  tapStar(s) {
     const n = s.userData.num;
     if (this.phase !== 'choosing' || s.userData.lit) return;
     const asked = this.last;
@@ -186,20 +186,16 @@ export class StarsMission extends Mission {
       });
       return;
     }
-    this.phase = 'drawing';
     this.correct(n);
     this.stopIdle();
     this.litNumbers.push(n);
     this.lightStar(s);
-    const talk = this.say(T.number(n));
-    await this.drawLine(this.stars[n - 2], s);
-    await talk;
-    if (!this.alive) return;
-    this.phase = 'choosing';
-    this.stepDone?.();
+    this.drawLine(this.stars[n - 2], s);
+    this.stepDone?.({ talk: this.say(T.number(n)) }); // the next star can be tapped while its line draws and its number is said
   }
 
-  askNumber(n) {
+  /** Ask for star n; talk: the number of the star before, still being said. Resolves with { talk }: this star's number. */
+  askNumber(n, talk) {
     const right = this.stars[n - 1];
     const soFar = this.stars.slice(0, n - 1).map((s) => s.userData.num);
     this.last = n;
@@ -210,13 +206,15 @@ export class StarsMission extends Mission {
       reveal: () => { this.hint(right, () => this.last !== n || this.phase !== 'choosing'); return T.starsHelp(n); },
     }, { options: this.stars.filter((s) => !s.userData.lit).length });
     ui.bubble({ big: String(n), pic: '⭐', onTap: () => this.replay(), passthrough: true });
-    this.ask(T.starsAsk(soFar));
+    this.askAfter(talk, T.starsAsk(soFar));
     return new Promise((resolve) => { this.stepDone = resolve; });
   }
 
-  async finishPicture() {
+  async finishPicture(talk) {
     this.phase = 'celebrating';
     this.stars.forEach((s) => this.untap(s));
+    await talk;
+    if (!this.alive) return;
     if (this.picture.closed) await this.drawLine(this.stars.at(-1), this.stars[0]);
     if (this.fill) await animate(650, (t) => { this.fill.material.opacity = t * 0.34; }, ease.out);
     this.stars.forEach((s) => this.lightStar(s));
@@ -250,12 +248,13 @@ export class StarsMission extends Mission {
     }
     const count = this.windingDown && r === this.rounds - 1 ? this.plan.at(-1) : this.plan[r];
     this.makePicture(count);
+    let talk = null;
     for (let n = 2; n <= count; n++) {
       if (!this.alive) return;
-      await this.askNumber(n);
+      ({ talk } = await this.askNumber(n, talk));
     }
     if (!this.alive) return;
-    await this.finishPicture();
+    await this.finishPicture(talk);
     if (!this.alive) return;
     this.clearPicture();
   }

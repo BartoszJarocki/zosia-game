@@ -267,7 +267,8 @@ class LetterTrain extends Mission {
         const next = this.open()[0] ?? -1;
         this.glowAt(next);
         if (this.mode !== 'ghost') this.bubbleFor(next);
-        await say([...this.yes(), ...T.letter(letter)]);
+        this.talk = say([...this.yes(), ...T.letter(letter)]); // the next letter can be tapped while it is said
+        if (next < 0) await this.talk; // (the word is done: the ending waits for it)
         resolve();
       };
       this.blocks.forEach((b) => { if (b.userData.letter) this.tappable(b, onTap); });
@@ -277,7 +278,7 @@ class LetterTrain extends Mission {
       wait(r === 0 ? 1200 : 200).then(() => {
         if (!this.alive) return;
         const first = { word: T.wordStart(this.word), missing: T.missingAsk(this.word, this.fill.length) }[this.mode] || T.spellStart(this.word);
-        this.ask(r === 0 ? first : next);
+        this.askAfter(this.talk, r === 0 ? first : next);
       });
     });
   }

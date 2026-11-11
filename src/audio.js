@@ -35,8 +35,13 @@ function shown() {
 }
 window.addEventListener('pointerdown', wake, true);
 
+let started = 0;
+/** How many tones and noises have started so far (input/answer.js: did a tap make a sound?). */
+export const soundsStarted = () => started;
+
 function tone(freq, dur, { type = 'sine', vol = 0.2, when = 0, to = freq } = {}) {
   if (!ctx) return;
+  started++;
   const t = ctx.currentTime + when;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
@@ -53,6 +58,7 @@ function tone(freq, dur, { type = 'sine', vol = 0.2, when = 0, to = freq } = {})
 
 function noise(dur, { vol = 0.3, when = 0, freq = 1500 } = {}) {
   if (!ctx) return;
+  started++;
   const len = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -70,6 +76,7 @@ function noise(dur, { vol = 0.3, when = 0, freq = 1500 } = {}) {
 
 export const sfx = {
   pop: () => tone(500, 0.1, { to: 900, vol: 0.25 }),
+  tick: () => tone(1250, 0.05, { type: 'triangle', vol: 0.12, to: 1050 }), // "I felt that": a tap the game cannot act on yet
   good: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, { type: 'triangle', vol: 0.2, when: i * 0.09 })),
   // right and wrong must be told apart in the first moment: up means yes, down means no (both gentle)
   yes: () => { tone(784, 0.1, { type: 'triangle', vol: 0.16, to: 880 }); tone(1175, 0.18, { type: 'triangle', vol: 0.15, when: 0.09, to: 1318 }); },

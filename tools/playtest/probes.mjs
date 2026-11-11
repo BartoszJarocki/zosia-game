@@ -132,9 +132,17 @@ if (name === 'maphome' || name === 'farflight') {
   await page.waitForTimeout(1000);
   if (name === 'maphome') {
     const hb = await page.locator('.space-home').boundingBox();
+    const centre = [{ x: hb.x + hb.width / 2, y: hb.y + hb.height / 2 }];
+    await tap(centre[0].x, centre[0].y);
+    await page.waitForTimeout(3000);
+    const stayed = await stageInfo();
+    await note(`one tap on the house button on the map: ${stayed.area === 'space' && stayed.state === 'waiting' ? 'still on the space map' : `left the map (${stayed.ctor}, ${stayed.area})`}`);
+    const cdp = await context.newCDPSession(page); // (a hold: touchscreen.tap lifts at once)
     const t1 = await T();
-    await tap(hb.x + hb.width / 2, hb.y + hb.height / 2);
-    await note('one tap on the house button on the map');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: centre });
+    await page.waitForTimeout(1000);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await note('she holds the house button for 1 s');
     const home = await until((s) => s.ctor && s.area === 'island' && !s.busy && s.state === undefined, 60000);
     await note(`back on the island ${((await T()) - t1).toFixed(1)} s later: ${Boolean(home)}`);
     await snap('island-again');

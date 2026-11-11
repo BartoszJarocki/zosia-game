@@ -370,11 +370,10 @@ export class LookoutMission extends Mission {
   }
 
   async round(r) {
+    // a press before the ride's question (the die still waits) or during a ride does nothing yet: ui.js answers it
     if (!this.panel) this.panel = ui.liftPanel({ floors: this.N, onPress: (f) => this.onPress?.(f) });
-    this.panel.lock(true);
     const ride = await this.plan(r);
     if (!this.alive) return;
-    this.panel.lock(false);
     const { target } = ride;
     this.visited.push(target);
     this.last = target;
@@ -399,7 +398,6 @@ export class LookoutMission extends Mission {
         this.correct(f);
         this.stopIdle();
         this.panel.light(f);
-        this.panel.lock(true);
         sfx.pop();
         await this.doorsTo(false);
         await this.ride(target);
@@ -415,7 +413,6 @@ export class LookoutMission extends Mission {
         await say([pick(T.kittenIn())]); // (one of the variants)
         if (!this.alive) return;
         this.panel.clear();
-        this.panel.lock(false);
         resolve();
       };
       wait(r === 0 ? 900 : 400).then(() => { if (this.alive) this.ask(ride.ask); });
@@ -424,7 +421,6 @@ export class LookoutMission extends Mission {
 
   async outro() {
     ui.hideBubble();
-    this.panel?.lock(true);
     await this.doorsTo(false);
     const atTop = this.floor === this.N, all = this.kittens.length > 1;
     const line = atTop ? (all ? T.kittensAllTop() : T.liftAtTop()) : (all ? T.kittensAll() : T.liftTop());

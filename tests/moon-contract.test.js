@@ -31,7 +31,7 @@ registerHooks({ load(url, context, next) {
     export const post = { tier: 'medium' };
     export const ease = { linear: t => t, out: t => t, in: t => t, inOut: t => t };
     export const animate = async (ms, fn) => {
-      if (ms === 1400) {
+      if (ms === 400) { // (her jumps)
         globalThis.__moonJumps.push(ms);
         if (globalThis.__holdMoonJump) await new Promise(r => { globalThis.__landMoonJump = r; });
       }
@@ -81,28 +81,25 @@ async function build(level = 1, count = 3) {
   return s;
 }
 
-test('one tap creates one 1.4 second jump and one footprint pair only after landing', async () => {
+test('her taps jump one after another: taps in the air are counted, and an automatic round stops at the number', async () => {
   const s = await build();
   const task = s.jumpRound(true);
   assert.equal(s.last, 3);
   assert.ok(jumper(s));
   assert.ok(flag(s));
   globalThis.__holdMoonJump = true;
-  const jumpsBefore = globalThis.__moonJumps.length;
-  const first = jumper(s).userData.onTap();
-  assert.equal(prints(s).length, 0);
-  await jumper(s).userData.onTap();
-  await jumper(s).userData.onTap();
-  assert.equal(globalThis.__moonJumps.length, jumpsBefore + 1);
-  globalThis.__landMoonJump();
-  await first;
-  assert.equal(prints(s).length, 1);
-  assert.equal(globalThis.__moonLines.at(-1), 'Jeden!');
+  const jumpsBefore = globalThis.__moonJumps.length, linesBefore = globalThis.__moonLines.length;
+  const taps = [1, 2, 3, 4].map(() => jumper(s).userData.onTap());
+  assert.equal(prints(s).length, 0, 'a footprint pair only after landing');
+  assert.equal(globalThis.__moonJumps.length, jumpsBefore + 1, 'one jump at a time');
   globalThis.__holdMoonJump = false;
-  await jumper(s).userData.onTap();
-  await jumper(s).userData.onTap();
+  globalThis.__landMoonJump();
+  await Promise.all(taps);
   await task;
-  assert.equal(prints(s).length, 3);
+  assert.equal(prints(s).length, 3, 'the fourth tap came after the round was done');
+  assert.equal(globalThis.__moonJumps.length, jumpsBefore + 3);
+  const numbers = ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'];
+  assert.deepEqual(globalThis.__moonLines.slice(linesBefore).filter((l) => numbers.includes(l)), ['Jeden!', 'Dwa!', 'Trzy!'], 'each landing counted, in order');
   assert.equal(s.answers.length, 1);
   assert.equal(s.answers[0].skill, 'counting');
   assert.equal(s.answers[0].item, '3');

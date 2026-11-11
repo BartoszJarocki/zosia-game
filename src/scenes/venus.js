@@ -282,17 +282,14 @@ export class VenusMission extends Mission {
           resolve();
           return;
         }
-        lastWrong = tile;
-        this.phase = 'checking';
+        lastWrong = tile; // (the right tile can be tapped all along)
         this.wrong(tile.userData.choice, { obj: tile, feedback: false });
         hop(tile, 0.35);
         await this.openClouds();
-        if (!this.alive) return;
+        if (!this.alive || solved) return;
         this.glowTile(right, () => solved);
         this.chase.userData.setHappy(1);
-        await this.say(T.venusWrong(target));
-        if (!this.alive) return;
-        this.phase = 'asking';
+        this.say(T.venusWrong(target));
       };
       for (const tile of this.tiles) this.tappable(tile, () => choose(tile));
 

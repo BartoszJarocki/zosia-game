@@ -144,16 +144,15 @@ export class BalloonsMission extends Mission {
           this.stopIdle();
           sfx.good();
           this.success(null, { big: true });
-          await say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]);
-          if (!this.alive) return;
-          // the rest float away
+          // the rest float away now: none is left looking poppable while the praise plays
           const rest = this.balloons;
           this.balloons = [];
           rest.forEach((x) => this.untap(x));
-          await Promise.all(rest.map((x) => {
+          await Promise.all([say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]), ...rest.map((x) => {
             const y0 = x.position.y;
             return animate(900, (t) => { x.position.y = y0 + t * 12; }, ease.in).then(() => x.removeFromParent());
-          }));
+          })]);
+          if (!this.alive) return;
           resolve();
         } else {
           lastWrong = b;

@@ -30,6 +30,7 @@ registerHooks({ load(url, context, next) {
     export const ease = { inOut: (x) => x, linear: (x) => x, out: (x) => x, in: (x) => x, back: (x) => x };
     export const animate = async (ms, fn) => {
       globalThis.__animations.push(ms);
+      if (globalThis.__holdFlash && ms < 200) await new Promise((resolve) => { globalThis.__flashed = resolve; }); // (a flash she makes)
       for (const t of [0, 0.25, 0.5, 0.75, 1]) fn(t);
     };
     export const wait = () => new Promise(setImmediate);
@@ -158,6 +159,31 @@ test('make: the boat waits, too few resets the dots, and the right count sails i
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
+  stop(s);
+});
+
+test('make: three quick taps give three flashes and three dots one after another, and the boat waits for them', async () => {
+  const s = await scene(3, 3);
+  const round = s.round(0);
+  await until(() => s.phase === 'making');
+  const dings = () => globalThis.__sfx.filter((x) => x === 'ding').length, before = dings();
+  globalThis.__holdFlash = true;
+  const taps = [s.lamp.userData.onTap(), s.lamp.userData.onTap(), s.lamp.userData.onTap()];
+  const boat = s.boat.userData.onTap();
+  assert.equal(dings() - before, 1, 'one flash at a time');
+  assert.equal(s.dots.length, 1);
+  assert.equal(s.learn.current.wrong, 0, 'the boat is judged after the flashes');
+  assert.equal(s.lamp.userData.onTap(), undefined, 'a tap after the boat is not counted');
+  globalThis.__holdFlash = false;
+  globalThis.__flashed();
+  await Promise.all(taps);
+  assert.equal(dings() - before, 3);
+  assert.equal(s.dots.length, 3);
+  assert.equal(s.count, 3);
+  await boat;
+  await round;
+  assert.equal(s.answers[0].skill, 'counting');
+  assert.equal(s.answers[0].firstTry, true, 'three quick taps are three, not "Za mało!"');
   stop(s);
 });
 

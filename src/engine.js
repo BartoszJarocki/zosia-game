@@ -6,6 +6,9 @@ import { optimizeScene } from './fx/optimize.js';
 import { CONFIG } from './config.js';
 import { startDrag } from './input/drag.js';
 import { strayTarget } from './input/stray.js';
+import { freshTap } from './input/bounce.js';
+import { answer } from './input/answer.js';
+import { sfx, soundsStarted } from './audio.js';
 
 // ---------- renderer ----------
 export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -157,8 +160,11 @@ function findTappable(obj) {
   return null;
 }
 
+/** Every tap on something she can tap answers: what it does, or a tick and a bounce of the thing (input/answer.js). */
+const answerTap = (obj, handle) => answer(handle, { sounds: soundsStarted, tick: sfx.tick, bounce: () => nudge(obj) });
+
 renderer.domElement.addEventListener('pointerdown', (e) => {
-  if (!current) return;
+  if (!freshTap(e) || !current) return; // (the same finger landing again: input/bounce.js)
   const rect = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
@@ -175,8 +181,11 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     });
     target = strayTarget(spots, { x: e.clientX - rect.left, y: e.clientY - rect.top }, Math.min(rect.width, rect.height), current.stray); // (a stage sets `stray` to want a different radius)
   }
-  if (target?.userData.drag) { startDrag(target, e, { camera, dom: renderer.domElement, isAlive: () => current?.alive, wake: () => (lastActive = performance.now()) }); return; }
-  if (target) target.userData.onTap(target);
+  if (target?.userData.drag) {
+    startDrag(target, e, { camera, dom: renderer.domElement, isAlive: () => current?.alive, wake: () => (lastActive = performance.now()), answer: (handle) => answerTap(target, handle) });
+    return;
+  }
+  if (target) answerTap(target, () => target.userData.onTap(target));
   else current.onMissTap?.(); // a tap that hit nothing: missions log it as a motor slip
 });
 
@@ -291,6 +300,14 @@ export function hop(obj, height = 0.6, ms = 450) {
     obj.userData.hopping = null;
   });
   return obj.userData.hopping;
+}
+
+/** "I felt that": a quick little swell of something she tapped (scale only, back exactly where it was). */
+export function nudge(obj) {
+  if (obj.userData.nudging || obj.userData.hinting) return; // (a pulsing hint already moves it)
+  const s0 = obj.scale.clone();
+  obj.userData.nudging = animate(180, (t) => obj.scale.copy(s0).multiplyScalar(1 + Math.sin(t * Math.PI) * 0.12), ease.linear)
+    .then(() => { obj.scale.copy(s0); obj.userData.nudging = null; });
 }
 
 /** "No": a quick side-to-side head-shake (turns and sways), then back exactly where it was. */

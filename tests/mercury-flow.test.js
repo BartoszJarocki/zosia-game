@@ -102,8 +102,7 @@ test('a flash round hides the craters under pink dust, then counts them after a 
   assert.equal(s.craters.visible, false);
   assert.equal(globalThis.__lines.at(-1), 'Szybkie oko! Ile było kraterów?');
   const wrong = s.blocks.find((b) => b.userData.num !== s.last);
-  wrong.userData.onTap();
-  await until(() => s.busy === false);
+  await wrong.userData.onTap();
   assert.ok(globalThis.__lines.includes('Popatrz jeszcze raz.'));
   assert.deepEqual(globalThis.__lines.filter((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l)).slice(-4), ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!']);
   assert.equal(s.craters.visible, true);
@@ -112,6 +111,22 @@ test('a flash round hides the craters under pink dust, then counts them after a 
   await round;
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].scored, true);
+  stop(s);
+});
+
+test('right after a wrong tile the right one counts, and the count for help gives way to hers', async () => {
+  const s = await scene(3, 4);
+  const round = s.craterRound();
+  await until(() => s.phase === 'choosing');
+  globalThis.__lines = [];
+  s.blocks.find((b) => b.userData.num !== s.last).userData.onTap();
+  s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
+  await flush();
+  assert.equal(s.answers.length, 1, 'the right tile was not locked by the wrong one');
+  assert.equal(s.answers[0].firstTry, false);
+  await round;
+  const numbers = globalThis.__lines.filter((l) => ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'].includes(l));
+  assert.deepEqual(numbers, ['Jeden!', 'Dwa!', 'Trzy!', 'Cztery!'], 'one count, not two at once');
   stop(s);
 });
 

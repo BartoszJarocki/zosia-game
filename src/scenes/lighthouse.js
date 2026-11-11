@@ -20,6 +20,8 @@ const LAMP_BASE = 1.7;
 const DOT_R = 0.16;
 const DOT_STEP = 0.55;
 const DOT_SLOTS = 7;
+const SHOW_FLASH_MS = 1100; // the flashes she counts by watching
+const TAP_FLASH_MS = 420;   // a flash she makes: about the gap between two quick taps, so her count keeps up with her
 
 const numeralMap = (n, bg = '#ffffff', fg = '#1e3a8a') => texture(256, (c, size) => {
   c.clearRect(0, 0, size, size);
@@ -307,16 +309,16 @@ export class LighthouseMission extends Mission {
     this.dots.forEach((dot) => dot.material.color.set('#fde047'));
   }
 
-  async flashOnce() {
+  async flashOnce(ms = SHOW_FLASH_MS) {
     sfx.ding();
     const material = this.lantern.material;
     this.glow.visible = true;
-    await animate(500, (t) => {
+    await animate(ms * 5 / 11, (t) => {
       material.emissiveIntensity = LAMP_BASE + t * 6;
       this.glowMat.opacity = 0.9 * Math.min(1, t * 1.6);
       this.glow.scale.setScalar(4.2 + t * 1.4);
     }, ease.out);
-    await animate(600, (t) => {
+    await animate(ms * 6 / 11, (t) => {
       material.emissiveIntensity = LAMP_BASE + 6 - t * 6;
       this.glowMat.opacity = 0.9 * (1 - t);
       this.glow.scale.setScalar(5.6 - t * 1.4);
@@ -456,22 +458,29 @@ export class LighthouseMission extends Mission {
     this.ask([...(mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n)), ...T.lighthouseDoneTap()]);
   }
 
-  async tapLamp() {
-    if (this.phase !== 'making' || this.flashing) return;
-    this.poke();
-    this.flashing = true;
-    this.count++;
-    this.addDot();
-    await this.flashOnce();
-    this.flashing = false;
-    if (!this.alive) return;
-    this.last = this.count >= this.target ? 'done' : this.target;
-    if (this.count >= this.target) delete this.lamp.userData.choice;
-  }
-
-  async tapBoat() {
+  /** One flash she makes, with its dot. Quick taps flash one after another, every one counted. */
+  tapLamp() {
     if (this.phase !== 'making') return;
     this.poke();
+    return this.inTurn(() => {
+      if (this.phase !== 'making' && this.phase !== 'checking') return; // (taps made before the boat still count)
+      this.count++;
+      this.addDot();
+      this.last = this.count >= this.target ? 'done' : this.target;
+      if (this.count >= this.target) delete this.lamp.userData.choice;
+      return this.flashOnce(TAP_FLASH_MS);
+    });
+  }
+
+  /** "Done": judged once every flash she asked for has played. */
+  tapBoat() {
+    if (this.phase !== 'making') return;
+    this.poke();
+    this.phase = 'checking';
+    return this.inTurn(() => this.checkCount());
+  }
+
+  async checkCount() {
     const verdict = countVerdict(this.count, this.target);
     if (verdict !== 'right') {
       this.bobBoat();

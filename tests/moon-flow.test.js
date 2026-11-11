@@ -29,7 +29,7 @@ registerHooks({ load(url, context, next) {
     export const ease = { inOut: (x) => x, linear: (x) => x, out: (x) => x };
     export const animate = async (ms, fn) => {
       globalThis.__animations.push(ms);
-      if (ms === 1400 && globalThis.__holdJump) await new Promise((resolve) => { globalThis.__land = resolve; });
+      if (ms === 400 && globalThis.__holdJump) await new Promise((resolve) => { globalThis.__land = resolve; });
       for (const t of [0, 0.25, 0.5, 0.75, 1]) fn(t);
     };
     export const wait = () => new Promise(setImmediate);
@@ -75,36 +75,29 @@ async function scene(n = 3) {
   return s;
 }
 
-test('one tap makes one 1400 ms jump; taps and flag checks in the air are ignored', async () => {
+test('quick taps jump in turn: three taps while he is in the air give three counted jumps, then the flag', async () => {
   const s = await scene();
   const round = s.jumpRound(false);
+  globalThis.__lines = [];
   globalThis.__holdJump = true;
-  const first = s.chase.userData.onTap();
-  assert.equal(s.airborne, true);
-  await s.chase.userData.onTap();
-  await s.flag.userData.onTap();
-  assert.equal(s.prints.length, 0);
-  assert.equal(s.learn.current.wrong, 0);
+  const taps = [s.chase.userData.onTap(), s.chase.userData.onTap(), s.chase.userData.onTap()];
+  const flag = s.flag.userData.onTap();
+  assert.equal(s.prints.length, 0, 'the first jump is still in the air');
+  assert.equal(s.learn.current.wrong, 0, 'the flag waits for the jumps she asked for');
+  assert.equal(s.chase.userData.onTap(), undefined, 'a tap after the flag is not counted');
   globalThis.__holdJump = false;
   globalThis.__land();
-  await first;
-  assert.equal(s.prints.length, 1);
-  assert.equal(s.chase.position.y, 0);
-  assert.equal(globalThis.__lines.at(-1), 'Jeden!');
-  await flush();
-  assert.equal(s.prints.length, 1);
-  await s.chase.userData.onTap();
-  await s.chase.userData.onTap();
+  await Promise.all([...taps, flag]);
   assert.equal(s.prints.length, 3);
   assert.deepEqual(s.prints.map((p) => Number(p.position.x.toFixed(2))), [-3.85, -2.8, -1.75]);
-  assert.equal(s.phase, 'jump');
-  await s.flag.userData.onTap();
+  assert.deepEqual(globalThis.__lines.filter((l) => /^(Jeden|Dwa|Trzy|Cztery)!$/.test(l)), ['Jeden!', 'Dwa!', 'Trzy!']);
+  assert.equal(s.chase.position.y, 0);
   await round;
   assert.equal(s.answers[0].skill, 'counting');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
-  assert.equal(globalThis.__animations.filter((ms) => ms === 1400).length, 3);
+  assert.equal(globalThis.__animations.filter((ms) => ms === 400).length, 3, 'her jumps are quick');
   stop(s);
 });
 
@@ -185,7 +178,7 @@ test('every Moon level runs through base progress and celebration, and counts fo
     const unsubscribe = learning.subscribe((e) => events.push(e));
     s.enter(); s.collect(); optimizeScene(s.scene);
     for (let step = 0; step < 250 && !globalThis.__celebration; step++) {
-      if (s.phase === 'jump' && !s.airborne) {
+      if (s.phase === 'jump') {
         if (s.prints.length < s.last) await s.chase.userData.onTap();
         else if (s.flag.visible) await s.flag.userData.onTap();
       } else if (s.phase === 'choosing') s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
