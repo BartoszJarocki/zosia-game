@@ -716,8 +716,9 @@ in and next to them.
 
 ### 📯 The Port · `port`
 
-A little sunny port with a wooden quay, five small moored boats bobbing, each with its name painted on a white
-board, and Chase watching from his round window. A big round horn stands on the quay. One boat comes forward,
+A little sunny port with a wooden quay, five small moored boats bobbing, each with its animal painted on a white
+board (the boat is named after it: a seal is Foka), and Chase watching from his round window. Every board is the
+same width, so it never tells how long a name is. A big round horn stands on the quay. One boat comes forward,
 and she toots its name once for each syllable.
 
 | Level | mode | syllables | rounds |
@@ -728,14 +729,16 @@ and she toots its name once for each syllable.
 
 - **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
   `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
-  `which`: three boats come forward, "Która łódka ma dwa kawałki?", and she taps the tick under a boat.
+  `which`: three boats come forward, each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka
+  ma dwa kawałki?", and she taps the tick under a boat. Tapping a boat itself says its name again.
 - **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the boat's name again, and
   she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
   kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
-  pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right name pulses. Right:
+  pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right board pulses; a long
+  wait brings the three names again. Right:
   the boat sails out happily, saying its name once; the next boat comes in meanwhile. The name is said once
   before her toots (Chase's clap, or the whole name) and once after. A boat is never lost.
 

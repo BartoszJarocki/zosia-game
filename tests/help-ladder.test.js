@@ -167,8 +167,8 @@ const PLACES = [
   {
     name: 'The Port, which boat', open: async () => { const s = await make(PortMission, 3); s.round(0); await until(s, () => s.phase === 'choosing' && s.aid, 'boats'); return s; },
     wrong: (s) => tap(s.tickButtons.find((t) => t.userData.num !== s.last && t.userData.onTap)),
-    right: (s) => s.boats.filter((b) => b.userData.num === s.last),
-    shown: (s) => (s.boards.some((b) => b.userData.hinting) ? "the right boat's name pulses" : ''),
+    right: (s) => s.boats.filter((b) => b.userData.pieces === s.last),
+    shown: (s) => (s.boats.some((b) => b.userData.board.userData.hinting) ? "the right boat's board pulses" : ''),
   },
   {
     name: 'The Port, toot the name', open: async () => { const s = await make(PortMission, 2, (x) => { x.pick = () => 'FOKA'; }); s.round(0); await until(s, () => s.phase === 'asking' && s.aid, 'the horn'); return s; },

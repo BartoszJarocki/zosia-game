@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wait } from '../engine.js';
+import { animate, ease, wait, hop } from '../engine.js';
 import { mat, mesh, rbox } from '../models.js';
 import { makeBoat } from '../world/props.js';
 import { portrait } from '../world/portrait.js';
@@ -15,6 +15,8 @@ import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const TOOT_BACK = 300; // ms between the boat's toots back
+const BLOCK_W = 0.98, BLOCK_STEP = 1.1;
+const BOARD_W = 3 * BLOCK_STEP + 0.3; // every board fits three pieces, so its width never tells how many a name has
 const BOAT_COLORS = ['#ef4444', '#2563eb', '#0ea5e9', '#f59e0b', '#14b8a6'];
 const colorFor = (word) => BOAT_COLORS[[...word].reduce((n, c) => n + c.charCodeAt(0), 0) % BOAT_COLORS.length];
 
@@ -34,23 +36,43 @@ function syllableTexture(syllable) {
   });
 }
 
-/** The whole name on one board. Narrowed in the canvas so the wide board does not stretch the letters. */
-function wordTexture(word, aspect) {
-  const shown = [...word].map(showLetter).join('');
+/** A gull for MEWA's board: there is no gull among the emoji. */
+function drawGull(c, cx, cy, r) {
+  c.fillStyle = '#f8fafc';
+  c.strokeStyle = '#64748b';
+  c.lineWidth = r * 0.06;
+  c.beginPath(); c.ellipse(cx, cy + r * 0.15, r * 0.62, r * 0.36, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.arc(cx + r * 0.5, cy - r * 0.22, r * 0.26, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#94a3b8';
+  c.beginPath(); c.moveTo(cx - r * 0.5, cy + r * 0.05); c.quadraticCurveTo(cx - r * 0.1, cy - r * 0.75, cx + r * 0.25, cy + r * 0.02); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#f59e0b';
+  c.beginPath(); c.moveTo(cx + r * 0.72, cy - r * 0.26); c.lineTo(cx + r * 1.02, cy - r * 0.16); c.lineTo(cx + r * 0.72, cy - r * 0.1); c.closePath(); c.fill();
+  c.fillStyle = '#1f2937';
+  c.beginPath(); c.arc(cx + r * 0.56, cy - r * 0.28, r * 0.06, 0, Math.PI * 2); c.fill();
+}
+
+/** What each boat's board shows: its animal, so she knows its name without reading it. */
+export const BOAT_PICTURES = { KOT: '🐱', SŁOŃ: '🐘', MEWA: drawGull, FOKA: '🦭', RYBKA: '🐟', KACZKA: '🦆', ŻYRAFA: '🦒', MOTYLEK: '🦋', BIEDRONKA: '🐞' };
+
+/** The board's face: the animal on white. Narrowed in the canvas so the wide board does not stretch it. */
+function pictureTexture(word, aspect) {
+  const picture = BOAT_PICTURES[word];
   return texture(512, (c, size) => {
     c.fillStyle = '#ffffff';
     c.fillRect(0, 0, size, size);
     c.strokeStyle = '#c7d2fe';
     c.lineWidth = 10;
     c.strokeRect(5, 5, size - 10, size - 10);
-    c.fillStyle = '#1e3a8a';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.font = `700 ${Math.round(Math.min(size * 0.56, (size * 4.1 * aspect) / shown.length))}px "Fredoka", "Arial Rounded MT Bold", Arial, sans-serif`;
     c.save();
-    c.translate(size / 2, size * 0.54);
+    c.translate(size / 2, size * 0.52);
     c.scale(1 / aspect, 1);
-    c.fillText(shown, 0, 0);
+    if (typeof picture === 'function') picture(c, 0, 0, size * 0.42);
+    else {
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.font = `${Math.round(size * 0.84)}px "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      c.fillText(picture, 0, size * 0.03);
+    }
     c.restore();
   });
 }
@@ -69,7 +91,6 @@ export class PortMission extends Mission {
     this.count = 0;
     this.target = null;
     this.boats = [];
-    this.boards = [];
     this.tickButtons = [];
     this.moored = [];
     this.used = [];
@@ -166,14 +187,14 @@ export class PortMission extends Mission {
     this.horn.userData.tapHeight = 1.2;
     this.scene.add(this.horn);
 
-    this.moored = shuffle(BOATS).slice(0, 5).map((b, i) => this.makeBoatFor(b.word, { x: -6 + i * 3, z: -2.6, scale: 0.5 }));
+    this.moored = shuffle(BOATS).slice(0, 5).map((b, i) => this.makeBoatFor(b.word, { x: -9.4 + i * 2.8, z: -7, scale: 0.5 })); // (far back, above the boats that come forward)
     this.onUpdate((dt, t) => {
       this.moored.forEach((b, i) => {
         b.position.y = b.userData.baseY + Math.sin(t * 2 + i) * 0.05;
         b.rotation.z = Math.sin(t * 1.5 + i) * 0.035;
       });
       this.boats.forEach((b) => {
-        if (b.userData.sailing) return;
+        if (b.userData.sailing || b.userData.hopping) return;
         b.position.y = b.userData.baseY + Math.sin(t * 2.2 + b.userData.seed) * 0.07;
         b.rotation.z = Math.sin(t * 1.7 + b.userData.seed) * 0.04;
       });
@@ -183,24 +204,24 @@ export class PortMission extends Mission {
 
   makeBoard(word, round = false) {
     const { syllables } = boatFor(word);
-    const width = syllables.length * 1.12 + (syllables.length - 1) * 0.18 + 0.4;
+    const width = BOARD_W;
     const board = new THREE.Group();
     const bgMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 });
     (round ? this.roundMats : this.mats).push(bgMat);
     board.add(mesh(rbox(width, 1.2, 0.12, 0.08), bgMat, { shadow: false }));
-    const map = wordTexture(word, (width - 0.12) / 1.02);
-    const wholeMat = new THREE.MeshStandardMaterial({ map, roughness: 0.45 });
+    const map = pictureTexture(word, (width - 0.12) / 1.02);
+    const wholeMat = new THREE.MeshBasicMaterial({ map }); // (unlit: the animal keeps its colours in the sun)
     (round ? this.roundMaps : this.maps).push(map);
     (round ? this.roundMats : this.mats).push(wholeMat);
     const whole = mesh(rbox(width - 0.12, 1.02, 0.08, 0.06), wholeMat, { z: 0.09, shadow: false });
     board.add(whole);
-    const start = -((syllables.length - 1) / 2) * 1.3;
+    const start = -((syllables.length - 1) / 2) * BLOCK_STEP;
     const blocks = syllables.map((syllable, i) => {
       const blockMap = syllableTexture(syllable);
       const blockMat = new THREE.MeshStandardMaterial({ map: blockMap, roughness: 0.45, emissive: '#f59e0b', emissiveIntensity: 0 });
       (round ? this.roundMaps : this.maps).push(blockMap);
       (round ? this.roundMats : this.mats).push(blockMat);
-      const block = mesh(rbox(1.12, 0.92, 0.08, 0.06), blockMat, { x: start + i * 1.3, z: 0.09, shadow: false });
+      const block = mesh(rbox(BLOCK_W, 0.92, 0.08, 0.06), blockMat, { x: start + i * BLOCK_STEP, z: 0.09, shadow: false });
       block.visible = false;
       board.add(block);
       return block;
@@ -208,7 +229,6 @@ export class PortMission extends Mission {
     board.userData.blocks = blocks;
     board.userData.whole = whole;
     board.userData.split = false;
-    board.userData.text = [...word].map(showLetter).join('');
     return board;
   }
 
@@ -414,47 +434,63 @@ export class PortMission extends Mission {
     const xs = [-4.6, 0, 4.6];
     const picks = whichBoats(this.asked, this.L.syllables);
     this.boats = picks.map((b, i) => this.makeBoatFor(b.word, { x: 10.5 + i * 2, z: 1.15, scale: 1, round: true }));
-    this.boats.forEach((boat) => { boat.userData.num = countOf(boat.userData.boatName); });
+    this.boats.forEach((boat) => { boat.userData.pieces = countOf(boat.userData.boatName); });
     await Promise.all(this.boats.map((boat, i) => this.enterBoat(boat, xs[i])));
     if (!this.alive) return;
     this.phase = 'choosing';
     for (const boat of this.boats) {
-      const tick = this.makeTick(boat.userData.num);
+      const tick = this.makeTick(boat.userData.pieces);
       tick.position.set(0, 0.62, 0.72);
       boat.add(tick);
       this.tickButtons.push(tick);
       this.tappable(tick, () => this.pickBoat(boat));
-      this.boards.push(boat.userData.board);
-      this.tappable(boat.userData.board, () => {
+      this.tappable(boat, () => { // (a tap on the tick answers: it is nearer the finger; the rest of the boat says its name)
         if (this.phase !== 'choosing') return;
         this.poke();
-        this.say(T.portName(boat.userData.boatName));
+        this.sayName(boat);
       });
     }
     this.question('syllables', this.asked, {
       short: () => T.portWhich(this.asked),
-      hint: () => T.portWhich(this.asked),
+      hint: (said = []) => { // the names again, each boat hopping: who is who, not how many pieces
+        const q = this.learn.current;
+        return this.say(said).then(() => this.nameBoats(q)).then(() => { if (this.learn.current === q) this.ask(T.portWhich(this.asked)); });
+      },
       simplify: () => {
-        const wrongs = this.boats.filter((b) => b.userData.num !== this.asked && !b.userData.gone);
+        const wrongs = this.boats.filter((b) => b.userData.pieces !== this.asked && !b.userData.gone);
         const boat = wrongs.includes(this.lastWrong) ? this.lastWrong : wrongs[0];
         if (!boat) return;
         boat.traverse((o) => this.untap(o));
         this.removeOption(boat);
       },
       reveal: () => {
-        const right = this.boats.find((b) => b.userData.num === this.asked);
+        const right = this.boats.find((b) => b.userData.pieces === this.asked);
         if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
         return T.portWhich(this.asked);
       },
     }, { options: 3 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
-    this.askAfter(this.talk, T.portWhich(this.asked));
+    const q = this.learn.current;
+    this.askAfter(Promise.resolve(this.talk).then(() => this.nameBoats(q)), T.portWhich(this.asked)); // the three names, then the question
     await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  /** Each boat says its name as it hops, left to right; stops once she has answered. */
+  async nameBoats(q) {
+    for (const boat of [...this.boats].sort((a, b) => a.position.x - b.position.x)) {
+      if (!this.alive || this.learn.current !== q) return;
+      if (!boat.userData.gone) await this.sayName(boat);
+    }
+  }
+
+  sayName(boat) {
+    hop(boat, 0.35);
+    return this.say(T.spellWord(boat.userData.boatName));
   }
 
   async pickBoat(boat) {
     if (this.phase !== 'choosing') return;
-    const num = boat.userData.num;
+    const num = boat.userData.pieces;
     this.poke();
     this.lookAt(boat);
     if (num !== this.last) {
@@ -466,7 +502,7 @@ export class PortMission extends Mission {
     this.correct(this.last);
     this.stopIdle();
     for (const tick of this.tickButtons) this.untap(tick);
-    for (const board of this.boards) this.untap(board);
+    for (const other of this.boats) this.untap(other);
     sfx.good();
     this.success(boat.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
     this.talk = this.say([...T.portRight(num), ...T.spellWord(boat.userData.boatName)]);
@@ -568,7 +604,6 @@ export class PortMission extends Mission {
   clearRound() {
     if (this.horn) this.untap(this.horn);
     for (const tick of this.tickButtons) this.untap(tick);
-    for (const board of this.boards) this.untap(board);
     for (const boat of this.boats) this.untap(boat);
     for (const boat of this.boats) {
       boat.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
@@ -576,7 +611,6 @@ export class PortMission extends Mission {
     }
     for (const puff of [...this.puffs]) this.disposePuff(puff);
     this.boats = [];
-    this.boards = [];
     this.tickButtons = [];
     this.roundMaps.forEach((map) => map.dispose());
     this.roundMaps = [];

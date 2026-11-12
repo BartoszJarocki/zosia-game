@@ -157,6 +157,9 @@ test('the horn and the boat stay large, apart, on screen and clear of Chase at a
   s.alive = false; s.exit();
 });
 
+/** A tick sits on its boat: the nearer one takes the tap (the next test checks the tick is first under the finger). */
+const nested = (a, b) => { const inside = (x, y) => { for (let o = x.parent; o; o = o.parent) if (o === y) return true; return false; }; return inside(a, b) || inside(b, a); };
+
 test('which boats and their ticks stay large, apart and clear of Chase at all three sizes', async () => {
   const s = await scene(3);
   s.pick = () => 2;
@@ -165,14 +168,17 @@ test('which boats and their ticks stay large, apart and clear of Chase at all th
   assert.equal(s.tappables.filter((o) => o.userData.num !== undefined).length, 3);
   for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = cameraFor(s, width, height);
-    const boxes = s.tappables.filter((o) => o.userData.onTap && o.parent).map((o) => screenBox(o, camera, width, height));
+    const live = s.tappables.filter((o) => o.userData.onTap && o.parent);
+    const boxes = live.map((o) => screenBox(o, camera, width, height));
     const chase = screenBox(s.window, camera, width, height);
     for (const boat of s.boats) assert.ok(screenBox(boat, camera, width, height).maxX - screenBox(boat, camera, width, height).minX >= 120, `${width}x${height}: boat`);
     for (const box of boxes) {
       assert.ok(box.minX >= -0.5 && box.maxX <= width + 0.5 && box.minY >= -0.5 && box.maxY <= height + 0.5, `${width}x${height}: on screen`);
       assert.equal(overlaps(box, chase), false, `${width}x${height}: clears Chase`);
     }
-    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: tappables ${i}/${j}`);
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      if (!nested(live[i], live[j])) assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: tappables ${i}/${j}`);
+    }
   }
   await s.tappables.find((o) => o.userData.num === 2).userData.onTap();
   await round;
@@ -198,7 +204,7 @@ test('the port has no shadows or point lights and leaves room for medium post pa
   s.alive = false; s.exit();
 });
 
-test('the name is one whole word until the clap: no syllable separators on the board in alone and which', async () => {
+test('every board is one width and shows the animal until the clap: no syllable blocks in alone and which', async () => {
   const alone = await scene(2);
   alone.pick = () => 'MEWA';
   let splitAtSing = null;
@@ -208,8 +214,6 @@ test('the name is one whole word until the clap: no syllable separators on the b
   await until(() => alone.phase === 'asking');
   const board = alone.boats[0].userData.board;
   assert.equal(board.userData.split, false);
-  assert.equal(board.userData.text, 'MEWA');
-  assert.match(board.userData.text, /^\p{L}+$/u);
   assert.equal(board.userData.whole.visible, true);
   assert.ok(board.userData.blocks.every((b) => b.visible === false));
   assert.equal(board.userData.dots.visible, true);
@@ -242,9 +246,10 @@ test('the name is one whole word until the clap: no syllable separators on the b
   which.tootBack = async (word, boat) => { await whichSing(word, boat); whichSplit = boat.userData.board.userData.split; };
   const whichRound = which.round(0);
   await until(() => which.phase === 'choosing');
+  const widths = new Set([...which.boats, ...which.moored].map((b) => new THREE.Box3().setFromObject(b.userData.board).getSize(new THREE.Vector3()).x / b.scale.x).map((w) => w.toFixed(3)));
+  assert.equal(widths.size, 1, `board widths ${[...widths]}: a board's width never tells how many pieces`);
   for (const boat of which.boats) {
     assert.equal(boat.userData.board.userData.split, false);
-    assert.match(boat.userData.board.userData.text, /^\p{L}+$/u);
     assert.equal(boat.userData.board.userData.whole.visible, true);
   }
   await which.tappables.find((o) => o.userData.num === 1).userData.onTap();
@@ -293,14 +298,15 @@ test('no tappable overlaps another, the bubble, Chase or the HUD at all three si
       const btn = Math.min(width * 0.11, height * 0.11, 96);
       assert.ok(chase.minY > 14 + btn, `${width}x${height}: window below the HUD`);
       assert.equal(overlaps(chase, bubble), false, `${width}x${height}: window and bubble`);
-      const boxes = s.tappables.filter((o) => o.userData.onTap && o.parent).map((o) => screenBox(o, camera, width, height));
+      const live = s.tappables.filter((o) => o.userData.onTap && o.parent);
+      const boxes = live.map((o) => screenBox(o, camera, width, height));
       boxes.forEach((box) => {
         assert.ok(box.minX >= -0.5 && box.maxX <= width + 0.5 && box.minY >= -0.5 && box.maxY <= height + 0.5, `${width}x${height}: on screen`);
         assert.equal(overlaps(box, bubble), false, `${width}x${height}: under the bubble`);
         assert.equal(overlaps(box, chase), false, `${width}x${height}: under Chase`);
       });
       for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
-        assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: tappables ${i}/${j}`);
+        if (!nested(live[i], live[j])) assert.equal(overlaps(boxes[i], boxes[j]), false, `${width}x${height}: tappables ${i}/${j}`);
       }
     }
     if (level === 3) await s.tappables.find((o) => o.userData.num === 2).userData.onTap();

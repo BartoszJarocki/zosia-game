@@ -659,6 +659,7 @@ export function allSegments(levels, allLetters) {
   [T.reefLook, T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
   BOATS.forEach((boat) => {
     add(T.portName(boat.word));
+    add(T.spellWord(boat.word)); // (each boat says its name: "Foka!")
     boat.syllables.forEach((s) => add(T.syllable(s)));
   });
   [1, 2, 3].forEach((n) => { add(T.portWhich(n)); add(T.portHas(n)); add(T.portRight(n)); });
