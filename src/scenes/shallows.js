@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease } from '../engine.js';
+import { animate, ease, hop } from '../engine.js';
 import { mat, mesh, rbox } from '../models.js';
 import { portrait } from '../world/portrait.js';
 import { sparkle } from '../fx/particles.js';
@@ -10,17 +10,18 @@ import { shallowsPlan } from '../levels/shallows.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const SURFACE = 1.75;
-const BOTTOM = 0.04;
-const EDGE = new THREE.Vector3(0, 1.78, 1.05);
-const DROP_AT = new THREE.Vector3(0, 0, 3.9);
-const SHELF_X = 6;
-const SHELF_Z = 1.2;
-const SHELF_Y = 1.45;
-const SLOTS = [[-1.5, 0.54], [0, 0.54], [1.5, 0.54], [-1.5, 1.34], [0, 1.34], [1.5, 1.34]];
+// A glass pool on the beach, seen from the side: blue water up to a white surface line, sand on its bottom.
+const SURFACE = 4.2;
+const BOTTOM = 0.34;
+const POOL_X = 3.9, POOL_Z = 1.3;
+const PLANK_Y = SURFACE + 1.35;
+const WAIT_AT = new THREE.Vector3(0, PLANK_Y + 0.11, -0.55); // on the plank above the water
+const DROP_AT = new THREE.Vector3(0, 0, 0.25);
+const SHELF_X = 7.45;
+const SLOTS = [[0, 1.72], [-1.5, 1.72], [1.5, 1.72], [0, 0.52], [-1.5, 0.52], [1.5, 0.52]]; // the top board first, from the middle
 
-const SAND_SIZE = { kłoda: 3.6, moneta: 2, default: 2.35 };
-const SHELF_SIZE = { kłoda: 1.6, moneta: 1.3, default: 1.45 };
+const SAND_SIZE = { kłoda: 3.6, moneta: 2.4, default: 2.7 }; // waiting on the plank and in the water
+const SHELF_SIZE = { kłoda: 1.6, moneta: 1.6, default: 1.55 };
 const target = (table, id) => table[id] ?? table.default;
 const tall = () => globalThis.innerHeight > globalThis.innerWidth;
 
@@ -66,48 +67,79 @@ export function thingPicture(id) {
   return `<svg data-thing="${id}" viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true">${art}</svg>`;
 }
 
+/** A shelf's picture: the pool again, with a duck sitting on the surface line or a stone lying on the bottom. */
 function signMap(side) {
   const cv = document.createElement('canvas');
   cv.width = 512;
-  cv.height = 192;
+  cv.height = 384;
   const c = cv.getContext('2d');
-  const sky = c.createLinearGradient(0, 0, 0, 192);
-  sky.addColorStop(0, '#e0f2fe');
-  sky.addColorStop(0.6, '#bae6fd');
-  sky.addColorStop(1, '#fde68a');
-  c.fillStyle = sky;
-  c.fillRect(0, 0, 512, 192);
-  const surface = side === 'float' ? 94 : 44;
-  if (side === 'sink') {
-    c.fillStyle = '#fde68a';
-    c.fillRect(0, 108, 512, 84);
-    for (let i = 0; i < 24; i++) {
-      c.fillStyle = i % 2 ? '#fcd34d' : '#e7c873';
-      c.beginPath();
-      c.ellipse((i * 97 + 33) % 512, 118 + (i * 31) % 66, 7, 4, 0.3, 0, Math.PI * 2);
-      c.fill();
-    }
-  }
-  c.fillStyle = 'rgba(165, 243, 252, 0.55)';
-  c.fillRect(0, surface, 512, 192 - surface);
-  c.strokeStyle = '#0ea5e9';
-  c.lineWidth = 7;
-  c.lineCap = 'round';
-  for (const y of [surface + 12, surface + 34, surface + 56]) {
-    if (y > 184) continue;
-    c.beginPath();
-    c.moveTo(12, y);
-    c.quadraticCurveTo(70, y - 10, 128, y);
-    c.quadraticCurveTo(186, y + 10, 244, y);
-    c.quadraticCurveTo(302, y - 10, 360, y);
-    c.quadraticCurveTo(418, y + 10, 500, y);
-    c.stroke();
-  }
+  const line = 150;
+  c.fillStyle = '#f0f9ff';
+  c.fillRect(0, 0, 512, 384);
+  c.fillStyle = '#fde68a';
+  c.fillRect(0, 328, 512, 56);
+  const water = c.createLinearGradient(0, line, 0, 328);
+  water.addColorStop(0, '#7dd3fc');
+  water.addColorStop(1, '#0ea5e9');
+  c.fillStyle = water;
+  c.fillRect(0, line, 512, 328 - line);
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.font = '82px "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-  if (side === 'float') c.fillText('🦆', 256, surface - 14);
-  else c.fillText('🪨', 256, 152);
+  c.font = '170px "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  if (side === 'float') c.fillText('🦆', 256, line - 30);
+  else {
+    c.fillText('🪨', 256, 262);
+    c.fillStyle = 'rgba(14, 165, 233, 0.35)'; // under water
+    c.fillRect(0, line, 512, 328 - line);
+  }
+  c.strokeStyle = '#ffffff';
+  c.lineWidth = 14;
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(8, line);
+  for (let x = 8; x < 504; x += 62) c.quadraticCurveTo(x + 31, line + (x / 62 % 2 ? 12 : -12), x + 62, line);
+  c.stroke();
+  c.strokeStyle = '#b45309';
+  c.lineWidth = 16;
+  c.strokeRect(8, 8, 496, 368);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** The pool's front glass: clear above the wavy white surface line, blue below it, darker towards the bottom. */
+function waterMap() {
+  const cv = document.createElement('canvas');
+  cv.width = 512;
+  cv.height = 256;
+  const c = cv.getContext('2d');
+  const line = 24; // the canvas reaches a little above the surface, for the crests
+  const water = c.createLinearGradient(0, line, 0, 256);
+  water.addColorStop(0, 'rgba(125, 211, 252, 0.5)');
+  water.addColorStop(1, 'rgba(2, 132, 199, 0.62)');
+  c.fillStyle = water;
+  c.beginPath();
+  c.moveTo(0, line);
+  for (let x = 0; x < 512; x += 64) c.quadraticCurveTo(x + 32, line + (x / 64 % 2 ? 9 : -9), x + 64, line);
+  c.lineTo(512, 256);
+  c.lineTo(0, 256);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  c.lineWidth = 9;
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(0, line);
+  for (let x = 0; x < 512; x += 64) c.quadraticCurveTo(x + 32, line + (x / 64 % 2 ? 9 : -9), x + 64, line);
+  c.stroke();
+  c.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+  c.lineWidth = 4;
+  for (const [x, y, w] of [[70, 90, 90], [300, 130, 120], [170, 190, 80], [400, 210, 70]]) {
+    c.beginPath();
+    c.moveTo(x, y);
+    c.quadraticCurveTo(x + w / 2, y - 8, x + w, y);
+    c.stroke();
+  }
   const t = new THREE.CanvasTexture(cv);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -155,23 +187,16 @@ function bottomMap() {
       c.ellipse(x, y, r * 1.6, r, i, 0, Math.PI * 2);
       c.fill();
     }
-    c.fillStyle = '#a5f3fc';
-    for (let i = 0; i < 8; i++) {
-      const x = 40 + (i * 197) % (size - 80), y = 60 + (i * 283) % (size - 120);
-      c.beginPath();
-      c.ellipse(x, y, 22, 7, 0.3, 0, Math.PI * 2);
-      c.fill();
-    }
   });
 }
 
-function makeShelf(side) {
+function makeShelf() {
   const g = new THREE.Group();
   const wood = mat('#b45309', { roughness: 0.85 });
   const board = mat('#d97706', { roughness: 0.8 });
-  g.add(mesh(rbox(4.8, 2.5, 0.18, 0.09), wood, { y: 1.25, z: -0.18, shadow: false }));
-  for (const x of [-2.25, 2.25]) g.add(mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.5, 8), wood, { x, y: 1.25, z: -0.14, shadow: false }));
-  for (const y of [0.45, 1.25]) g.add(mesh(rbox(4.6, 0.13, 0.62, 0.05), board, { y, z: 0.24, shadow: false }));
+  g.add(mesh(rbox(4.8, 3.0, 0.18, 0.09), mat('#fdf4e3', { roughness: 0.9 }), { y: 1.5, z: -0.18, shadow: false })); // (light, so the things on it stand out)
+  for (const x of [-2.32, 2.32]) g.add(mesh(new THREE.CylinderGeometry(0.09, 0.11, 3.0, 8), wood, { x, y: 1.5, z: -0.14, shadow: false }));
+  for (const y of [0.45, 1.65]) g.add(mesh(rbox(4.7, 0.14, 0.7, 0.05), board, { y, z: 0.26, shadow: false }));
   return g;
 }
 
@@ -194,8 +219,12 @@ export function makeThing(id, hitMat) {
     add(new THREE.SphereGeometry(0.035, 8, 6), mat('#1f2937'), { x: 0.43, y: 0.9, z: 0.2 });
     add(new THREE.SphereGeometry(0.035, 8, 6), mat('#1f2937'), { x: 0.43, y: 0.9, z: -0.2 });
   } else if (id === 'liść') {
-    add(new THREE.SphereGeometry(0.55, 16, 12), mat('#4ade80', { roughness: 0.6 }), { y: 0.55, s: [1, 0.95, 0.14], rz: 0.4 });
-    add(new THREE.CylinderGeometry(0.025, 0.025, 0.32, 6), mat('#166534'), { x: -0.04, y: 0.08, rz: Math.PI / 2 });
+    const leaf = new THREE.Shape(); // pointed at both ends, so it reads as a leaf from the side
+    leaf.moveTo(0, -0.62);
+    leaf.quadraticCurveTo(0.8, 0, 0, 0.62);
+    leaf.quadraticCurveTo(-0.8, 0, 0, -0.62);
+    add(new THREE.ExtrudeGeometry(leaf, { depth: 0.06, bevelEnabled: false }), mat('#4ade80', { roughness: 0.6 }), { y: 0.62, rz: -0.9 });
+    add(new THREE.CylinderGeometry(0.03, 0.03, 1.0, 6), mat('#166534'), { y: 0.62, z: 0.07, rz: -0.9 });
   } else if (id === 'klocek') {
     add(rbox(0.85, 0.85, 0.85, 0.08), mat('#b45309', { roughness: 0.75 }), { y: 0.425 });
     add(rbox(0.87, 0.08, 0.87, 0.04), mat('#d97706', { roughness: 0.7 }), { y: 0.85 });
@@ -253,12 +282,11 @@ function disposeTree(root) {
 export class ShallowsMission extends Mission {
   constructor(game) {
     super(game, 'shallows');
-    this.view = { pos: new THREE.Vector3(0, 6.8, 15), look: new THREE.Vector3(0, 2, 0.5), get minWidth() { return tall() ? 18.8 : 20.2; } };
+    this.view = { pos: new THREE.Vector3(0, 7.7, 20), look: new THREE.Vector3(0, 6.3, 0), get minWidth() { return tall() ? 21.6 : 22.2; } }; // (side on, a little above the water line)
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.bubbleAt = 'left';
     this.phase = 'waiting';
-    this.mode = 'watch';
     this.plan = null;
     this.thing = null;
     this.shelves = {};
@@ -293,31 +321,12 @@ export class ShallowsMission extends Mission {
     this.maps.push(ground);
     const sandMat = new THREE.MeshStandardMaterial({ map: ground, roughness: 1 });
     this.mats.push(sandMat);
-    this.scene.add(mesh(new THREE.CircleGeometry(24, 48), sandMat, { rx: -Math.PI / 2, shadow: false }));
-    // The bank rises to the waterline, so the side view shows sand, water and the bottom together.
-    this.scene.add(mesh(rbox(19, 1.75, 6, 0.3), sandMat, { y: 0.875, z: -1.4, shadow: false }));
+    this.scene.add(mesh(new THREE.CircleGeometry(40, 48), sandMat, { rx: -Math.PI / 2, shadow: false }));
+    const seaMat = new THREE.MeshBasicMaterial({ color: '#38bdf8' });
+    this.mats.push(seaMat);
+    this.scene.add(mesh(new THREE.PlaneGeometry(120, 14), seaMat, { y: 0.02, z: -26, rx: -Math.PI / 2, shadow: false })); // the sea behind the beach
 
-    this.bottom = bottomMap();
-    this.maps.push(this.bottom);
-    const bottomMat = new THREE.MeshStandardMaterial({ map: this.bottom, roughness: 1 });
-    this.mats.push(bottomMat);
-    this.scene.add(mesh(new THREE.PlaneGeometry(18, 7), bottomMat, { y: BOTTOM, z: 4.9, rx: -Math.PI / 2, shadow: false }));
-
-    const waterMat = new THREE.MeshBasicMaterial({ color: '#bae6fd', transparent: true, opacity: 0.38, depthWrite: false });
-    this.mats.push(waterMat);
-    this.surface = mesh(new THREE.PlaneGeometry(18, 7), waterMat, { y: SURFACE, z: 4.9, rx: -Math.PI / 2, shadow: false });
-    this.surface.renderOrder = 1;
-    this.scene.add(this.surface);
-
-    const foamMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9, depthWrite: false });
-    this.mats.push(foamMat);
-    this.scene.add(mesh(rbox(18, 0.05, 0.2, 0.04), foamMat, { y: SURFACE + 0.04, z: 1.5, shadow: false }));
-    const rippleMat = new THREE.MeshBasicMaterial({ color: '#ecfeff', transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
-    this.mats.push(rippleMat);
-    for (const [x, z, r] of [[-3.4, 5.6, 0.55], [2.6, 6.4, 0.7], [5.4, 3.4, 0.45]]) {
-      this.scene.add(mesh(new THREE.RingGeometry(r * 0.7, r, 28), rippleMat, { x, y: SURFACE + 0.01, z, rx: -Math.PI / 2, shadow: false }));
-    }
-
+    this.buildPool();
     this.shelves.float = this.addShelf('float', -SHELF_X);
     this.shelves.sink = this.addShelf('sink', SHELF_X);
 
@@ -325,9 +334,9 @@ export class ShallowsMission extends Mission {
     const discMat = new THREE.MeshBasicMaterial({ map: this.portrait.texture });
     this.mats.push(discMat);
     this.window = new THREE.Group();
-    this.window.add(mesh(new THREE.CircleGeometry(1.3, 48), discMat, { shadow: false }));
-    this.window.add(mesh(new THREE.TorusGeometry(1.36, 0.12, 10, 48), mat('#fbbf24'), { shadow: false }));
-    this.window.position.set(0, 5, -5.5);
+    this.window.add(mesh(new THREE.CircleGeometry(1.15, 48), discMat, { shadow: false }));
+    this.window.add(mesh(new THREE.TorusGeometry(1.21, 0.11, 10, 48), mat('#fbbf24'), { shadow: false }));
+    this.window.position.set(3.4, 10.7, -2);
     this.window.lookAt(this.view.pos);
     this.scene.add(this.window);
 
@@ -340,18 +349,52 @@ export class ShallowsMission extends Mission {
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
   }
 
+  /** The glass pool: a dark back wall, sand on the bottom, the front glass blue below its white surface line, a plank across. */
+  buildPool() {
+    const backMat = new THREE.MeshBasicMaterial({ color: '#0e7fae' });
+    const rimMat = mat('#e0f2fe', { roughness: 0.3 });
+    const plankMat = mat('#a16207', { roughness: 0.85 });
+    this.mats.push(backMat);
+    this.scene.add(mesh(new THREE.PlaneGeometry(POOL_X * 2, SURFACE), backMat, { y: SURFACE / 2, z: -POOL_Z, shadow: false }));
+    this.bottom = bottomMap();
+    this.maps.push(this.bottom);
+    const bottomMat = new THREE.MeshStandardMaterial({ map: this.bottom, roughness: 1 });
+    this.mats.push(bottomMat);
+    this.scene.add(mesh(rbox(POOL_X * 2, BOTTOM, POOL_Z * 2, 0.04), bottomMat, { y: BOTTOM / 2, shadow: false }));
+    const topMat = new THREE.MeshBasicMaterial({ color: '#bae6fd', transparent: true, opacity: 0.55, depthWrite: false });
+    this.mats.push(topMat);
+    this.scene.add(mesh(new THREE.PlaneGeometry(POOL_X * 2, POOL_Z * 2), topMat, { y: SURFACE, rx: -Math.PI / 2, shadow: false }));
+
+    this.waterFront = waterMap();
+    this.maps.push(this.waterFront);
+    const frontMat = new THREE.MeshBasicMaterial({ map: this.waterFront, transparent: true, depthWrite: false });
+    this.mats.push(frontMat);
+    const crest = (SURFACE - BOTTOM) * 24 / 232; // (the canvas's crests rise above the surface line)
+    this.surface = mesh(new THREE.PlaneGeometry(POOL_X * 2, SURFACE - BOTTOM + crest), frontMat, { y: BOTTOM + (SURFACE - BOTTOM + crest) / 2, z: POOL_Z, shadow: false });
+    this.surface.renderOrder = 2; // after the things inside, so they are seen through the water
+    this.scene.add(this.surface);
+
+    for (const x of [-POOL_X, POOL_X]) this.scene.add(mesh(rbox(0.22, SURFACE + 0.3, 0.22, 0.06), rimMat, { x, y: (SURFACE + 0.3) / 2, z: POOL_Z, shadow: false }));
+    this.scene.add(mesh(rbox(POOL_X * 2 + 0.22, 0.2, 0.22, 0.06), rimMat, { y: 0.1, z: POOL_Z, shadow: false }));
+    this.plank = new THREE.Group();
+    this.plank.add(mesh(rbox(POOL_X * 2 + 0.6, 0.2, 1.2, 0.06), plankMat, { shadow: false }));
+    for (const x of [-POOL_X, POOL_X]) this.plank.add(mesh(new THREE.CylinderGeometry(0.1, 0.12, PLANK_Y, 8), plankMat, { x, y: -PLANK_Y / 2, shadow: false }));
+    this.plank.position.set(0, PLANK_Y, WAIT_AT.z);
+    this.scene.add(this.plank);
+  }
+
   addShelf(side, x) {
-    const shelf = makeShelf(side);
+    const shelf = makeShelf();
     const map = signMap(side);
     this.maps.push(map);
     const signMat = new THREE.MeshBasicMaterial({ map });
     this.mats.push(signMat);
-    const sign = mesh(new THREE.PlaneGeometry(4.2, 1.2), signMat, { y: 2.05, z: 0.02, shadow: false });
+    const sign = mesh(new THREE.PlaneGeometry(4.6, 3.45), signMat, { y: 4.85, z: 0.02, shadow: false });
     shelf.add(sign);
     this.signs[side] = sign;
-    shelf.position.set(x, SHELF_Y, SHELF_Z);
+    shelf.position.set(x, 0, 0.6);
     shelf.userData.choice = side;
-    shelf.userData.tapHeight = 1.35;
+    shelf.userData.tapHeight = 2.6;
     this.scene.add(shelf);
     return shelf;
   }
@@ -360,29 +403,29 @@ export class ShallowsMission extends Mission {
     ui.bubble({ big, pic: thingPicture(this.task?.id), onTap: () => this.replay(), passthrough: true });
   }
 
+  /**
+   * One question per step. drop: tap the thing (not scored: it can't be got wrong). sort: which shelf for what she saw.
+   * guess: which shelf before it drops (a prediction, scored once). Each has its own item, so a slow drop is not her sort.
+   */
   openQuestion(task, step) {
-    const item = `${task.side}:${task.id}`;
-    const short = step === 'drop' ? T.shallowsDrop : step === 'place' ? T.shallowsWhere : T.shallowsAsk;
-    const answer = () => (step === 'guess' ? T.shallowsThing(task) : [...T.shallowsThing(task), ...T.shallowsWhere()]);
-    const pulse = () => {
-      if (step === 'drop') this.hint(this.thing, () => this.phase !== 'dropping');
-      else this.hint(this.shelves[task.side], () => this.phase === 'solved' || this.phase === 'clearing');
-    };
-    this.question('sorting', item, {
-      short,
-      hint: () => {
-        pulse();
-        return step === 'drop' ? T.shallowsDrop() : answer();
-      },
-      reveal: pulse,
+    const shelf = this.shelves[task.side];
+    if (step === 'drop') {
+      this.question('sorting', 'drop', {
+        short: T.shallowsDrop,
+        hint: () => { this.pulseUntil(this.thing, () => this.phase !== 'dropping'); return T.shallowsDrop(); },
+        reveal: () => this.hint(this.thing, () => this.phase !== 'dropping'),
+      }, { scored: false, options: 1 });
+      return;
+    }
+    this.question('sorting', `${task.side}:${task.id}`, {
+      short: T.shallowsAsk,
+      hint: () => { hop(this.thing, 0.3); return T.lookCarefully(); }, // look at the thing again: where it is, or what it is
+      reveal: () => this.hint(shelf, () => this.phase === 'solved' || this.phase === 'clearing'),
     }, { options: 2 });
   }
 
-  tapShelves(on = true) {
-    for (const side of ['float', 'sink']) {
-      if (on) this.tappable(this.shelves[side], () => this.tapShelf(side));
-      else this.untap(this.shelves[side]);
-    }
+  tapShelves() {
+    for (const side of ['float', 'sink']) this.tappable(this.shelves[side], () => this.tapShelf(side));
   }
 
   untapShelves() {
@@ -390,7 +433,7 @@ export class ShallowsMission extends Mission {
   }
 
   tapShelf(side) {
-    if (this.phase !== 'guessing' && this.phase !== 'placing') return;
+    if (this.phase !== 'guessing' && this.phase !== 'sorting') return;
     this.poke();
     if (this.phase === 'guessing') this.phase = 'guessed';
     this.shelfResolve?.(side);
@@ -403,6 +446,7 @@ export class ShallowsMission extends Mission {
     this.phase = 'dropped';
     this.untap(this.thing);
     delete this.thing.userData.choice;
+    this.correct('drop');
     this.dropResolve?.();
     this.dropResolve = null;
   }
@@ -414,12 +458,12 @@ export class ShallowsMission extends Mission {
   splash() {
     const group = new THREE.Group();
     const material = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.92, depthWrite: false });
-    const geometry = new THREE.SphereGeometry(0.07, 6, 4);
+    const geometry = new THREE.SphereGeometry(0.09, 6, 4);
     const drops = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       const drop = new THREE.Mesh(geometry, material);
       drop.position.set(DROP_AT.x, SURFACE, DROP_AT.z);
-      drop.userData.v = new THREE.Vector3((Math.random() - 0.5) * 2.3, 1.4 + Math.random() * 1.5, (Math.random() - 0.5) * 1.3);
+      drop.userData.v = new THREE.Vector3((Math.random() - 0.5) * 3, 1.6 + Math.random() * 1.6, (Math.random() - 0.5) * 1.2);
       group.add(drop);
       drops.push(drop);
     }
@@ -437,17 +481,21 @@ export class ShallowsMission extends Mission {
     });
   }
 
+  /** In it goes: a splash, then it rests at the surface line or sinks slowly to the sand. */
   async dropThing(task) {
     const to = DROP_AT.clone();
     const height = this.thing.userData.half ?? 0.5;
-    to.y = task.side === 'float' ? Math.max(0.35, SURFACE - height * 0.55) : BOTTOM + 0.02;
+    to.y = task.side === 'float' ? SURFACE - height * 0.55 : BOTTOM + 0.02;
     const from = this.thing.position.clone();
+    const entry = new THREE.Vector3(to.x, SURFACE - height * 0.3, to.z);
+    await animate(380, (t) => {
+      this.thing.position.lerpVectors(from, entry, t);
+      this.thing.position.y += Math.sin(t * Math.PI) * 0.5;
+    }, ease.in);
+    if (!this.alive) return;
     sfx.bubble();
     this.splash();
-    await animate(950, (t) => {
-      this.thing.position.lerpVectors(from, to, t);
-      this.thing.position.y += Math.sin(t * Math.PI) * 0.35;
-    }, task.side === 'float' ? ease.out : ease.in);
+    await animate(task.side === 'float' ? 500 : 1100, (t) => this.thing.position.lerpVectors(entry, to, t), task.side === 'float' ? ease.out : ease.inOut);
     if (!this.alive) return;
     this.thing.position.copy(to);
     if (task.side === 'float') {
@@ -463,19 +511,22 @@ export class ShallowsMission extends Mission {
     const to = shelf.localToWorld(new THREE.Vector3(x, y, 0.35));
     const from = this.thing.position.clone();
     this.bobbing.delete(this.thing);
+    const s0 = this.thing.scale.x, s1 = this.thing.userData.shelfScale;
     await animate(650, (t) => {
       this.thing.position.lerpVectors(from, to, t);
-      this.thing.position.y += Math.sin(t * Math.PI) * 1.1;
+      this.thing.position.y += Math.sin(t * Math.PI) * 1.6;
+      this.thing.scale.setScalar(s0 + (s1 - s0) * t);
     }, ease.inOut);
     if (!this.alive) return;
     shelf.attach(this.thing);
     this.thing.position.set(x, y, 0.35);
     this.thing.rotation.set(0, 0, 0);
-    this.thing.scale.setScalar(this.thing.userData.shelfScale);
+    this.thing.scale.setScalar(s1);
     this.thing.userData.placed = true;
     sfx.pop();
   }
 
+  /** Level 1: she drops it in and watches, then sorts what she saw. Only then is it said. */
   async watchRound(task) {
     this.phase = 'dropping';
     this.last = 'drop';
@@ -486,36 +537,34 @@ export class ShallowsMission extends Mission {
     this.askAfter(this.talk, T.shallowsDrop());
     await new Promise((done) => { this.dropResolve = done; });
     if (!this.alive) return;
-    const talk = this.say(T.shallowsThing(task));
+    const told = this.L.tell ? this.say(T.shallowsThing(task)) : null; // (a gentler run says it first)
     await this.dropThing(task);
-    await talk;
     if (!this.alive) return;
 
-    this.phase = 'placing';
+    this.phase = 'sorting';
     this.last = task.side;
-    this.openQuestion(task, 'place');
+    this.openQuestion(task, 'sort');
     this.bubble();
     this.tapShelves();
-    this.ask(T.shallowsWhere());
-    let side;
+    this.askAfter(told, T.shallowsAsk());
     for (;;) {
-      side = await this.waitForShelf();
+      const side = await this.waitForShelf();
       if (!this.alive) return;
       if (side === task.side) break;
-      this.wrong(side, { obj: this.shelves[side], feedback: false });
-      await this.say([...T.shallowsThing(task), ...T.shallowsWhere()]);
+      this.wrong(side, { obj: this.shelves[side] }); // "Nie, to nie ten." and the question again
     }
     this.untapShelves();
     this.phase = 'solved';
-    this.correct(side);
+    this.correct(task.side);
     this.stopIdle();
+    sfx.good();
+    this.talk = this.say([this.praise(), ...T.shallowsThing(task)]);
     await this.placeOnShelf(task);
     if (!this.alive) return;
-    this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 1.8, 0)));
-    sfx.good();
-    this.talk = this.say([this.praise()]);
+    this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 3, 0)));
   }
 
+  /** Levels 2 and 3: she guesses first. One guess, scored; then the water shows it either way. */
   async guessRound(task) {
     this.phase = 'guessing';
     this.last = task.side;
@@ -528,20 +577,26 @@ export class ShallowsMission extends Mission {
     this.untapShelves();
     this.phase = 'revealed';
     const right = guess === task.side;
-    if (right) {
-      this.correct(guess);
-      this.stopIdle();
-    } else {
-      this.wrong(guess, { obj: this.shelves[guess], feedback: false });
-      this.stopIdle();
-    }
-    this.talk = this.say(right ? [...T.shallowsThing(task), ...T.shallowsSurprise(task), this.praise()] : [...T.shallowsLook(task), ...T.shallowsSurprise(task)]);
+    if (right) this.correct(guess);
+    else this.guessedWrong(guess);
+    this.stopIdle();
+    if (right) sfx.good();
+    this.talk = this.say(right ? [this.praise(), ...T.shallowsThing(task), ...T.shallowsSurprise(task)] : [...T.shallowsLook(task), ...T.shallowsSurprise(task)]);
     await this.dropThing(task);
     if (!this.alive) return;
     await this.placeOnShelf(task);
     if (!this.alive || !right) return;
-    this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 1.8, 0)));
-    sfx.good();
+    this.success(this.shelves[task.side].position.clone().add(new THREE.Vector3(0, 3, 0)));
+  }
+
+  /**
+   * A guess is one try: a wrong one is not tried again. It closes the question without a "no" (she is not punished for a
+   * guess), and the run counts it as answered but not right first time.
+   */
+  guessedWrong(guess) {
+    const ev = this.learn.wrong({ chosen: guess });
+    this.learn.cancel();
+    if (ev) this.answers.push({ ...ev, correct: true, firstTry: false });
   }
 
   async round(r) {
@@ -553,9 +608,8 @@ export class ShallowsMission extends Mission {
     const task = this.windingDown && r === this.rounds - 1 ? this.plan.at(-1) : this.plan[r];
     this.task = task;
     this.phase = 'entering';
-    this.lastWrong = null;
     this.thing = makeThing(task.id, this.hitMat);
-    this.thing.position.copy(EDGE);
+    this.thing.position.copy(WAIT_AT);
     this.scene.add(this.thing);
     if (this.L.mode === 'watch') await this.watchRound(task);
     else await this.guessRound(task);

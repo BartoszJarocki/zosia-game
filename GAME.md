@@ -665,11 +665,11 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 
 ### 🦆 Pływa czy tonie? · `shallows`
 
-A sunny sandy beach at the edge of clear shallow water. The water surface and the sandy bottom are both
-in view, from a low side-on camera. One thing waits at the water's edge; when it drops in, it splashes,
-then floats at the surface or sinks slowly to the bottom. Two little shelves stand on the sand, one under
-a duck on the waves ("pływa"), one under a stone on the bottom ("tonie"). Things already sorted stay on
-the shelves, so she sees the groups grow.
+A sunny beach with a glass pool on it, seen from the side: blue water up to a clear white surface line, sand on
+the bottom. One thing waits on a plank above the water; when it drops in, it splashes, then rests across the
+surface line or sinks slowly to the sand. Two big shelves stand on the beach, each under a large picture of the
+same pool: a duck sitting on the surface line ("pływa"), a stone lying on the bottom ("tonie"). Things already
+sorted stay on the shelves, so she sees the groups grow.
 
 | Level | mode | things | rounds |
 |---|---|---|---|
@@ -677,16 +677,20 @@ the shelves, so she sees the groups grow.
 | 2 | guess | familiar | 4 |
 | 3 | surprise | all | 5 |
 
-- **mode** — `watch`: she taps the thing, watches it float or sink, hears "Jabłko pływa!", then "Gdzie to położymy?"
-  and taps the matching shelf. `guess`: first "Pływa czy tonie?" and she taps a shelf as her guess, then the
-  thing drops in and shows the answer. `surprise`: as `guess`, with the big log and the little coin among the
-  things. A wrong guess is not punished: the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to
-  its shelf, then the next round.
+- **mode** — `watch`: "Wrzuć to do wody!", she taps the thing and watches it float or sink, then "Pływa czy
+  tonie?" and she taps the shelf for what she saw; only then "Brawo! Jabłko pływa!". `guess`: first "Pływa czy
+  tonie?" and she taps a shelf as her guess, then the thing drops in and shows the answer. `surprise`: as
+  `guess`, with the big log and the little coin among the things. A guess is one try: a wrong one gets no "no",
+  the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to its shelf, then the next round. Help in
+  `watch`: "Nie, to nie ten." and the question again, then the thing bobs ("Popatrz uważnie!"), then the right
+  shelf pulses. A gentler run is `watch` with the familiar things; one after a rough `watch` run also says what
+  the thing did before it asks.
 - **things** — `familiar`: an apple, a ball, a rubber duck, a stone, a key and a spoon. `all`: also a leaf,
   a wooden block, a big log (clearly the biggest) and a little coin (clearly the smallest), so the log floats
   and the coin sinks. Chase never says heavy or light.
-- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap; `guess` and
-  `surprise` are scored on the guess. Every level has at least one scored question.
+- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap (the tap that drops it
+  is not scored); `guess` and `surprise` are scored on the guess, once: a right guess is right first time, a
+  wrong one counts against the run. Every level has at least one scored question.
 ### 🦀 The Reef · `reef`
 
 Looking down through the boat's round glass floor at a bright, shallow reef: sandy sea floor, green sea grass,

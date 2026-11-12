@@ -32,6 +32,15 @@ export const FAIR_BUBBLE = {
   delivery: { when: (row) => row.mode === 'pictureSound', why: '`pictureSound`: the bubble shows the asked letter and the parcels show pictures, so the letter is the question' },
 };
 
+/**
+ * Rows whose question is a guess made once, before anything shows the answer (a prediction). GAME.md scores the guess
+ * and then shows what happens, so the game closing the question after one wrong guess is the design, not a leak.
+ * Anything else after that wrong guess (more help, the answer pulsing or named) still fails.
+ */
+export const PREDICTION = {
+  shallows: { when: (row) => row.mode === 'guess' || row.mode === 'surprise', why: '`guess` and `surprise`: she taps a shelf as her guess, then the thing drops in and shows the answer' },
+};
+
 /** Bubbles that show the answer as a picture, not as its label (saturn.js: the piece's kind is the ring to pick). */
 export const BUBBLE_PICTURES = { saturn: { ice: '❄️', rock: '🪨' } };
 
@@ -98,7 +107,8 @@ export function questionIsHers(runs, row) {
     if (bubbleShowsAnswer(kind, x.bubble, x.right) && !fairBubble(kind, row, skill)) shown.set(`"${x.bubble}" for ${x.right}`, true);
   }
   const tries = runs.filter((r) => r.plan === 'wrong-first').flatMap((r) => r.rounds.filter((x) => x.wrongFirst));
-  const gave = tries.filter((x) => x.wrongFirst.help > HELP_AFTER_ONE_WRONG || x.wrongFirst.shown.length || x.wrongFirst.closed);
+  const guess = Boolean(PREDICTION[kind]?.when(row ?? {}));
+  const gave = tries.filter((x) => x.wrongFirst.help > HELP_AFTER_ONE_WRONG || x.wrongFirst.shown.length || (x.wrongFirst.closed && !guess));
   const why = [];
   if (shown.size) why.push(`bubble shows the answer: ${[...shown.keys()].join(', ')}`);
   if (gave.length) {
@@ -110,6 +120,7 @@ export function questionIsHers(runs, row) {
   }
   if (why.length) return verdict(false, why.join('; '));
   if (!tries.length) return verdict(true, 'bubble keeps the answer; no wrong option to try');
+  if (guess) return verdict(true, `bubble keeps the answer; ${tries.length} wrong guesses scored, then shown`);
   return verdict(true, `bubble keeps the answer; ${tries.length} wrong taps showed nothing`);
 }
 
