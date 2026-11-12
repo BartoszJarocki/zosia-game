@@ -11,7 +11,7 @@ import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
 import { Mission } from './mission.js';
-import { riverRows, missingFoil, KEEP_CLEAR, START as RIVER_START, LAND } from '../levels/river.js';
+import { riverRows, missingFoil, KEEP_CLEAR, START as RIVER_START, LAND, VIEW } from '../levels/river.js';
 
 const START = new THREE.Vector3(RIVER_START.x, 0, RIVER_START.z);
 const FAR = new THREE.Vector3(4.5, 0, -5.9);
@@ -26,7 +26,7 @@ export class StonesMission extends Mission {
   constructor(game) {
     super(game, 'stones');
     this.rounds = this.L.rounds;
-    this.view = { pos: new THREE.Vector3(0, 12.5, 10.5), look: new THREE.Vector3(0, 0, 0.3), minWidth: 16 };
+    this.view = { pos: new THREE.Vector3(...VIEW.pos), look: new THREE.Vector3(...VIEW.look), minWidth: VIEW.minWidth }; // (levels/river.js knows what she hides from here)
     this.bubbleAt = 'left'; // the far bank and Chase stay in view
     this.post = { tilt: 0.3, focus: 0.5, band: 0.4 };
   }
@@ -71,6 +71,7 @@ export class StonesMission extends Mission {
     this.fish();
     this.addHeroes(START.clone(), Math.PI, FAR.clone(), -0.3);
     this.girl.scale.setScalar(0.85);
+    this.girl.userData.zone = true; // a stone wins a tap that lands on her as well (engine.js)
   }
 
   fish() {
@@ -126,11 +127,12 @@ export class StonesMission extends Mission {
         reveal: () => { const right = row.find((x) => x.userData.num === next), want = next; if (right) this.hint(right, () => next !== want); },
       };
 
+      const showNumber = () => ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
       const askNext = () => {
         // "what comes next?" (after the first stone) tests order; otherwise the numeral
         this.question(nextMode && next > 1 ? 'sequence' : 'numeral', next, hooks, { options: this.L.choices });
         if (!seqBubble()) {
-          ui.bubble({ big: String(next), dots: next, pic: next === 1 ? '🪨' : '', onTap: () => this.replay() });
+          if (next > 1) showNumber(); // (a river's first number is on show from the start)
           if (next === 1) this.askAfter(this.talk, r === 0 ? (nextMode ? T.riverFirstNext() : T.riverFirst()) : T.riverAgain());
           else this.ask(T.riverNext(next));
         } else {
@@ -176,6 +178,7 @@ export class StonesMission extends Mission {
       };
 
       raise(0);
+      showNumber(); // (not the last river's number until the question is asked)
       this.question('numeral', 1, hooks, { options: this.L.choices }); // open now: the first stones can be tapped before the question is spoken
       wait(900).then(() => { if (this.alive && next === 1 && !busy) askNext(); }); // (unless she already tapped the 1)
     });

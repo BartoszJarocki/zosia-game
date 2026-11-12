@@ -135,7 +135,7 @@ test('River: the missing stone needs 3–9 stones', () => {
 
 test('Treat House: new kinds of round come one level at a time; each level has a scored round; flash and hidden need ranges, auto no, rounds enough', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
-  const added = levels.counting.map((l, i) => l.types.filter((t) => !(levels.counting[i - 1]?.types || []).includes(t)));
+  const added = levels.counting.map((l, i) => [...new Set(l.types)].filter((t) => !(levels.counting[i - 1]?.types || []).includes(t))); // (a kind listed twice is one kind)
   assert.deepEqual(added, [['give', 'howMany', 'share'], [], [], [], ['flash'], ['hidden'], [], []]);
   const treats = (row) => `## Letter sets\n\n| Set | Letters |\n|---|---|\n| ALL | AB |\n\n### Test · \`counting\`\n\n| Level | types | give | hidden | flash | auto | rounds |\n|---|---|---|---|---|---|---|\n| 1 | ${row} |\n`;
   assert.deepEqual(only(parseGame(treats('give, hidden, flash | 1–3 | 2–4 | 1–4 | no | 3'), {})).errors, []);

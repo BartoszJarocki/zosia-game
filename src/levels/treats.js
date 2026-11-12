@@ -3,7 +3,8 @@
 /**
  * The kinds of round for one mission, in play order. Every kind comes up (when there are rounds enough),
  * never the same kind twice in a row (when there is any other choice), and the last round is one of the
- * easy kinds, so the mission ends on a happy win.
+ * easy kinds, so the mission ends on a happy win. A kind listed more than once comes up that many times: the
+ * levels where only one round in a run can be got wrong list that round twice, so one lucky tap does not level her up.
  *   types: the level's round kinds · rounds: how many · easy: kinds that make a good ending
  */
 export function roundOrder(types, rounds, { easy = [], random = Math.random } = {}) {
@@ -17,14 +18,21 @@ export function roundOrder(types, rounds, { easy = [], random = Math.random } = 
   for (let i = seq.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [seq[i], seq[j]] = [seq[j], seq[i]]; }
   const body = last ? rounds - 1 : rounds;
   seq.length = Math.min(seq.length, body);
-  // …then extra rounds go wherever they don't sit next to their own kind
+  // …then extra rounds (the kinds listed twice first) go wherever they don't sit next to their own kind
+  const listedTwice = types.filter((k, i) => types.indexOf(k) !== i);
   while (seq.length < body) {
-    const fits = [];
-    for (const k of kinds) for (let at = 0; at <= seq.length; at++) {
-      const after = at === seq.length ? last : seq[at];
-      if (seq[at - 1] !== k && after !== k) fits.push([k, at]);
-    }
+    const fitsFor = (pool) => {
+      const fits = [];
+      for (const k of pool) for (let at = 0; at <= seq.length; at++) {
+        const after = at === seq.length ? last : seq[at];
+        if (seq[at - 1] !== k && after !== k) fits.push([k, at]);
+      }
+      return fits;
+    };
+    let fits = fitsFor(listedTwice.length ? [...new Set(listedTwice)] : kinds);
+    if (!fits.length) fits = fitsFor(kinds);
     const [k, at] = fits.length ? pick(fits) : [pick(kinds), seq.length];
+    if (listedTwice.includes(k)) listedTwice.splice(listedTwice.indexOf(k), 1);
     seq.splice(at, 0, k);
   }
   return last ? [...seq, last] : seq;

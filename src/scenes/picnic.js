@@ -7,6 +7,7 @@ import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
+import { boneSpots, linedUp, BONE, ROW } from '../levels/picnic.js';
 import { Mission } from './mission.js';
 
 // "Pup Picnic": more, less, the same — comparing amounts by looking, before numbers.
@@ -19,9 +20,7 @@ import { Mission } from './mission.js';
 // Skill: comparison (item = the mode, '#' with numerals).
 
 const BLANKET_X = 3.5, BLANKET_Z = 0.6, BLANKET_W = 5.2, BLANKET_D = 3;
-const ROW = 0.95;   // treats in a lined-up row, centre to centre
 const FEAST_MS = 900; // the longest the eating of one pile takes
-const INNER = 1.6;  // a lined-up row starts this far from the middle and runs outwards (rows of five)
 const PLATE = new THREE.Vector3(0, 0, -1.75); // Chase's plate ("same")
 const NUMERAL_BG = '#2563eb';
 
@@ -86,7 +85,7 @@ export class PicnicMission extends Mission {
   }
 
   /**
-   * n treats laid out on a spot (neat rows of up to four, or one straight row), or a numeral card.
+   * n treats laid out on a spot (neat rows of up to five, none touching: levels/picnic.js), or a numeral card.
    * Each is marked `treat` (and `num`, its amount) so probes can see what she sees.
    */
   spread(n, at, { numeral = false, row = false, y = 0.16 } = {}) {
@@ -100,17 +99,15 @@ export class PicnicMission extends Mission {
       items.push(card);
       return items;
     }
-    const perRow = row ? n : n > 4 ? Math.ceil(n / 2) : n, jitter = row ? 0 : 0.12;
-    for (let i = 0; i < n; i++) {
-      const r = Math.floor(i / perRow), col = i % perRow, inRow = Math.min(perRow, n - r * perRow);
-      const bone = makeBone(1.5);
-      bone.position.set(at.x + (col - (inRow - 1) / 2) * ROW + (Math.random() - 0.5) * jitter, y, at.z + (r - 0.5 * (n > perRow ? 1 : 0)) * 1.0 + (Math.random() - 0.5) * jitter);
-      bone.rotation.y = row ? 0 : (Math.random() - 0.5) * 0.8;
+    boneSpots(n, { row }).forEach((spot, i) => {
+      const bone = makeBone(BONE.scale);
+      bone.position.set(at.x + spot.x, y, at.z + spot.z);
+      bone.rotation.y = spot.turn;
       bone.userData.treat = true;
       this.scene.add(bone);
       this.dropIn(bone, y, 120 + i * 70, 500);
       items.push(bone);
-    }
+    });
     return items;
   }
 
@@ -139,9 +136,10 @@ export class PicnicMission extends Mission {
 
       // tap zones: the blankets (each group stays on its own blanket, clue or not)
       const zones = spots.map((at, i) => {
-        const z = new THREE.Mesh(new THREE.BoxGeometry(BLANKET_W, 1.2, BLANKET_D), new THREE.MeshBasicMaterial({ visible: false }));
-        z.position.copy(at).setY(0.6);
+        const z = new THREE.Mesh(new THREE.BoxGeometry(BLANKET_W, 0.6, BLANKET_D), new THREE.MeshBasicMaterial({ visible: false })); // (low: the kitten and Zosia behind it stay theirs)
+        z.position.copy(at).setY(0.3);
         z.userData.tapHeight = 0;
+        z.userData.zone = true; // whatever else is under her finger wins (engine.js)
         this.scene.add(z);
         this.tappable(z, () => choose(i));
         return z;
@@ -189,8 +187,8 @@ export class PicnicMission extends Mission {
           return;
         }
         groups.forEach((g, i) => g.forEach((b, k) => {
-          const side = i ? 1 : -1, rows = Math.ceil(g.length / 5), r0 = b.rotation.y;
-          const from = b.position.clone(), to = new THREE.Vector3(side * (INNER + (k % 5) * ROW), 0.16, BLANKET_Z + (Math.floor(k / 5) - (rows - 1) / 2) * 0.9);
+          const side = i ? 1 : -1, r0 = b.rotation.y, at = linedUp(k, g.length);
+          const from = b.position.clone(), to = new THREE.Vector3(side * at.x, 0.16, BLANKET_Z + at.z);
           animate(600, (t) => { b.position.lerpVectors(from, to, t); b.position.y += Math.sin(t * Math.PI) * 0.5; b.rotation.y = r0 * (1 - t); }, ease.inOut);
         }));
       };

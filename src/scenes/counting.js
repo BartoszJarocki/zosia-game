@@ -267,11 +267,14 @@ export class CountingMission extends Mission {
       }
       this.wrong(c, { feedback: false }); // a wrong amount: answered here, in words
       if (c < n) { f.state = 'giving'; this.say(T.tooFew()); return; }
-      await this.say(T.tooManyBack(c - n));
-      while (f.count() > n && this.alive) await giveBack();
+      // the extra ones go back. Where n is what she has to find out (flash, hidden: compare), every treat goes back, because
+      // exactly the extra ones would leave n lying on the tray
+      const keep = compare ? 0 : n;
+      await this.say(compare ? T.tooManyAll() : T.tooManyBack(c - n));
+      while (f.count() > keep && this.alive) await giveBack();
       if (!this.alive) return;
       f.state = 'giving';
-      this.say(T.nowRight()); // the last tap is hers
+      this.say(compare ? T.sameForPup() : T.nowRight()); // the last tap is hers
     };
     return f;
   }
@@ -309,7 +312,11 @@ export class CountingMission extends Mission {
         if (b) hop(b, 0.5, 400);
         return T.tapTreat();
       },
-      reveal: () => { const b = f.next(), c0 = f.count(); if (b && c0 < n) this.hint(b, () => f.state === 'done' || f.count() > c0); },
+      reveal: () => {
+        const b = f.next(), c0 = f.count();
+        if (c0 >= n) return T.tapPupWhenDone(); // enough is there: what is left is to tap Chase, so say it (nothing else to point at)
+        if (b) this.hint(b, () => f.state === 'done' || f.count() > c0);
+      },
     }, { scored: !auto }); // an automatic give can't go wrong: played, not counted
 
     ui.bubble({ big: String(n), dots: n, pic: '🦴', onTap: () => this.replay(), passthrough: true }); // Chase sits right under it
@@ -445,12 +452,13 @@ export class CountingMission extends Mission {
     for (let i = 0; i < n; i++) {
       wait(300 + i * 220).then(() => {
         if (!this.alive) return;
-        const { bone } = this.flyBone(this.slotPos(i, layout));
+        const { bone, flight } = this.flyBone(this.slotPos(i, layout));
         bone.userData.tapHeight = 0;
         bones.push(bone);
+        flight.then(() => { bone.userData.still = true; });
         this.tappable(bone, () => {
-          // touch-counting: each tap lights a bone and says the next number
-          if (solved || bone.userData.counted) return;
+          // touch-counting: each tap lights a bone and says the next number (a bone still in the air only gets the tick)
+          if (!bone.userData.still || solved || bone.userData.counted) return;
           bone.userData.counted = true;
           tapCount++;
           sparkle(this, bone.position.clone().add(new THREE.Vector3(0, 0.3, 0)), { count: 6, size: 0.1, speed: 1.5 });

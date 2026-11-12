@@ -531,6 +531,7 @@ export const T = {
   dragTreat: () => [`Przesuń smakołyk do ${pupGen}!`],
   tapTreat: () => ['Dotknij smakołyka!'], // (the clue: a tap is enough, it hops over by itself)
   tooManyBack: (k) => [`Oj, za dużo! Oddaję ${NUM[k]} ${treats(k)}.`], // (the extra ones hop back: as many as it says)
+  tooManyAll: () => ['Oj, za dużo! Oddaję wszystkie smakołyki.'], // (flash, hidden: every one hops back, so the tray does not show the number)
   nowRight: () => [`Teraz dobrze? Dotknij ${pupGen}!`],
   tooFew: () => ['Za mało! Jeszcze!'],
   // Treat House "share": everyone gets one
@@ -597,6 +598,7 @@ export function allSegments(levels, allLetters) {
   const riverN = Math.max(...levels.stones.map((l) => l.n));
   nums.slice(1, riverN).forEach((n) => { add(T.riverCounted(n)); add(T.riverAfter(n - 1)); });
   [1, 2, 3].forEach((k) => add(T.tooManyBack(k))); // (Treat House: at most three extra treats from the pile)
+  add(T.tooManyAll());
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.cometAsk(l)); add(T.spellNext(l)); });
   // every word a grown-up can pick for a letter (#parent) is recorded, so the voice never changes

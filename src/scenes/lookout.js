@@ -33,8 +33,9 @@ const FRAME = { land: { x: 0.3, top: 0.13, bottom: 0.96, minWidth: 6.6 }, port: 
 // its sign lights and its number is said after a beat (count along). Every ride rescues a kitten, and at the end
 // everyone goes to the very top and down the slide!
 //  pickup: a kitten waits on a floor ("Kotek czeka na piętrze dwa!") · find: only the kitten in the bubble, she reads
-//  the sign beside it · relative: after a pickup, "one floor up/down" from where we are · dice: she taps a big die,
-//  it says how many floors up, she presses where that lands (counting on); the kitten is a surprise there ·
+//  the sign beside it · relative: after a pickup, "one floor up/down" from where we are; the kitten is a surprise on
+//  that floor, so no sign beside it gives the floor away · dice: she taps a big die, it says how many floors up, she
+//  presses where that lands (counting on); the kitten is a surprise there too ·
 //  go: one easy kitten, floors 1–3 with numeral + dots (the gentler run after a rough one)
 //
 // Session finale (when the session director says the finale is due — the hub's alarm called her here):
@@ -351,7 +352,7 @@ export class LookoutMission extends Mission {
     }
     if (mode === 'relative' && r > 0) {
       const from = this.floor, target = this.pick('sequence', nextDoor(from, this.N)), up = target > from;
-      return { skill: 'sequence', target, kitten: 'waits', show: () => ui.bubble({ seq: [from, up ? '⬆' : '⬇'], pic: '🐱', onTap: () => this.replay() }),
+      return { skill: 'sequence', target, kitten: 'surprise', show: () => ui.bubble({ seq: [from, up ? '⬆' : '⬇'], pic: '🐱', onTap: () => this.replay() }), // (no kitten on the floor yet: its sign would be the answer)
         ask: [...T.liftHere(from), ...T.kittenNext(up)], short: T.oneFloor(up), hint: () => { this.countFloors(0, from); return T.oneFloor(up); } }; // the floors up to the car light one by one
     }
     const pool = mode === 'go' ? range(1, Math.min(3, this.N)) : range(1, this.N);
