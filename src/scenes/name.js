@@ -257,18 +257,21 @@ class LetterTrain extends Mission {
         b.rotation.set(0, 0, 0);
         this.lookAt(slot);
         const s0 = b.scale.x;
-        await Promise.all([this.jumpTo(b, slot, { height: 2, ms: 650 }), animate(650, (t) => b.scale.setScalar(s0 + (1 - s0) * t))]);
-        // ride with the train from now on
-        this.train.attach(b);
+        // The wagon is taken now and the next letter is asked at once, while this block is still in the air: she
+        // need not wait for the hop to tap the next one.
         this.placed.push({ block: b, letter, idx: into, mine: true });
-        sfx.boing();
-        this.success(slot.clone().add(new THREE.Vector3(0, 0.8, 0)));
         if (this.ghosts[into]) this.ghosts[into].visible = false;
         const next = this.open()[0] ?? -1;
         this.glowAt(next);
         if (this.mode !== 'ghost') this.bubbleFor(next);
         this.talk = say([...this.yes(), ...T.letter(letter)]); // the next letter can be tapped while it is said
-        if (next < 0) await this.talk; // (the word is done: the ending waits for it)
+        const landed = Promise.all([this.jumpTo(b, slot, { height: 2, ms: 650 }), animate(650, (t) => b.scale.setScalar(s0 + (1 - s0) * t))]).then(() => {
+          if (!this.alive) return;
+          this.train.attach(b); // (it rides with the train from now on)
+          sfx.boing();
+          this.success(slot.clone().add(new THREE.Vector3(0, 0.8, 0)));
+        });
+        if (next < 0) { await landed; await this.talk; } // (the word is done: the ending waits for the last block and the voice)
         resolve();
       };
       this.blocks.forEach((b) => { if (b.userData.letter) this.tappable(b, onTap); });
@@ -490,6 +493,12 @@ class WhoseTrain extends Mission {
     }));
   }
 
+  /** What a wrong train says about itself: whose it is ("To pociąg mamy!"), or its word when it is a thing (KOT, DOM). */
+  whoseIt(word) {
+    const whose = this.L.whose[word];
+    return whose ? T.whoseIs(whose) : T.spellWord(word);
+  }
+
   /** "Here I am!": the train toots, bounces and puffs, its board grows for a moment. */
   honk(t) {
     sfx.toot();
@@ -511,7 +520,7 @@ class WhoseTrain extends Mission {
         const right = () => this.trains.find((t) => t.userData.word === asked);
         this.question('wordVisual', asked, {
           short: T.whoseAsk(whose),
-          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); ui.nudgeBubble(); return Promise.resolve(); }, // the name in the bubble (now she can match it), no words
+          hint: () => { ui.bubble({ word: [...asked].map(showLetter).join(''), onTap: () => this.replay() }); ui.nudgeBubble(); return T.whoseAsk(whose); }, // the name in the bubble (now she can match it); after a wrong train, whose that was comes first
           simplify: () => { const t = this.trains.find((x) => x.userData.word !== asked && x.parent && x.userData.onTap); if (t && this.trains.filter((x) => x.userData.onTap).length > 2) this.leave([t]); },
           reveal: () => { this.hint(right(), () => solved, right().userData.board); return T.whoseIs(whose); },
         }, { options: this.trains.length });
@@ -520,7 +529,7 @@ class WhoseTrain extends Mission {
           if (solved) return;
           this.poke();
           this.lookAt(t.userData.board);
-          if (t.userData.word !== asked) { this.wrong(t.userData.word, { obj: t }); return; }
+          if (t.userData.word !== asked) { this.wrong(t.userData.word, { obj: t, said: this.whoseIt(t.userData.word) }); return; }
           solved = true;
           this.correct(asked);
           this.stopIdle();

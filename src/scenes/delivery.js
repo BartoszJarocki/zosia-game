@@ -193,22 +193,25 @@ export class DeliveryMission extends Mission {
       });
       const parcel = makeParcel(pic, '#fde68a');
       parcel.scale.setScalar(0.8);
-      parcel.position.set(0, 0, 3);
+      const homeZ = camera.aspect < 1 ? 6 : 4.5; // (it waits well in front of the mailboxes, so a small lift is nowhere near one)
+      parcel.position.set(0, 0, homeZ);
       this.scene.add(parcel);
       this.shadowUnder(parcel, 0.9, 0.3);
       this.dropIn(parcel, 0, n * 140 + 200).then(() => sfx.pop());
       parcel.userData.tapHeight = 0.6;
-      const home = new THREE.Vector3(0, 0, 3);
+      const home = new THREE.Vector3(0, 0, homeZ);
       // Dragged along the ground, the parcel would slide behind the fence under her finger. Past the mailboxes'
       // front it moves back along her line of sight instead (the same spot on screen), so it climbs their fronts.
       const FRONT = 0.1;
       const inFront = (p) => (p.z >= FRONT ? p : camera.position.clone().lerp(p, (camera.position.z - FRONT) / (camera.position.z - p.z)));
-      // the mailbox the top of the parcel is over on screen (the box with the letter: the posts' feet are a nudge away)
+      // The mailbox the middle of the parcel is over on screen: its letter box, a little round it and the air above it
+      // (the posts' feet are a nudge away). The middle, not the top edge: a small lift only puts the top edge in front of
+      // the box, and that posts nothing.
       const under = () => {
-        const c = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.9, 0)).project(camera);
+        const c = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.7 * parcel.scale.y, 0)).project(camera);
         return boxes.find((b) => {
           if (!b.parent || b.userData.gone) return false;
-          const q = [[-0.85, 1.1], [0.85, 1.1], [-0.85, 2.7], [0.85, 2.7]].map(([dx, y]) => new THREE.Vector3(b.position.x + dx, y, b.position.z + 0.55).project(camera));
+          const q = [[-0.9, 1.1], [0.9, 1.1], [-0.9, 3.3], [0.9, 3.3]].map(([dx, y]) => new THREE.Vector3(b.position.x + dx, y, b.position.z + 0.55).project(camera));
           return c.x > Math.min(...q.map((v) => v.x)) && c.x < Math.max(...q.map((v) => v.x)) && c.y > Math.min(...q.map((v) => v.y)) && c.y < Math.max(...q.map((v) => v.y));
         });
       };

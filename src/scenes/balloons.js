@@ -17,6 +17,8 @@ const BOTTOM = 1.3;
 // Balloons rise in lanes 2.2 apart, so two side by side never touch, even swaying towards each other while they
 // pop up (1.1 × 1.5 wide). Balloons sharing a lane rise at the same speed, GAP apart (a balloon is 1.77 tall).
 const LANES = [-4.4, -2.2, 0, 2.2, 4.4], SWAY = 0.25, GAP = 2.1;
+/** The balloons left over when the last right one is popped drift up and away this slowly, and can be popped on the way. */
+const DRIFT_MS = 1600;
 
 /** Where an element sits on screen, ignoring transforms (the bubble pops in with a scale animation). */
 function box(el) {
@@ -26,7 +28,8 @@ function box(el) {
 }
 
 // "Balloon Hill": pop every balloon with the target letter (and count them!).
-//  Levels: other letters, more balloons, faster, lookalike letters.
+//  Levels: other letters, asked by name, more balloons, faster, lookalike letters.
+//  GAME.md "ask": match shows the letter in the bubble (letterVisual), audio only names it (letterAudio).
 export class BalloonsMission extends Mission {
   constructor(game) {
     super(game, 'balloons');
@@ -86,7 +89,9 @@ export class BalloonsMission extends Mission {
   round() {
     return new Promise((resolve) => {
       const pool = [...this.L.pool];
-      const target = this.pick('letterVisual', pool);
+      const ask = this.L.ask;
+      const skill = ask === 'match' ? 'letterVisual' : 'letterAudio';
+      const target = this.pick(skill, pool);
       this.last = target;
       const nOthers = this.L.total - this.L.targets;
       const set = distractors(target, pool, Math.min(pool.length - 1, nOthers), this.L.similar);
@@ -100,7 +105,9 @@ export class BalloonsMission extends Mission {
       let popped = 0, done = false, lastWrong = null, help = 0; // help: the clue (2) or the answer shown (3) stays for her next balloons
       this.speedK = 1;
 
-      ui.bubble({ big: showLetter(target), onTap: () => this.replay() }); // (left, and just the letter: the lanes need its width)
+      // (left, and just the letter or a balloon: the lanes need its width)
+      const bubble = (shown) => ui.bubble({ big: shown ? showLetter(target) : '', pic: shown ? '' : '🎈', onTap: () => this.replay() });
+      bubble(ask === 'match');
       // lanes: how high each can go, how many balloons fit in it, one speed each; fill one per lane first
       const tops = LANES.map((x) => this.laneTop(x));
       const fits = tops.map((top) => Math.max(1, Math.floor((top - BOTTOM) / GAP)));
@@ -133,7 +140,7 @@ export class BalloonsMission extends Mission {
           popped++;
           this.correct(target);
           if (popped < this.L.targets) { // next balloon with the same letter
-            this.question('letterVisual', target, hooks, { options: choices() });
+            this.question(skill, target, hooks, { options: choices() });
             if (help) this.helped(help);
           }
           if (popped < this.L.targets) {
@@ -144,14 +151,14 @@ export class BalloonsMission extends Mission {
           this.stopIdle();
           sfx.good();
           this.success(null, { big: true });
-          // the rest float away now: none is left looking poppable while the praise plays
+          // the rest drift up and away, and she can pop them on the way: for fun, nothing counts
           const rest = this.balloons;
           this.balloons = [];
-          rest.forEach((x) => this.untap(x));
+          rest.forEach((x) => this.tappable(x, () => this.popForFun(x)));
           this.talk = this.say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]); // (the next balloons come up meanwhile)
           await Promise.all(rest.map((x) => {
             const y0 = x.position.y;
-            return animate(900, (t) => { x.position.y = y0 + t * 12; }, ease.in).then(() => x.removeFromParent());
+            return animate(DRIFT_MS, (t) => { x.position.y = y0 + t * 14; }, ease.in).then(() => { this.untap(x); x.removeFromParent(); });
           }));
           if (!this.alive) return;
           resolve();
@@ -173,15 +180,24 @@ export class BalloonsMission extends Mission {
       };
       const hooks = {
         short: T.findLetter(target),
-        hint: () => { help = Math.max(help, 2); this.speedK = 0.5; return T.letterLike(target); },
+        hint: () => { help = Math.max(help, 2); this.speedK = 0.5; if (ask === 'audio') bubble(true); return T.letterLike(target); },
         simplify: () => floatAway(lastWrong?.parent ? lastWrong : this.balloons.find((x) => x.userData.letter !== target)),
         reveal: () => { help = 3; this.balloons.filter((x) => x.userData.letter === target).forEach((x) => this.hint(x, () => done || x.userData.popped, x.userData.body)); },
       };
       // several balloons are right at once, so a guess is right more often than 1 in n (mastery takes that out)
       const choices = () => this.balloons.length / (this.L.targets - popped);
-      this.question('letterVisual', target, hooks, { options: choices() }); // one question per balloon to find
+      this.question(skill, target, hooks, { options: choices() }); // one question per balloon to find
       this.askAfter(Promise.all([wait(500), this.talk]), T.balloonAsk(target));
     });
+  }
+
+  /** A balloon nobody asked for: it pops and nothing counts (no answer, no mistake). */
+  popForFun(b) {
+    if (b.userData.popped) return;
+    b.userData.popped = true;
+    this.untap(b);
+    this.lookAt(b);
+    this.pop(b);
   }
 
   pop(b) {
