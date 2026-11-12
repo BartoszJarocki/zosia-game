@@ -66,7 +66,7 @@ const until = async (predicate) => {
   assert.fail('Scene did not reach the expected phase');
 };
 const stop = (s) => { s.alive = false; s.exit(); };
-const heart = (s) => s.tappables.find((o) => o.userData.choice === 'heart');
+const asked = (s) => s.tappables.find((o) => o.userData.choice === s.last);
 
 async function scene(level = 1) {
   CONFIG.level = level;
@@ -80,10 +80,11 @@ test('one wrong tap gets a "no" and the question again, and does not score or fi
   const s = await scene(1);
   const task = s.round(0);
   await until(() => s.phase === 'choosing' && s.tappables.length >= 2);
-  assert.equal(s.last, 'heart');
+  assert.ok(['heart', 'star', 'oval'].includes(s.last));
   assert.equal(s.tappables.length, 2);
-  assert.ok(heart(s));
-  const wrong = s.tappables.find((o) => o.userData.choice !== 'heart');
+  assert.ok(asked(s));
+  assert.match(globalThis.__bubble.big, /<svg/, 'level 1 matches: the bubble draws the shape');
+  const wrong = s.tappables.find((o) => o.userData.choice !== s.last);
   const before = globalThis.__lines.length, glow = s.heartBody.material.emissiveIntensity;
   await wrong.userData.onTap();
   assert.equal(s.answers.length, 0);
@@ -93,57 +94,96 @@ test('one wrong tap gets a "no" and the question again, and does not score or fi
   assert.equal(s.heartLevel, 0);
   const said = globalThis.__lines.slice(before);
   assert.ok(/^Nie/.test(said[0]), said.join(' '));
-  assert.equal(said.at(-1), T.plutoAsk()[0]);
+  assert.equal(said.at(-1), T.plutoAsk(s.last)[0]);
   assert.equal(s.heartBody.material.emissiveIntensity, glow, "Pluto's own heart, which she cannot tap, does not light");
-  assert.ok(!heart(s).userData.hinting);
-  await heart(s).userData.onTap();
+  assert.ok(!asked(s).userData.hinting);
+  await asked(s).userData.onTap();
   await task;
   stop(s);
 });
 
-test('a right tap floats one heart in, scores it and brightens Pluto', async () => {
+test('a right tap floats the shape into the heart, scores it, names it and brightens Pluto', async () => {
   const s = await scene(1);
   const task = s.round(0);
   await until(() => s.phase === 'choosing');
-  await heart(s).userData.onTap();
-  await task;
+  const shape = s.last;
+  await asked(s).userData.onTap();
+  await task; await s.talk;
   assert.equal(s.answers.length, 1);
   assert.equal(s.answers[0].skill, 'shape');
-  assert.equal(s.answers[0].item, 'heart');
+  assert.equal(s.answers[0].item, shape);
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
   assert.equal(s.answers[0].options, 2);
+  assert.equal(globalThis.__lines.at(-1), T.plutoRight(shape)[0]);
   assert.ok(Math.abs(s.heartLevel - 1 / 3) < 1e-9);
   assert.equal(s.tappables.length, 0);
   assert.equal(s.pieces.length, 0);
   stop(s);
 });
 
-test('a wrong first tap is remembered when the heart is found on the retry', async () => {
+test('a named shape: the bubble keeps it, the clue draws it, the second miss takes a piece away, the third pulses it', async () => {
+  const s = await scene(2);
+  s.asks = ['oval'];
+  s.round(0);
+  await until(() => s.phase === 'choosing');
+  assert.equal(globalThis.__bubble.big, '?', 'the question is hers');
+  assert.equal(globalThis.__lines.at(-1), 'Gdzie jest owal?');
+  assert.ok(!s.tappables.some((o) => o.userData.choice === 'circle'), 'no twin at a level without lookalikes');
+  s.runAssist('hint');
+  assert.match(globalThis.__bubble.big, /<svg/, 'the clue draws the shape in the bubble');
+  const wrongs = s.tappables.filter((o) => o.userData.choice !== 'oval');
+  await wrongs[0].userData.onTap();
+  await wrongs[0].userData.onTap();
+  assert.equal(s.pieces.filter((o) => o.userData.gone).length, 1);
+  assert.ok(!asked(s).userData.hinting);
+  await wrongs[1].userData.onTap();
+  assert.ok(asked(s).userData.hinting, 'the third miss pulses the oval');
+  stop(s);
+});
+
+test('a wrong first tap is remembered when the shape is found on the retry', async () => {
   const s = await scene(2);
   const task = s.round(0);
   await until(() => s.phase === 'choosing');
-  await s.tappables.find((o) => o.userData.choice !== 'heart').userData.onTap();
-  await heart(s).userData.onTap();
+  await s.tappables.find((o) => o.userData.choice !== s.last).userData.onTap();
+  await asked(s).userData.onTap();
   await task;
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].scored, true);
   stop(s);
 });
 
-test('every right answer fills the heart until the last one shines fully', async () => {
+test('the asked shape changes every round, and every right answer fills the heart until it shines fully', async () => {
   const s = await scene(4);
-  assert.equal(s.rounds, 3);
+  assert.equal(s.rounds, 4);
+  const shapes = [];
   for (let r = 0; r < s.rounds; r++) {
     const task = s.round(r);
-    await until(() => s.phase === 'choosing' && s.tappables.some((o) => o.userData.choice === 'heart'));
-    assert.equal(s.last, 'heart');
+    await until(() => s.phase === 'choosing' && asked(s));
+    shapes.push(s.last);
     assert.equal(s.tappables.length, 4);
-    await heart(s).userData.onTap();
+    await asked(s).userData.onTap();
     await task;
   }
+  assert.equal(new Set(shapes).size, 4, shapes.join(' '));
   assert.ok(Math.abs(s.heartLevel - 1) < 1e-9);
   assert.equal(s.pieces.length, 0);
+  stop(s);
+});
+
+test('a visit cut short ends on the heart, and the heart shines fully before the goodbye', async () => {
+  const s = await scene(3);
+  s.asks = ['diamond', 'oval', 'star', 'rectangle'];
+  s.windingDown = true; s.rounds = 2;
+  const task = s.round(1);
+  await until(() => s.phase === 'choosing');
+  assert.equal(s.last, 'heart');
+  await asked(s).userData.onTap();
+  await task;
+  assert.ok(s.heartLevel < 1);
+  await s.outro();
+  assert.equal(s.heartLevel, 1);
   stop(s);
 });
 
@@ -159,15 +199,16 @@ test('every Pluto level runs through base progress and celebration, and counts f
     s.enter(); s.collect(); optimizeScene(s.scene);
     for (let step = 0; step < 300 && !globalThis.__celebration; step++) {
       await flush();
-      if (s.phase === 'choosing' && heart(s)) await heart(s).userData.onTap();
+      if (s.phase === 'choosing' && asked(s)) await asked(s).userData.onTap();
       s.update(0.05, step * 0.05);
     }
     assert.ok(globalThis.__celebration, `level ${level} celebrated: ${s.phase}, round ${s.roundIndex}, ${s.answers.length} answers`);
-    assert.deepEqual(globalThis.__progress, [1, 2, 3]);
+    const rounds = LEVELS.pluto[level - 1].rounds;
+    assert.deepEqual(globalThis.__progress, Array.from({ length: rounds }, (_, i) => i + 1));
     assert.equal(globalThis.__celebration.kind, 'pluto');
     assert.equal(events.filter((e) => e.correct).length, LEVELS.pluto[level - 1].rounds);
-    assert.equal(scoreRun(s.answers).scored, 3);
-    assert.ok(s.answers.every((a) => a.skill === 'shape' && a.item === 'heart' && a.scored));
+    assert.equal(scoreRun(s.answers).scored, rounds);
+    assert.ok(s.answers.every((a) => a.skill === 'shape' && LEVELS.pluto[level - 1].shapes.includes(a.item) && a.scored));
     assert.equal(getSession().missionsCompleted, 1);
     globalThis.__celebration.onAgain();
     assert.deepEqual(again, ['pluto']);

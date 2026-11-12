@@ -4,8 +4,8 @@ import { mesh, rbox } from '../models.js';
 import { glyphTexture, TILE_COLORS } from '../textures.js';
 import { sfx, hush } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { numberChoices } from '../levels.js';
 import { moonRounds, numbersIn, countVerdict } from '../levels/moon.js';
+import { leftNumbers, takeAway, awayChoices } from '../levels/blackhole.js';
 import { makeBlackHole } from './space.js';
 import { portrait } from '../world/portrait.js';
 import * as ui from '../ui.js';
@@ -13,6 +13,10 @@ import { Mission } from './mission.js';
 
 const MAX = 10, INK = '#ad8dc7', LIT = '#fff2ae';
 const FALL_GAP = 400; // ms between pebbles she watches fall
+const SEEN_MS = 500; // the pebbles left, lit, in view before the next round
+const SPIRAL_MS = 2400, AWAY_MS = 1600; // a pebble she sends; one she watches fall from the shelf
+const SHELF_Z = 4.25, SHELF_GAP = 1.9, TILE_Z = 1.4;
+const COLORS = ['#d6dce5', '#eed8af', '#d9bdf1', '#d6dce5'];
 const FACE = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
 const basic = (color) => new THREE.MeshBasicMaterial({ color });
 
@@ -48,6 +52,7 @@ export class BlackHoleMission extends Mission {
     this.beads = [];
     this.lights = [];
     this.blocks = [];
+    this.stones = []; // the shelf's pebbles in a taking-away round, and the outlines the fallen ones leave
     this.maps = [];
   }
 
@@ -100,7 +105,7 @@ export class BlackHoleMission extends Mission {
       c.lineTo(176, 108); c.lineTo(170, 86); c.lineTo(150, 80); c.lineTo(170, 74); c.closePath(); c.fill();
     });
     this.maps.push(this.litMap, this.outlineMap, this.pebbleMap);
-    this.pebbles = ['#d6dce5', '#eed8af', '#d9bdf1', '#d6dce5'].map((color, i) => this.makePebble(color, i));
+    this.pebbles = COLORS.map((color, i) => this.makePebble(color, i));
     const buttonMap = glyphTexture('✓', { bg: '#f4c869' });
     this.maps.push(buttonMap);
     this.button = mesh(new THREE.CircleGeometry(1, 64), new THREE.MeshBasicMaterial({ map: buttonMap }), { x: 5.3, y: 0.35, z: 4.25, rx: -Math.PI / 2, shadow: false });
@@ -112,7 +117,7 @@ export class BlackHoleMission extends Mission {
   }
 
   makePebble(color, i) {
-    const p = mesh(new THREE.CircleGeometry(0.85, 48), new THREE.MeshBasicMaterial({ map: this.pebbleMap, color, transparent: true }), { x: -4.7 + i * 2.2, y: 0.35, z: 4.25, rx: -Math.PI / 2, shadow: false });
+    const p = this.pebble(color, -4.7 + i * 2.2);
     p.userData.pebble = true;
     p.userData.tapHeight = 0;
     p.userData.home = p.position.clone();
@@ -129,6 +134,10 @@ export class BlackHoleMission extends Mission {
     });
     this.tappable(p, () => this.onPebble?.(p));
     return p;
+  }
+
+  pebble(color, x) {
+    return mesh(new THREE.CircleGeometry(0.85, 48), new THREE.MeshBasicMaterial({ map: this.pebbleMap, color, transparent: true }), { x, y: 0.35, z: SHELF_Z, rx: -Math.PI / 2, shadow: false });
   }
 
   /**
@@ -174,10 +183,10 @@ export class BlackHoleMission extends Mission {
 
   canDrop(p) { return this.alive && this.phase === 'drop' && p.userData.pebble && this.beads.length < MAX; }
 
-  async release(p) {
+  async release(p, ms = SPIRAL_MS) {
     const from = p.position.clone(), to = this.hole.position;
     const orbit = new THREE.Vector3(to.x - 1.8, to.y + 0.8, to.z);
-    await animate(2400, (t) => {
+    await animate(ms, (t) => {
       if (t < 0.5) p.position.lerpVectors(from, orbit, t * 2);
       else {
         const u = (t - 0.5) * 2, a = Math.PI + u * Math.PI * 2;
@@ -202,30 +211,35 @@ export class BlackHoleMission extends Mission {
     if (!this.alive) return;
     this.task = this.windingDown && r === this.rounds - 1 ? this.plan.at(-1) : this.plan[r];
     this.pebbles.forEach((p) => { p.visible = true; });
-    await (this.task.type === 'drop' ? this.dropRound(this.task.auto) : this.howManyRound());
+    await (this.task.type === 'drop' ? this.dropRound(this.task.auto) : this.awayRound());
     if (!this.alive) return;
     this.phase = 'clearing';
     this.onPebble = this.onButton = null;
     this.button.visible = false;
     this.lights.forEach((p) => {
-      this.untap(p); p.visible = false; p.userData.counted = false;
+      p.visible = false;
       p.material.map = this.outlineMap; p.material.color.set(INK); p.material.opacity = 1;
     });
-    this.blocks.forEach((b) => { this.untap(b); b.removeFromParent(); b.geometry.dispose(); b.material.map.dispose(); b.material.dispose(); });
-    this.beads = []; this.blocks = [];
+    for (const o of [...this.blocks, ...this.stones]) {
+      this.untap(o); o.removeFromParent(); o.geometry.dispose();
+      if (this.blocks.includes(o)) o.material.map.dispose();
+      o.material.dispose();
+    }
+    this.beads = []; this.blocks = []; this.stones = [];
   }
 
   async dropRound(auto) {
     const n = this.pick('counting', numbersIn(this.L.drop));
     this.last = n;
     this.phase = 'drop';
-    this.button.visible = !auto;
-    if (this.L.slots) this.showSlots(n);
+    let slots = this.L.slots;
+    const clue = () => { slots = true; this.showSlots(n); };
+    if (slots) clue();
     const flights = [];
     let resolve;
     const done = new Promise((r) => { resolve = r; });
     const finish = () => {
-      this.phase = 'solved'; this.correct(n); this.stopIdle();
+      this.phase = 'solved'; this.correct(n); this.stopIdle(); sfx.good();
       resolve();
     };
     this.onPebble = (p) => {
@@ -233,6 +247,7 @@ export class BlackHoleMission extends Mission {
       this.poke();
       this.untap(p); p.userData.pebble = false; delete p.userData.drag;
       this.addBead();
+      this.button.visible = !auto; // (the button comes with her first pebble: nothing to check before)
       const count = this.beads.length;
       this.count(count);
       const i = this.pebbles.indexOf(p);
@@ -244,26 +259,25 @@ export class BlackHoleMission extends Mission {
       if (auto && count === n) finish();
       return flight;
     };
-    this.onButton = async () => {
+    // a wrong check is a wrong answer on the shared help; too many: every bead goes dark and she sends them again
+    this.onButton = () => {
       if (!this.alive || this.phase !== 'drop') return;
       this.poke();
-      const count = this.beads.length, verdict = countVerdict(count, n);
+      const verdict = countVerdict(this.beads.length, n);
       if (verdict === 'right') { finish(); return; }
-      this.wrong(count, { feedback: false, quiet: true });
-      if (verdict === 'few') { this.say(T.blackholeTooFew()); return; }
-      this.phase = 'checking';
-      const extras = this.beads.splice(n);
-      await animate(650, (t) => extras.forEach((p) => { p.material.opacity = 1 - t; }), ease.linear);
-      if (!this.alive) return;
-      extras.forEach((p) => { p.material.map = this.outlineMap; p.material.color.set(INK); p.material.opacity = 0.6; });
-      this.phase = 'drop';
-      this.say(T.blackholeTooMany());
+      const count = this.beads.length;
+      if (verdict === 'many') {
+        this.beads = [];
+        this.lights.forEach((p, i) => { p.material.map = this.outlineMap; p.material.color.set(INK); p.visible = slots && i < n; });
+      }
+      this.wrong(count, { obj: this.button, said: verdict === 'few' ? T.blackholeTooFew() : T.blackholeTooMany() });
     };
     this.question('counting', n, {
       short: () => !auto && this.beads.length ? T.blackholeButton() : T.blackholeDropShort(n),
-      hint: () => { this.showSlots(n); return T.blackholeHelp(); },
+      hint: () => { clue(); return !auto && this.beads.length >= n ? T.blackholeButton() : T.blackholeHelp(); },
+      simplify: clue,
       reveal: () => {
-        this.showSlots(n);
+        clue();
         const count = this.beads.length;
         this.hint(!auto && count >= n ? this.button : this.pebbles[0], () => this.phase === 'solved' || this.beads.length !== count);
       },
@@ -273,7 +287,7 @@ export class BlackHoleMission extends Mission {
     await done;
     if (!this.alive) return;
     const counted = this.speech; // her numbers, still being said
-    this.success(); sfx.good();
+    this.success();
     const glow = !this.lampSaid; // (the fact once a visit)
     this.lampSaid = true;
     if (glow) this.brighten();
@@ -281,66 +295,77 @@ export class BlackHoleMission extends Mission {
     await Promise.all([...flights, counted]); // the next question comes as she is praised
   }
 
-  /** She watches pebbles fall in, 0.4 s apart, and counts them: the question starts as they start to fall. */
-  async howManyRound() {
-    await this.speech; // (her numbers and the praise first: then she can count)
+  /**
+   * Taking away: the shelf holds `was` pebbles, the last `fell` lift off 0.4 s apart and spiral in, each leaving an
+   * outline, then "Ile zostało?". The question is open from the start; she can count the pebbles left by tapping them.
+   */
+  async awayRound() {
+    await this.speech; // (her numbers and the praise first: then she can watch)
     if (!this.alive) return;
-    const n = this.pick('quantity', numbersIn(this.L.howMany));
-    this.last = n;
+    const left = this.pick('quantity', leftNumbers(this.L));
+    const { was, fell } = takeAway(this.L, left);
+    this.last = left;
     this.phase = 'watching';
-    if (this.L.slots) this.showSlots(n);
+    this.pebbles.forEach((p) => { p.visible = false; });
+    const shelf = Array.from({ length: was }, (_, i) => {
+      const p = this.pebble(COLORS[i % COLORS.length], (i - (was - 1) / 2) * SHELF_GAP);
+      this.scene.add(p);
+      return p;
+    });
+    const kept = shelf.slice(0, left);
+    this.stones = [...shelf];
     let right = null, lastWrong;
-    this.question('quantity', n, {
-      short: T.blackholeHowMany(),
-      hint: () => { this.showSlots(n); return T.countTogether(); },
+    this.question('quantity', left, {
+      short: T.blackholeLeft(),
+      hint: () => { this.pointAlong(kept, (p) => { p.scale.setScalar(1.3); return () => p.scale.setScalar(1); }); return T.countTogether(); },
       simplify: () => right && this.removeOption(lastWrong?.parent ? lastWrong : this.blocks.find((b) => b !== right && b.parent)),
       reveal: () => right && this.hint(right, () => this.phase !== 'choosing'),
     }, { options: 3 });
     ui.bubble({ big: '?', pic: '✨', onTap: () => this.replay(), passthrough: true });
-    this.say(T.blackholeWatch());
-    await Promise.all(Array.from({ length: n }, (_, i) => wait(i * FALL_GAP).then(async () => {
+    await this.say(T.blackholeDropShort(was));
+    if (!this.alive) return;
+    await Promise.all(shelf.slice(left).map((p, k) => wait(k * FALL_GAP).then(async () => {
       if (!this.alive) return;
-      const p = this.pebbles[i % this.pebbles.length].clone(); // (the one on the shelf stays: more can fall from it)
-      p.material = p.material.clone();
-      this.scene.add(p);
-      await this.release(p);
-      p.removeFromParent(); p.material.dispose();
-      if (this.alive) this.addBead();
+      const outline = mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: this.outlineMap, color: INK, transparent: true, opacity: 0.6, depthWrite: false }), { x: p.position.x, y: 0.2, z: SHELF_Z, rx: -Math.PI / 2, shadow: false });
+      this.scene.add(outline);
+      this.stones.push(outline);
+      await this.release(p, AWAY_MS);
+      p.visible = false;
     })));
     if (!this.alive) return;
+    this.say(T.blackholeFell(fell));
     this.phase = 'choosing';
-    this.pebbles.forEach((p) => { p.visible = false; });
     let tapped = 0, resolve;
     const done = new Promise((r) => { resolve = r; });
-    this.beads.forEach((p) => this.tappable(p, () => {
+    kept.forEach((p) => this.tappable(p, () => {
       if (this.phase !== 'choosing' || p.userData.counted) return;
       this.poke(); p.userData.counted = true; p.material.color.set(LIT).multiplyScalar(1.8);
       this.count(++tapped);
     }));
-    const max = Math.max(this.L.howMany[1] + 1, n + 1);
-    this.blocks = numberChoices(n, max, 3, true).map((num, i) => {
+    this.blocks = awayChoices({ was, left }).map((num, i) => {
       const map = glyphTexture(String(num), { bg: TILE_COLORS[i], dots: this.L.slots ? num : 0 });
-      const b = mesh(rbox(1.75, 1.75, 0.25, 0.16), new THREE.MeshBasicMaterial({ map }), { x: (i - 1) * 2.6, y: 0.35, z: 4.25, rx: -Math.PI / 2, shadow: false });
+      const b = mesh(rbox(1.75, 1.75, 0.25, 0.16), new THREE.MeshBasicMaterial({ map }), { x: (i - 1) * 2.6, y: 0.35, z: TILE_Z, rx: -Math.PI / 2, shadow: false });
       b.userData.num = num; b.userData.tapHeight = 0;
       this.scene.add(b);
       this.tappable(b, () => {
         if (this.phase !== 'choosing') return;
         this.poke();
-        if (num !== n) { lastWrong = b; this.wrong(num, { quiet: true }); return; }
-        this.phase = 'solved'; this.correct(num); this.stopIdle(); resolve(b);
+        if (num !== left) { lastWrong = b; this.wrong(num, { obj: b }); return; }
+        this.phase = 'solved'; this.correct(num); this.stopIdle(); sfx.good(); resolve(b);
       });
       return b;
     });
-    right = this.blocks.find((b) => b.userData.num === n);
-    this.ask(T.blackholeHowMany());
+    right = this.blocks.find((b) => b.userData.num === left);
+    this.ask(T.blackholeLeft());
     const chosen = await done;
     if (!this.alive) return;
-    [...this.beads, ...this.blocks].forEach((o) => this.untap(o));
+    [...kept, ...this.blocks].forEach((o) => this.untap(o));
     this.blocks.filter((b) => b !== chosen).forEach((b) => { b.visible = false; });
-    this.success(); sfx.good();
-    this.beads.forEach((p) => p.material.color.set(LIT).multiplyScalar(1.8));
-    this.talk = this.say([...T.yes(), ...T.number(n)]); // "Tak! Trzy!": the number she chose, said once
+    this.success();
+    kept.forEach((p) => p.material.color.set(LIT).multiplyScalar(1.8));
+    this.talk = this.say([...T.yes(), ...T.number(left)]); // "Tak! Dwa!": the number she chose, said once
     await animate(350, (t) => chosen.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.15), ease.linear);
+    await wait(SEEN_MS);
   }
 
   success() { this.cheer(2); }

@@ -19,6 +19,7 @@ const saved = new Map();
 globalThis.localStorage = { getItem: (k) => saved.get(k), setItem: (k, v) => saved.set(k, v) };
 globalThis.__lines = [];
 globalThis.__animations = [];
+globalThis.__shakes = [];
 
 const engine = readFileSync(new URL('../src/engine.js', import.meta.url), 'utf8');
 const stage = engine.slice(engine.indexOf('export class Stage'), engine.indexOf('\nlet current'));
@@ -37,7 +38,7 @@ registerHooks({ load(url, context, next) {
     };
     export const wait = (ms) => globalThis.__delay ? globalThis.__delay(ms) : new Promise(setImmediate);
     export const hop = async () => { throw new Error('No character hops in the black hole scene'); };
-    export const shakeNo = () => { throw new Error('No shakes in the black hole scene'); };
+    export const shakeNo = (obj) => { globalThis.__shakes.push(obj); };
     export const addSkyAndLights = () => {};
     ${stage}`;
   if (url.endsWith('/src/audio.js')) source = `export const say = async (s) => {
@@ -168,53 +169,77 @@ test('the manual button judges the lit beads while pebbles are still flying', as
   await advance(650); await round;
 });
 
-test('too few waits; too many darkens extras and requires her second button tap', async () => {
+test('the button comes with her first pebble; too few waits, too many puts every bead out and she sends them again', async () => {
   const s = await scene();
   const round = s.dropRound(false);
+  assert.equal(s.button.visible, false, 'nothing to check before her first pebble');
+  await s.pebbles[0].userData.onTap();
+  assert.equal(s.button.visible, true);
+  globalThis.__shakes = [];
   await s.button.userData.onTap();
   await flush();
-  assert.equal(globalThis.__lines.at(-1), 'Za mało! Wypuść jeszcze!');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za mało! Wypuść jeszcze!', 'Dotknij guzika, kiedy skończysz!']);
+  assert.deepEqual(globalThis.__shakes, [s.button], 'the button shakes its head');
   assert.equal(s.answers.length, 0);
-  for (let i = 0; i < 10; i++) await s.pebbles[i % 4].userData.onTap();
-  await s.pebbles[0].userData.onTap();
+  for (let i = 0; i < 9; i++) await s.pebbles[i % 4].userData.onTap();
   assert.equal(s.beads.length, 10);
-  const extras = s.beads.slice(3);
+  const lit = [...s.beads];
   await s.button.userData.onTap();
-  assert.equal(globalThis.__lines.at(-1), 'Za dużo! Teraz dobrze? Dotknij guzika!');
-  assert.equal(s.beads.length, 3);
+  await flush();
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za dużo! Policz jeszcze raz!', 'Trzy kamyki!']);
+  assert.equal(s.beads.length, 0, 'the count starts again');
+  assert.ok(lit.every((p) => p.material.map === s.outlineMap), 'no bead stays lit');
+  assert.deepEqual(lit.map((p) => p.visible), [true, true, true, ...Array(7).fill(false)], 'the second miss shows three outlines, nothing more');
   assert.equal(s.answers.length, 0);
   assert.equal(s.phase, 'drop');
-  assert.ok(extras.every((p) => p.material.map === s.outlineMap));
-  assert.ok(extras.every((p) => p.material.opacity === 0.6));
+  assert.equal(s.learn.current.wrong, 2);
+  for (let i = 0; i < 3; i++) await s.pebbles[i].userData.onTap();
   await s.button.userData.onTap(); await round;
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
   stop(s);
 });
 
-test('too many darkens the extra beads during flights and arrivals do not relight them', async (t) => {
+test('a wrong count climbs the shared help: the outlines, then the pebble or the button pulses', async () => {
+  const s = await scene();
+  s.dropRound(false);
+  await s.pebbles[0].userData.onTap();
+  s.button.userData.onTap();
+  assert.equal(s.aid.state.level, 1);
+  assert.ok(s.lights.slice(1).every((p) => !p.visible), 'the first miss shows nothing more');
+  s.button.userData.onTap();
+  assert.equal(s.aid.state.level, 2);
+  assert.ok(s.lights.slice(0, 3).every((p) => p.visible), 'the second miss shows the three outlines');
+  assert.ok(!s.pebbles.some((p) => p.userData.hinting) && !s.button.userData.hinting, 'and nothing pulses');
+  s.button.userData.onTap();
+  assert.equal(s.aid.state.level, 3);
+  assert.ok(s.pebbles[0].userData.hinting, 'the third pulses a pebble to send');
+  assert.equal(s.learn.current.assist, 3);
+  await flush();
+  assert.equal(globalThis.__lines.at(-1), 'Tutaj!');
+  stop(s);
+});
+
+test('too many during flights puts the beads out, and arrivals do not relight them', async (t) => {
   const s = await scene(), advance = clock(t);
   t.after(() => stop(s));
   const round = s.dropRound(false);
   const launched = [...s.pebbles];
   launched.forEach((p) => p.userData.onTap());
   assert.equal(s.beads.length, 4);
-  const extra = s.beads[3];
-  const check = s.button.userData.onTap();
-  assert.equal(s.beads.length, 3);
+  const lit = s.lights.slice(0, 4);
+  s.button.userData.onTap();
+  assert.equal(s.beads.length, 0);
   assert.equal(s.learn.current.wrong, 1);
-  await advance(650); await check;
-  assert.equal(extra.material.map, s.outlineMap);
-  assert.equal(extra.material.opacity, 0.6);
   assert.equal(s.phase, 'drop');
-  assert.equal(s.answers.length, 0);
-  assert.ok(launched.every((p) => p.parent === s.scene));
+  await advance(2400);
+  assert.ok(lit.every((p) => p.material.map === s.outlineMap && !p.visible));
+  assert.ok(launched.every((p) => !p.parent), 'her pebbles still reach the black hole');
+  s.pebbles.slice(0, 3).forEach((p) => p.userData.onTap());
   s.button.userData.onTap();
   assert.equal(s.answers[0].firstTry, false);
   await advance(2400); await round;
   assert.equal(s.beads.length, 3);
-  assert.equal(extra.material.map, s.outlineMap);
-  assert.equal(extra.material.opacity, 0.6);
 });
 
 test('auto finishes with the last pebble, praises after its number and does not score', async () => {
@@ -249,60 +274,89 @@ test('a drag towards the window sends a pebble; a drag within the tray is reject
   stop(s);
 });
 
-test('howMany flights are silent; each bead can be counted once before the scored choice', async () => {
-  const s = await scene();
+test('taking away: the shelf shows what there was, the last ones fall in, and she says how many are left', async () => {
+  const s = await scene(2);
+  s.L = { ...s.L, away: [4, 4], fall: [2, 2] };
   globalThis.__lines = [];
-  const round = s.howManyRound();
+  const round = s.awayRound();
   await until(() => s.phase === 'choosing');
-  assert.deepEqual(globalThis.__lines, ['Patrz, jak lecą!', 'Ile kamyków wpadło?']);
-  assert.equal(s.beads.length, 3);
-  assert.deepEqual(s.blocks.map((b) => b.userData.num).sort(), [2, 3, 4]);
-  assert.ok(s.pebbles.every((p) => !p.visible));
-  s.beads[1].userData.onTap(); s.beads[1].userData.onTap(); s.beads[0].userData.onTap();
+  assert.deepEqual(globalThis.__lines, ['Cztery kamyki!', 'Dwa wpadły.', 'Ile zostało?']);
+  const shelf = s.stones.filter((o) => o.material.map === s.pebbleMap);
+  assert.equal(shelf.length, 4);
+  assert.deepEqual(shelf.map((p) => p.visible), [true, true, false, false], 'the last two fell in');
+  assert.equal(s.stones.filter((o) => o.material.map === s.outlineMap).length, 2, 'each leaves an outline where it lay');
+  assert.ok(s.pebbles.every((p) => !p.visible), 'nothing to send in a taking-away round');
+  assert.deepEqual(s.blocks.map((b) => b.userData.num).sort(), [1, 2, 4], 'what is left, what there was, a neighbour');
+  assert.equal(s.last, 2);
+  shelf[1].userData.onTap(); shelf[1].userData.onTap(); shelf[0].userData.onTap();
   await until(() => globalThis.__lines.includes('Dwa!'));
-  assert.deepEqual(globalThis.__lines.slice(-2), ['Jeden!', 'Dwa!']);
-  s.blocks.find((b) => b.userData.num === 2).userData.onTap();
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Jeden!', 'Dwa!'], 'each pebble left counts once');
+  globalThis.__shakes = [];
+  s.blocks.find((b) => b.userData.num === 4).userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
-  s.blocks.find((b) => b.userData.num === 3).userData.onTap();
+  assert.deepEqual(globalThis.__shakes.map((b) => b.userData.num), [4]);
+  s.blocks.find((b) => b.userData.num === 2).userData.onTap();
   await round; await s.talk;
-  assert.deepEqual(globalThis.__lines.slice(-2), ['Tak!', 'Trzy!'], 'her number, once: no count through');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Tak!', 'Dwa!'], 'her number, once');
   assert.equal(s.answers[0].skill, 'quantity');
-  assert.equal(s.answers[0].item, '3');
+  assert.equal(s.answers[0].item, '2');
   assert.equal(s.answers[0].options, 3);
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
-  assert.ok(s.beads.every((p) => !p.userData.onTap));
+  assert.ok(shelf.every((p) => !p.userData.onTap));
   stop(s);
 });
 
-test('howMany pebbles fall 0.4 s apart, each counts on arrival, and the question is open as they start', async (t) => {
-  const s = await scene(), advance = clock(t);
-  t.after(() => stop(s));
-  const pebbles = [...s.pebbles];
-  globalThis.__animations = [];
-  const round = s.howManyRound();
+test('taking-away help: the clue lights the pebbles left without a number, then a wrong tile goes, then the right one pulses', async () => {
+  const s = await scene(3);
+  s.L = { ...s.L, away: [5, 5], fall: [2, 2] };
+  s.awayRound();
+  await until(() => s.phase === 'choosing');
+  const before = globalThis.__lines.length;
+  s.runAssist('hint');
   await flush();
-  assert.equal(s.learn.current?.skill, 'quantity');
-  await advance(2399);
-  assert.equal(s.beads.length, 0);
-  assert.equal(globalThis.__animations.filter((ms) => ms === 2400).length, 3);
-  await advance(1);
-  assert.equal(s.beads.length, 1);
-  await advance(400);
-  assert.equal(s.beads.length, 2);
-  await advance(400);
-  assert.equal(s.beads.length, 3);
-  assert.equal(s.phase, 'choosing');
-  assert.deepEqual(s.pebbles, pebbles);
-  assert.ok(pebbles.every((p) => p.position.equals(p.userData.home)), 'the shelf keeps its pebbles');
-  s.blocks.find((b) => b.userData.num === 3).userData.onTap();
-  await advance(350); await round;
+  assert.deepEqual(globalThis.__lines.slice(before), ['Policzmy razem!']);
+  const right = s.blocks.find((b) => b.userData.num === 3);
+  s.blocks.find((b) => b.userData.num === 5).userData.onTap();
+  s.blocks.find((b) => b.userData.num === 5).userData.onTap();
+  assert.equal(s.blocks.filter((b) => b.userData.gone).length, 1, 'the second miss takes a wrong tile away');
+  assert.ok(!right.userData.gone && !right.userData.hinting);
+  s.blocks.find((b) => b !== right && !b.userData.gone).userData.onTap();
+  assert.ok(right.userData.hinting, 'the third pulses the right tile');
+  right.userData.onTap();
+  stop(s);
 });
 
-test('Moon and Black Hole choices stay positive at one and keep neighbours above one', async () => {
-  for (const Scene of [MoonMission, BlackHoleMission]) for (const n of [1, 2, 7, 9]) {
-    const s = new Scene({});
+test('taking-away pebbles fall 0.4 s apart, and the question is open from the start of the round', async (t) => {
+  const s = await scene(1), advance = clock(t);
+  t.after(() => stop(s));
+  s.L = { ...s.L, away: [4, 4], fall: [3, 3] };
+  globalThis.__animations = [];
+  const round = s.awayRound();
+  await flush();
+  assert.equal(s.learn.current?.skill, 'quantity');
+  assert.equal(s.learn.current?.item, '1');
+  await advance(1);
+  const shelf = s.stones.slice(0, 4);
+  assert.equal(globalThis.__animations.filter((ms) => ms === 1600).length, 1, 'the first one lifts off');
+  await advance(400);
+  assert.equal(globalThis.__animations.filter((ms) => ms === 1600).length, 2);
+  await advance(400);
+  assert.equal(globalThis.__animations.filter((ms) => ms === 1600).length, 3);
+  assert.equal(s.blocks.length, 0, 'no tiles while they fall');
+  await advance(1600);
+  assert.deepEqual(shelf.map((p) => p.visible), [true, false, false, false]);
+  assert.equal(s.phase, 'choosing');
+  s.blocks.find((b) => b.userData.num === 1).userData.onTap();
+  await advance(350);
+  assert.ok(shelf[0].visible, 'the pebble left stays in view, lit, a moment after her answer');
+  await advance(500); await round;
+});
+
+test('Moon choices stay positive at one and keep neighbours above one', async () => {
+  for (const n of [1, 2, 7, 9]) {
+    const s = new MoonMission({});
     s.L = { ...s.L, howMany: [1, 2], slots: true };
     s.pick = () => n;
     s.build(); await s.landed;
@@ -315,7 +369,7 @@ test('Moon and Black Hole choices stay positive at one and keep neighbours above
   }
 });
 
-test('all four levels reach the base celebration, score quantity and end with auto drops', async () => {
+test('all four levels reach the base celebration, ask two or more scored questions and end with auto drops', async () => {
   for (let level = 1; level <= 4; level++) {
     CONFIG.level = level;
     startSession();
@@ -328,15 +382,16 @@ test('all four levels reach the base celebration, score quantity and end with au
       if (s.phase === 'drop') {
         if (s.beads.length < s.last) await s.pebbles[0].userData.onTap();
         else if (s.button.visible) await s.button.userData.onTap();
-      } else if (s.phase === 'choosing') s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
+      } else if (s.phase === 'choosing' && s.blocks.length) s.blocks.find((b) => b.userData.num === s.last).userData.onTap();
       s.update(0.05, step * 0.05);
       await flush();
     }
     assert.equal(globalThis.__celebration?.kind, 'blackhole', `level ${level}, ${s.phase}, round ${s.roundIndex}`);
-    assert.deepEqual(globalThis.__progress, level < 3 ? [1, 2, 3] : [1, 2, 3, 4]);
+    assert.deepEqual(globalThis.__progress, [1, 2, 3, 4]);
     assert.deepEqual(s.task, { type: 'drop', auto: true });
     assert.equal(events.filter((e) => e.correct).length, LEVELS.blackhole[level - 1].rounds);
-    assert.equal(scoreRun(s.answers).scored, [1, 1, 3, 3][level - 1]);
+    assert.equal(scoreRun(s.answers).scored, [2, 2, 3, 3][level - 1]);
+    assert.deepEqual(s.answers.filter((a) => a.skill === 'quantity').length, 2, 'two taking-away questions');
     assert.equal(getSession().missionsCompleted, 1);
     assert.deepEqual(s.doneLine(), ['Brawo! Czarna dziura świeci od twoich kamyków!']);
     globalThis.__celebration.onAgain();
@@ -350,7 +405,7 @@ test('all four levels reach the base celebration, score quantity and end with au
 
 test('winding down skips to the automatic final drop', async () => {
   const s = await scene(1);
-  s.plan = [{ type: 'howMany', auto: false }, { type: 'drop', auto: false }, { type: 'howMany', auto: false }, { type: 'drop', auto: true }];
+  s.plan = [{ type: 'away', auto: false }, { type: 'drop', auto: false }, { type: 'away', auto: false }, { type: 'drop', auto: true }];
   s.windingDown = true; s.rounds = 2;
   const round = s.round(1);
   assert.deepEqual(s.task, { type: 'drop', auto: true });
@@ -424,8 +479,9 @@ function bounds(obj, camera, width, height) {
 }
 
 test('all controls fit both iPads at 70 px or larger and the scene stays below the draw budget', async () => {
-  const s = await scene(9);
-  const round = s.howManyRound();
+  const s = await scene(5);
+  s.L = { ...s.L, away: [7, 7], fall: [2, 2] };
+  const round = s.awayRound();
   await until(() => s.phase === 'choosing');
   s.showSlots(10); s.button.visible = true; s.pebbles.forEach((p) => { p.visible = true; });
   for (const [width, height] of [[1180, 820], [1366, 1024]]) {
@@ -433,9 +489,9 @@ test('all controls fit both iPads at 70 px or larger and the scene stays below t
     const dir = s.view.pos.clone().sub(s.view.look);
     dir.setLength(Math.max(dir.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
     camera.position.copy(s.view.look).add(dir); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
-    for (const obj of [...s.pebbles, ...s.lights, ...s.blocks, s.button]) {
+    for (const obj of [...s.pebbles, ...s.lights, ...s.blocks, ...s.stones.filter((o) => o.visible), s.button]) {
       const b = bounds(obj, camera, width, height);
-      const painted = obj.userData.bead ? 224 / 256 : 1;
+      const painted = obj.userData.bead || obj.material.map === s.outlineMap ? 224 / 256 : 1;
       assert.ok((b.right - b.left) * painted >= 70, `${width}x${height} target width: ${JSON.stringify(b)}`);
       assert.ok((b.bottom - b.top) * painted >= 70, `${width}x${height} target height: ${JSON.stringify(b)}`);
       assert.ok(b.left >= 0 && b.right <= width && b.top >= 0 && b.bottom <= height);
@@ -453,7 +509,7 @@ test('all controls fit both iPads at 70 px or larger and the scene stays below t
   assert.ok(draws + 20 < 100, `${draws} scene calls plus 20 for medium postprocessing`);
   assert.equal(s.drift, 0);
   assert.deepEqual(s.post, { tilt: 0, ao: false });
-  s.blocks.find((b) => b.userData.num === 9).userData.onTap(); await round; stop(s);
+  s.blocks.find((b) => b.userData.num === 5).userData.onTap(); await round; stop(s);
 });
 
 test('the black hole stop starts the mission and returning parks the rocket there', async () => {

@@ -87,7 +87,7 @@ test('both rings are answer choices with string labels, and the piece is draggab
   s.alive = false; s.exit();
 });
 
-test('a right piece shrinks its ring gap and both rings close when the pieces are in', async () => {
+test('a right piece shrinks its hole and every hole closes when the pieces are in', async () => {
   const s = await build(4);
   const plan = saturnPieces(LEVELS.saturn[3], () => 0.37);
   s.plan = plan;
@@ -97,9 +97,9 @@ test('a right piece shrinks its ring gap and both rings close when the pieces ar
     await ring(s, s.last).userData.onTap();
     await task;
   }
-  for (const kind of ['ice', 'rock']) {
-    assert.equal(s.rings[kind].filled, plan.filter((p) => p.kind === kind).length);
-    assert.equal(s.rings[kind].gap.visible, false);
+  for (const slot of s.slots) {
+    assert.equal(slot.filled, plan.filter((p) => `${p.kind}:${p.size}` === slot.key).length);
+    assert.equal(slot.gap.visible, false);
   }
   await s.outro();
   assert.equal(s.spin, true);
@@ -114,38 +114,39 @@ test('each gap lies in its ring plane and is visible before the first piece', as
     const normal = new THREE.Vector3().fromBufferAttribute(obj.geometry.getAttribute('normal'), 0);
     return normal.applyMatrix3(new THREE.Matrix3().getNormalMatrix(obj.matrixWorld)).normalize();
   };
-  for (const kind of ['ice', 'rock']) {
-    const { mesh: ring, gap } = s.rings[kind];
-    assert.equal(gap.visible, true, kind);
-    assert.ok(Math.abs(normalOf(ring).dot(normalOf(gap))) > 0.999, `${kind} gap is parallel to its ring`);
+  for (const { key, kind, gap } of s.slots) {
+    assert.equal(gap.visible, true, key);
+    assert.ok(Math.abs(normalOf(s.rings[kind].mesh).dot(normalOf(gap))) > 0.999, `${key} hole is parallel to its ring`);
   }
   s.alive = false; s.exit();
 });
 
-test('the ring taps line up with the drawn rings at every iPad size', async () => {
-  const s = await build(4);
-  s.scene.updateMatrixWorld(true);
-  const ray = new THREE.Raycaster();
-  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
-    const direction = s.view.pos.clone().sub(s.view.look);
-    direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
-    camera.position.copy(s.view.look).add(direction); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
-    for (const kind of ['ice', 'rock']) {
-      const tap = ring(s, kind);
-      const [inner, outer] = s.rings[kind].radii;
-      const radius = (inner + outer) / 2;
-      for (const angle of [Math.PI / 2, Math.PI, 0]) {
-        const world = s.saturn.localToWorld(new THREE.Vector3(Math.cos(angle) * radius, 0.01, Math.sin(angle) * radius));
-        const ndc = world.clone().project(camera);
-        ray.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), camera);
-        const hits = ray.intersectObjects(s.tappables.filter((o) => o.userData.choice !== undefined), false);
-        assert.ok(hits.length, `${width}x${height} ${kind} ${angle}`);
-        assert.equal(hits[0].object, tap, `${width}x${height} ${kind} ${angle}`);
+test('the ring taps line up with the drawn rings at every iPad size, by kind and by both', async () => {
+  for (const level of [1, 4]) {
+    const s = await build(level);
+    s.scene.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+      const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+      const direction = s.view.pos.clone().sub(s.view.look);
+      direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
+      camera.position.copy(s.view.look).add(direction); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
+      for (const { key, tap, radii, angle: hole, size } of s.slots) {
+        const radius = (radii[0] + radii[1]) / 2;
+        // the hole, the front, and the side of the ring (or of its half); angles as the ring geometry draws them
+        const angles = [hole, ...(size ? [size === 'big' ? Math.PI : 0] : [-Math.PI / 2, Math.PI, 0])];
+        for (const angle of angles) {
+          const world = s.saturn.localToWorld(new THREE.Vector3(Math.cos(angle) * radius, 0.01, -Math.sin(angle) * radius));
+          const ndc = world.clone().project(camera);
+          ray.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), camera);
+          const hits = ray.intersectObjects(s.tappables, false);
+          assert.ok(hits.length, `${width}x${height} ${key} ${angle}`);
+          assert.equal(hits[0].object, tap, `${width}x${height} ${key} ${angle}`);
+        }
       }
     }
+    s.alive = false; s.exit();
   }
-  s.alive = false; s.exit();
 });
 
 test('Saturn has no shadows or point lights and stays below the medium draw budget', async () => {

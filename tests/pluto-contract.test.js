@@ -54,7 +54,7 @@ const { CONFIG } = await import('../src/config.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const { T } = await import('../src/lang/pl.js');
 const flush = () => new Promise(setImmediate);
-const heart = (s) => s.tappables.find((o) => o.userData.choice === 'heart');
+const asked = (s) => s.tappables.find((o) => o.userData.choice === s.last);
 
 function view(s, width, height) {
   const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
@@ -99,7 +99,8 @@ test('the heart is one extruded Garage-style piece used by the scene', async () 
 
 test('pieces are one colour, at least 70 px, never overlap, and keep clear of Chase', async () => {
   const s = await build(4);
-  const pieces = s.makePieces(plutoRound(s.L, () => 0.5));
+  const pieces = s.makePieces({ pieces: ['rectangle', 'oval', 'diamond', 'star'].map((shape) => ({ shape, turn: 0, size: 1.2 })) }); // the widest
+  plutoRound(s.L, 'rectangle', () => 0.5).pieces.forEach((p) => assert.ok(p.size <= 1.2));
   pieces.forEach((o) => o.position.copy(o.userData.home));
   assert.equal(pieces.length, 4);
   assert.deepEqual(pieces.map((o) => o.userData.body.material.color.getHexString()), Array(4).fill('f9a8d4'));
@@ -126,7 +127,7 @@ test('pieces are one colour, at least 70 px, never overlap, and keep clear of Ch
   s.alive = false; s.exit();
 });
 
-test('every level runs to its celebration, scores every heart and finishes full', async () => {
+test('every level runs to its celebration, scores every shape and finishes full', async () => {
   for (let level = 1; level <= 4; level++) {
     globalThis.__plutoCelebration = null;
     const s = new PlutoMission({ home() {}, startMission() {} });
@@ -137,12 +138,12 @@ test('every level runs to its celebration, scores every heart and finishes full'
     optimizeScene(s.scene);
     for (let step = 0; step < 200 && !globalThis.__plutoCelebration; step++) {
       await flush();
-      if (s.phase === 'choosing' && heart(s)) await heart(s).userData.onTap();
+      if (s.phase === 'choosing' && asked(s)) await asked(s).userData.onTap();
     }
     assert.equal(globalThis.__plutoCelebration?.kind, 'pluto', `level ${level}`);
     assert.equal(globalThis.__plutoDone.at(-1), 'pluto');
     assert.equal(s.answers.length, LEVELS.pluto[level - 1].rounds);
-    assert.ok(s.answers.every((a) => a.skill === 'shape' && a.item === 'heart' && a.scored));
+    assert.ok(s.answers.every((a) => a.skill === 'shape' && s.L.shapes.includes(a.item) && a.scored));
     assert.ok(Math.abs(s.heartLevel - 1) < 1e-9, `level ${level} heart full`);
     assert.deepEqual(s.doneLine(), T.plutoDone());
     s.alive = false; s.exit(); await flush();

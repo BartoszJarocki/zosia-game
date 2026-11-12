@@ -7,7 +7,7 @@ import { sparkle } from '../fx/particles.js';
 import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { plutoRound } from '../levels/pluto.js';
+import { plutoAsks, plutoRound } from '../levels/pluto.js';
 import { portrait } from '../world/portrait.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
@@ -135,38 +135,40 @@ export class PlutoMission extends Mission {
       await this.say(T.plutoStart());
     }
     if (!this.alive) return;
-    const plan = plutoRound(this.L);
-    const objs = this.makePieces(plan);
+    this.asks ||= plutoAsks(this.L);
+    const answer = this.windingDown && r === this.rounds - 1 ? 'heart' : this.asks[r]; // (cut short: one she knows)
+    const objs = this.makePieces(plutoRound(this.L, answer));
     await wait(750);
     if (!this.alive) return;
-    await this.askHeart(objs);
+    await this.askShape(objs, answer);
     if (!this.alive) return;
     this.phase = 'clearing';
     this.clearPieces();
   }
 
-  askHeart(objs) {
+  askShape(objs, answer) {
     return new Promise((resolve) => {
-      const right = objs.find((o) => o.userData.choice === 'heart');
+      const right = objs.find((o) => o.userData.choice === answer);
+      const picture = () => ui.bubble({ big: shapeSVG(answer, PIECE), pic: '🔍', onTap: () => this.replay() });
       let solved = false, lastWrong = null;
       this.phase = 'choosing';
-      this.last = 'heart';
+      this.last = answer;
       const choose = async (o) => {
         if (solved) return;
         this.poke();
         this.lookAt(o);
         if (o === right) {
           solved = true;
-          this.correct('heart');
+          this.correct(answer);
           this.stopIdle();
           objs.forEach((x) => this.untap(x));
           sfx.good();
           await this.floatToHeart(o);
           if (!this.alive) return;
-          this.brightenHeart();
+          this.brightenHeart(Math.min(1, this.heartLevel + 1 / this.rounds));
           sparkle(this, this.heart.getWorldPosition(new THREE.Vector3()), { count: 12 });
           this.success();
-          this.talk = this.say(T.plutoRight());
+          this.talk = this.say([...T.yesStep(), ...T.plutoRight(answer)]);
           await wait(SEEN_MS);
           resolve();
         } else {
@@ -175,14 +177,15 @@ export class PlutoMission extends Mission {
         }
       };
       objs.forEach((o) => this.tappable(o, () => choose(o)));
-      ui.bubble({ big: shapeSVG('heart', PIECE), pic: '🤍', onTap: () => this.replay() });
-      this.question('shape', 'heart', {
-        short: T.plutoAsk(),
-        hint: () => { ui.nudgeBubble(); return T.plutoAsk(); }, // the heart to find is in the bubble (Pluto's own heart cannot be tapped)
+      if (this.L.ask === 'match') picture();
+      else ui.bubble({ big: '?', pic: '🔍', onTap: () => this.replay() });
+      this.question('shape', answer, {
+        short: T.plutoAsk(answer),
+        hint: () => { picture(); ui.nudgeBubble(); return T.plutoAsk(answer); }, // the clue: the bubble draws the shape to find
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : objs.find((o) => o !== right && o.parent)),
         reveal: () => this.hint(right, () => solved),
       }, { options: objs.length });
-      this.askAfter(this.talk, T.plutoAsk());
+      this.askAfter(this.talk, T.plutoAsk(answer));
     });
   }
 
@@ -201,14 +204,13 @@ export class PlutoMission extends Mission {
     this.disposePiece(o);
   }
 
-  brightenHeart() {
-    this.heartLevel = Math.min(1, this.heartLevel + 1 / this.rounds);
-    const k = this.heartLevel;
+  brightenHeart(k) {
+    this.heartLevel = k;
     const from = this.heartBody.material.color.clone();
     const to = new THREE.Color(DIM).lerp(new THREE.Color(BRIGHT), k);
     const fromGlow = this.heartBody.material.emissiveIntensity;
     const fromHalo = this.heartGlow.material.opacity;
-    animate(800, (t) => {
+    return animate(800, (t) => {
       this.heartBody.material.color.copy(from).lerp(to, t);
       this.heartBody.material.emissiveIntensity = fromGlow + (k * 1.2 - fromGlow) * t;
       this.heartGlow.material.opacity = fromHalo + (0.12 + k * 0.72 - fromHalo) * t;
@@ -237,6 +239,8 @@ export class PlutoMission extends Mission {
     }
     this.pieces = [];
   }
+
+  async outro() { if (this.heartLevel < 1) await this.brightenHeart(1); } // (a visit cut short: the heart shines all the same)
 
   doneLine() { return T.plutoDone(); }
 

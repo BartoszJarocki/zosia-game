@@ -16,14 +16,14 @@ export const EASIER = {
   mercury: (s) => ({ ...s, show: 'stay', labels: 'both', choices: Math.max(2, s.choices - 1) }),
   telescope: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: ['feature', 'order'].includes(s.ask) ? 'name' : s.ask }),
   jupiter: (s) => ({ ...s, pattern: 'AB', bigger: 'big' }),
-  blackhole: (s) => ({ ...s, auto: true, slots: true }),
-  saturn: (s) => ({ ...s, named: true, sizes: 'same' }),
+  blackhole: (s) => ({ ...s, auto: true, slots: true, away: [s.away[0], Math.max(s.away[0], s.away[1] - 1)], fall: [s.fall[0], Math.max(s.fall[0], s.fall[1] - 1)] }), // (smaller numbers too: level 1 has auto and slots already)
+  saturn: (s) => (s.sort === 'both' ? { ...s, sort: 'kind' } : { ...s, named: true, sizes: 'same', pieces: s.named ? Math.max(2, s.pieces - 2) : s.pieces }), // (named already: fewer pieces)
   venus: (s) => ({ ...s, reveal: 'full', turned: false }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
   picnic: (s) => ({ ...s, close: false, numerals: false }),
   garage: easierGarage,
-  pluto: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), turned: false }),
+  pluto: (s) => ({ ...s, shapes: s.shapes.slice(0, Math.max(2, s.shapes.length - 1)), ask: 'match', choices: Math.max(2, s.choices - 1), similar: false, turned: false }), // (the newest shape stays out)
   lighthouse: (s) => ({ ...s, choices: Math.max(2, (s.choices ?? 2) - 1), numbers: [s.numbers[0], Math.max(s.numbers[0], s.numbers[1] - 1)] }),
   shallows: (s) => ({ ...s, mode: 'watch', things: 'familiar' }),
   reef: (s) => ({ ...s, mode: 'see', choices: Math.max(2, s.choices - 1) }),

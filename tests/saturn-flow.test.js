@@ -53,6 +53,7 @@ registerHooks({ load(url, context, next) {
 } });
 
 const { SaturnMission } = await import('../src/scenes/saturn.js');
+const { camera } = await import('../src/engine.js');
 const { saturnPieces } = await import('../src/levels/saturn.js');
 const { CONFIG } = await import('../src/config.js');
 const { LEVELS } = await import('../src/levels/data.js');
@@ -67,6 +68,15 @@ const until = async (predicate) => {
 };
 const stop = (s) => { s.alive = false; s.exit(); };
 const ring = (s, kind) => s.tappables.find((o) => o.userData.choice === kind);
+/** The camera where the engine puts it for this scene (engine.js frameCamera: wide enough for view.minWidth). */
+function frame(s, cam = camera, width = 1180, height = 820) {
+  cam.aspect = width / height; cam.updateProjectionMatrix();
+  const direction = s.view.pos.clone().sub(s.view.look);
+  direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * cam.aspect)));
+  cam.position.copy(s.view.look).add(direction); cam.lookAt(s.view.look); cam.updateMatrixWorld(true);
+  s.scene.updateMatrixWorld(true);
+  return cam;
+}
 
 async function scene(level = 1, plan = null) {
   CONFIG.level = 4;
@@ -94,8 +104,8 @@ test('a tap on the right ring flies the piece into its gap and scores the piece'
   assert.equal(s.answers[0].item, 'ice');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
-  assert.equal(s.rings.ice.filled, 1);
-  assert.equal(s.rings.ice.gap.visible, false);
+  assert.equal(s.slot('ice').filled, 1);
+  assert.equal(s.slot('ice').gap.visible, false);
   assert.equal(s.pieceObj, null);
   assert.ok(globalThis.__lines.includes('To jest lód.'));
   assert.ok(globalThis.__lines.includes('Lód do lodu!'));
@@ -130,43 +140,122 @@ test('the wrong ring gets a gentle "no" and the question again, the right ring d
   stop(s);
 });
 
-test('dragging the piece onto a ring works, and a drop in empty space floats back', async () => {
-  const s = await scene(1, [{ kind: 'ice', size: 'small' }]);
+/** Put the piece where she would drag it (its home height) on the line from the eye to a point of Saturn, and let go. */
+function dropOver(s, local) {
+  const piece = s.pieceObj, target = s.saturn.localToWorld(local.clone()), dir = target.sub(camera.position);
+  piece.position.copy(camera.position).addScaledVector(dir, (piece.userData.home.y + 0.35 - camera.position.y) / dir.y);
+  return piece.userData.drag.onDrop(piece, piece.position.clone());
+}
+
+test('a drop counts on the ring drawn under the piece as she sees it; over the planet or empty sky it floats back', async () => {
+  const s = await scene(1, [{ kind: 'rock', size: 'same' }]);
   s.rounds = 1;
+  frame(s);
   const task = s.round(0);
   await until(() => s.phase === 'asking');
-  const piece = s.pieceObj;
-  assert.equal(piece.userData.drag.onDrop(piece, new THREE.Vector3(0, 2.5, 100)), false);
-  assert.equal(piece.userData.drag.onDrop(piece, new THREE.Vector3(0, 2.5, s.saturn.position.z + 3.47)), true);
+  assert.equal(dropOver(s, new THREE.Vector3(0, 1.6, 0.8)), false, 'over the planet');
+  assert.equal(dropOver(s, new THREE.Vector3(8, 0, 0)), false, 'in empty sky');
+  assert.equal(s.learn.current.wrong, 0, 'neither is an answer');
+  assert.equal(dropOver(s, new THREE.Vector3(0, 0, 3.47)), true, 'the front of the ice ring');
+  assert.equal(s.learn.current.wrong, 1);
+  await until(() => s.pieceObj.position.distanceTo(s.pieceObj.userData.home) < 0.02);
+  assert.equal(dropOver(s, new THREE.Vector3(0, 0, 4.93)), true, 'the front of the rock ring, where the ring is drawn');
   await task;
-  assert.equal(s.answers[0].item, 'ice');
-  assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].item, 'rock');
+  assert.equal(s.answers[0].firstTry, false);
   stop(s);
 });
 
-test('named pieces ask for their ring; unnamed pieces ask what it is', async () => {
-  const named = await scene(2, [{ kind: 'rock', size: 'same' }]);
+test('a tap on the planet is never an answer, also over the back of a ring', async () => {
+  const s = await scene(2, [{ kind: 'ice', size: 'big' }]);
+  s.rounds = 1;
+  const cam = frame(s);
+  const task = s.round(0);
+  await until(() => s.phase === 'asking');
+  const ray = new THREE.Raycaster();
+  for (const local of [new THREE.Vector3(0, 0.4, 0.5), new THREE.Vector3(-1.2, 0.9, 1.2), new THREE.Vector3(0, 0, -3.47)]) {
+    const p = s.saturn.localToWorld(local).project(cam);
+    ray.setFromCamera(new THREE.Vector2(p.x, p.y), cam);
+    const hit = ray.intersectObjects(s.tappables, false)[0];
+    assert.equal(hit?.object, s.planet, `the planet takes the tap at ${local.toArray()}`);
+  }
+  s.planet.userData.onTap(s.planet);
+  assert.equal(s.learn.current.wrong, 0);
+  assert.equal(s.answers.length, 0);
+  ring(s, 'ice').userData.onTap();
+  await task;
+  stop(s);
+});
+
+test('named pieces ask for their ring; unnamed pieces ask what it is; the bubble shows the kind only when it is named', async () => {
+  const named = await scene(1, [{ kind: 'rock', size: 'same' }]);
   named.rounds = 1;
   let task = named.round(0);
   await until(() => named.phase === 'asking');
   assert.ok(globalThis.__lines.includes('To jest skała.'));
   assert.ok(globalThis.__lines.includes('Gdzie jest skalny pierścień?'));
+  assert.equal(globalThis.__bubble.big, '🪨');
   ring(named, 'rock').userData.onTap();
   await task;
   stop(named);
 
   globalThis.__lines = [];
-  const plain = await scene(3, [{ kind: 'ice', size: 'same' }]);
+  const plain = await scene(2, [{ kind: 'ice', size: 'small' }]);
   plain.rounds = 1;
   task = plain.round(0);
   await until(() => plain.phase === 'asking');
   assert.ok(globalThis.__lines.includes('Lód czy skała? Gdzie to pasuje?'));
+  assert.equal(globalThis.__bubble.big, '?', 'the question is hers');
   plain.runAssist('hint');
   assert.ok(globalThis.__lines.includes('To jest lód.'));
   assert.ok(globalThis.__lines.includes('Gdzie jest lodowy pierścień?'));
   ring(plain, 'ice').userData.onTap();
   await task;
   stop(plain);
+});
+
+test('sorting by both: a big ice piece goes in the ice ring\'s big hole; the kind alone or the size alone is wrong', async () => {
+  globalThis.__lines = [];
+  const s = await scene(3, [{ kind: 'ice', size: 'big' }, { kind: 'rock', size: 'small' }]);
+  s.rounds = 2;
+  frame(s);
+  let task = s.round(0);
+  await until(() => s.phase === 'asking');
+  assert.deepEqual(s.tappables.filter((o) => o.userData.choice).map((o) => o.userData.choice).sort(), ['ice:big', 'ice:small', 'rock:big', 'rock:small']);
+  assert.equal(s.last, 'ice:big');
+  assert.ok(globalThis.__lines.includes('Lód czy skała? Duży czy mały?'));
+  assert.equal(globalThis.__bubble.big, '?');
+  ring(s, 'ice:small').userData.onTap();
+  await until(() => s.pieceObj.position.distanceTo(s.pieceObj.userData.home) < 0.02);
+  ring(s, 'rock:big').userData.onTap();
+  await until(() => s.pieceObj.position.distanceTo(s.pieceObj.userData.home) < 0.02);
+  assert.equal(s.learn.current.wrong, 2);
+  assert.equal(s.aid.state.level, 2);
+  assert.equal(globalThis.__lines.at(-1), 'To duży kawałek lodu.', 'the middle step names the piece, not the hole');
+  assert.equal(s.slot('ice:big').gap.userData.hinting, undefined, 'nothing glows yet');
+  assert.equal(dropOver(s, new THREE.Vector3(-3.47, 0, 0)), true, 'the left half of the ice ring holds its big hole');
+  await task;
+  assert.equal(s.answers[0].item, 'ice:big');
+  assert.equal(s.slot('ice:big').filled, 1);
+  task = s.round(1);
+  await until(() => s.phase === 'asking');
+  assert.equal(s.last, 'rock:small');
+  for (let i = 0; i < 3; i++) { ring(s, 'rock:big').userData.onTap(); await until(() => s.pieceObj.position.distanceTo(s.pieceObj.userData.home) < 0.02); }
+  for (let i = 0; i < 5; i++) { s.update(0.05, 1 + i * 0.05); await flush(); }
+  assert.ok(s.slot('rock:small').gap.userData.hinting, 'the third miss makes the right hole glow');
+  assert.notEqual(s.slot('rock:small').gap.material.color.getHexString(), '7a58c4');
+  ring(s, 'rock:small').userData.onTap();
+  await task;
+  for (let i = 0; i < 2; i++) { s.update(0.05, 2 + i * 0.05); await flush(); }
+  assert.equal(s.slot('rock:small').gap.material.color.getHexString(), '7a58c4', 'the glow stops once she fills it');
+  stop(s);
+});
+
+test('a run cut short still closes every hole before "naprawione!"', async () => {
+  const s = await scene(4);
+  await s.outro();
+  assert.ok(s.slots.every((x) => !x.gap.visible));
+  stop(s);
 });
 
 test('every Saturn level runs through base progress and celebration, and counts for the session', async () => {
@@ -194,7 +283,8 @@ test('every Saturn level runs through base progress and celebration, and counts 
     assert.equal(events.filter((e) => e.correct).length, pieces);
     assert.equal(scoreRun(s.answers).scored, pieces);
     assert.ok(s.answers.every((a) => a.scored && a.skill === 'sorting'));
-    assert.deepEqual([...new Set(s.answers.map((a) => a.item))].sort(), ['ice', 'rock']);
+    assert.deepEqual([...new Set(s.answers.map((a) => a.item.split(':')[0]))].sort(), ['ice', 'rock']);
+    if (s.L.sort === 'both') assert.deepEqual([...new Set(s.answers.map((a) => a.item.split(':')[1]))].sort(), ['big', 'small']);
     assert.equal(getSession().missionsCompleted, 1);
     globalThis.__celebration.onAgain();
     assert.deepEqual(again, ['saturn']);
@@ -222,8 +312,7 @@ test('Saturn has no shadows or point lights and its ring taps are big enough on 
     const direction = s.view.pos.clone().sub(s.view.look);
     direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
     camera.position.copy(s.view.look).add(direction); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
-    for (const kind of ['ice', 'rock']) {
-      const tap = ring(s, kind);
+    for (const { key: kind, tap } of s.slots) {
       tap.updateWorldMatrix(true, true);
       const points = [];
       const position = tap.geometry.getAttribute('position');

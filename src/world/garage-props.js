@@ -15,6 +15,12 @@ const heartOutline = Array.from({ length: 40 }, (_, i) => {
   const y = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17;
   return [x * 0.55, y * 0.75 + 0.265];
 }).reverse();
+/** Pluto's five-pointed star and its long oval, sampled like the heart. */
+const starOutline = Array.from({ length: 10 }, (_, i) => {
+  const t = Math.PI / 2 + (i * Math.PI) / 5, r = i % 2 ? 0.3 : 0.68;
+  return [Math.cos(t) * r, Math.sin(t) * r - 0.04];
+});
+const ovalOutline = Array.from({ length: 40 }, (_, i) => [Math.cos((i / 40) * Math.PI * 2) * 0.72, Math.sin((i / 40) * Math.PI * 2) * 0.46]);
 /** Corner points (x, y up), about one unit across. A circle is the only true curve. */
 const OUTLINES = {
   square: [[-0.48, -0.48], [0.48, -0.48], [0.48, 0.48], [-0.48, 0.48]],
@@ -23,6 +29,10 @@ const OUTLINES = {
   flat: [[-0.7, -0.28], [0.7, -0.28], [0.2, 0.36]],
   tall: [[-0.32, -0.62], [0.32, -0.62], [0, 0.62]],
   heart: heartOutline,
+  star: starOutline,
+  oval: ovalOutline,
+  rectangle: [[-0.62, -0.34], [0.62, -0.34], [0.62, 0.34], [-0.62, 0.34]], // long, so it never passes for the square
+  diamond: [[0, -0.66], [0.38, 0], [0, 0.66], [-0.38, 0]], // much taller than wide, so it never passes for a turned square
 };
 const CIRCLE_R = 0.55;
 const outline = (shape, odd) => OUTLINES[odd || shape];
