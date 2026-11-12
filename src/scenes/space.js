@@ -10,7 +10,7 @@ import { SPACE_LINES, SPACE_INVITE, SPACE_TO, SPACE_FACTS } from '../lang/pl.js'
 import { PLACES, placesIn } from '../places.js';
 import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, launchHud } from '../ui.js';
-import { AreaMap, fitView, WIPE_MS } from './area-map.js';
+import { AreaMap, fitView, makeHome, WIPE_MS } from './area-map.js';
 export { MOVES, nextState, flightMs } from './area-map.js';
 
 const rand = (seed) => () => {
@@ -474,6 +474,12 @@ export class Space extends AreaMap {
     const { r, at } = LAYOUT[kind];
     const g = makeSpacePlace(kind, this.face, r);
     g.position.set(at[0], r * 0.55, at[2]);
+    if (kind === 'earth') {
+      const home = makeHome({ scale: r * 0.3 });
+      home.quaternion.copy(this.face);
+      home.position.copy(this.right).multiplyScalar(r * 0.42).addScaledVector(this.up, -r * 0.46).addScaledVector(forward(this.face), r * 0.74);
+      g.add(home);
+    }
     if (kind === 'neptune') {
       const wind = new THREE.Group();
       wind.userData.dynamic = true;

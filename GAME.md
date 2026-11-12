@@ -52,7 +52,10 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
    boarding, the countdown, then START (the horn). A later trip in the same session is a short drive, the crew
    already aboard, START at once, and a short lift-off: about 6 s from the tap on the island to the map. A flight
    goes straight to the stop she taps, with one line ("Lecimy na Marsa!"); a tap on another stop on the way
-   changes course, and the way home is one glide.
+   changes course, and the way home is one glide. On the sea map the stops sit on a ring, each on a round
+   white-rimmed pad and at least 110 px wide on an iPad held either way. On both maps a stop with a game carries
+   that game's badge and a place that is only to look at carries none; Earth and the island show a small house,
+   so home does not look like a place to play.
 5. **A session** — the island suggests where to go next, sometimes as a little story (a kitten stuck up a
    tree, balloons escaping); after 2 missions the Lookout's alarm calls everyone in for the finale; after it, she can keep
    playing anything she likes. Suggestions never lock a place. If she seems tired (answers slowing down
