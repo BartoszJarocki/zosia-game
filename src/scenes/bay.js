@@ -9,7 +9,7 @@ import { SEA_LINES, SEA_TO, SEA_INVITE, SEA_FACTS } from '../lang/pl.js';
 import { PLACES, placesIn } from '../places.js';
 import { mapDecision, suggestStop } from '../session/map.js';
 import { spaceHud, boatHud } from '../ui.js';
-import { AreaMap, fitView, WIPE_MS } from './area-map.js';
+import { AreaMap, fitView, makeHome, WIPE_MS } from './area-map.js';
 import { BAY_LAYOUT, SEA_ORDER, checkLayout } from '../levels/sea.js';
 export { MOVES, nextState, flightMs } from './area-map.js';
 export { BAY_LAYOUT as LAYOUT, SEA_ORDER as ROAD_ORDER, checkLayout } from '../levels/sea.js';
@@ -45,8 +45,18 @@ const LAUNCH = {
   island: { x: 0, z: -8, r: 5 },
   boat: { x: 2.3, z: 1.4, y: -0.55, scale: 1.6 },
 };
+const PAD_RIM = 0.94;
+const padMaterials = new Map();
+/** The round pad every stop stands on: its colour with a white rim, so each stop is a place on the sea (as on the space map). */
 const patch = (r, color) => {
-  const m = mesh(new THREE.CircleGeometry(r, 36), mat(color, { roughness: 1 }), { y: 0.03, rx: -Math.PI / 2, shadow: false });
+  if (!padMaterials.has(color)) {
+    const map = paint(128, 128, (c, w) => {
+      c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, w);
+      c.fillStyle = color; c.beginPath(); c.arc(w / 2, w / 2, (w / 2) * PAD_RIM, 0, TAU); c.fill();
+    });
+    padMaterials.set(color, new THREE.MeshBasicMaterial({ map }));
+  }
+  const m = mesh(new THREE.CircleGeometry(r / PAD_RIM, 40), padMaterials.get(color), { y: 0.03, rx: -Math.PI / 2, shadow: false });
   m.userData.patch = true;
   return m;
 };
@@ -71,7 +81,8 @@ const discPoints = (kind) => {
 const starPosition = (kind) => new THREE.Vector3(BAY_LAYOUT[kind].at[0], BAY_LAYOUT[kind].height + 1.5, BAY_LAYOUT[kind].at[2]);
 const parkedPosition = (kind) => {
   const { at, r } = BAY_LAYOUT[kind];
-  return new THREE.Vector3(at[0], 1, at[2]).addScaledVector(FLAT_RIGHT, r + 2.2);
+  const inward = new THREE.Vector3(-at[0], 0, -at[2]).normalize();
+  return new THREE.Vector3(at[0], 1, at[2]).addScaledVector(inward, r + 2.4);
 };
 
 export function mapPoints(here = 'island', suggested = null) {
@@ -94,22 +105,20 @@ function makeIsland(r) {
   const base = new THREE.Group();
   base.add(mesh(new THREE.CylinderGeometry(r * 0.82, r, 0.55, 32), mat('#f4d88f', { roughness: 1 }), { y: 0.3, shadow: false }));
   base.add(mesh(new THREE.CylinderGeometry(r * 0.66, r * 0.78, 0.5, 32), mat('#6fcf62', { roughness: 1 }), { y: 0.75, shadow: false }));
+  base.add(makeHome({ wall: '#f4d88f', at: [-r * 0.25, 1, r * 0.12], scale: r * 0.25 }));
   g.add(base);
   const palm = new THREE.Group();
-  palm.position.set(r * 0.05, 0.9, 0);
+  palm.position.set(r * 0.4, 0.9, -r * 0.2);
+  palm.userData.dynamic = true;
   palm.add(mesh(new THREE.CylinderGeometry(r * 0.055, r * 0.085, r * 0.9, 10), mat('#92400e', { roughness: 0.9 }), { y: r * 0.45, rz: 0.08, shadow: false }));
-  const fronds = [];
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * TAU;
-    const frond = mesh(new THREE.SphereGeometry(r * 0.3, 10, 8), mat('#22c55e', { roughness: 1 }), {
+    palm.add(mesh(new THREE.SphereGeometry(r * 0.3, 10, 8), mat('#22c55e', { roughness: 1 }), {
       x: Math.cos(a) * r * 0.32, y: r * 0.92, z: Math.sin(a) * r * 0.32, s: [1.5, 0.2, 0.55], ry: -a, rz: 0.16, shadow: false,
-    });
-    frond.userData.dynamic = true;
-    palm.add(frond);
-    fronds.push(frond);
+    }));
   }
   g.add(palm);
-  g.userData.fronds = fronds;
+  g.userData.palm = palm;
   return g;
 }
 
@@ -118,7 +127,7 @@ function makeBuoy(r) {
   g.add(patch(r, '#a5f3fc'));
   const bob = new THREE.Group();
   bob.add(mesh(new THREE.CylinderGeometry(r * 0.72, r, r * 1.1, 18), mat('#ef4444'), { y: r * 0.55, shadow: false }));
-  bob.add(mesh(new THREE.CylinderGeometry(r * 0.82, r * 0.82, r * 0.2, 18), mat('#f8fafc'), { y: r * 0.6, shadow: false }));
+  bob.add(mesh(new THREE.CylinderGeometry(r * 0.93, r * 0.93, r * 0.2, 18), mat('#f8fafc'), { y: r * 0.6, shadow: false }));
   bob.add(mesh(new THREE.ConeGeometry(r * 0.72, r * 0.55, 18), mat('#ef4444'), { y: r * 1.35, shadow: false }));
   const bell = new THREE.Group();
   bell.position.y = r * 1.62;
@@ -164,11 +173,12 @@ function makeSeal(r) {
   const g = new THREE.Group();
   g.add(patch(r, '#7dd3fc'));
   const base = new THREE.Group();
-  base.add(mesh(new THREE.CylinderGeometry(r * 0.9, r * 0.98, r * 0.28, 28), mat('#44403c', { roughness: 1 }), { y: r * 0.16, shadow: false }));
+  base.add(mesh(new THREE.CylinderGeometry(r * 0.9, r * 0.98, r * 0.28, 28), mat('#a8a095', { roughness: 1 }), { y: r * 0.16, shadow: false }));
   g.add(base);
-  const grey = mat('#94a3b8', { roughness: 0.9 });
+  const grey = mat('#7d8ea6', { roughness: 0.9 });
   const seal = new THREE.Group();
   seal.position.y = r * 0.3;
+  seal.scale.setScalar(1.25);
   seal.add(mesh(new THREE.SphereGeometry(r * 0.55, 20, 14), grey, { y: r * 0.16, s: [1.35, 0.62, 0.95], shadow: false }));
   seal.add(mesh(new THREE.SphereGeometry(r * 0.24, 18, 14), grey, { y: r * 0.44, z: r * 0.34, s: [1, 1.15, 1], shadow: false }));
   seal.add(mesh(new THREE.SphereGeometry(r * 0.14, 16, 12), grey, { y: r * 0.7, z: r * 0.46, shadow: false }));
@@ -200,7 +210,7 @@ function makeLighthouse(r) {
   g.add(mesh(new THREE.CylinderGeometry(r * 0.4, r * 0.4, r * 0.1, 20), mat('#475569'), { y: r * 2.05, shadow: false }));
   const lamp = mesh(new THREE.CylinderGeometry(r * 0.27, r * 0.27, r * 0.4, 18), new THREE.MeshStandardMaterial({ color: '#fff4c0', emissive: '#ffd84a', emissiveIntensity: 2.5, roughness: 0.4 }), { y: r * 2.3, shadow: false });
   g.add(lamp);
-  g.add(mesh(new THREE.ConeGeometry(r * 0.36, r * 0.33, 18), mat('#ef4444'), { y: r * 2.65, shadow: false }));
+  bands.add(mesh(new THREE.ConeGeometry(r * 0.36, r * 0.33, 18), mat('#ef4444'), { y: r * 2.65, shadow: false }));
   g.userData.lamp = lamp;
   return g;
 }
@@ -218,7 +228,7 @@ function bird(scale = 1) {
 function makeGulls(r) {
   const g = new THREE.Group();
   g.add(patch(r, '#a5f3fc'));
-  g.add(mesh(new THREE.CylinderGeometry(r * 0.8, r * 0.9, r * 0.28, 24), mat('#57534e', { roughness: 1 }), { y: r * 0.16, shadow: false }));
+  g.add(mesh(new THREE.CylinderGeometry(r * 0.8, r * 0.9, r * 0.28, 24), mat('#7c7268', { roughness: 1 }), { y: r * 0.16, shadow: false }));
   const birds = [];
   const spots = [[-r * 0.42, r * 0.82, r * 0.05], [r * 0.4, r * 1.02, r * 0.25], [0, r * 1.18, -r * 0.12]];
   for (const [x, y, z] of spots) {
@@ -546,10 +556,10 @@ export class Bay extends AreaMap {
     });
     const shimmer = this.bodies.shallows?.userData.shimmer;
     if (shimmer) shimmer.material.opacity = 0.28 + Math.sin(t * 2.4) * 0.07 + (now < (this.shimmerUntil || 0) ? Math.sin(t * 12) * 0.18 : 0);
-    const fronds = this.bodies.island?.userData.fronds;
-    if (fronds) {
+    const palm = this.bodies.island?.userData.palm;
+    if (palm) {
       const k = now < (this.palmUntil || 0) ? 0.22 : 0.05;
-      fronds.forEach((f, i) => { f.rotation.z = 0.16 + Math.sin(t * (k > 0.1 ? 8 : 1.3) + i) * k; });
+      palm.rotation.z = Math.sin(t * (k > 0.1 ? 8 : 1.3)) * k * 0.6;
     }
   }
 

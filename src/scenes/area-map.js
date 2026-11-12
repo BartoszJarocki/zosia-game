@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Stage, animate, ease, camera, renderer } from '../engine.js';
-import { star } from '../models.js';
+import { mat, mesh, rbox, star } from '../models.js';
 import { say, hush } from '../audio.js';
 import { PLACES, placesIn } from '../places.js';
 import { getVisited, recordVisit } from '../progress.js';
@@ -26,6 +26,41 @@ export const WIPE_MS = 800;
 /** A flight glides along the road straight to its stop, without stopping on the way: longer for a farther stop, never long. */
 export const FLIGHT = { baseMs: 1000, perStopMs: 250, maxMs: 3000 };
 export const flightMs = (from, to) => Math.min(FLIGHT.maxMs, FLIGHT.baseMs + FLIGHT.perStopMs * Math.abs(to - from));
+
+const badgeTextures = new Map();
+/** The round sticker of a game's badge (its glyph on its colour, as on the shelf): shared, a few small canvases for the whole app. */
+function badgeTexture({ label, color }) {
+  const key = `${label}|${color}`;
+  if (!badgeTextures.has(key)) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 128;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#ffffff'; c.beginPath(); c.arc(64, 64, 62, 0, Math.PI * 2); c.fill();
+    c.fillStyle = color; c.beginPath(); c.arc(64, 64, 54, 0, Math.PI * 2); c.fill();
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '600 64px sans-serif'; c.fillStyle = '#ffffff';
+    c.fillText(label, 64, 70);
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    badgeTextures.set(key, t);
+  }
+  return badgeTextures.get(key);
+}
+
+/**
+ * The small house of home. Earth on the space map and the island in the bay show it, so "home" does not look like a place to play.
+ * Meshes of one material in one group are drawn together, so the walls, roof and door take three colours at most.
+ */
+export function makeHome({ wall = '#fde68a', at = [0, 0, 0], scale = 1 } = {}) {
+  const g = new THREE.Group();
+  g.userData.home = true;
+  const red = mat('#ef4444');
+  g.add(mesh(rbox(2.2, 1.6, 2, 0.1), mat(wall), { y: 0.8, shadow: false }));
+  for (const side of [-1, 1]) g.add(mesh(rbox(1.5, 0.16, 2.4, 0.06), red, { x: side * 0.6, y: 1.95, rz: side * -0.62, shadow: false }));
+  g.add(mesh(rbox(0.6, 1, 0.1, 0.06), red, { y: 0.5, z: 1.02, shadow: false }));
+  g.position.set(...at);
+  g.scale.setScalar(scale);
+  return g;
+}
 
 const copyView = (view) => ({ pos: view.pos.clone(), look: view.look.clone(), minWidth: view.minWidth });
 
@@ -137,9 +172,25 @@ export class AreaMap extends Stage {
     hit.userData.dynamic = true;
     g.add(hit);
     g.userData.hit = hit;
+    const badge = this.makeBadge(kind, g);
+    if (badge) g.add(badge);
     this.bodies[kind] = g;
     this.map.add(g);
     this.tappable(g, () => this.tapStop(kind));
+  }
+
+  /** A game stop carries its badge, on the front left of its pad. A look-only stop and home carry none. */
+  makeBadge(kind, stop) {
+    const place = PLACES[kind];
+    if (!place.game || place.stop === false || !place.badge) return null;
+    const pad = this.layout[kind].disc ?? this.layout[kind].r;
+    const south = this.up.clone().setY(0).normalize().negate();
+    const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTexture(place.badge) }));
+    badge.position.copy(this.right).multiplyScalar(-0.8 * pad).addScaledVector(south, 0.85 * pad);
+    badge.position.y = 0.9 - stop.position.y;
+    badge.scale.setScalar(0.7 * pad);
+    badge.userData.badge = kind;
+    return badge;
   }
 
   direct(greeting) {
@@ -292,8 +343,25 @@ export class AreaMap extends Stage {
       const c = p.clone().project(camera);
       const edge = p.addScaledVector(right, g.userData.hit.scale.x * g.scale.x).project(camera);
       return { kind, x: rect.left + (c.x + 1) * rect.width / 2, y: rect.top + (1 - c.y) * rect.height / 2,
-        r: Math.abs(edge.x - c.x) * rect.width / 2 };
+        r: Math.abs(edge.x - c.x) * rect.width / 2, width: this.pictureWidth(g, rect.width) };
     });
+  }
+
+  /** How wide a stop's own picture is on screen, in px: not its pad, its glow, its badge or its tap zone. */
+  pictureWidth(stop, screenWidth) {
+    let left = Infinity, right = -Infinity;
+    const p = new THREE.Vector3();
+    stop.updateWorldMatrix(true, true);
+    stop.traverse((o) => {
+      if (!o.isMesh || o === stop.userData.hit || o.userData.patch) return;
+      const at = o.geometry.getAttribute('position');
+      for (let i = 0; i < at.count; i++) {
+        p.fromBufferAttribute(at, i).applyMatrix4(o.matrixWorld).project(camera);
+        left = Math.min(left, p.x);
+        right = Math.max(right, p.x);
+      }
+    });
+    return (right - left) * screenWidth / 2;
   }
 
   startLog() {

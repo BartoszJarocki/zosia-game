@@ -45,6 +45,7 @@ registerHooks({ load(url, context, next) {
 } });
 const { Bay, mapView } = await import(root + '/src/scenes/bay.js');
 const { SEA_ORDER, BAY_LAYOUT } = await import(root + '/src/levels/sea.js');
+const { PLACES } = await import(root + '/src/places.js');
 const { getSession } = await import(root + '/src/session/session.js');
 const { getVisited } = await import(root + '/src/progress.js');
 const { camera } = await import(root + '/src/engine.js');
@@ -90,6 +91,54 @@ test('the bay keeps every stop on screen, clear of each other, with no shadows a
     for (const c of circles) {
       assert.ok(c.r >= 35 && c.x - c.r >= 0 && c.x + c.r <= w && c.y - c.r >= 0 && c.y + c.r <= h, JSON.stringify(c));
       for (const other of circles) if (other !== c) assert.ok(Math.hypot(c.x - other.x, c.y - other.y) > c.r + other.r, `${c.kind} overlaps ${other.kind}`);
+    }
+  }
+  s.exit();
+});
+
+test('every stop is at least 110 px wide on an iPad held either way, wherever the boat is and whatever is suggested', () => {
+  const s = new Bay({});
+  s.enter();
+  let narrowest = Infinity;
+  for (const [w, h] of [[1180, 820], [820, 1180], [1366, 1024], [1024, 1366]]) {
+    globalThis.innerWidth = w; globalThis.innerHeight = h;
+    for (const here of SEA_ORDER) for (const suggested of [null, 'shallows', 'lighthouse', 'reef', 'port']) {
+      s.routeIndex = SEA_ORDER.indexOf(here);
+      s.suggested = suggested;
+      frame(s);
+      for (const c of s.stopsOnScreen()) {
+        narrowest = Math.min(narrowest, c.width);
+        assert.ok(c.width >= 110, `${w}x${h}, boat at ${here}: ${c.kind} is ${c.width.toFixed(0)} px wide`);
+      }
+    }
+  }
+  assert.ok(narrowest < 200, 'the stops are not just huge');
+  s.exit();
+});
+
+test('a game stop carries its badge, a look-only stop none, and home shows a small house', () => {
+  const s = new Bay({});
+  s.enter();
+  const badge = (kind) => s.bodies[kind].children.find((o) => o.isSprite);
+  const house = (kind) => { let found = false; s.bodies[kind].traverse((o) => { if (o.userData.home) found = true; }); return found; };
+  for (const kind of SEA_ORDER) {
+    assert.equal(Boolean(badge(kind)), PLACES[kind].game, `${kind}: badge`);
+    assert.equal(house(kind), kind === 'island', `${kind}: house`);
+  }
+  assert.deepEqual(SEA_ORDER.filter(badge), ['shallows', 'lighthouse', 'reef', 'port']);
+  s.exit();
+});
+
+test('the parked boat stands inside the ring of stops, clear of every pad', () => {
+  const s = new Bay({});
+  s.enter();
+  for (const kind of SEA_ORDER) {
+    const boat = s.parkedPosition(kind);
+    assert.ok(Math.hypot(boat.x, boat.z) < Math.hypot(BAY_LAYOUT[kind].at[0], BAY_LAYOUT[kind].at[2]), `boat at ${kind} is not inside the ring`);
+    for (const other of SEA_ORDER) {
+      const { at, r } = BAY_LAYOUT[other];
+      const gap = Math.hypot(boat.x - at[0], boat.z - at[2]) - r;
+      assert.ok(other === kind ? gap > 1 : gap > 1.4, `boat at ${kind} is ${gap.toFixed(1)} from the pad of ${other}`);
     }
   }
   s.exit();

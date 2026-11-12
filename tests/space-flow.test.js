@@ -43,6 +43,7 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 const { Space, ROAD_ORDER, LAYOUT } = await import(root + '/src/scenes/space.js');
+const { PLACES } = await import(root + '/src/places.js');
 const { getSession } = await import(root + '/src/session/session.js');
 const { getVisited } = await import(root + '/src/progress.js');
 const { camera } = await import(root + '/src/engine.js');
@@ -114,6 +115,18 @@ test('the built map keeps its rocket, discs and bouncing star inside the margins
       }
     }
   }
+  s.exit();
+});
+
+test('a game stop carries its badge, a look-only stop none, and Earth shows a small house', () => {
+  const s = new Space({});
+  s.enter();
+  const house = (kind) => { let found = false; s.bodies[kind].traverse((o) => { if (o.userData.home) found = true; }); return found; };
+  for (const kind of ROAD_ORDER) {
+    assert.equal(s.bodies[kind].children.some((o) => o.isSprite && o.userData.badge === kind), PLACES[kind].game, `${kind}: badge`);
+    assert.equal(house(kind), kind === 'earth', `${kind}: house`);
+  }
+  assert.deepEqual(ROAD_ORDER.filter((kind) => !PLACES[kind].game), ['sun', 'earth', 'uranus', 'neptune']);
   s.exit();
 });
 
