@@ -398,7 +398,8 @@ for (let r = 0; r < 24; r++) {
   let picnicFirst = null;
   if (plan === 'wrong-first') {
     if (multi) { // a wrong count: one short (one over when one is asked), then "done"
-      const done = await doneOption();
+      let done = await doneOption();
+      if (!done && target > 1 && (await nextThing())) { await countTo(q, rec, 1, 450); done = await doneOption(); } // ("done" can come with her first tap)
       if (done) {
         const wrongCount = target > 1 ? target - 1 : target + 1;
         await countTo(q, rec, wrongCount, 450);
