@@ -197,8 +197,9 @@ and the next level asks the same letters by name alone (4, 7).
 
 Balloons with letters float up. Pop every balloon with the asked letter, counting them as you go. Only the
 first two levels show the letter in the bubble ("Przebij balony z literą Be!" with a big B); from the third
-level on the bubble holds a balloon and she pops the letter she hears. When the last right balloon is gone the
-others drift up and away, and for that moment she can pop them for fun: nothing counts and nothing is wrong.
+level on the bubble holds a balloon and she pops the letter she hears. When the last right balloon is gone she
+hears "Tak! Trzy!" and the next letter is named at once; the other balloons drift up and away, and for that
+moment she can pop them for fun: nothing counts and nothing is wrong.
 
 | Level | pool | ask | targets | total | speed | similar | rounds |
 |---|---|---|---|---|---|---|---|

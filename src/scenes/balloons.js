@@ -155,7 +155,7 @@ export class BalloonsMission extends Mission {
           const rest = this.balloons;
           this.balloons = [];
           rest.forEach((x) => this.tappable(x, () => this.popForFun(x)));
-          this.talk = this.say([...this.yes(), ...T.number(popped), ...T.balloonDone(target)]); // (the next balloons come up meanwhile)
+          this.talk = this.say([...this.yes(), ...T.number(popped)]); // (the next balloons come up meanwhile, and the next letter is named at once: on a named level she cannot play before)
           await Promise.all(rest.map((x) => {
             const y0 = x.position.y;
             return animate(DRIFT_MS, (t) => { x.position.y = y0 + t * 14; }, ease.in).then(() => { this.untap(x); x.removeFromParent(); });

@@ -125,6 +125,7 @@ test('Balloon Hill: the first two levels show the letter, the rest ask by name a
 test('Balloon Hill: after the last right balloon the others drift up, and one she taps pops for nothing', async () => {
   const s = await make(BalloonsMission, 3);
   const { got, off } = events();
+  globalThis.__lines = [];
   const round = s.round(0);
   await until(s, () => s.balloons.length === s.L.total, 'balloons');
   const target = s.last;
@@ -134,6 +135,8 @@ test('Balloon Hill: after the last right balloon the others drift up, and one sh
   const lastTap = tap(right()[0]);
   await sooner();
   assert.equal(s.answers.length, s.L.targets, 'the last right balloon counted');
+  assert.equal(globalThis.__lines.at(-1), T.number(s.L.targets)[0], 'the praise is the count ("Tak! Trzy!"), so the next letter is named soon');
+  assert.ok(!globalThis.__lines.some((l) => /Wszystkie balony|jak /.test(l)), 'no long praise before the next question');
   const leftover = s.tappables.filter((o) => o.userData.letter && o.parent);
   assert.equal(leftover.length, s.L.total - s.L.targets, 'every wrong balloon is still there, and can be tapped');
   const before = got.length, answers = s.answers.length;
