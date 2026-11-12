@@ -37,7 +37,7 @@ registerHooks({ load(url, context, next) {
   if (url.endsWith('/src/audio.js')) source = `export const say = async s => { globalThis.__starLines.push(...[s].flat()); };
     export const hush = () => {}; export const sfx = new Proxy({}, { get: () => () => {} });`;
   if (url.endsWith('/src/ui.js')) source = `export const badges = { get: () => ({}), add: kind => ({ [kind]: 1 }) };
-    export const bubble = () => {}; export const hideBubble = () => {}; export const setProgress = () => {};
+    export const bubble = opts => { globalThis.__starBubble = opts; }; export const hideBubble = () => {}; export const setProgress = () => {};
     export const setRounds = () => {}; export const nudgeBubble = () => {};
     export const missionHud = opts => { globalThis.__starHud = opts; };
     export const celebrate = opts => { globalThis.__starCelebration = opts; };`;
@@ -48,7 +48,7 @@ registerHooks({ load(url, context, next) {
 
 const { StarsMission } = await import('../src/scenes/stars.js');
 const { LEVELS } = await import('../src/levels/data.js');
-const { PICTURES } = await import('../src/levels/stars.js');
+const { PICTURES, ORDERS, numerals } = await import('../src/levels/stars.js');
 const { T } = await import('../src/lang/pl.js');
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const { scoreRun } = await import('../src/progress/levelup.js');
@@ -62,6 +62,7 @@ function build(level = 1) {
   optimizeScene(s.scene);
   return s;
 }
+const starTaps = (s) => s.tappables.filter((o) => o.userData.num !== undefined);
 
 test('every star is a walker hook with userData.num, and this.last is the next number', async () => {
   const s = build();
@@ -70,12 +71,100 @@ test('every star is a walker hook with userData.num, and this.last is the next n
     assert.equal(s.stars.length, count);
     assert.deepEqual(s.stars.map((o) => o.userData.num), Array.from({ length: count }, (_, i) => i + 1));
     assert.deepEqual(s.stars.map((o) => [o.position.x, o.position.y]), PICTURES[count].points.map(([x, y]) => [x * 1.25, y * 1.25]));
-    assert.deepEqual(s.tappables.map((o) => o.userData.num).sort((a, b) => a - b), Array.from({ length: count - 1 }, (_, i) => i + 2));
-    s.askNumber(2);
+    assert.deepEqual(starTaps(s).map((o) => o.userData.num).sort((a, b) => a - b), Array.from({ length: count - 1 }, (_, i) => i + 2));
+    s.askStep(1);
     assert.equal(s.last, 2);
     assert.equal(globalThis.__starLines.at(-1), 'Jeden, a co dalej?');
     s.stopIdle();
     s.clearPicture();
+  }
+  s.alive = false; s.exit();
+});
+
+test('a countdown puts the biggest numeral on the first star, counting by twos puts 2 there, and this.last follows', async () => {
+  for (const [level, order, count, first, asked] of [[5, 'down', 5, 5, 4], [6, 'twos', 4, 2, 4]]) {
+    const s = build(level);
+    assert.equal(s.L.order, order);
+    s.makePicture(count);
+    assert.deepEqual(s.stars.map((o) => o.userData.num), numerals(order, count));
+    assert.equal(s.stars[0].userData.lit, true);
+    assert.equal(s.stars[0].userData.num, first);
+    globalThis.__starLines.length = 0;
+    s.askStep(1);
+    await flush();
+    assert.equal(s.last, asked);
+    assert.deepEqual(globalThis.__starLines, [...T.starsRule(order), ...T.starsAsk([first], order)]);
+    s.stopIdle();
+    s.alive = false; s.exit();
+  }
+});
+
+test('the rule is said with the first question of a picture, and the questions after it are just the numbers so far', async () => {
+  const s = build(5);
+  s.makePicture(4);
+  s.askStep(1);
+  await flush();
+  assert.deepEqual(globalThis.__starLines.slice(-3), ['Liczymy od tyłu!', 'Cztery!', 'A dalej?']);
+  await s.tapStar(s.stars[1]);
+  globalThis.__starLines.length = 0;
+  s.askStep(2);
+  await flush();
+  assert.deepEqual(globalThis.__starLines, ['Cztery!', 'Trzy!', 'A dalej?']);
+  s.stopIdle();
+  s.alive = false; s.exit();
+});
+
+test('the bubble shows the numbers so far and a question mark, never the number asked, in every order', async () => {
+  for (const level of [1, 4, 5, 6]) {
+    const s = build(level);
+    const [, hi] = s.L.stars;
+    s.makePicture(hi);
+    const seq = numerals(s.L.order, hi);
+    s.phase = 'choosing';
+    for (let i = 1; i < hi; i++) {
+      s.askStep(i);
+      const shown = globalThis.__starBubble;
+      assert.equal(shown.big ?? '', '');
+      assert.equal(shown.dots ?? 0, 0);
+      const numbers = shown.seq[0].split(/\s+/).filter((w) => /^\d+$/.test(w)).map(Number);
+      assert.deepEqual(numbers, seq.slice(Math.max(0, i - 3), i), `${s.L.order} step ${i}`);
+      assert.ok(!numbers.includes(seq[i]), `${seq[i]} is the answer`);
+      assert.equal(shown.seq.length, 1, 'the arrow and the question mark are the bubble\'s own');
+      s.stopIdle();
+      await s.tapStar(s.stars[i]);
+      s.phase = 'choosing';
+    }
+    s.alive = false; s.exit();
+  }
+});
+
+test('the numeral tile is a tap too, at least 0.9 wide, and clear of the other stars', async () => {
+  const s = build(4);
+  for (const count of [3, 4, 5, 6, 7]) {
+    s.makePicture(count);
+    s.phase = 'choosing';
+    const labels = s.stars.map((o) => o.userData.label);
+    labels.forEach((label, i) => {
+      assert.ok(label.geometry.parameters.width >= 0.9, 'a tile of 0.9 or more');
+      s.stars.forEach((other, j) => {
+        if (i === j) return;
+        const dx = Math.max(Math.abs(label.position.x - other.position.x) - label.geometry.parameters.width / 2, 0);
+        const dy = Math.max(Math.abs(label.position.y - other.position.y) - label.geometry.parameters.height / 2, 0);
+        assert.ok(Math.hypot(dx, dy) >= 0.55, `${PICTURES[count].id}: the tile of star ${i + 1} covers part of star ${j + 1}`);
+      });
+      labels.forEach((tile, j) => {
+        if (j > i) assert.ok(Math.abs(label.position.x - tile.position.x) >= 0.95 || Math.abs(label.position.y - tile.position.y) >= 0.95, `${PICTURES[count].id}: tiles ${i + 1} and ${j + 1} overlap`);
+      });
+    });
+    assert.equal(s.tappables.filter((o) => labels.includes(o)).length, count - 1, 'every unlit star has a tile to tap');
+    s.last = 2;
+    s.question('sequence', 2, {}, { options: count - 1 });
+    await labels[1].userData.onTap();
+    assert.equal(s.answers.length, 1, 'tapping the tile joins star 2');
+    assert.equal(s.stars[1].userData.lit, true);
+    assert.ok(!s.tappables.includes(labels[1]) && !s.tappables.includes(s.stars[1]), 'a lit star and its tile stop being taps');
+    s.clearPicture();
+    s.answers.length = 0;
   }
   s.alive = false; s.exit();
 });

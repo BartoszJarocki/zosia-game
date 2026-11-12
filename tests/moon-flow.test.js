@@ -81,16 +81,23 @@ test('quick taps jump in turn: three taps while he is in the air give three coun
   globalThis.__lines = [];
   globalThis.__holdJump = true;
   const taps = [s.chase.userData.onTap(), s.chase.userData.onTap(), s.chase.userData.onTap()];
-  const flag = s.flag.userData.onTap();
   assert.equal(s.prints.length, 0, 'the first jump is still in the air');
+  assert.equal(s.flag.visible, false, 'no flag before she has jumped');
+  globalThis.__land();
+  await flush();
+  assert.equal(s.prints.length, 1);
+  assert.equal(s.flag.visible, true, 'the flag stands up after her first jump');
+  const flag = s.flag.userData.onTap();
   assert.equal(s.learn.current.wrong, 0, 'the flag waits for the jumps she asked for');
   assert.equal(s.chase.userData.onTap(), undefined, 'a tap after the flag is not counted');
   globalThis.__holdJump = false;
   globalThis.__land();
   await Promise.all([...taps, flag]);
   assert.equal(s.prints.length, 3);
-  assert.deepEqual(s.prints.map((p) => Number(p.position.x.toFixed(2))), [-3.85, -2.8, -1.75]);
+  assert.deepEqual(s.prints.map((p) => Number(p.position.x.toFixed(2))), [-4.2, -2.6, -1]);
   assert.deepEqual(globalThis.__lines.filter((l) => /^(Jeden|Dwa|Trzy|Cztery)!$/.test(l)), ['Jeden!', 'Dwa!', 'Trzy!']);
+  assert.ok(globalThis.__lines.indexOf('Dotknij flagi, kiedy skończysz!') > globalThis.__lines.indexOf('Jeden!'), 'the flag is asked for once he has landed the first time');
+  assert.equal(globalThis.__lines.filter((l) => l === 'Dotknij flagi, kiedy skończysz!').length, 1);
   assert.equal(s.chase.position.y, 0);
   await round;
   assert.equal(s.answers[0].skill, 'counting');
@@ -101,16 +108,34 @@ test('quick taps jump in turn: three taps while he is in the air give three coun
   stop(s);
 });
 
+test('a manual round asks for the jumps first and never mentions the flag before it stands', async () => {
+  const s = await scene();
+  globalThis.__lines = [];
+  const round = s.jumpRound(false);
+  await flush();
+  assert.deepEqual(globalThis.__lines, ['Skocz trzy razy!', 'Dotknij Czejsa, to skoczy!']);
+  assert.equal(s.flag.visible, false);
+  assert.equal(globalThis.__bubble.big, '3');
+  await s.chase.userData.onTap();
+  await s.chase.userData.onTap();
+  await s.chase.userData.onTap();
+  await s.flag.userData.onTap();
+  await round;
+  stop(s);
+});
+
 test('too few continues; too many fades extras and waits for her second flag tap', async () => {
   const s = await scene();
   const round = s.jumpRound(false);
+  await s.chase.userData.onTap();
   await s.flag.userData.onTap();
-  assert.equal(globalThis.__lines.at(-1), 'Za mało! Skacz dalej!');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za mało! Skacz dalej!', 'Trzy razy!'], 'no, and the question again');
   assert.equal(s.answers.length, 0);
-  for (let i = 0; i < 5; i++) await s.chase.userData.onTap();
+  for (let i = 0; i < 4; i++) await s.chase.userData.onTap();
   const extras = s.prints.slice(3);
+  assert.equal(extras.length, 2);
   await s.flag.userData.onTap();
-  assert.equal(globalThis.__lines.at(-1), 'Za dużo! Teraz dobrze? Dotknij flagi!');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za dużo! Teraz dobrze?', 'Dotknij flagi, kiedy skończysz!']);
   assert.equal(s.prints.length, 3);
   assert.deepEqual(extras.map((p) => p.material.opacity), [0, 0]);
   assert.deepEqual(extras.map((p) => p.parent), [null, null]);
@@ -120,6 +145,60 @@ test('too few continues; too many fades extras and waits for her second flag tap
   await round;
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].scored, true);
+  stop(s);
+});
+
+test('a flag tapped wrong again and again climbs the help ladder: no, the outlines, then Chase pulses', async () => {
+  const s = await scene();
+  const round = s.jumpRound(false);
+  await s.chase.userData.onTap();
+  await s.flag.userData.onTap();
+  assert.equal(s.ghosts.length, 0, 'after one miss: no and the question again, nothing more');
+  assert.ok(!s.chase.userData.hinting);
+  await s.flag.userData.onTap();
+  assert.equal(s.ghosts.length, 3, 'after two: the outlines show how many');
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za mało! Skacz dalej!', 'Dotknij Czejsa, to skoczy!']);
+  assert.ok(!s.chase.userData.hinting);
+  await s.flag.userData.onTap();
+  assert.deepEqual(globalThis.__lines.slice(-2), ['Za mało! Skacz dalej!', 'Tutaj!']);
+  for (let i = 0; i < 4; i++) { s.update(0.05, i * 0.05); await flush(); }
+  assert.equal(s.chase.userData.hinting, true, 'after three: Chase pulses');
+  await s.chase.userData.onTap();
+  await s.chase.userData.onTap();
+  await s.flag.userData.onTap();
+  await round;
+  assert.equal(s.answers[0].firstTry, false);
+  stop(s);
+});
+
+test('wrong flags with too many footprints end in a pulsing flag that keeps pulsing after the extras fade', async () => {
+  const s = await scene();
+  const round = s.jumpRound(false);
+  for (let i = 0; i < 4; i++) await s.chase.userData.onTap();
+  await s.flag.userData.onTap();
+  assert.equal(s.prints.length, 3, 'the extra footprints faded');
+  for (let i = 0; i < 2; i++) { await s.chase.userData.onTap(); await s.flag.userData.onTap(); }
+  for (let i = 0; i < 4; i++) { s.update(0.05, i * 0.05); await flush(); }
+  assert.equal(s.flag.userData.hinting, true, 'the flag pulses after three wrong flags');
+  await s.flag.userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('the long wait\'s clue says "the flag" when she already has the footprints, not "tap Chase" again', async () => {
+  const s = await scene();
+  const round = s.jumpRound(false);
+  await s.chase.userData.onTap();
+  s.runAssist('hint');
+  assert.equal(globalThis.__lines.at(-1), 'Dotknij Czejsa, to skoczy!');
+  await s.chase.userData.onTap();
+  await s.chase.userData.onTap();
+  s.runAssist('hint');
+  assert.equal(globalThis.__lines.at(-1), 'Dotknij flagi, kiedy skończysz!');
+  s.runAssist('shortPrompt');
+  assert.equal(globalThis.__lines.at(-1), 'Dotknij flagi, kiedy skończysz!');
+  await s.flag.userData.onTap();
+  await round;
   stop(s);
 });
 
@@ -186,11 +265,11 @@ test('every Moon level runs through base progress and celebration, and counts fo
       await flush();
     }
     assert.ok(globalThis.__celebration, `level ${level} celebrated: ${s.phase}, round ${s.roundIndex}, ${s.prints.length}/${s.last}, ${s.answers.length} answers`);
-    assert.deepEqual(globalThis.__progress, level < 3 ? [1, 2, 3] : [1, 2, 3, 4]);
+    assert.deepEqual(globalThis.__progress, [1, 2, 3, 4]);
     assert.equal(globalThis.__celebration.kind, 'moon');
     assert.deepEqual(s.task, { type: 'jump', auto: true });
     assert.equal(events.filter((e) => e.correct).length, LEVELS.moon[level - 1].rounds);
-    assert.equal(scoreRun(s.answers).scored, [1, 1, 3, 3][level - 1]);
+    assert.equal(scoreRun(s.answers).scored, [2, 2, 3, 3][level - 1]);
     assert.equal(getSession().missionsCompleted, 1);
     globalThis.__celebration.onAgain();
     assert.deepEqual(again, ['moon']);
@@ -209,7 +288,7 @@ test('Moon scene has no shadows or point lights; Chase is at least 70 px at both
     const dir = s.view.pos.clone().sub(s.view.look);
     dir.setLength(Math.max(dir.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
     camera.position.copy(s.view.look).add(dir); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
-    for (const x of [-4.9, 5.6]) {
+    for (const x of [-5.8, 5.8]) {
       s.chase.position.x = x;
       s.chase.updateWorldMatrix(true, true);
       const points = [];

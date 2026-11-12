@@ -4,8 +4,8 @@
 import * as THREE from 'three';
 import { STRAY } from '../../src/input/stray.js';
 
-const W = 1180, H = 820, look = new THREE.Vector3(0, 1.2, 0), pos = new THREE.Vector3(0, 10, 16), minWidth = 16;
-const START = -4.9, GAP = 1.05, HOP_MS = 400, TAP_HEIGHT = 1.5, AIM = 0.8, LAG_MS = 280;
+const W = 1180, H = 820, look = new THREE.Vector3(0, 4, 0), pos = new THREE.Vector3(0, 12.8, 16), minWidth = 16;
+const START = -5.8, GAP = 1.6, HOP_MS = 400, CHASE = 1.4, TAP_HEIGHT = 1.5 * CHASE, AIM = 0.8 * CHASE, LAG_MS = 280; // (moon.js: the widest step, and Chase drawn 1.4 times as big)
 const cam = new THREE.PerspectiveCamera(42, W / H, 0.1, 500);
 const dir = pos.clone().sub(look);
 dir.setLength(Math.max(dir.length(), minWidth / (2 * Math.tan(THREE.MathUtils.degToRad(21)) * cam.aspect)));

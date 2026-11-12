@@ -12,26 +12,27 @@ import { moonRounds, numbersIn, countVerdict } from '../levels/moon.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const START = -4.9, GAP = 1.05, MAX = 10;
-const WATCH_JUMP = { ms: 900, height: 2.3 };  // Chase's own jumps, high and floaty, about one a second to count along
+const START = -5.8, SPAN = 11.6, STEP_MAX = 1.6, MAX = 10, EXTRA = 3; // the footprints share SPAN: as wide as STEP_MAX where the round allows it
+const CHASE = 1.4; // Chase is drawn this much bigger than the other pups
+const WATCH_JUMP = { ms: 900, height: 1.8 };  // Chase's own jumps, high and floaty, about one a second to count along
 const SEEN_MS = 500; // her count in view, lit, before the next round
-const TAP_JUMP = { ms: 400, height: 1.2 };    // a jump she makes: done by her next quick tap, and low enough that a tap
+const TAP_JUMP = { ms: 400, height: 1.0 };    // a jump she makes: done by her next quick tap, and low enough that a tap
                                               // where he just stood still reaches him (tools/playtest/hop-reach.mjs)
 const INK = '#79648e', LIT = '#b88012';
-const slot = (i) => new THREE.Vector3(START + (i + 1) * GAP, 0.025, 0.45);
+const slot = (i, step) => new THREE.Vector3(START + (i + 1) * step, 0.025, 0.45);
 
 function footprints(outline) {
   return texture(128, (c) => {
     c.fillStyle = c.strokeStyle = '#ffffff';
-    c.lineWidth = 4;
+    c.lineWidth = 7;
     for (const x of [35, 93]) {
       c.beginPath();
-      c.ellipse(x, 64, 18, 38, -0.14, 0, Math.PI * 2);
+      c.ellipse(x, 64, 24, 53, -0.14, 0, Math.PI * 2);
       if (outline) c.stroke();
       else {
         c.fill();
         c.globalCompositeOperation = 'destination-out';
-        for (const y of [47, 61, 75]) c.fillRect(x - 12, y, 24, 4);
+        for (const y of [41, 63, 85]) c.fillRect(x - 18, y, 36, 5);
         c.globalCompositeOperation = 'source-over';
       }
     }
@@ -41,7 +42,7 @@ function footprints(outline) {
 export class MoonMission extends Mission {
   constructor(game) {
     super(game, 'moon');
-    this.view = { pos: new THREE.Vector3(0, 10, 16), look: new THREE.Vector3(0, 1.2, 0), minWidth: 16 };
+    this.view = { pos: new THREE.Vector3(0, 12.8, 16), look: new THREE.Vector3(0, 4, 0), minWidth: 16 };
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.bubbleAt = 'left';
@@ -50,6 +51,8 @@ export class MoonMission extends Mission {
     this.ghosts = [];
     this.blocks = [];
     this.maps = [];
+    this.step = STEP_MAX; // the gap between footprints this round
+    this.cells = MAX;     // how many footprints this round can leave
   }
 
   build() {
@@ -84,7 +87,7 @@ export class MoonMission extends Mission {
     this.maps.push(ground, earth, this.printMap, this.ghostMap);
 
     this.rocket = makeRocket();
-    this.rocket.position.set(-6.2, 7, -3.4);
+    this.rocket.position.set(-7.6, 7, -3.4);
     this.rocket.userData.flame.visible = true;
     this.scene.add(this.rocket);
     this.landed = animate(1800, (t) => { this.rocket.position.y = 1.4 + (1 - t) * 5.6; }, ease.out).then(() => {
@@ -95,6 +98,7 @@ export class MoonMission extends Mission {
     // The base's decorative hops would look like extra, uncounted jumps.
     this.chase = makePup();
     this.chase.position.set(START, 0, -0.7);
+    this.chase.scale.setScalar(CHASE);
     this.chase.userData.tapHeight = 1.5;
     this.chase.userData.jumper = true;
     this.chase.visible = false;
@@ -132,10 +136,10 @@ export class MoonMission extends Mission {
   }
 
   makePrint(i, ghost = false) {
-    const p = mesh(new THREE.PlaneGeometry(0.85, 1), new THREE.MeshBasicMaterial({
+    const p = mesh(new THREE.PlaneGeometry(0.9 * this.step, 1.05 * this.step), new THREE.MeshBasicMaterial({
       map: ghost ? this.ghostMap : this.printMap, color: INK, transparent: true, opacity: ghost ? 0.45 : 1, depthWrite: false,
     }), { rx: -Math.PI / 2, shadow: false });
-    p.position.copy(slot(i)).setY(ghost ? 0.02 : 0.03);
+    p.position.copy(slot(i, this.step)).setY(ghost ? 0.02 : 0.03);
     p.userData.tapHeight = 0;
     if (!ghost) p.userData.footprint = true;
     this.scene.add(p);
@@ -147,7 +151,7 @@ export class MoonMission extends Mission {
   }
 
   async jump({ ms, height } = WATCH_JUMP) {
-    const from = this.chase.position.clone(), to = slot(this.prints.length).setY(0).setZ(-0.7);
+    const from = this.chase.position.clone(), to = slot(this.prints.length, this.step).setY(0).setZ(-0.7);
     await animate(ms, (t) => {
       this.chase.position.lerpVectors(from, to, t);
       this.chase.position.y = Math.sin(t * Math.PI) * height;
@@ -190,11 +194,26 @@ export class MoonMission extends Mission {
     this.prints = []; this.ghosts = []; this.blocks = [];
   }
 
+  /** Spread the round's footprints over SPAN: wide where there are few to leave, narrower for a long row. */
+  spread(n, extra) {
+    this.cells = Math.min(MAX, n + extra);
+    this.step = Math.min(STEP_MAX, SPAN / this.cells);
+  }
+
+  /** The flag stands up once she has jumped, so there is something to be finished. */
+  raiseFlag() {
+    this.flag.visible = true;
+    this.flag.scale.setScalar(0.01);
+    sfx.pop();
+    animate(350, (t) => this.flag.scale.setScalar(Math.max(0.01, t)), ease.out);
+  }
+
   async jumpRound(auto) {
     const n = this.pick('counting', numbersIn(this.L.jump));
     this.last = n;
     this.phase = 'jump';
-    this.flag.visible = !auto;
+    this.spread(n, EXTRA);
+    this.flag.visible = false;
     if (this.L.slots) this.showSlots(n);
     let resolve;
     const done = new Promise((r) => { resolve = r; });
@@ -210,11 +229,13 @@ export class MoonMission extends Mission {
       if (this.phase !== 'jump') return;
       this.poke();
       return this.inTurn(async () => {
-        if ((this.phase !== 'jump' && this.phase !== 'checking') || this.prints.length >= MAX) return;
+        if ((this.phase !== 'jump' && this.phase !== 'checking') || this.prints.length >= this.cells) return;
         await this.jump(TAP_JUMP);
         if (!this.alive) return;
         const count = this.prints.length;
-        const talk = this.say(T.number(count));
+        const first = !auto && count === 1;
+        if (first) this.raiseFlag();
+        const talk = this.say([...T.number(count), ...(first ? T.moonFlag() : [])]);
         if (auto && count === n) await finish(talk);
       });
     };
@@ -224,18 +245,20 @@ export class MoonMission extends Mission {
       this.phase = 'checking';
       return this.inTurn(() => this.checkJumps(n, finish));
     };
+    const toFlag = () => !auto && this.prints.length >= n;
+    const hint = () => { this.showSlots(n); return toFlag() ? T.moonFlag() : T.moonHelp(); };
     this.question('counting', n, {
-      short: () => !auto && this.prints.length ? T.moonFlag() : T.moonJumpShort(n),
-      hint: () => { this.showSlots(n); return T.moonHelp(); },
+      short: () => (toFlag() ? T.moonFlag() : T.moonJumpShort(n)),
+      hint,
+      simplify: hint,
       reveal: () => {
         this.showSlots(n);
-        const obj = !auto && this.prints.length >= n ? this.flag : this.chase;
         const count = this.prints.length;
-        this.hint(obj, () => this.phase === 'solved' || this.prints.length !== count);
+        this.hint(toFlag() ? this.flag : this.chase, () => this.phase === 'solved' || this.prints.length > count);
       },
     }, { scored: !auto });
     ui.bubble({ big: String(n), pic: '🌙', onTap: () => this.replay(), passthrough: true });
-    this.askAfter(this.talk, [...T.moonJump(n), ...(auto ? T.moonHelp() : T.moonFlag())]);
+    this.askAfter(this.talk, [...T.moonJump(n), ...T.moonHelp()]);
     await done;
     if (!this.alive) return;
     this.success(this.chase.position.clone().add(new THREE.Vector3(0, 2, 0)));
@@ -244,19 +267,22 @@ export class MoonMission extends Mission {
     await wait(SEEN_MS);
   }
 
-  /** The flag: right ends the round; too few, she jumps on; too many, the extra footprints fade. */
+  /** The flag: right ends the round; too few, she jumps on; too many, the extra footprints fade. A wrong flag climbs the help ladder. */
   async checkJumps(n, finish) {
     const count = this.prints.length, verdict = countVerdict(count, n);
     if (verdict === 'right') { finish(); return; }
-    this.wrong(count, { obj: this.flag, feedback: false });
-    if (verdict === 'few') { this.phase = 'jump'; this.say(T.moonTooFew()); return; }
+    if (verdict === 'few') {
+      this.phase = 'jump';
+      this.wrong(count, { obj: this.flag, said: T.moonTooFew() });
+      return;
+    }
+    this.wrong(count, { obj: this.flag, said: T.moonTooMany() });
     const extras = this.prints.splice(n);
     await animate(650, (t) => extras.forEach((p) => { p.material.opacity = 1 - t; }), ease.linear);
     extras.forEach((p) => { p.removeFromParent(); p.geometry.dispose(); p.material.dispose(); });
     if (!this.alive) return;
-    this.chase.position.x = slot(n - 1).x;
+    this.chase.position.x = slot(n - 1, this.step).x;
     this.phase = 'jump';
-    this.say(T.moonTooMany());
   }
 
   async countPrints() {
@@ -274,6 +300,7 @@ export class MoonMission extends Mission {
     const n = this.pick('quantity', numbersIn(this.L.howMany));
     this.last = n;
     this.phase = 'watching';
+    this.spread(n, 0);
     if (this.L.slots) this.showSlots(n);
     let right = null, lastWrong;
     this.question('quantity', n, {

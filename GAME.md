@@ -106,7 +106,7 @@ at `childAge` in `src/config.js` (3.5).
 | Pluto's Heart · `pluto` | 2 | 3 | 3 | 3 |
 | The Black Hole · `blackhole` | 2 | 3 | 3 | 3 |
 | Comet Catch · `comet` | 1 | 2 | 3 | 3 |
-| Star Pictures · `stars` | 2 | 3 | 3 | 3 |
+| Star Pictures · `stars` | 2 | 3 | 3 | 5 |
 | The Telescope · `telescope` | 1 | 2 | 3 | 5 |
 | The Lighthouse · `lighthouse` | 1 | 2 | 3 | 3 |
 | Pływa czy tonie? · `shallows` | 1 | 2 | 2 | 2 |
@@ -410,14 +410,14 @@ laid out like the dots on a die, so she sees how many at once. Below it are the 
 
 ### 🌙 Moon Jumps · `moon`
 
-Chase lands on the Moon in his helmet, under a violet sky with Earth above him. Each jump leaves a pair of
-footprints in a row, so she can count the jumps afterwards. The jumps he does by himself are high and floaty,
-about one a second to count along; the ones she makes are quick hops, over by the time she taps again.
+Chase lands on the Moon in a big helmet, under a violet sky with Earth above him. Each jump leaves a pair of
+big footprints in a row, so she can count the jumps afterwards. The jumps he does by himself are high and
+floaty, about one a second to count along; the ones she makes are quick hops, over by the time she taps again.
 
 | Level | types | jump | howMany | auto | slots | rounds |
 |---|---|---|---|---|---|---|
-| 1 | jump, howMany | 1–3 | 1–3 | yes | yes | 3 |
-| 2 | jump, howMany | 1–4 | 1–4 | yes | no | 3 |
+| 1 | jump, howMany | 1–3 | 1–3 | yes | yes | 4 |
+| 2 | jump, howMany | 1–4 | 1–4 | yes | no | 4 |
 | 3 | jump, howMany | 2–5 | 2–5 | no | no | 4 |
 | 4 | jump, howMany | 3–7 | 3–6 | no | no | 4 |
 
@@ -429,13 +429,20 @@ about one a second to count along; the ones she makes are quick hops, over by th
   choices are one less and one more. The footprints then light up and her number is said once ("Tak! Pięć!").
 - **jump** / **howMany**: the number ranges, up to 9; `—` when howMany is unused.
 - **auto**: `yes` finishes a jump round when the requested number of footprints is there. With `no`,
-  she taps the rocket flag when she is done. Too few: "Za mało! Skacz dalej!" Too many: the extra
-  footprints fade and she hears "Za dużo! Teraz dobrze? Dotknij flagi!" She taps the flag again herself.
+  the rocket flag stands up after her first jump and she taps it when she is done ("Dotknij flagi, kiedy
+  skończysz!"). Too few: "Za mało! Skacz dalej!" Too many: the extra footprints fade and she hears
+  "Za dużo! Teraz dobrze?" and is asked for the flag again. A wrong flag is answered by the help ladder:
+  the first miss says no and asks again, the second shows the footprint outlines, the third makes Chase
+  (or the flag, once there are enough footprints) pulse.
 - **slots**: `yes` shows ghost footprint outlines and dots under the numeral choices. With `no`,
-  neither is shown; help reveals the outlines. A gentler run turns both auto and slots on.
+  neither is shown; help reveals the outlines. A gentler run turns both auto and slots on and takes one
+  number off the top of both ranges (so level 1 has an easier step too).
 - **rounds**: tasks per mission, 1 to 8, with at least one per kind. Automatic jump rounds are played
-  but unscored, so every level includes howMany. Manual jumps practise producing a number (`counting`);
+  but unscored, so every level includes howMany; levels 1 and 2 have two (four rounds). Manual jumps practise producing a number (`counting`);
   howMany practises `quantity`.
+- **size**: the footprints are as wide as 1.44 world units (a footprint pair is about 80 px on the iPad)
+  where the round leaves few of them, and narrower only when a long row has to fit. Chase is drawn 1.4 times
+  the size of the other pups.
 
 ### 🚙 The Mars Rover · `mars`
 
@@ -531,29 +538,38 @@ under the window, so she can still count what she sent. Chase stays in the rocke
 
 ### ⭐ Star Pictures · `stars`
 
-Big gold stars sit on the corners of a hidden picture, each with a numeral under it. Star 1 already
-shines; she taps the next number in order and a glowing gold line draws the outline. At the end the
-picture fills with soft colour and Chase names it.
+Big gold stars sit on the corners of a hidden picture, each with a numeral on a big tile under it. Star 1
+already shines; she taps the next number and a glowing gold line draws the outline. At the end the picture
+fills with soft colour and Chase names it. The speech bubble shows the numbers so far and a question mark
+("1 2 ➜ ?", the last three at most) while Chase asks "Jeden, dwa, a co dalej?"; it never shows the answer.
 
-| Level | stars | labels | rounds |
-|---|---|---|---|
-| 1 | 3–4 | both | 2 |
-| 2 | 4–5 | both | 2 |
-| 3 | 5–6 | numeral | 2 |
-| 4 | 6–7 | numeral | 2 |
+| Level | stars | order | labels | rounds |
+|---|---|---|---|---|
+| 1 | 3–4 | up | both | 2 |
+| 2 | 4–5 | up | both | 2 |
+| 3 | 5–6 | up | numeral | 2 |
+| 4 | 6–7 | up | numeral | 2 |
+| 5 | 4–5 | down | numeral | 2 |
+| 6 | 3–4 | twos | numeral | 2 |
 
 - **stars**: the range of star counts. Each round is one picture and a mission never repeats a
-  picture; level 4 always ends on the Wielki Wóz (7, the line left open).
-- **labels**: `both` draws the numeral and dots under each star; `numeral` draws only the numeral.
+  picture; a mission that reaches 7 in `up` order always ends on the Wielki Wóz (7, the line left open).
+- **order**: how the numerals run along the picture. `up` is 1, 2, 3… . `down` is a countdown from the
+  number of stars to 1: the first star carries the biggest numeral, and the first question of each picture
+  says "Liczymy od tyłu!" first ("Pięć! Cztery! A dalej?"). `twos` is 2, 4, 6… , at most 4 stars so the
+  numeral stays one digit, and the first question says "Liczymy co dwa!". Chase says the last three numbers
+  so far.
+- **labels**: `both` draws the numeral and dots on the tile; `numeral` draws only the numeral. The tile is
+  as good a thing to tap as its star.
 - **rounds**: pictures joined per mission (1–4); every star after the first is a scored `sequence`
-  question, and its options are the stars not yet lit. A gentler run uses both labels and one
-  smaller picture.
+  question, item the numeral asked, and its options are the stars not yet lit. A gentler run goes back to
+  `up`, with both labels and one smaller picture.
 
 ### 🔭 The Telescope · `telescope`
 
 She looks through a round brass eyepiece and taps a floating place. First she matches a picture,
 then finds a place by name or by a feature. The place hops with sparkles: "Tak! To jest Saturn."
-The last level asks what comes next along the road from the Sun.
+The last level asks what comes next along the road from the Sun, and shows that road.
 
 | Level | pool | choices | ask | rounds |
 |---|---|---|---|---|
@@ -569,7 +585,14 @@ The last level asks what comes next along the road from the Sun.
 - **ask**: `match` shows the same place above; `name` asks its name; `feature` asks about rings,
   redness, our home, the largest planet, a tail, a heart or light and warmth; `order` asks what
   follows a planet along the road. Order records `sequence`; the others record `space`.
+  An `order` round draws the road from the Sun along the top of the eyepiece: the Sun and every planet
+  of the level's pool in order, small, with one place empty ("?") where the answer goes. "Co jest po
+  Wenus?" asks for the place that fits; the choices float below the road. A right choice flies into the
+  empty place. A place on the road says its name when she taps it, and the "?" asks the question
+  again. The clue walks her eye along the road from the Sun to the "?" without naming anyone.
 - **rounds**: how many places to find.
+- A gentler run takes one step down: one choice fewer (never below 2); order and feature fall back to
+  `name`; `name` with two choices falls back to `match`; `match` with two choices is a run one round shorter.
 
 ### ☁️ Venus's Clouds · `venus`
 

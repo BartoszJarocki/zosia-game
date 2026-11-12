@@ -6,13 +6,15 @@ import { star } from '../models.js';
 import { glyphTexture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { starRounds, PICTURES } from '../levels/stars.js';
+import { starRounds, numerals, PICTURES } from '../levels/stars.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const STAR = 0.55;
 const SCALE = 1.25;
-const CENTER = new THREE.Vector3(0.5, 4.3, 0);
+const LABEL = 0.95;                // a numeral tile, big enough to read and to tap
+const LABEL_BELOW = [0, -1.05];    // where it hangs from its star unless the picture says otherwise
+const CENTER = new THREE.Vector3(1, 4.3, 0); // (right of the view's middle: the speech bubble, now wider, stays off the picture's top star)
 const GOLD = '#c2871d';
 const LIT = '#fde047';
 const GLOW = '#f59e0b';
@@ -93,12 +95,13 @@ export class StarsMission extends Mission {
     this.scene.add(group);
     this.stars = [];
     this.lines = [];
-    this.litNumbers = [1];
+    this.numbers = numerals(this.L.order, count);
+    this.litNumbers = [this.numbers[0]];
     this.fill = null;
 
     const labels = this.L.labels === 'both';
     picture.points.forEach(([x, y], i) => {
-      const n = i + 1;
+      const n = this.numbers[i];
       const s = star(GOLD, STAR, 0.1);
       s.material = s.material.clone();
       s.material.color.set(GOLD);
@@ -106,18 +109,23 @@ export class StarsMission extends Mission {
       s.material.emissiveIntensity = 0.12;
       s.position.set(x * SCALE, y * SCALE, 0);
       s.userData.num = n;
+      s.userData.step = i;
       s.userData.tapHeight = 0;
       s.castShadow = s.receiveShadow = false;
       group.add(s);
       this.stars.push(s);
 
       const labelMap = glyphTexture(String(n), { bg: '#6d4bb5', fg: '#ffffff', dots: labels ? n : 0 });
-      const label = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.62), new THREE.MeshBasicMaterial({ map: labelMap, transparent: true }));
-      label.position.set(x * SCALE, y * SCALE - 0.82, 0.04);
+      const label = new THREE.Mesh(new THREE.PlaneGeometry(LABEL, LABEL), new THREE.MeshBasicMaterial({ map: labelMap, transparent: true }));
+      const [dx, dy] = picture.label?.[i] ?? LABEL_BELOW;
+      label.position.set(x * SCALE + dx, y * SCALE + dy, 0.1); // (in front of the gold lines)
       label.castShadow = label.receiveShadow = false;
+      label.userData.tapHeight = 0;
       group.add(label);
+      s.userData.label = label;
 
       this.tappable(s, () => this.tapStar(s));
+      this.tappable(label, () => this.tapStar(s));
     });
 
     const fillPoints = picture.fill || picture.points;
@@ -138,6 +146,7 @@ export class StarsMission extends Mission {
 
   lightStar(s) {
     this.untap(s);
+    this.untap(s.userData.label);
     s.userData.lit = true;
     s.material.color.set(LIT);
     s.material.emissive = new THREE.Color(GLOW);
@@ -184,34 +193,40 @@ export class StarsMission extends Mission {
     this.stopIdle();
     this.litNumbers.push(n);
     this.lightStar(s);
-    this.drawLine(this.stars[n - 2], s);
+    this.drawLine(this.stars[s.userData.step - 1], s);
     this.stepDone?.({ talk: this.say(T.number(n)) }); // the next star can be tapped while its line draws and its number is said
   }
 
-  /** Ask for star n; talk: the number of the star before, still being said. Resolves with { talk }: this star's number. */
-  askNumber(n, talk) {
-    const right = this.stars[n - 1];
-    const soFar = this.stars.slice(0, n - 1).map((s) => s.userData.num);
+  /** The numbers so far and a question mark: the last three, so the bubble stays narrow and off the picture. */
+  showSoFar(soFar) {
+    ui.bubble({ seq: [soFar.slice(-3).join(' ')], onTap: () => this.replay(), passthrough: true });
+  }
+
+  /** Ask for the star joined at step i (its numeral is this.numbers[i]); talk: the number before it, still being said. Resolves with { talk }: this star's number. */
+  askStep(i, talk) {
+    const right = this.stars[i], n = this.numbers[i], order = this.L.order;
+    const soFar = this.numbers.slice(0, i);
     this.last = n;
     this.phase = 'choosing';
     const soFarAlong = (said = []) => {
-      this.say([...said, ...T.starsAsk(soFar)]);
-      return this.pointAlong(this.stars.slice(0, n - 1), (s) => this.twinkle(s), 450);
+      this.say([...said, ...T.starsAsk(soFar, order)]);
+      return this.pointAlong(this.stars.slice(0, i), (s) => this.twinkle(s), 450);
     };
     this.question('sequence', n, {
-      short: () => T.starsAsk(soFar),
+      short: () => T.starsAsk(soFar, order),
       hint: soFarAlong,
       simplify: soFarAlong,
       reveal: () => { this.hint(right, () => this.last !== n || this.phase !== 'choosing'); return T.starsHelp(n); },
     }, { options: this.stars.filter((s) => !s.userData.lit).length });
-    ui.bubble({ big: String(n), pic: '⭐', onTap: () => this.replay(), passthrough: true });
-    this.askAfter(talk, T.starsAsk(soFar));
+    this.showSoFar(soFar);
+    this.askAfter(talk, [...(i === 1 && order !== 'up' ? T.starsRule(order) : []), ...T.starsAsk(soFar, order)]);
     return new Promise((resolve) => { this.stepDone = resolve; });
   }
 
   async finishPicture(talk) {
     this.phase = 'celebrating';
-    this.stars.forEach((s) => this.untap(s));
+    ui.hideBubble();
+    this.stars.forEach((s) => { this.untap(s); this.untap(s.userData.label); });
     await talk;
     if (!this.alive) return;
     if (this.picture.closed) await this.drawLine(this.stars.at(-1), this.stars[0]);
@@ -224,7 +239,7 @@ export class StarsMission extends Mission {
   }
 
   clearPicture() {
-    this.stars.forEach((s) => this.untap(s));
+    this.stars.forEach((s) => { this.untap(s); this.untap(s.userData.label); });
     if (this.pictureGroup) {
       this.pictureGroup.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
@@ -248,9 +263,9 @@ export class StarsMission extends Mission {
     const count = this.windingDown && r === this.rounds - 1 ? this.plan.at(-1) : this.plan[r];
     this.makePicture(count);
     let talk = null;
-    for (let n = 2; n <= count; n++) {
+    for (let i = 1; i < count; i++) {
       if (!this.alive) return;
-      ({ talk } = await this.askNumber(n, talk));
+      ({ talk } = await this.askStep(i, talk));
     }
     if (!this.alive) return;
     await this.finishPicture(talk);
