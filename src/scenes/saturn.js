@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wait } from '../engine.js';
+import { animate, ease, wait, camera } from '../engine.js';
 import { mesh } from '../models.js';
 import { makeRocket } from '../world/rocket.js';
 import { portrait } from '../world/portrait.js';
@@ -7,16 +7,16 @@ import { sparkle } from '../fx/particles.js';
 import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { saturnPieces } from '../levels/saturn.js';
+import { saturnPieces, saturnSlots, slotOf, SCALE } from '../levels/saturn.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const RING_Y = 3.4;
-const INNER = [2.9, 4.05];
-const OUTER = [4.2, 5.65];
-const GAPS = { ice: 0.95, rock: 1.05 };
+const RINGS = { ice: [2.9, 4.05], rock: [4.2, 5.65] };
+const SAMPLE_AT = { ice: 0.35, rock: Math.PI - 0.35 }; // a crystal on the ice ring, a stone on the rock ring, clear of the holes
+const PIC = { ice: '❄️', rock: '🪨' };
 const HOME = new THREE.Vector3(0, 2.5, 6.6);
-const SKY = '#9b77db';
+const SKY = '#9b77db', HOLE = '#7a58c4', GLOW = new THREE.Color('#fff3b0'); // a hole is a little deeper than the sky
 const mid = (ring) => (ring[0] + ring[1]) / 2;
 
 export class SaturnMission extends Mission {
@@ -29,9 +29,9 @@ export class SaturnMission extends Mission {
     this.bubbleAt = 'left';
     this.phase = 'landing';
     this.plan = null;
-    this.filled = { ice: 0, rock: 0 };
     this.maps = [];
     this.spin = false;
+    this.ray = new THREE.Raycaster();
   }
 
   build() {
@@ -72,14 +72,12 @@ export class SaturnMission extends Mission {
     this.saturn.position.set(0, RING_Y, -0.7);
     this.saturn.rotation.z = -0.22;
     this.scene.add(this.saturn);
-    const planet = mesh(new THREE.SphereGeometry(2.35, 48, 32), new THREE.MeshStandardMaterial({ map: planetMap, roughness: 0.82 }), { shadow: false });
-    this.saturn.add(planet);
-    this.rings = {
-      ice: this.makeRing('ice', INNER, GAPS.ice),
-      rock: this.makeRing('rock', OUTER, GAPS.rock, rockMap),
-    };
-    this.addSample('ice', Math.PI / 2 + 0.65, mid(INNER));
-    this.addSample('rock', Math.PI / 2 - 0.65, mid(OUTER));
+    this.planet = mesh(new THREE.SphereGeometry(2.35, 48, 32), new THREE.MeshStandardMaterial({ map: planetMap, roughness: 0.82 }), { shadow: false });
+    this.saturn.add(this.planet);
+    this.tappable(this.planet, () => {}); // not an answer: a tap on it ticks and bounces, and never falls through to a ring behind
+    this.rings = { ice: this.makeRing('ice'), rock: this.makeRing('rock', rockMap) };
+    this.slots = saturnSlots(this.L.sort).map((slot) => this.makeSlot(slot));
+    for (const kind of ['ice', 'rock']) this.addSample(kind, SAMPLE_AT[kind], mid(RINGS[kind]));
 
     this.rocket = makeRocket();
     this.rocket.position.set(-7, 8, 3);
@@ -108,36 +106,54 @@ export class SaturnMission extends Mission {
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
   }
 
-  makeRing(kind, radii, gap, map = null) {
+  makeRing(kind, map = null) {
     const material = kind === 'ice'
       ? new THREE.MeshStandardMaterial({ color: '#c9efff', emissive: '#7fd4ff', emissiveIntensity: 0, transparent: true, opacity: 0.84, roughness: 0.14, metalness: 0.12 })
       : new THREE.MeshStandardMaterial({ map, color: '#d8b08a', emissive: '#d4a14a', emissiveIntensity: 0, roughness: 0.95 });
-    const ring = new THREE.Mesh(new THREE.RingGeometry(radii[0], radii[1], 96), material);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(...RINGS[kind], 96), material);
     ring.rotation.x = -Math.PI / 2;
     this.saturn.add(ring);
-
-    const missing = new THREE.Mesh(this.gapGeometry(radii[0], radii[1], gap), new THREE.MeshBasicMaterial({
-      color: SKY, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
-    }));
-    missing.position.y = 0.02;
-    this.saturn.add(missing);
-
-    const tapGeo = new THREE.RingGeometry(radii[0], radii[1], 64);
-    tapGeo.rotateX(-Math.PI / 2);
-    tapGeo.translate(0, 0, -mid(radii));
-    const tap = new THREE.Mesh(tapGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-    tap.position.set(0, 0, mid(radii));
-    tap.userData.choice = kind;
-    tap.userData.tapHeight = 0;
-    this.saturn.add(tap);
-    this.tappable(tap, () => this.choose?.(kind));
-    return { mesh: ring, gap: missing, tap, radii, total: gap, need: 0, filled: 0 };
+    return { mesh: ring };
   }
 
-  gapGeometry(inner, outer, gap) {
-    const geo = new THREE.RingGeometry(inner, outer, 48, 1, -Math.PI / 2 - gap / 2, gap);
+  /** One answer: its hole in the ring, and what takes her tap (the whole ring, or the half ring around the hole). */
+  makeSlot(slot) {
+    const radii = RINGS[slot.kind];
+    const gap = new THREE.Mesh(this.gapGeometry(radii, slot.angle, slot.width), new THREE.MeshBasicMaterial({
+      color: HOLE, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+    }));
+    gap.position.y = 0.02;
+    gap.add(new THREE.LineLoop(this.rimGeometry(radii, slot.angle, slot.width), new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 })));
+    this.saturn.add(gap);
+
+    const at = new THREE.Vector3(Math.cos(slot.angle) * mid(radii), 0, -Math.sin(slot.angle) * mid(radii)); // the hole's middle
+    const tapGeo = new THREE.RingGeometry(...radii, 64, 1, ...slot.tap);
+    tapGeo.rotateX(-Math.PI / 2);
+    tapGeo.translate(-at.x, 0, -at.z);
+    const tap = new THREE.Mesh(tapGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    tap.position.copy(at);
+    tap.userData.choice = slot.key;
+    tap.userData.tapHeight = 0;
+    this.saturn.add(tap);
+    this.tappable(tap, () => this.choose?.(slot.key));
+    return { ...slot, radii, gap, tap, need: 0, filled: 0 };
+  }
+
+  slot(key) { return this.slots.find((x) => x.key === key); }
+
+  gapGeometry([inner, outer], angle, width) {
+    const geo = new THREE.RingGeometry(inner, outer, 48, 1, angle - width / 2, width);
     geo.rotateX(-Math.PI / 2);
     return geo;
+  }
+
+  /** The hole's edge, so it reads as a slot to fill: along the outer edge, then back along the inner one. */
+  rimGeometry([inner, outer], angle, width) {
+    const arc = (r, from, to) => Array.from({ length: 17 }, (_, i) => {
+      const a = from + ((to - from) * i) / 16;
+      return new THREE.Vector3(Math.cos(a) * r, 0.01, -Math.sin(a) * r);
+    });
+    return new THREE.BufferGeometry().setFromPoints([...arc(outer, angle - width / 2, angle + width / 2), ...arc(inner, angle + width / 2, angle - width / 2)]);
   }
 
   addSample(kind, angle, radius) {
@@ -173,7 +189,7 @@ export class SaturnMission extends Mission {
 
   makePiece(piece) {
     const obj = piece.kind === 'ice' ? this.makeCrystal() : this.makeStone();
-    obj.scale.setScalar(piece.size === 'small' ? 0.66 : 1);
+    obj.scale.setScalar(SCALE[piece.size]);
     obj.position.copy(HOME);
     obj.userData.home = HOME.clone();
     obj.userData.piece = piece.kind;
@@ -183,7 +199,7 @@ export class SaturnMission extends Mission {
   }
 
   setNeeds() {
-    for (const kind of ['ice', 'rock']) this.rings[kind].need = this.plan.filter((p) => p.kind === kind).length;
+    for (const slot of this.slots) slot.need = this.plan.filter((p) => slotOf(p, this.L.sort) === slot.key).length;
   }
 
   async round(r) {
@@ -220,24 +236,26 @@ export class SaturnMission extends Mission {
   pieceRound(obj, piece, index) {
     return new Promise((resolve) => {
       const home = obj.userData.home.clone();
-      const prompt = this.L.named ? T.saturnNamed(piece.kind) : T.saturnWhich();
+      const sort = this.L.sort, target = slotOf(piece, sort), slot = this.slot(target);
+      const prompt = this.L.named ? T.saturnNamed(piece.kind) : sort === 'both' ? T.saturnWhichBoth() : T.saturnWhich();
+      const clue = () => (sort === 'both' ? T.saturnHintBoth(piece.kind, piece.size) : this.L.named ? T.saturnRight(piece.kind) : T.saturnHint(piece.kind));
       let solved = false;
 
-      const choose = async (kind) => {
+      const choose = async (choice) => {
         if (solved || this.phase !== 'asking') return;
         this.poke();
-        if (kind !== piece.kind) {
-          this.wrong(kind, { obj: this.rings[kind].tap });
+        if (choice !== target) {
+          this.wrong(choice, { obj: this.slot(choice).tap });
           await this.jumpTo(obj, home, { height: 0.5, ms: 420 });
           return;
         }
         solved = true;
         this.phase = 'solved';
-        this.correct(piece.kind);
+        this.correct(target);
         this.stopIdle();
         this.untap(obj);
         const from = obj.position.clone();
-        const to = new THREE.Vector3(0, RING_Y + 0.35, mid(piece.kind === 'ice' ? INNER : OUTER));
+        const to = this.saturn.localToWorld(slot.tap.position.clone().setY(0.35));
         const scale = obj.scale.x;
         sfx.whoosh();
         await animate(520, (t) => {
@@ -247,7 +265,7 @@ export class SaturnMission extends Mission {
         }, ease.inOut);
         if (!this.alive) return;
         obj.visible = false;
-        this.fillGap(piece.kind);
+        this.fillGap(slot);
         sparkle(this, to, { count: 14 });
         this.success(to);
         sfx.good();
@@ -260,11 +278,11 @@ export class SaturnMission extends Mission {
         height: home.y,
         lift: 0.35,
         onPick: () => { this.poke(); sfx.pop(); },
-        onDrop: (o, at) => {
+        onDrop: (o) => {
           if (this.phase !== 'asking') return false;
-          const kind = this.ringAt(at);
-          if (!kind) return false;
-          choose(kind);
+          const choice = this.slotAt(o);
+          if (!choice) return false;
+          choose(choice);
           return true;
         },
         onTap: () => { this.poke(); this.jumpTo(obj, home, { height: 0.3, ms: 260 }); },
@@ -273,14 +291,15 @@ export class SaturnMission extends Mission {
       this.arrive(obj, index).then(() => {
         if (!this.alive) return;
         this.phase = 'asking';
-        this.last = piece.kind;
-        this.question('sorting', piece.kind, {
+        this.last = target;
+        this.question('sorting', target, {
           short: prompt,
-          hint: () => (this.L.named ? T.saturnRight(piece.kind) : T.saturnHint(piece.kind)), // (two rings: also the middle step)
-          reveal: () => this.hint(this.rings[piece.kind].mesh, () => solved),
-        }, { options: 2 });
+          hint: clue,
+          simplify: clue, // (four holes: the clue again, nothing taken away)
+          reveal: () => this.glowHole(slot, () => solved),
+        }, { options: this.slots.length });
         this.ask(prompt);
-        ui.bubble({ big: piece.kind === 'ice' ? '❄️' : '🪨', pic: '🪐', onTap: () => this.replay() });
+        ui.bubble({ big: this.L.named ? PIC[piece.kind] : '?', pic: '🪐', onTap: () => this.replay() });
       });
 
       this.pieceOff = this.onUpdate((dt, t) => {
@@ -304,23 +323,36 @@ export class SaturnMission extends Mission {
     }, ease.inOut);
   }
 
-  ringAt(at) {
-    const radius = Math.hypot(at.x, at.z - this.saturn.position.z);
-    if (radius < INNER[0] - 0.4 || radius > OUTER[1] + 0.6) return null;
-    return Math.abs(radius - mid(INNER)) <= Math.abs(radius - mid(OUTER)) ? 'ice' : 'rock';
+  /** The answer whose ring is drawn under the piece, as she sees it (null over the planet or empty sky). */
+  slotAt(obj) {
+    const eye = camera.position, at = obj.getWorldPosition(new THREE.Vector3());
+    this.ray.set(eye, at.sub(eye).normalize());
+    return this.ray.intersectObjects([this.planet, ...this.slots.map((x) => x.tap)], false)[0]?.object.userData.choice ?? null;
   }
 
-  fillGap(kind) {
-    const ring = this.rings[kind];
-    ring.filled++;
-    this.filled[kind] = ring.filled;
-    const left = ring.total * Math.max(0, 1 - ring.filled / Math.max(1, ring.need));
-    ring.gap.geometry.dispose();
+  fillGap(slot) {
+    slot.filled++;
+    const left = slot.width * Math.max(0, 1 - slot.filled / Math.max(1, slot.need));
+    const rim = slot.gap.children[0];
+    slot.gap.geometry.dispose(); rim.geometry.dispose();
     if (left < 0.015) {
-      ring.gap.visible = false;
+      slot.gap.visible = false;
       return;
     }
-    ring.gap.geometry = this.gapGeometry(ring.radii[0], ring.radii[1], left);
+    slot.gap.geometry = this.gapGeometry(slot.radii, slot.angle, left);
+    rim.geometry = this.rimGeometry(slot.radii, slot.angle, left);
+  }
+
+  /** The answer: the right hole glows until she fills it. */
+  glowHole(slot, isDone) {
+    this.helped(3);
+    const gap = slot.gap;
+    if (gap.userData.hinting) return;
+    gap.userData.hinting = true;
+    const off = this.onUpdate((dt, t) => {
+      if (isDone() || !this.alive) { off(); gap.userData.hinting = false; gap.material.color.set(HOLE); return; }
+      gap.material.color.set(HOLE).lerp(GLOW, 0.5 + 0.5 * Math.sin(t * 7));
+    });
   }
 
   success(at) {
@@ -329,6 +361,7 @@ export class SaturnMission extends Mission {
   }
 
   async outro() {
+    this.slots.forEach((slot) => { slot.gap.visible = false; }); // (a run cut short mends the rings too: "naprawione!")
     this.spin = true;
     this.cheer(3);
     sfx.good();

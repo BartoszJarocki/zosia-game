@@ -30,6 +30,7 @@ export const FAIR_BUBBLE = {
   lookout: { when: (row, skill) => row.mode === 'pickup' || (row.mode === 'relative' && skill === 'numeral'), why: '`pickup`: "Kotek czeka na piętrze dwa!" (the number in the bubble); `relative`: the first ride is a `pickup`' },
   reef: { when: (row) => row.mode === 'see', why: '`see` shows a small picture of the asked position in the bubble, to match with what she sees' },
   delivery: { when: (row) => row.mode === 'pictureSound', why: '`pictureSound`: the bubble shows the asked letter and the parcels show pictures, so the letter is the question' },
+  saturn: { when: (row) => row.named, why: '`named`: Chase says what the piece is ("To jest lód.") and the bubble shows it; she finds its ring' },
 };
 
 /** Bubbles that show the answer as a picture, not as its label (saturn.js: the piece's kind is the ring to pick). */

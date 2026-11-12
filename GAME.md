@@ -105,8 +105,8 @@ at `childAge` in `src/config.js` (3.5).
 | Moon Jumps · `moon` | 2 | 3 | 3 | 3 |
 | The Mars Rover · `mars` | 2 | 3 | 4 | 4 |
 | Jupiter's Stripes · `jupiter` | 1 | 2 | 3 | 3 |
-| Saturn's Rings · `saturn` | 2 | 3 | 3 | 3 |
-| Pluto's Heart · `pluto` | 2 | 3 | 3 | 3 |
+| Saturn's Rings · `saturn` | 1 | 2 | 3 | 3 |
+| Pluto's Heart · `pluto` | 1 | 2 | 3 | 3 |
 | The Black Hole · `blackhole` | 2 | 3 | 3 | 3 |
 | Comet Catch · `comet` | 1 | 2 | 3 | 3 |
 | Star Pictures · `stars` | 2 | 3 | 3 | 3 |
@@ -464,73 +464,95 @@ bubble asks for and the rover drives there, scans it and sparkles.
 
 ### 🪐 Saturn's Rings · `saturn`
 
-The rocket stops at Saturn, where the rings have broken apart. Chase names each piece as it floats in, or she
-works out by its look whether it is ice or rock, then drags it to the right ring (or taps the ring). Each piece
-mends a little more of the gap; when both rings are whole, Saturn turns slowly and Chase cheers.
+The rocket stops at Saturn, where the rings have broken apart: there are holes in them. One piece floats in at a
+time, ice (a pale blue crystal) or rock (a brown stone), big or small. She drags it into its hole (or taps the
+ring). Each piece mends a little of its hole; when the rings are whole, Saturn turns slowly and Chase cheers.
 
-| Level | pieces | named | sizes |
-|---|---|---|---|
-| 1 | 4 | yes | same |
-| 2 | 6 | yes | same |
-| 3 | 6 | no | same |
-| 4 | 8 | no | mixed |
+| Level | pieces | named | sizes | sort |
+|---|---|---|---|---|
+| 1 | 4 | yes | same | kind |
+| 2 | 6 | no | mixed | kind |
+| 3 | 6 | no | mixed | both |
+| 4 | 8 | no | mixed | both |
 
-- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question, so the
-  progress paws count pieces. Both kinds come in every mission, never three of the same kind in a row, and
-  their counts differ by at most one.
+- **pieces**: how many pieces come, one at a time (2–8). Each piece is one round and one question (skill
+  `sorting`), so the progress paws count pieces. Both kinds come in every mission, never three of the same kind in a
+  row, and their counts differ by at most one.
 - **named**: `yes` names each piece as it arrives and asks for its ring ("To jest lód. Gdzie jest lodowy
-  pierścień?"). `no` asks her to judge by its look ("Lód czy skała? Gdzie to pasuje?"); help names it first.
-- **sizes**: `same` gives every piece about the same size. `mixed` gives big and small pieces, with each kind
-  getting its own big and small share, so size never tells her the answer.
+  pierścień?"), and the bubble shows ❄️ or 🪨. `no` asks her to judge by its look ("Lód czy skała? Gdzie to
+  pasuje?"), and the bubble shows a question mark; the clue names it ("To jest lód.").
+- **sizes**: `same` gives every piece the same size. `mixed` gives big and small pieces (a big one is twice a
+  small one), each kind its own share of both.
+- **sort**: `kind` has one hole at the front of each ring, and the whole ring takes her tap. `both` sorts by two
+  things at once: each ring has a big hole on the left and a small hole on the right, so a big ice crystal goes in
+  the ice ring's big hole ("Lód czy skała? Duży czy mały?"; the clue: "To duży kawałek lodu."). A tap anywhere on
+  the half ring around a hole picks that hole. Needs `named` no and `sizes` mixed.
+- A drop counts on the ring drawn under the piece as she sees it. A tap on the planet is never an answer. The third
+  miss (or a long wait) makes the right hole glow. A run cut short closes the holes before "naprawione!".
 
 ### 🤍 Pluto's Heart · `pluto`
 
 The rocket lands on Pluto, a small pale planet with a big, soft heart on its front, dim at first. Chase
-watches from his round window. On the icy ground lie a few shapes, all one colour: she finds the heart.
-Each heart floats up into Pluto's heart, which shines a little brighter.
+watches from his round window. On the icy ground lie a few shapes, all one colour, and Chase asks for one
+by name ("Gdzie jest owal?"), a different one each round. Each shape she finds floats up into Pluto's heart,
+which shines a little brighter, and Chase names it ("Super! To jest owal!").
 
-| Level | choices | turned | rounds |
-|---|---|---|---|
-| 1 | 2 | no | 3 |
-| 2 | 3 | no | 3 |
-| 3 | 4 | no | 3 |
-| 4 | 4 | yes | 3 |
+| Level | shapes | ask | choices | similar | turned | rounds |
+|---|---|---|---|---|---|---|
+| 1 | heart, star, oval | match | 2 | no | no | 3 |
+| 2 | heart, star, oval, rectangle | name | 3 | no | no | 3 |
+| 3 | heart, star, oval, rectangle, diamond | name | 3 | yes | no | 4 |
+| 4 | heart, star, oval, rectangle, diamond | name | 4 | yes | yes | 4 |
 
-- **choices**: how many pieces lie on the ground (2–4): one heart and the rest from koło, kwadrat and
-  trójkąt, all in the same colour so colour never gives the answer.
-- **turned**: `no`, every piece is the textbook shape; `yes`, the pieces are turned and bigger or
-  smaller (the heart too).
-- **rounds**: hearts to find per mission (1–6). Each is one scored `shape` question, item 'heart'.
+- **shapes**: the shapes she is asked to find: serduszko (`heart`), gwiazda (`star`), owal (`oval`), prostokąt
+  (`rectangle`), romb (`diamond`), and the Garage's koło, kwadrat, trójkąt (`circle`, `square`, `triangle`). Each
+  round asks the next one in a shuffled order, never the same one twice in a row. The other pieces come from all
+  eight shapes. Each round is one scored `shape` question, item the shape.
+- **ask**: `match` draws the shape in the speech bubble. `name` shows a question mark: Chase only says it. The
+  clue (a long wait) draws it in the bubble; the second miss takes a wrong piece away; the third pulses the right one.
+- **choices**: how many pieces lie on the ground (2–4), all in the same colour so colour never gives the answer.
+- **similar**: `yes` puts the asked shape next to the one it is most easily taken for: owal by koło, prostokąt by
+  kwadrat, romb by kwadrat. `no` keeps them apart.
+- **turned**: `no`, every piece is the textbook shape; `yes`, the pieces are turned a little and bigger or smaller.
+  The square never turns far enough to look like the romb.
+- **rounds**: shapes to find per mission (1–6). When the visit is cut short, the last one is the heart, and the
+  heart shines fully before "Serduszko Plutona świeci!".
 
 ### 🕳️ The Black Hole · `blackhole`
 
 Through the rocket's golden window, she sends friendly space pebbles towards a small, distant black
-hole in a bright violet sky. Each pebble spirals gently into its glowing ring and lights one bead
-under the window, so she can still count what she sent. Chase stays in the rocket and cheers.
+hole in a bright violet sky, and watches some fall in from the shelf: how many are left? Chase stays
+in the rocket and cheers.
 
-| Level | types | drop | howMany | auto | slots | rounds |
-|---|---|---|---|---|---|---|
-| 1 | drop, howMany | 1–3 | 1–3 | yes | yes | 3 |
-| 2 | drop, howMany | 1–4 | 1–4 | yes | no | 3 |
-| 3 | drop, howMany | 2–6 | 2–5 | no | no | 4 |
-| 4 | drop, howMany | 3–8 | 3–7 | no | no | 4 |
+| Level | types | drop | away | fall | auto | slots | rounds |
+|---|---|---|---|---|---|---|---|
+| 1 | drop, away | 1–3 | 2–3 | 1–1 | yes | yes | 4 |
+| 2 | drop, away | 1–4 | 3–4 | 1–2 | yes | no | 4 |
+| 3 | drop, away | 2–6 | 3–5 | 1–2 | no | no | 4 |
+| 4 | drop, away | 3–8 | 4–6 | 1–3 | no | no | 4 |
 
-- **types**: the Moon's round order. Each kind appears, kinds alternate, and the last round is
-  always `drop` with auto on. `drop` asks "Wypuść trzy kamyki!": tap a pebble or drag it towards
-  the window. One floats away at a time, with each new bead counted aloud. `howMany` sends N
-  pebbles silently, 0.4 s apart, then asks "Ile kamyków wpadło?" She can tap each bead to count before choosing
-  the numeral. Choices are one less and one more, using another positive number when N is 1.
-  The beads then glow and her number is said once ("Tak! Pięć!"). "Czarna dziura świeci jak lampka!" comes
-  once a visit, after her first drop.
-- **drop** / **howMany**: the number ranges, up to 9.
-- **auto**: `yes` finishes at N lit beads. With `no`, she taps the rocket's big button to check.
-  Too few: "Za mało! Wypuść jeszcze!" Too many: the extra beads go dark and she hears
-  "Za dużo! Teraz dobrze? Dotknij guzika!" She taps the button again herself.
-- **slots**: `yes` shows unlit bead outlines and dots under the numerals. With `no`, help can
-  reveal the outlines. A gentler run turns auto and slots on.
-- **rounds**: tasks per mission, 1 to 8, at least one per kind. Automatic drops are unscored,
-  so every level includes a scored `howMany` round. Manual drops practise `counting`;
-  choosing the numeral practises `quantity`.
+- **types**: each kind appears, kinds alternate, and the last round is always `drop` with auto on.
+  `drop` asks "Wypuść trzy kamyki!": tap a pebble or drag it towards the window. Each pebble spirals
+  into the black hole's glowing ring and lights one bead under the window, counted aloud, so she can
+  still count what she sent. "Czarna dziura świeci jak lampka!" comes once a visit, after her first drop.
+  `away` is taking away: the shelf fills with pebbles ("Trzy kamyki!"), the last ones lift off 0.4 s
+  apart and spiral in, each leaving a pale outline where it lay ("Jeden wpadł."), then "Ile zostało?"
+  and three numeral tiles: what is left, what there was, and a neighbour of what is left. She can tap
+  each pebble left on the shelf to count it before choosing. The pebbles left then glow and her number
+  is said once ("Tak! Dwa!").
+- **drop**: the range of pebbles to send, up to 9.
+- **away** / **fall**: how many pebbles were on the shelf (2–7) and how many fall in (at least one
+  always stays). The number left is the question (skill `quantity`).
+- **auto**: `yes` finishes a drop at N lit beads. With `no`, she taps the rocket's big button to check;
+  the button comes once she has sent her first pebble. Too few: "Za mało! Wypuść jeszcze!" Too many:
+  every bead goes dark, "Za dużo! Policz jeszcze raz!", and she sends them again. A wrong check is a
+  wrong answer on the shared help: the second shows the bead outlines, the third pulses the pebble or
+  the button.
+- **slots**: `yes` shows unlit bead outlines for a drop and dots under the tiles. With `no`, help can
+  reveal the outlines. A gentler run turns auto and slots on and takes the smallest numbers.
+- **rounds**: tasks per mission, 1 to 8, at least one per kind. Automatic drops are unscored, so
+  levels 1 and 2 have four rounds: two scored `away` questions. Manual drops practise `counting`;
+  choosing what is left practises `quantity`.
 
 ### ⭐ Star Pictures · `stars`
 

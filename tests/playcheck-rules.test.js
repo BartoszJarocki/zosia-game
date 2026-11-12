@@ -50,9 +50,10 @@ test('rule 2 passes the rows GAME.md makes matching without an ask column (Name 
   assert.equal(questionIsHers(r, { mode: 'word' }).pass, false);
 });
 
-test('rule 2 sees a bubble that shows the answer as a picture (Saturn)', () => {
-  const v = questionIsHers([run('saturn', 'fast', { rounds: [round({ q: 'sorting:ice', bubble: '❄️ 🪐', right: 'ice' })] })], { pieces: 4, named: true, sizes: 'same' });
-  assert.equal(v.pass, false);
+test('rule 2 sees a bubble that shows the answer as a picture (Saturn), fair only where Chase names the piece', () => {
+  const r = [run('saturn', 'fast', { rounds: [round({ q: 'sorting:ice', bubble: '❄️ 🪐', right: 'ice' })] })];
+  assert.equal(questionIsHers(r, { pieces: 6, named: false, sizes: 'mixed', sort: 'kind' }).pass, false);
+  assert.equal(questionIsHers(r, { pieces: 4, named: true, sizes: 'same', sort: 'kind' }).pass, true);
 });
 
 test('rule 2 passes when one wrong tap leaves the help at "try again" and shows nothing', () => {

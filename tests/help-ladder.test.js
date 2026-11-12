@@ -136,7 +136,7 @@ const PLACES = [
   {
     name: "Saturn's Rings", open: async () => { const s = await make(SaturnMission, 1); s.round(0); await until(s, () => s.phase === 'asking' && s.aid, 'a piece'); return s; },
     wrong: (s) => s.choose(s.last === 'ice' ? 'rock' : 'ice'),
-    right: (s) => [s.rings[s.last].mesh],
+    right: (s) => [s.slot(s.last).gap],
   },
   {
     name: 'Mercury (a quick look)', open: async () => { const s = await make(MercuryMission, 3, (x) => { x.pick = () => 3; }); s.craterRound(); await until(s, () => s.phase === 'choosing' && s.aid, 'tiles'); return s; },
@@ -150,8 +150,8 @@ const PLACES = [
   },
   {
     name: "Pluto's Heart", open: async () => { const s = await make(PlutoMission, 2); s.round(0); await until(s, () => s.phase === 'choosing' && s.aid, 'shapes'); return s; },
-    wrong: (s) => tap(choices(s).find((o) => o.userData.choice !== 'heart')),
-    right: (s) => choices(s).filter((o) => o.userData.choice === 'heart'),
+    wrong: (s) => tap(choices(s).find((o) => o.userData.choice !== s.last)),
+    right: (s) => choices(s).filter((o) => o.userData.choice === s.last),
   },
   {
     name: 'The Reef', open: async () => { const s = await make(ReefMission, 2); s.round(0); await until(s, () => s.phase === 'asking' && s.aid, 'scenes'); return s; },

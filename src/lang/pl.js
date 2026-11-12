@@ -37,6 +37,8 @@ const pupGen = CONFIG.pupGenitive || pup;
 const COLOUR = { red: ['czerwony', 'czerwona', 'czerwonego'], blue: ['niebieski', 'niebieska', 'niebieskiego'], yellow: ['żółty', 'żółta', 'żółtego'], green: ['zielony', 'zielona', 'zielonego'] };
 const SIZE = { big: ['duży', 'dużego'], small: ['mały', 'małego'] };
 const SHAPE = { circle: 'koło', square: 'kwadrat', triangle: 'trójkąt', heart: 'serduszko' };
+/** Every shape Pluto can ask for: the Garage's names, and the ones only Pluto asks. */
+const PLUTO_SHAPE = { ...SHAPE, star: 'gwiazda', oval: 'owal', rectangle: 'prostokąt', diamond: 'romb' };
 const SHAPE_CLUE = { circle: 'Koło jest okrągłe!', square: 'Kwadrat ma cztery rogi!', triangle: 'Trójkąt ma trzy rogi!' };
 const JUPITER_COLOUR = { white: 'biały', orange: 'pomarańczowy', brown: 'brązowy', red: 'czerwony' };
 const stripeWords = (row) => row.map((c, i) => (i ? JUPITER_COLOUR[c] : cap(JUPITER_COLOUR[c])));
@@ -47,8 +49,8 @@ const SHALLOWS_SURPRISE = {
   moneta: 'Taka mała, a tonie!',
 };
 const SATURN = {
-  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!' },
-  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!' },
+  ice: { name: 'To jest lód.', ring: 'Gdzie jest lodowy pierścień?', right: 'Lód do lodu!', big: 'To duży kawałek lodu.', small: 'To mały kawałek lodu.' },
+  rock: { name: 'To jest skała.', ring: 'Gdzie jest skalny pierścień?', right: 'Skała do skał!', big: 'To duży kawałek skały.', small: 'To mały kawałek skały.' },
 };
 
 export const PRAISE = ['Brawo!', 'Super!', 'Świetnie!', 'Hura!', 'Wspaniale!', 'Doskonale!'];
@@ -332,8 +334,8 @@ export const T = {
   portSuccess: () => ['Brawo! Łódka wypływa w morze!'],
   portFinished: () => ['Brawo! Wszystkie łódki wypłynęły w morze!'],
   plutoStart: () => ['Jesteśmy na Plutonie! Pluton to planeta karłowata. Pluton ma jasne serduszko.'],
-  plutoAsk: () => ['Gdzie jest serduszko?'],
-  plutoRight: () => ['Tak! To jest serduszko!'],
+  plutoAsk: (shape) => [`Gdzie jest ${PLUTO_SHAPE[shape]}?`],
+  plutoRight: (shape) => [`To jest ${PLUTO_SHAPE[shape]}!`],
   plutoDone: () => ['Brawo! Serduszko Plutona świeci!'],
   blackholeStart: () => ['Patrzymy przez okno rakiety. Czarna dziura jest bardzo daleko.'],
   blackholeDrop: (n) => [`Wypuść ${NUM[n]} ${n === 1 ? 'kamyk' : n < 5 ? 'kamyki' : 'kamyków'}!`],
@@ -342,14 +344,16 @@ export const T = {
   blackholeGlow: () => ['Czarna dziura świeci jak lampka!'],
   blackholeButton: () => ['Dotknij guzika, kiedy skończysz!'],
   blackholeTooFew: () => ['Za mało! Wypuść jeszcze!'],
-  blackholeTooMany: () => ['Za dużo! Teraz dobrze? Dotknij guzika!'],
-  blackholeWatch: () => ['Patrz, jak lecą!'],
-  blackholeHowMany: () => ['Ile kamyków wpadło?'],
+  blackholeTooMany: () => ['Za dużo! Policz jeszcze raz!'],
+  blackholeFell: (k) => [`${cap(NUM[k])} ${k === 1 ? 'wpadł' : k < 5 ? 'wpadły' : 'wpadło'}.`],
+  blackholeLeft: () => ['Ile zostało?'],
   blackholeDone: () => ['Brawo! Czarna dziura świeci od twoich kamyków!'],
   saturnStart: () => ['Jesteśmy przy Saturnie! Pierścienie się rozsypały. Pomożesz je naprawić?'],
   saturnNamed: (kind) => [SATURN[kind].name, SATURN[kind].ring],
   saturnWhich: () => ['Lód czy skała? Gdzie to pasuje?'],
+  saturnWhichBoth: () => ['Lód czy skała? Duży czy mały?'],
   saturnHint: (kind) => [SATURN[kind].name, SATURN[kind].ring],
+  saturnHintBoth: (kind, size) => [SATURN[kind][size]],
   saturnRight: (kind) => [SATURN[kind].right],
   saturnDone: () => ['Brawo! Pierścienie Saturna są naprawione!'],
   mercuryStart: () => ['Jesteśmy na Merkurym!', 'Merkury jest najbliżej Słońca.', 'To najmniejsza planeta.'],
@@ -667,10 +671,13 @@ export function allSegments(levels, allLetters) {
   nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
   Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
   [T.starsStart, T.starsDone].forEach((f) => add(f()));
-  [T.plutoStart, T.plutoAsk, T.plutoRight, T.plutoDone].forEach((f) => add(f()));
+  new Set(levels.pluto.flatMap((l) => l.shapes)).forEach((shape) => { add(T.plutoAsk(shape)); add(T.plutoRight(shape)); });
+  [T.plutoStart, T.plutoDone].forEach((f) => add(f()));
   nums.forEach((n) => { add(T.blackholeDrop(n)); add(T.blackholeDropShort(n)); });
-  [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeWatch, T.blackholeHowMany, T.blackholeDone].forEach((f) => add(f()));
+  nums.slice(0, Math.max(0, ...levels.blackhole.map((l) => l.fall?.[1] ?? 0))).forEach((k) => add(T.blackholeFell(k)));
+  [T.blackholeStart, T.blackholeHelp, T.blackholeGlow, T.blackholeButton, T.blackholeTooFew, T.blackholeTooMany, T.blackholeLeft, T.blackholeDone].forEach((f) => add(f()));
   Object.keys(SATURN).forEach((kind) => { add(T.saturnNamed(kind)); add(T.saturnHint(kind)); add(T.saturnRight(kind)); });
+  if (levels.saturn.some((l) => l.sort === 'both')) { add(T.saturnWhichBoth()); Object.keys(SATURN).forEach((kind) => ['big', 'small'].forEach((size) => add(T.saturnHintBoth(kind, size)))); }
   [T.saturnStart, T.saturnWhich, T.saturnDone].forEach((f) => add(f()));
   nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
   [T.mercuryStart, T.mercuryStayAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));

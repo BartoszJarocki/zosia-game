@@ -131,9 +131,10 @@ export const SCHEMA = {
     rounds: { type: 'int', min: 1, max: 8 },
   },
   blackhole: {
-    types: { type: 'list', values: ['drop', 'howMany'] },
+    types: { type: 'list', values: ['drop', 'away'] },
     drop: { type: 'range', min: 1, max: 9 },
-    howMany: { type: 'range', min: 1, max: 9, optional: true },
+    away: { type: 'range', min: 2, max: 7, optional: true }, // pebbles on the shelf before some fall in (a row of 7 fills it)
+    fall: { type: 'range', min: 1, max: 5, optional: true }, // how many fall in
     auto: { type: 'bool' },
     slots: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8 },
@@ -142,6 +143,7 @@ export const SCHEMA = {
     pieces: { type: 'int', min: 2, max: 8 },
     named: { type: 'bool' },
     sizes: { type: 'enum', values: ['same', 'mixed'] },
+    sort: { type: 'enum', values: ['kind', 'both'] }, // by kind (two rings), or by kind and size (a big and a small hole in each)
   },
   venus: {
     reveal: { type: 'enum', values: ['full', 'part'] },
@@ -185,7 +187,10 @@ export const SCHEMA = {
     rounds: { type: 'int', min: 1, max: 6, optional: true, default: 3 },
   },
   pluto: {
-    choices: { type: 'int', min: 2, max: 4 }, // pieces on the ground: one heart and the rest
+    shapes: { type: 'list', values: ['heart', 'star', 'oval', 'rectangle', 'diamond', 'circle', 'square', 'triangle'] }, // the shapes she is asked to find
+    ask: { type: 'enum', values: ['match', 'name'] }, // the bubble draws the shape, or only Chase names it
+    choices: { type: 'int', min: 2, max: 4 }, // pieces on the ground: the asked shape and the rest
+    similar: { type: 'bool' }, // the asked shape lies next to its twin (owal and koło, prostokąt and kwadrat, romb and kwadrat)
     turned: { type: 'bool' }, // textbook shapes, or turned and resized
     rounds: { type: 'int', min: 1, max: 6 },
   },
@@ -438,7 +443,17 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && (!s.types.includes('stripes') || !s.types.includes('bigger'))) errors.push(`${where}: types needs both stripes and bigger (every question is scored)`);
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
   }
-  if (kind === 'moon' || kind === 'blackhole') {
+  if (kind === 'pluto' && s.shapes && new Set(s.shapes).size !== s.shapes.length) errors.push(`${where}: shapes must be distinct`);
+  if (kind === 'saturn' && s.sort === 'both' && s.sizes !== 'mixed') errors.push(`${where}: sort "both" sorts by size too, so it needs sizes "mixed"`);
+  if (kind === 'saturn' && s.sort === 'both' && s.named) errors.push(`${where}: sort "both" asks her to judge the piece, so named must be "no"`);
+  if (kind === 'blackhole') {
+    for (const [t, cols] of [['drop', ['drop']], ['away', ['away', 'fall']]]) for (const c of cols) if (s.types?.includes(t) && !s[c]) errors.push(`${where}: types includes ${t}, so set a ${c} range`);
+    if (s.types && !s.types.includes('away')) errors.push(`${where}: needs an away round (automatic drops do not count towards levelling)`);
+    if (s.types && !s.types.includes('drop')) errors.push(`${where}: types needs drop for the easy last round`);
+    if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
+    if (s.away && s.fall && s.fall[0] >= s.away[1]) errors.push(`${where}: at least one pebble has to stay, so fall must start below the most there were (${s.away[1]})`);
+  }
+  if (kind === 'moon') {
     const action = kind === 'moon' ? 'jump' : 'drop';
     for (const t of s.types || []) if (!s[t]) errors.push(`${where}: types includes ${t}, so set a ${t} range`);
     if (s.types && !s.types.includes('howMany')) errors.push(`${where}: needs a howMany round (automatic ${action}s do not count towards levelling)`);
