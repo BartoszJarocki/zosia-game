@@ -647,17 +647,21 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 
 - **mode**: `marks` keeps a yellow dot on the board for every flash (things that stay); `flashes` has no dots, so
   she counts what she saw, and tapping the bubble replays the flashes; `make` puts the number on the boat's sail,
-  she taps the lamp that many times and then the boat; `more` flashes a number and she makes one flash more.
-  The flashes she makes are quick and each leaves a dot; quick taps flash one after another, every one counted,
+  she taps the lamp that many times and then the boat; `more` flashes a number, keeps a pale dot on the board for
+  each flash and shows one empty place after them ("Mrugnij o jeden raz więcej!"): she makes as many flashes and one
+  more, each lighting the next place, the empty one last, and then taps the boat.
+  The flashes she makes are quick and each lights a dot; quick taps flash one after another, every one counted,
   and the boat is judged once they have all played.
-- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
+- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows (2 to 5),
+  and that count is what it records.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
 - **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
   a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
   after the praise. Wrong: the boat bobs, "Nie, to nie ten." (`make` and `more`: "Za mało! Policz jeszcze
-  raz!" and the dots reset) and the question again. Help: the dots light one by one (`marks`), or the flashes
-  again (`flashes`, and `more`: the ones she saw), or the lamp shows itself (`make`); last the right buoy
-  pulses, or the lamp flashes the answer ("Mrugnij trzy razy!") and she makes it herself. A boat is never lost.
+  raz!" and her dots go out; the pale ones stay) and the question again, nothing more. Help: the dots light one by
+  one (`marks`), or the flashes again (`flashes`, and `more`: the ones she saw, each pale dot glowing with its
+  flash, the empty place still empty), or the lamp shows itself (`make`); last the right buoy pulses, or the lamp
+  flashes the answer ("Mrugnij trzy razy!") and she makes it herself. A boat is never lost.
 
 ### 🦆 Pływa czy tonie? · `shallows`
 

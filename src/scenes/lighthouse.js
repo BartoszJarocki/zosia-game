@@ -17,11 +17,16 @@ const HARBOUR = new THREE.Vector3(-4.4, 0.04, 1.7);
 const BOAT_START = new THREE.Vector3(5.4, 0.04, 2.15);
 const LAMP_Y = 6.5;
 const LAMP_BASE = 1.7;
-const DOT_R = 0.16;
+const DOT_R = 0.2;
 const DOT_STEP = 0.55;
 const DOT_SLOTS = 7;
+const DOT_COLOR = { lit: '#fde047', seen: '#fff4c4', empty: '#fde047' };
+const DOT_GLOW = { lit: '#fff1a8', seen: '#fde047', empty: '#fffbe6' }; // a place lit for a moment by a flash
 const SHOW_FLASH_MS = 1100; // the flashes she counts by watching
 const TAP_FLASH_MS = 420;   // a flash she makes: about the gap between two quick taps, so her count keeps up with her
+
+/** What each mode's question asks: how many she saw, a count she makes, one more than she saw. */
+const SKILL = { marks: 'quantity', flashes: 'quantity', make: 'counting', more: 'sequence' };
 
 const numeralMap = (n, bg = '#ffffff', fg = '#1e3a8a') => texture(256, (c, size) => {
   c.clearRect(0, 0, size, size);
@@ -61,6 +66,8 @@ export class LighthouseMission extends Mission {
     this.boat = null;
     this.choices = [];
     this.dots = [];
+    this.marks = 0;
+    this.count = 0;
     this.maps = [];
     this.mats = [];
     this.roundMaps = [];
@@ -280,15 +287,26 @@ export class LighthouseMission extends Mission {
     return buoy;
   }
 
-  addDot() {
-    if (this.dots.length >= DOT_SLOTS) return;
-    const dot = mesh(new THREE.CircleGeometry(DOT_R, 20), new THREE.MeshBasicMaterial({ color: '#fde047' }), {
-      x: -DOT_STEP * (DOT_SLOTS - 1) / 2 + this.dots.length * DOT_STEP,
-      z: 0.12,
-      shadow: false,
-    });
-    this.board.add(dot);
-    this.dots.push(dot);
+  /**
+   * The board, drawn from two counts: the lamp's flashes it keeps (marks) and the flashes she made (count). At `more` the
+   * lamp's are pale and one empty place waits after them ("o jeden więcej"); each of hers lights the next place.
+   */
+  drawBoard() {
+    this.clearDots();
+    const more = this.mode === 'more';
+    const places = Math.min(DOT_SLOTS, Math.max(this.count, more && this.marks ? this.marks + 1 : this.marks));
+    for (let i = 0; i < places; i++) {
+      const look = !more || i < this.count ? 'lit' : i < this.marks ? 'seen' : 'empty';
+      const geometry = look === 'empty' ? new THREE.RingGeometry(DOT_R * 0.6, DOT_R, 24) : new THREE.CircleGeometry(DOT_R, 20);
+      const dot = mesh(geometry, new THREE.MeshBasicMaterial({ color: DOT_COLOR[look] }), {
+        x: -DOT_STEP * (DOT_SLOTS - 1) / 2 + i * DOT_STEP,
+        z: 0.12,
+        shadow: false,
+      });
+      dot.userData.look = look;
+      this.board.add(dot);
+      this.dots.push(dot);
+    }
   }
 
   clearDots() {
@@ -298,15 +316,6 @@ export class LighthouseMission extends Mission {
       dot.material.dispose();
     }
     this.dots = [];
-  }
-
-  async countDots() {
-    for (let i = 0; i < this.dots.length; i++) {
-      if (!this.alive) return;
-      this.dots[i].material.color.set('#fff1a8');
-      await this.say(T.number(i + 1));
-    }
-    this.dots.forEach((dot) => dot.material.color.set('#fde047'));
   }
 
   async flashOnce(ms = SHOW_FLASH_MS) {
@@ -328,14 +337,18 @@ export class LighthouseMission extends Mission {
     material.emissiveIntensity = LAMP_BASE;
   }
 
-  async showFlashes(n, { dots = false } = {}) {
+  /** The lamp flashes n times. keep: each flash leaves its mark on the board. glow: each flash lights its place for a moment. */
+  async showFlashes(n, { keep = false, glow = false } = {}) {
     if (!this.alive) return;
     this.flashing = true;
     for (let i = 0; i < n; i++) {
       if (!this.alive) break;
-      if (dots) this.addDot();
+      if (keep) { this.marks++; this.drawBoard(); }
+      const dot = glow ? this.dots[i] : null;
+      dot?.material.color.set(DOT_GLOW[dot.userData.look]);
       await this.flashOnce();
       if (!this.alive) break;
+      dot?.material.color.set(DOT_COLOR[dot.userData.look]);
     }
     this.flashing = false;
   }
@@ -381,7 +394,7 @@ export class LighthouseMission extends Mission {
     this.question('quantity', n, {
       short: T.lighthouseHowMany,
       hint: async () => { // marks: the dots light one by one, no number said; flashes: the flashes again
-        if (this.dots.length) await this.pointAlong(this.dots, (dot) => { dot.material.color.set('#fff1a8'); return () => dot.material.color.set('#fde047'); });
+        if (this.dots.length) await this.pointAlong(this.dots, (dot) => { dot.material.color.set(DOT_GLOW.lit); return () => dot.material.color.set(DOT_COLOR.lit); });
         else await this.showFlashes(n);
         if (this.alive && this.phase === 'choosing') await this.say(T.lighthouseHowMany());
       },
@@ -408,7 +421,7 @@ export class LighthouseMission extends Mission {
   /** Home she sails, praised, as the dots she counted light up; the next boat comes in while the praise goes on. */
   async sailHome() {
     sfx.good();
-    this.dots.forEach((dot) => dot.material.color.set('#fff1a8'));
+    this.dots.forEach((dot) => dot.material.color.set(DOT_GLOW.lit));
     this.talk = this.say([...T.lighthouseHome(), this.praise()]);
     await this.arriveBoat();
     if (!this.alive) return;
@@ -444,20 +457,21 @@ export class LighthouseMission extends Mission {
     this.mode = mode;
     this.phase = 'watching';
     const short = () => (mode === 'more' ? T.lighthouseMore() : T.lighthouseMake(n));
-    const showing = async (flashes, said, line) => {
-      this.phase = 'helping';
+    // the lamp flashes again while she waits: what she saw (a clue) or the whole count (the answer, phase 'helping')
+    const showing = async (flashes, phase, said, line) => {
+      this.phase = phase;
       this.resetCount();
       if (said.length) await this.say(said);
-      if (this.alive) await this.showFlashes(flashes);
+      if (this.alive) await this.showFlashes(flashes, { glow: mode === 'more' });
       if (!this.alive) return;
       this.phase = 'making';
       await this.say(line);
     };
     const lamp = () => { this.pulseUntil(this.lamp, () => this.phase !== 'making' || this.count > 0); return T.lighthouseCountHelp(); };
-    this.question(mode === 'more' ? 'sequence' : 'counting', n, {
+    this.question(SKILL[mode], n, {
       short,
-      hint: mode === 'more' ? (said = []) => showing(n - 1, said, short()) : lamp, // more: the flashes she saw, again
-      reveal: (said = []) => showing(n, said, T.lighthouseMake(n)), // the answer: as many flashes as she makes
+      hint: mode === 'more' ? (said = []) => showing(n - 1, 'watching', said, short()) : lamp, // more: the flashes she saw, again
+      reveal: (said = []) => showing(n, 'helping', said, T.lighthouseMake(n)), // the answer: as many flashes as she makes
     }, { options: 1 });
     ui.bubble({ big: mode === 'more' ? '?' : String(n), dots: mode === 'more' ? 0 : n, pic: '💡', onTap: () => this.replay(), passthrough: true });
     if (show) await show();
@@ -472,10 +486,10 @@ export class LighthouseMission extends Mission {
     if (show) this.ask(prompt); else this.askAfter(this.talk, prompt);
   }
 
-  /** She makes the flashes again from the start: no dots, nothing counted. */
+  /** She makes the flashes again from the start: none of hers counted or lit (the lamp's own stay on the board). */
   resetCount() {
-    this.clearDots();
     this.count = 0;
+    this.drawBoard();
     this.last = this.target;
     this.lamp.userData.choice = 'lamp';
   }
@@ -487,7 +501,7 @@ export class LighthouseMission extends Mission {
     return this.inTurn(() => {
       if (this.phase !== 'making' && this.phase !== 'checking') return; // (taps made before the boat still count)
       this.count++;
-      this.addDot();
+      this.drawBoard();
       this.last = this.count >= this.target ? 'done' : this.target;
       if (this.count >= this.target) delete this.lamp.userData.choice;
       return this.flashOnce(TAP_FLASH_MS);
@@ -530,20 +544,21 @@ export class LighthouseMission extends Mission {
     this.clearRound();
     this.plan ||= lighthousePlan(this.L.mode, this.rounds);
     this.mode = this.plan[r] ?? this.L.mode;
-    const n = this.pick(this.mode === 'more' ? 'sequence' : this.mode === 'make' ? 'counting' : 'quantity', numbersIn(this.L.numbers));
-    const task = flashRound(this.mode, n);
+    const tasks = numbersIn(this.L.numbers).map((n) => flashRound(this.mode, n));
+    const asked = this.pick(SKILL[this.mode], tasks.map((t) => t.target)); // (more: the count she makes, as it is recorded)
+    const task = tasks.find((t) => t.target === asked);
     this.target = task.target;
     this.last = task.target;
-    this.makeBoat(this.mode === 'make' ? n : null, this.mode === 'make' || this.mode === 'more');
+    this.makeBoat(this.mode === 'make' ? task.target : null, this.mode === 'make' || this.mode === 'more');
     await this.enterBoat();
     if (!this.alive) return;
     if (this.mode !== 'make') await this.talk; // the flashes she watches come after the praise, so she can count them
     if (!this.alive) return;
-    const flashes = (dots) => () => this.showFlashes(task.flashes, { dots });
-    if (this.mode === 'marks' || this.mode === 'flashes') await this.choose(n, flashes(this.mode === 'marks'));
+    const flashes = (keep) => () => this.showFlashes(task.flashes, { keep });
+    if (this.mode === 'marks' || this.mode === 'flashes') await this.choose(task.target, flashes(this.mode === 'marks'));
     else {
       const made = new Promise((resolve) => { this.resolveRound = resolve; });
-      await this.beginMaking(task.target, this.mode, this.mode === 'more' ? flashes(false) : null);
+      await this.beginMaking(task.target, this.mode, this.mode === 'more' ? flashes(true) : null);
       await made;
     }
     if (!this.alive) return;
@@ -579,6 +594,7 @@ export class LighthouseMission extends Mission {
     this.sailMat = null;
     this.boatHitMat?.dispose();
     this.boatHitMat = null;
+    this.marks = 0;
     this.clearDots();
     this.roundMaps.forEach((map) => map.dispose());
     this.roundMaps = [];
