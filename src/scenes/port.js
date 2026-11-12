@@ -31,7 +31,7 @@ function syllableTexture(syllable) {
     c.fillStyle = '#1e3a8a';
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.font = `700 ${Math.round(size * Math.min(0.56, 1.7 / Math.max(1, syllable.length)))}px "Fredoka", "Arial Rounded MT Bold", Arial, sans-serif`;
+    c.font = `700 ${Math.round(size * Math.min(0.56, 1.35 / Math.max(1, syllable.length)))}px "Fredoka", "Arial Rounded MT Bold", Arial, sans-serif`;
     c.fillText(shown, size / 2, size * 0.55);
   });
 }
