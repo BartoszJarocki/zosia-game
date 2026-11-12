@@ -97,6 +97,32 @@ function screenBox(object, camera, width, height) {
 
 const overlaps = (a, b) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
 
+/** The bubble body in style.css: left-anchored, below the home button, sized by its big glyph and picture. */
+function bubbleBox(w, h) {
+  const btn = Math.min(0.11 * w, 0.11 * h, 96);
+  const left = 16 + btn + 24, top = 14 + btn + 0.016 * h;
+  const big = Math.min(0.15 * w, 0.14 * h, 150), pic = Math.min(0.12 * w, 0.11 * h, 108);
+  const wide = big + Math.min(0.03 * w, 26) + pic + 2 * Math.min(0.036 * w, 32) + 10, tall = Math.max(big, pic) + 2 * 0.011 * h + 10;
+  return { minX: left, maxX: left + wide, minY: top, maxY: top + tall };
+}
+
+test('every place she can tap in the one scene stays clear of the bubble at all three sizes', async () => {
+  const s = await scene(4);
+  for (const target of REEF_PLACES) {
+    const round = s.placeRound({ word: target.word, animal: 'octopus', place: target });
+    await until(() => s.phase === 'asking');
+    for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+      const camera = cameraFor(s, width, height);
+      for (const spot of s.spots) assert.equal(overlaps(screenBox(spot, camera, width, height), bubbleBox(width, height)), false, `${width}x${height}: ${spot.userData.choice} under the bubble`);
+      assert.equal(overlaps(screenBox(s.animalObj, camera, width, height), bubbleBox(width, height)), false, `${width}x${height}: the waiting animal under the bubble`);
+    }
+    await s.spots.find((o) => o.userData.choice === s.last).userData.onTap();
+    await round;
+    s.clearRound();
+  }
+  s.alive = false; s.exit();
+});
+
 test('GAME.md parses the reef levels exactly', () => {
   const md = readFileSync(new URL('../GAME.md', import.meta.url), 'utf8');
   const { levels, missions, errors } = parseGame(md, { childName: CONFIG.childName });
@@ -183,7 +209,7 @@ test('every choice animal is at least 90 px across at 1180x820', async () => {
   const s = await scene(3);
   const camera = cameraFor(s, 1180, 820);
   for (const kind of ['crab', 'starfish', 'fish', 'octopus']) {
-    const group = s.makeMini({ word: 'na', on: 'rock' }, kind);
+    const group = s.makeChoice({ word: 'na', on: 'rock' }, kind);
     s.scene.add(group);
     group.updateMatrixWorld(true);
     const box = screenBox(group.userData.animal, camera, 1180, 820);

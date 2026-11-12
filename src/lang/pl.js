@@ -238,7 +238,6 @@ export const REEF_PLACES = {
   'pod:rock': 'pod kamieniem',
   'obok:rock': 'obok kamienia',
   'w:shell': 'w muszli',
-  'na:shell': 'na muszli',
   'obok:shell': 'obok muszli',
 };
 export const REEF_ANIMALS = {
@@ -312,11 +311,10 @@ export const T = {
   shallowsLook: (thing) => [`Popatrz! ${thing.name} ${thing.side === 'float' ? 'pływa' : 'tonie'}!`],
   shallowsSurprise: (thing) => (SHALLOWS_SURPRISE[thing.id] ? [SHALLOWS_SURPRISE[thing.id]] : []),
   shallowsDone: () => ['Brawo! Wiesz, co pływa, a co tonie!'],
-  reefStart: (i) => ['Jesteśmy na rafie!', 'Zaglądamy przez szklaną podłogę łódki!', REEF_FACTS[i % REEF_FACTS.length]],
+  reefStart: (i) => ['Jesteśmy na rafie!', REEF_FACTS[i % REEF_FACTS.length]],
   reefAsk: (animal, word, on) => [`${REEF_ANIMALS[animal].which} ${REEF_ANIMALS[animal].nom} jest ${reefPlace(word, on)}?`],
   reefRight: (animal, word, on) => [`Tak! ${cap(REEF_ANIMALS[animal].nom)} jest ${reefPlace(word, on)}.`],
   reefPlaceAsk: (animal, word, on) => [`Połóż ${REEF_ANIMALS[animal].acc} ${reefPlace(word, on)}.`],
-  reefLook: () => ['Popatrz na wszystkie obrazki.'],
   reefPlaceLook: () => ['Popatrz na wszystkie miejsca.'],
   reefDone: () => ['Brawo! Znalazłaś wszystkie zwierzątka na rafie!'],
   portStart: () => ['W porcie łódki odpoczywają. Każda łódka ma imię.'],
@@ -656,7 +654,7 @@ export function allSegments(levels, allLetters) {
     });
   });
   REEF_FACTS.forEach((_, i) => add(T.reefStart(i)));
-  [T.reefLook, T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
+  [T.reefPlaceLook, T.reefDone].forEach((f) => add(f()));
   BOATS.forEach((boat) => {
     add(T.portName(boat.word));
     add(T.spellWord(boat.word)); // (each boat says its name: "Foka!")

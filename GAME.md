@@ -693,9 +693,9 @@ sorted stay on the shelves, so she sees the groups grow.
   wrong one counts against the run. Every level has at least one scored question.
 ### 🦀 The Reef · `reef`
 
-Looking down through the boat's round glass floor at a bright, shallow reef: sandy sea floor, green sea grass,
-a grey rock and a big pink shell. A crab, a starfish, a little fish and an octopus take turns hiding on, under,
-in and next to them.
+Under water at a bright, shallow reef, seen from the side: blue water, a sandy floor, green sea grass, a big
+grey rock with a dark hollow under its ledge, and a big pink shell lying open. A crab, a starfish, a little fish
+and an octopus take turns hiding on, under, in and next to them.
 
 | Level | mode | words | choices | rounds |
 |---|---|---|---|---|
@@ -704,15 +704,21 @@ in and next to them.
 | 3 | hear | na, pod, w, obok | 3 | 4 |
 | 4 | place | na, pod, w, obok | 3 | 3 |
 
-- **mode**: `see` shows a small picture of the asked position in the bubble, to match with what she sees;
-  `hear` gives the words only; `place` shows one big scene, the animal waits above it and three glowing spots
-  mark places. She taps the spot and the animal swims there.
-- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock or shell, under the rock,
-  in the shell, and next to the rock or shell.
-- **choices**: how many small scenes side by side (2 to 4), or how many glowing spots in `place`.
+- **mode**: one scene each round. `see` and `hear`: the same animal sits in two or three places at once,
+  "Który krab jest pod kamieniem?", and she taps the one that is; `see` shows a small picture of the asked
+  place in the bubble, to match with what she sees; `hear` gives the words only (the bubble shows the animal).
+  `place`: the animal waits above the scene and three large bright rings mark places ("Połóż kraba pod
+  kamieniem."). She taps a ring and the animal swims there.
+- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock, under the rock (in the hollow,
+  only its eyes showing in the dark), in the shell, and next to the rock or the shell. `na` is only on the rock
+  and `w` only in the shell, so they never share a spot. Where the scene can, another animal (or ring) is on the
+  same thing as the asked one (on and under the rock), so the thing alone does not tell which.
+- **choices**: how many places the animal sits in (2 to 4), or how many rings in `place`.
 - **rounds**: questions per mission (1 to 8). Each is one scored question, skill `position`, item the word.
   Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, "Nie, to nie
-  ten." and the question again; the right scene or spot pulses only at the end of the help. The right word is never the same three times in a row.
+  ten." and the question again; then one wrong animal swims away (with two to pick from, the animals hop one by
+  one: "Popatrz uważnie!"); the right animal or ring pulses only at the end of the help. Each round's word is
+  picked at random, never the same three times in a row.
 
 ### 📯 The Port · `port`
 
