@@ -33,8 +33,9 @@ export const SCHEMA = {
   },
   comet: {
     pool: { type: 'letters' },
+    ask: { type: 'enum', values: ['match', 'name'] },
     targets: { type: 'int', min: 1, max: 4 },
-    total: { type: 'int', min: 3, max: 9 },
+    total: { type: 'int', min: 3, max: 8 }, // (two to a lane, four lanes)
     speed: { type: 'range', min: 0.1, max: 2, float: true },
     similar: { type: 'bool' },
     rounds: { type: 'int', min: 1, max: 8, optional: true, default: 3 }, // letters to catch
@@ -126,7 +127,7 @@ export const SCHEMA = {
   mars: {
     max: { type: 'int', min: 2, max: 9 },
     choices: { type: 'int', min: 2, max: 4 },
-    ask: { type: 'enum', values: ['both', 'numeral', 'dots', 'name'] },
+    ask: { type: 'enum', values: ['match', 'dots', 'name'] },
     rock: { type: 'enum', values: ['both', 'numeral'] },
     rounds: { type: 'int', min: 1, max: 8 },
   },

@@ -12,21 +12,20 @@ const { levels, letterSets, errors } = parseGame(md, { childName: 'Zosia' });
 test('Mars level rows parse to the specified literal settings', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(levels.mars, [
-    { max: 3, choices: 3, ask: 'both', rock: 'both', rounds: 3 },
-    { max: 5, choices: 3, ask: 'both', rock: 'numeral', rounds: 3 },
-    { max: 5, choices: 3, ask: 'numeral', rock: 'numeral', rounds: 3 },
+    { max: 3, choices: 3, ask: 'match', rock: 'both', rounds: 3 },
+    { max: 5, choices: 3, ask: 'match', rock: 'both', rounds: 3 },
+    { max: 5, choices: 3, ask: 'name', rock: 'numeral', rounds: 3 },
     { max: 6, choices: 3, ask: 'dots', rock: 'numeral', rounds: 3 },
     { max: 9, choices: 4, ask: 'name', rock: 'numeral', rounds: 3 },
   ]);
 });
 
 test('Mars rounds ask for a numeral or an amount', () => {
-  assert.deepEqual(marsBubble('both', 3), ['3', 3]);
-  assert.deepEqual(marsBubble('numeral', 3), ['3', 0]);
+  assert.deepEqual(marsBubble('match', 3, 'both'), ['3', 3], 'a match shows what the rocks show: the numeral and its dots');
+  assert.deepEqual(marsBubble('match', 3, 'numeral'), ['3', 0]);
   assert.deepEqual(marsBubble('dots', 3), ['', 3]);
   assert.deepEqual(marsBubble('name', 3), ['', 0]);
-  assert.equal(marsSkill('both'), 'numeral');
-  assert.equal(marsSkill('numeral'), 'numeral');
+  assert.equal(marsSkill('match'), 'numeral');
   assert.equal(marsSkill('dots'), 'quantity');
   assert.equal(marsSkill('name'), 'quantity');
   assert.deepEqual(marsPool(3), [1, 2, 3]);
@@ -37,17 +36,17 @@ const table = (row) => `### Test · \`mars\`\n\n| Level | max | choices | ask | 
 const rowErrors = (row) => parseGame(table(row)).errors.filter((e) => e.includes('(Test'));
 
 test('Mars schema checks ranges, modes and round count', () => {
-  assert.deepEqual(rowErrors('3 | 3 | both | both | 3'), []);
+  assert.deepEqual(rowErrors('3 | 3 | match | both | 3'), []);
   assert.deepEqual(rowErrors('9 | 4 | name | numeral | 8'), []);
-  for (const row of ['1 | 2 | both | both | 3', '10 | 3 | both | both | 3', '3 | 1 | both | both | 3',
-    '3 | 5 | both | both | 3', '3 | 3 | count | both | 3', '3 | 3 | both | dots | 3',
-    '3 | 3 | both | both | 0', '3 | 3 | both | both | 9']) assert.ok(rowErrors(row).length > 0, row);
-  assert.deepEqual(rowErrors('3 | 4 | both | both | 3'), ['GAME.md line 5 (Test, level 1): choices (4) can\'t be more than max (3)']);
+  for (const row of ['1 | 2 | match | both | 3', '10 | 3 | match | both | 3', '3 | 1 | match | both | 3',
+    '3 | 5 | match | both | 3', '3 | 3 | count | both | 3', '3 | 3 | match | dots | 3', '3 | 3 | both | both | 3',
+    '3 | 3 | numeral | both | 3', '3 | 3 | match | both | 0', '3 | 3 | match | both | 9']) assert.ok(rowErrors(row).length > 0, row);
+  assert.deepEqual(rowErrors('3 | 4 | match | both | 3'), ['GAME.md line 5 (Test, level 1): choices (4) can\'t be more than max (3)']);
 });
 
 test('a gentler Mars run uses one rock fewer and shows numerals with dots', () => {
   assert.deepEqual(EASIER.mars(levels.mars[4]), {
-    max: 9, choices: 3, ask: 'both', rock: 'both', rounds: 3,
+    max: 9, choices: 3, ask: 'match', rock: 'both', rounds: 3,
   });
   assert.equal(levels.mars[4].choices, 4);
   assert.equal(levels.mars[4].ask, 'name');

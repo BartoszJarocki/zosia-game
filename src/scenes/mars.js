@@ -119,7 +119,7 @@ export class MarsMission extends Mission {
     const rockMat = new THREE.MeshStandardMaterial({ color: ROCK_BG, roughness: 0.95, emissive: '#f59e0b', emissiveIntensity: 0 });
     g.add(mesh(new THREE.DodecahedronGeometry(0.9, 0), rockMat, { y: 0.75, s: [1, 0.9, 0.85], shadow: false }));
     const map = glyphTexture(String(num), { bg: ROCK_BG, fg: '#fff7ed', dots: showDots ? num : 0, border: ROCK_BG });
-    const sign = mesh(new THREE.PlaneGeometry(0.95, 0.95), new THREE.MeshBasicMaterial({ map }), { y: 0.82, z: 0.82, shadow: false });
+    const sign = mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map }), { y: 0.8, z: 0.82, shadow: false }); // (the numeral, big enough to read from across the room)
     g.add(sign);
     g.userData.sign = sign;
     g.userData.num = num;
@@ -168,21 +168,22 @@ export class MarsMission extends Mission {
         this.tappable(rock, () => handleTap(rock, num));
         this.rollIn(rock);
       });
-      bubble(...marsBubble(this.L.ask, target));
+      const shown = marsBubble(this.L.ask, target, this.L.rock);
+      bubble(...shown);
       const rc = rocks.find((x) => x.userData.num === target);
 
       const pointAtDots = () => this.pointAlong(document.querySelectorAll?.('.bubble .dots i') || [], (dot) => { Object.assign(dot.style, { background: '#f59e0b', transform: 'scale(1.3)', transition: 'transform .2s' }); });
       const simplify = () => this.removeOption(lastWrong?.parent ? lastWrong : rocks.find((x) => x !== rc && x.parent));
-      const hooks = this.L.ask === 'dots' ? {
-        short: T.marsDots(), // (she counts the dots: the number is said only when the answer is shown)
-        hint: (said = []) => this.say([...said, ...T.countDots()]).then(pointAtDots),
+      const hooks = {
+        short: this.L.ask === 'dots' ? T.marsDots() : T.marsRepeat(target), // (counting the dots: the number is said only when the answer is shown)
+        hint: shown[1] // the dots are there: light them one by one; otherwise show them
+          ? (said = []) => this.say([...said, ...T.countDots()]).then(pointAtDots)
+          : () => { bubble(shown[0], target); return T.dots(target); },
         simplify,
-        reveal: () => { this.hint(rc, () => solved, rc.userData.sign); return T.dots(target); },
-      } : {
-        short: T.marsRepeat(target),
-        hint: () => { bubble(this.L.ask === 'name' ? '' : String(target), target); return T.dots(target); },
-        simplify,
-        reveal: () => this.hint(rc, () => solved, rc.userData.sign),
+        reveal: () => {
+          this.hint(rc, () => solved, rc.userData.sign);
+          if (this.L.ask === 'dots') return T.dots(target);
+        },
       };
       this.question(skill, target, hooks, { options: n });
       this.askAfter(Promise.all([wait(600), this.talk]), this.L.ask === 'dots' ? T.marsDots() : T.marsAsk(target));
@@ -202,24 +203,24 @@ export class MarsMission extends Mission {
         rocks.forEach((x) => this.untap(x));
         sfx.good();
         this.success();
-        await this.driveTo(rock);
+        await this.driveTo(rock.userData.x - 1.75);
         if (!this.alive) return;
         this.talk = this.say(T.marsRight()); // "Brawo! Łazik dojechał!", while it scans the rock
         await this.scan(rock);
         if (!this.alive) return;
-        await this.clearRocks(rocks);
+        await Promise.all([this.clearRocks(rocks), this.driveTo(START_X, 600)]); // (back to the start, so it never parks in front of the next rocks)
         if (this.alive) resolve();
       };
     });
   }
 
-  async driveTo(rock) {
-    const from = this.rover.position.x, to = rock.userData.x - 1.75;
+  async driveTo(to, ms = 900) {
+    const from = this.rover.position.x;
     if (Math.abs(to - from) < 0.01) return;
     sfx.engine();
     this.speed = 0.45;
     let puff = 0;
-    await animate(900, (t) => {
+    await animate(ms, (t) => {
       this.rover.position.x = from + (to - from) * t;
       if (++puff % 5 === 0 && t < 0.9) dust(this, new THREE.Vector3(this.rover.position.x, 0.12, 1.3), { count: 2, size: 0.22 });
     }, ease.inOut);

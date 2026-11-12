@@ -110,7 +110,7 @@ const PLACES = [
   {
     name: 'Comet Catch', open: async () => { const s = await make(CometMission, 2, (x) => { x.pick = (k, pool) => pool[0]; }); s.round(0); await until(s, () => s.phase === 'catch' && s.comets.length && s.prompt.length, 'comets'); return s; },
     wrong: (s) => tap(choices(s, 'letter').find((o) => o.userData.letter !== s.last && !o.userData.popped)),
-    right: (s) => choices(s, 'letter').filter((o) => o.userData.letter === s.last),
+    right: (s) => s.comets.filter((o) => o.userData.letter === s.last),
   },
   {
     name: 'Star Pictures', open: async () => { const s = await make(StarsMission, 4, (x) => { x.plan = [5]; }); s.round(0); await until(s, () => s.phase === 'choosing' && s.aid, 'a star'); return s; },

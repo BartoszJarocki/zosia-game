@@ -72,8 +72,12 @@ async function scene(level = 1, target = 3) {
   return s;
 }
 
-test('a right rock scores, the rover drives over and the rock is scanned', async () => {
+test('a right rock scores, the rover drives over, scans the rock and drives back to where it started', async () => {
   const s = await scene(2, 3);
+  const start = s.rover.position.x;
+  let atScan = null;
+  const scan = s.scan.bind(s);
+  s.scan = (rock) => { atScan = s.rover.position.x; return scan(rock); };
   const round = s.round(0);
   await until(() => s.learn.isOpen && s.prompt.length);
   assert.equal(s.last, 3);
@@ -86,8 +90,26 @@ test('a right rock scores, the rover drives over and the rock is scanned', async
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
-  assert.ok(Math.abs(s.rover.position.x - (right.userData.x - 1.75)) < 0.01);
+  assert.ok(Math.abs(atScan - (right.userData.x - 1.75)) < 0.01, 'it scanned the rock from beside it');
+  assert.ok(Math.abs(s.rover.position.x - start) < 0.01, 'and is back at the start when the round ends');
   assert.ok(globalThis.__lines.includes('Brawo! Łazik dojechał!'));
+  stop(s);
+});
+
+test('the rover starts every round at the same place, never parked in front of a rock', async () => {
+  const s = await scene(2, 3);
+  const start = s.rover.position.x;
+  const standsAt = [];
+  for (let r = 0; r < 3; r++) {
+    const round = s.round(r);
+    await until(() => s.learn.isOpen && rocks(s).length === 3);
+    standsAt.push(s.rover.position.x);
+    const rover = s.rover.position.x;
+    for (const rock of rocks(s)) assert.ok(Math.abs(rock.userData.x - rover) > 1.6, `rock ${rock.userData.num} is clear of the rover`);
+    await rocks(s).find((o) => o.userData.num === 3).userData.onTap();
+    await round;
+  }
+  assert.deepEqual(standsAt, [start, start, start]);
   stop(s);
 });
 
@@ -131,6 +153,39 @@ test('the dots level asks for an amount and keeps the answer hidden in the bubbl
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].options, 3);
+  stop(s);
+});
+
+test('a match level shows the numeral and its dots; its clue lights the dots one by one without naming the number', async () => {
+  const s = await scene(1, 3);
+  const round = s.round(0);
+  await until(() => s.learn.isOpen && s.prompt.length);
+  assert.equal(globalThis.__bubble.big, '3');
+  assert.equal(globalThis.__bubble.dots, 3);
+  s.runAssist('hint');
+  assert.equal(globalThis.__lines.at(-1), 'Policz kropki!');
+  rocks(s).find((o) => o.userData.num === 3).userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('a name level shows nothing in the bubble but the rover; the first wrong rock says no and asks again', async () => {
+  const s = await scene(3, 3);
+  const round = s.round(0);
+  await until(() => s.learn.isOpen && s.prompt.length);
+  assert.equal(s.learn.current.skill, 'quantity');
+  assert.deepEqual([globalThis.__bubble.big, globalThis.__bubble.dots, globalThis.__bubble.pic], ['', 0, '🚙']);
+  const before = globalThis.__lines.length;
+  rocks(s).find((o) => o.userData.num === 2).userData.onTap();
+  assert.ok(/^Nie/.test(globalThis.__lines[before]));
+  assert.equal(globalThis.__lines.at(-1), 'Gdzie jest numer trzy?');
+  assert.equal(s.aid.state.level, 1);
+  assert.deepEqual([globalThis.__bubble.big, globalThis.__bubble.dots], ['', 0], 'one wrong tap shows nothing more');
+  s.runAssist('hint');
+  assert.equal(globalThis.__bubble.dots, 3, 'the clue shows the dots, not the numeral');
+  assert.equal(globalThis.__bubble.big, '');
+  rocks(s).find((o) => o.userData.num === 3).userData.onTap();
+  await round;
   stop(s);
 });
 

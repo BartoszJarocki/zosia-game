@@ -94,13 +94,14 @@ async function build(level = 1) {
   return s;
 }
 
-test('every comet is a tappable with its letter, and last is the asked letter', async () => {
+test('every comet carries its letter, the asked letter is among them, and a comet is tappable only while its letter is in view', async () => {
   const s = await build(4);
-  const comets = s.tappables.filter((o) => o.userData.letter);
-  assert.equal(comets.length, 6);
-  assert.ok(comets.every((o) => typeof o.userData.letter === 'string'));
-  assert.ok(comets.some((o) => o.userData.letter === s.last));
-  assert.equal(comets.filter((o) => o.userData.letter === s.last).length, 3);
+  assert.equal(s.comets.length, 6);
+  assert.ok(s.comets.every((o) => typeof o.userData.letter === 'string'));
+  assert.equal(s.comets.filter((o) => o.userData.letter === s.last).length, 3);
+  const tappable = s.tappables.filter((o) => o.userData.letter);
+  assert.ok(tappable.length > 0 && tappable.length <= 6);
+  assert.ok(tappable.every((o) => s.comets.includes(o)));
   assert.equal(s.learn.current.item, s.last);
   s.alive = false; s.exit();
 });
@@ -132,7 +133,7 @@ test('Comet has no shadows or point lights, stays under 100 draws, and every com
   s.alive = false; s.exit();
 });
 
-test('every tappable comet and the rocket stay fully on screen through a whole round at every size', async () => {
+test('a tappable comet shows its whole letter, one with the asked letter is always in reach, and the rocket stays on screen', async () => {
   for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const s = await build(4);
     frame(s, w, h);
@@ -141,11 +142,75 @@ test('every tappable comet and the rocket stay fully on screen through a whole r
       s.scene.updateMatrixWorld(true);
       const live = s.tappables.filter((o) => o.userData.letter);
       assert.ok(live.length > 0, `${w}x${h} step ${i}: no comet to tap`);
-      for (const c of live) assert.ok(onScreen(c), `${w}x${h} step ${i}: a tappable comet is off screen`);
-      assert.ok(live.some((c) => c.userData.letter === s.last), `${w}x${h} step ${i}: no asked-letter comet`);
+      for (const c of live) assert.ok(onScreen(c.userData.label), `${w}x${h} step ${i}: a tappable comet's letter is off screen`);
+      assert.ok(live.some((c) => c.userData.letter === s.last), `${w}x${h} step ${i}: no asked-letter comet in reach`);
       assert.ok(onScreen(s.rocket), `${w}x${h} step ${i}: the rocket is off screen`);
       await flush();
     }
     s.alive = false; s.exit();
   }
+});
+
+test('a comet leaves past the left edge and comes in from the right edge: it never appears or disappears inside the sky', async () => {
+  for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const s = await build(4);
+    frame(s, w, h);
+    const hidden = (c) => {
+      const box = visibleBox(c), p = new THREE.Vector3(), xs = [];
+      for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) xs.push(p.set(x, y, z).project(camera).x);
+      return Math.min(...xs) > 1 || Math.max(...xs) < -1;
+    };
+    const wraps = new Set();
+    for (let i = 0; i < 700; i++) {
+      const before = new Map(s.comets.map((c) => [c, c.position.x]));
+      s.scene.updateMatrixWorld(true);
+      const was = new Map(s.comets.map((c) => [c, hidden(c)]));
+      s.update(0.1, i * 0.1);
+      s.scene.updateMatrixWorld(true);
+      for (const c of s.comets) {
+        if (c.position.x > before.get(c)) {
+          wraps.add(c);
+          assert.ok(was.get(c) || c.position.x - before.get(c) > 5, `${w}x${h} step ${i}: a comet was still on screen when it jumped`);
+          assert.ok(hidden(c), `${w}x${h} step ${i}: a comet turned up on screen`);
+          const side = (c.position.x > 0) ? 'right' : 'left';
+          assert.equal(side, 'right', 'it comes back from the right');
+        } else assert.ok(before.get(c) - c.position.x <= s.pace * 7 * 0.1 + 1e-6, `${w}x${h} step ${i}: a comet moved ${(before.get(c) - c.position.x).toFixed(2)} in one step`);
+      }
+    }
+    assert.ok(wraps.size >= 4, `${w}x${h}: ${wraps.size} comets went round in a minute`);
+    s.alive = false; s.exit();
+  }
+});
+
+test('a lone comet is out of reach for a few seconds at most between one pass and the next, even at the slowest speed', async () => {
+  const s = await build(1);
+  const [only] = s.comets.filter((c) => c.userData.letter === s.last);
+  s.comets.filter((c) => c !== only).forEach((c) => { s.untap(c); c.removeFromParent(); });
+  s.comets = [only];
+  s.pace = 0.25;
+  let gap = 0, longest = 0, passes = 0, was = Boolean(only.userData.onTap);
+  for (let i = 0; i < 4000; i++) {
+    s.update(0.05, i * 0.05);
+    const now = Boolean(only.userData.onTap);
+    if (now) { longest = Math.max(longest, gap); gap = 0; } else gap += 0.05;
+    if (now && !was) passes++;
+    was = now;
+  }
+  assert.ok(passes >= 2, `${passes} passes in 200 s`);
+  assert.ok(longest <= 7, `out of reach for ${longest.toFixed(1)} s`);
+  s.alive = false; s.exit();
+});
+
+test('every lane is below the speech bubble: the top lane\'s comets start a third of the way down the screen', async () => {
+  const s = await build(4);
+  const top = s.comets.find((c) => c.userData.lane === 3);
+  assert.ok(top, 'a comet in the top lane');
+  for (const [w, h, share] of [[1180, 820, 0.33], [1366, 1024, 0.33], [820, 1180, 0.2]]) {
+    frame(s, w, h);
+    top.position.set(0, 5.4 + 0.6, 0);
+    top.updateWorldMatrix(true, true);
+    const y = (1 - top.position.clone().project(camera).y) / 2 * h;
+    assert.ok(y >= share * h, `${w}x${h}: the top of the highest comet is ${y.toFixed(0)} px down, the bubble ends near ${(share * h).toFixed(0)}`);
+  }
+  s.alive = false; s.exit();
 });

@@ -103,6 +103,62 @@ test('a wrong pot wiggles back, the right one glows, then the row is said aloud'
   stop(s);
 });
 
+test('the right pot is not always the same colour, and the pots are not always the same three', async () => {
+  const s = await scene(1);
+  const answers = new Set(), pots = new Set();
+  for (let n = 1; n <= 12; n++) {
+    s.random = seed(n);
+    const round = s.stripesRound();
+    answers.add(s.last);
+    pots.add(s.tappables.filter((o) => o.userData.choice).map((o) => o.userData.choice).sort().join());
+    await s.tappables.find((o) => o.userData.choice === s.last).userData.onTap();
+    await round;
+  }
+  assert.ok(answers.size >= 3, `answers: ${[...answers].join(', ')}`);
+  assert.ok(pots.size >= 3, `pots: ${[...pots].join(' | ')}`);
+  stop(s);
+});
+
+test('a pot dragged onto the row and dropped: the wrong one floats back, the right one stays', async () => {
+  const s = await scene();
+  const round = s.stripesRound();
+  const wrong = s.tappables.find((o) => o.userData.choice === 'red');
+  const right = s.tappables.find((o) => o.userData.choice === s.last);
+  const onRow = new THREE.Vector3(0, 0, 0.4);
+  assert.equal(wrong.userData.drag.onDrop(wrong, onRow), false, 'a wrong pot is not kept where it was dropped');
+  assert.equal(s.answers.length, 0);
+  assert.equal(s.learn.current.wrong, 1);
+  assert.equal(right.userData.drag.onDrop(right, onRow), true);
+  await round;
+  assert.equal(s.answers[0].firstTry, false);
+  stop(s);
+});
+
+test('a gentler run has only the two colours of the row, and the clue comes at once instead of taking a pot away', async () => {
+  const s = await scene(1);
+  s.L = { ...s.L, foil: false };
+  const round = s.stripesRound();
+  const pots = s.tappables.filter((o) => o.userData.choice);
+  assert.deepEqual(pots.map((o) => o.userData.choice).sort(), ['orange', 'white']);
+  assert.equal(s.learn.current.options, 2);
+  await pots.find((o) => o.userData.choice === s.last).userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('the bubble does not carry an orange disc: a colour in the stripe question and a hint at Jupiter in the size question', async () => {
+  const s = await scene(1);
+  const stripes = s.stripesRound();
+  assert.ok(globalThis.__bubble.pic && globalThis.__bubble.pic !== '🟠');
+  await s.tappables.find((o) => o.userData.choice === s.last).userData.onTap();
+  await stripes;
+  const size = s.sizeRound();
+  assert.ok(globalThis.__bubble.pic && globalThis.__bubble.pic !== '🟠');
+  await s.tappables.find((o) => o.userData.choice === s.last).userData.onTap();
+  await size;
+  stop(s);
+});
+
 test('gap asks which stripe is missing and scores the pattern name', async () => {
   const s = await scene(3);
   s.L = { ...s.L, pattern: 'gap' };
