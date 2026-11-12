@@ -78,7 +78,7 @@ test('joining a picture in order scores each star; a wrong tap gets a "no" and t
   assert.equal(s.last, 2);
   assert.deepEqual(s.stars.map((x) => x.userData.num), [1, 2, 3]);
   assert.deepEqual(s.stars.filter((x) => x.userData.lit).map((x) => x.userData.num), [1]);
-  assert.deepEqual(s.tappables.map((o) => o.userData.num).sort(), [2, 3]);
+  assert.deepEqual(s.tappables.filter((o) => o.userData.num !== undefined).map((o) => o.userData.num).sort(), [2, 3]);
   assert.equal(globalThis.__lines.at(-1), 'Jeden, a co dalej?');
 
   const wrong = s.stars.find((x) => x.userData.num === 3);
@@ -100,7 +100,7 @@ test('joining a picture in order scores each star; a wrong tap gets a "no" and t
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.lines.length, 1);
   assert.ok(globalThis.__lines.includes('Dwa!'));
-  assert.deepEqual(s.tappables.map((o) => o.userData.num), [3]);
+  assert.deepEqual(s.tappables.filter((o) => o.userData.num !== undefined).map((o) => o.userData.num), [3]);
 
   await until(() => s.last === 3 && s.phase === 'choosing');
   assert.equal(globalThis.__lines.at(-1), 'Jeden, dwa, a co dalej?');
@@ -111,6 +111,37 @@ test('joining a picture in order scores each star; a wrong tap gets a "no" and t
   assert.equal(s.answers[1].scored, true);
   assert.ok(globalThis.__lines.includes('To góra!'));
   assert.equal(s.phase, 'idle');
+  stop(s);
+});
+
+test('a countdown asks "Pięć! A dalej?", says no to a wrong star and asks again, and only the third miss shows the star', async () => {
+  const s = await scene();
+  s.L = LEVELS.stars[4];
+  s.plan = [5];
+  const round = s.round(0);
+  await until(() => s.phase === 'choosing');
+  assert.deepEqual(s.stars.map((x) => x.userData.num), [5, 4, 3, 2, 1]);
+  assert.equal(s.last, 4);
+  assert.deepEqual(globalThis.__lines.slice(-3), ['Liczymy od tyłu!', 'Pięć!', 'A dalej?']);
+  const right = s.stars.find((x) => x.userData.num === 4);
+  for (const misses of [1, 2, 3]) {
+    globalThis.__lines.length = 0;
+    const wrong = s.stars.find((x) => x.userData.num === 1);
+    await wrong.userData.onTap();
+    for (let i = 0; i < 6; i++) { s.update(0.05, i * 0.05); await flush(); }
+    assert.equal(s.answers.length, 0);
+    assert.equal(!!right.userData.hinting, misses >= 3, `the star is shown after ${misses} misses: ${!!right.userData.hinting}`);
+    if (misses === 1) assert.deepEqual(globalThis.__lines.slice(-2), ['Pięć!', 'A dalej?']);
+    if (misses === 3) assert.ok(globalThis.__lines.includes('Teraz numer cztery!'));
+  }
+  for (const n of [4, 3, 2, 1]) {
+    await until(() => s.last === n && s.phase === 'choosing');
+    await s.stars.find((x) => x.userData.num === n).userData.onTap();
+  }
+  await round;
+  assert.deepEqual(s.answers.map((a) => a.item), ['4', '3', '2', '1']);
+  assert.equal(s.answers[0].firstTry, false);
+  assert.equal(s.answers[1].firstTry, true);
   stop(s);
 });
 
@@ -146,7 +177,7 @@ test('a closed picture draws its closing line and fills with colour; the Big Dip
 });
 
 test('every Star Pictures level runs through base progress and celebration, and counts for the session', async () => {
-  for (let level = 1; level <= 4; level++) {
+  for (let level = 1; level <= 6; level++) {
     CONFIG.level = level;
     startSession();
     let homes = 0;
@@ -166,7 +197,7 @@ test('every Star Pictures level runs through base progress and celebration, and 
     assert.ok(globalThis.__celebration, `level ${level} celebrated: ${s.phase}, round ${s.roundIndex}, ${s.answers.length} answers`);
     assert.deepEqual(globalThis.__progress, [1, 2]);
     assert.equal(globalThis.__celebration.kind, 'stars');
-    const questions = [5, 7, 9, 11][level - 1];
+    const questions = [5, 7, 9, 11, 7, 5][level - 1];
     assert.equal(events.filter((e) => e.correct && e.skill === 'sequence').length, questions);
     assert.equal(scoreRun(s.answers).scored, questions);
     assert.equal(getSession().missionsCompleted, 1);

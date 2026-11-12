@@ -6,6 +6,7 @@ import { gapCount } from '../levels/train.js';
 import { stripeRows, patternUnit } from '../levels/jupiter.js';
 import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
 import { BOATS } from '../levels/port.js';
+import { numerals, STAR_COUNTS } from '../levels/stars.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -260,7 +261,10 @@ export const T = {
   telescopeRight: (kind) => [`Tak! To jest ${TELESCOPE_NAMES[kind]}.`],
   telescopeDone: () => ['Brawo! Znasz już kosmos!'],
   starsStart: () => ['Jesteśmy wśród gwiazd! Połączymy gwiazdki i zobaczymy obrazek.'],
-  starsAsk: (nums) => [`${nums.map((n, i) => i ? NUM[n] : cap(NUM[n])).join(', ')}, a co dalej?`],
+  starsAsk: (nums, order = 'up') => (order === 'up'
+    ? [`${nums.map((n, i) => i ? NUM[n] : cap(NUM[n])).join(', ')}, a co dalej?`]
+    : [...nums.slice(-3).flatMap((n) => T.number(n)), RIVER_ON[0]]), // ("Pięć! Cztery! A dalej?": the clips of the numbers and of the river's "A dalej?")
+  starsRule: (order) => [{ down: 'Liczymy od tyłu!', twos: 'Liczymy co dwa!' }[order]],
   starsHelp: (n) => [`Teraz numer ${NUM[n]}!`],
   starsPicture: (id) => [STAR_PICTURE_LINES[id]],
   starsDone: () => ['Brawo! Gwiazdy świecą obrazki!'],
@@ -290,7 +294,7 @@ export const T = {
   moonHelp: () => [`Dotknij ${pupGen}, to skoczy!`],
   moonFlag: () => ['Dotknij flagi, kiedy skończysz!'],
   moonTooFew: () => ['Za mało! Skacz dalej!'],
-  moonTooMany: () => ['Za dużo! Teraz dobrze? Dotknij flagi!'],
+  moonTooMany: () => ['Za dużo! Teraz dobrze?'], // (the flag line follows it: the help ladder's own "ask again")
   moonWatch: () => ['Patrz, jak skacze!'],
   moonHowMany: () => ['Ile było skoków?'],
   moonDone: () => ['Brawo! Ale wysoko skakaliśmy!'],
@@ -668,8 +672,13 @@ export function allSegments(levels, allLetters) {
   });
   [1, 2, 3].forEach((n) => { add(T.portWhich(n)); add(T.portHas(n)); add(T.portRight(n)); });
   [T.portStart, T.portToot, T.portDone, T.portTooFew, T.portTooMany, T.portHelp, T.portSuccess, T.portFinished].forEach((f) => add(f()));
-  nums.slice(0, 6).forEach((n) => add(T.starsAsk(nums.slice(0, n))));
-  nums.slice(1, 7).forEach((n) => add(T.starsHelp(n)));
+  levels.stars.forEach(({ stars: [lo, hi], order }) => {
+    if (order !== 'up') add(T.starsRule(order));
+    STAR_COUNTS.filter((count) => count >= lo && count <= hi).forEach((count) => {
+      const seq = numerals(order, count);
+      seq.slice(1).forEach((n, i) => { add(T.starsAsk(seq.slice(0, i + 1), order)); add(T.starsHelp(n)); });
+    });
+  });
   Object.keys(STAR_PICTURE_LINES).forEach((id) => add(T.starsPicture(id)));
   [T.starsStart, T.starsDone].forEach((f) => add(f()));
   new Set(levels.pluto.flatMap((l) => l.shapes)).forEach((shape) => { add(T.plutoAsk(shape)); add(T.plutoRight(shape)); });

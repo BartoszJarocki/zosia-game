@@ -111,10 +111,11 @@ test('her taps jump one after another: taps in the air are counted, and an autom
 test('manual jumps reject too few, fade extras and require another flag tap', async () => {
   const s = await build(3);
   const task = s.jumpRound(false);
-  assert.equal(flag(s).visible, true);
+  assert.equal(flag(s).visible, false, 'the flag stands up after her first jump');
   await jumper(s).userData.onTap();
+  assert.equal(flag(s).visible, true);
   await flag(s).userData.onTap();
-  assert.equal(globalThis.__moonLines.at(-1), 'Za mało! Skacz dalej!');
+  assert.equal(globalThis.__moonLines.at(-2), 'Za mało! Skacz dalej!');
   assert.equal(s.answers.length, 0);
   await jumper(s).userData.onTap();
   await jumper(s).userData.onTap();
@@ -122,7 +123,7 @@ test('manual jumps reject too few, fade extras and require another flag tap', as
   assert.equal(prints(s).length, 4);
   await flag(s).userData.onTap();
   assert.equal(prints(s).length, 3);
-  assert.equal(globalThis.__moonLines.at(-1), 'Za dużo! Teraz dobrze? Dotknij flagi!');
+  assert.equal(globalThis.__moonLines.at(-2), 'Za dużo! Teraz dobrze?');
   assert.equal(s.answers.length, 0);
   await flag(s).userData.onTap();
   await task;
@@ -174,6 +175,56 @@ test('howMany jumps are silent, touch counting is distinct, and a numeral answer
   assert.equal(s.answers[0].skill, 'quantity');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, false);
+  s.alive = false; s.exit();
+});
+
+const screenWidth = (s, object, width, height) => {
+  const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+  const direction = s.view.pos.clone().sub(s.view.look);
+  direction.setLength(Math.max(direction.length(), s.view.minWidth / (2 * Math.tan(Math.PI * 21 / 180) * camera.aspect)));
+  camera.position.copy(s.view.look).add(direction); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
+  object.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(object);
+  const xs = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) xs.push(new THREE.Vector3(x, y, z).project(camera).x);
+  return { px: (Math.max(...xs) - Math.min(...xs)) * width / 2, left: Math.min(...xs), right: Math.max(...xs) };
+};
+
+test('footprints are big enough to tap and count: at least 70 px wide on both iPads for every count a level asks, and always on screen', async () => {
+  for (const [level, jump, howMany] of [[1, 3, 3], [2, 4, 4], [3, 5, 5], [4, 7, 6]]) {
+    for (const [width, height] of [[1180, 820], [820, 1180]]) {
+      const s = await build(level, howMany);
+      s.L = { ...s.L, slots: true };
+      const round = s.howManyRound();
+      await flush();
+      const widest = prints(s).map((p) => screenWidth(s, p, width, height));
+      assert.equal(widest.length, howMany);
+      for (const w of widest) {
+        assert.ok(w.px >= 70, `level ${level}, ${howMany} footprints at ${width}x${height}: ${w.px.toFixed(0)} px`);
+        assert.ok(w.left > -1 && w.right < 1, 'on screen');
+      }
+      s.blocks.find((b) => b.userData.num === howMany).userData.onTap();
+      await round;
+      s.alive = false; s.exit();
+
+      const t = await build(level, jump);
+      t.jumpRound(false);
+      for (let i = 0; i < t.cells; i++) await jumper(t).userData.onTap();
+      assert.equal(prints(t).length, t.cells);
+      for (const p of prints(t)) {
+        const w = screenWidth(t, p, width, height);
+        assert.ok(w.left > -1 && w.right < 1, `level ${level}: footprint ${prints(t).indexOf(p) + 1} of ${t.cells} on screen at ${width}x${height}`);
+        assert.ok(w.px >= (jump <= 4 ? 70 : 50), `level ${level}: ${w.px.toFixed(0)} px`);
+      }
+      assert.ok(screenWidth(t, flag(t), width, height).right < 1, 'the flag is on screen too');
+      t.alive = false; t.exit();
+    }
+  }
+});
+
+test('Chase is drawn big: at least 120 px wide at the iPad\'s landscape size', async () => {
+  const s = await build(1);
+  assert.ok(screenWidth(s, jumper(s), 1180, 820).px >= 120);
   s.alive = false; s.exit();
 });
 

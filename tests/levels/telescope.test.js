@@ -82,10 +82,11 @@ test('schema rejects unknown places, unsupported features, duplicate and ambiguo
   }
 });
 
-test('easier keeps matching, reduces choices and falls back to names', () => {
-  assert.deepEqual(levels.map((l) => { const s = EASIER.telescope(l); return [s.ask, s.choices]; }), [
-    ['match', 2], ['name', 2], ['name', 2], ['name', 2], ['name', 2], ['name', 2],
+test('easier takes one step down: fewer choices, order and features fall back to names, names to matching', () => {
+  assert.deepEqual(levels.map((l) => { const s = EASIER.telescope(l); return [s.ask, s.choices, s.rounds]; }), [
+    ['match', 2, 3], ['match', 2, 4], ['name', 2, 5], ['name', 2, 5], ['name', 2, 5], ['name', 2, 5],
   ]);
+  levels.forEach((l, i) => assert.notDeepEqual(EASIER.telescope(l), l, `level ${i + 1} has an easier step`));
 });
 
 test('every telescope sentence reaches allSegments, with nominatives and locatives', () => {

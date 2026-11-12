@@ -17,6 +17,9 @@ export function itemsFor(level) {
     : level.pool;
 }
 
+/** The road an order round draws: the Sun, then the level's planets in the order they lie from it. */
+export const roadOf = (level) => ['sun', ...PLANETS.filter((kind) => level.pool.includes(kind))];
+
 export function questionFor(level, item, rng = Math.random) {
   const after = level.ask === 'order' ? item.slice('space:'.length) : null;
   const target = after ? PLANETS[PLANETS.indexOf(after) + 1] : item;

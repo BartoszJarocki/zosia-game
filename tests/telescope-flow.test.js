@@ -126,6 +126,128 @@ test('order picks namespaced sequence items and records the predecessor, exposin
   stop(s);
 });
 
+const roadThings = (s) => s.scene.children.filter((o) => o.userData.road);
+const roadOrder = (s) => roadThings(s).sort((a, b) => a.position.x - b.position.x).map((o) => o.userData.road);
+
+test('an order round shows the road from the Sun with the asked place empty, and the choices below it', async () => {
+  const s = scene(6);
+  s.pick = () => 'space:venus';
+  const round = s.round(1);
+  assert.equal(s.last, 'earth');
+  assert.deepEqual(roadOrder(s), ['sun', 'mercury', 'venus', 'gap', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
+  assert.ok(!roadOrder(s).includes('earth'), 'the answer is not on the road');
+  const road = roadThings(s);
+  assert.ok(road.every((o) => o.userData.place === undefined), 'a road place is never a choice');
+  assert.equal(s.tappables.filter((o) => o.userData.place).length, 3, 'three choices');
+  const top = Math.min(...s.choices.map((o) => o.position.y)), roadY = road[0].position.y;
+  assert.ok(roadY - 1 > Math.max(...s.choices.map((o) => o.position.y)), 'the road is above the choices');
+  assert.ok(road.every((o) => Math.hypot(o.position.x, o.position.y) < 7.5), 'inside the eyepiece');
+  assert.ok(top < 0);
+  assert.deepEqual(globalThis.__lines, ['Co jest po Wenus?']);
+  await s.choices.find((o) => o.userData.place === 'earth').userData.onTap();
+  await round;
+  assert.equal(roadThings(s).length, 0, 'the road goes with the round');
+  assert.equal(s.scene.children.filter((o) => o.userData.place).length, 0);
+  assert.equal(globalThis.__lines.at(-1), 'Tak! To jest Ziemia.');
+  stop(s);
+});
+
+test('the road follows the level\'s planets and puts the empty place at the asked one, wherever it is', async () => {
+  const s = scene(6);
+  for (const after of ['mercury', 'earth', 'uranus']) {
+    s.pick = () => `space:${after}`;
+    const round = s.round(1);
+    const target = s.last;
+    const order = roadOrder(s);
+    assert.equal(order.length, 9);
+    assert.equal(order[0], 'sun');
+    assert.equal(order[order.indexOf('gap') - 1], after, 'the place before the gap is the one asked about');
+    assert.equal(order.filter((k) => k === 'gap').length, 1);
+    assert.ok(!order.includes(target));
+    await s.choices.find((o) => o.userData.place === target).userData.onTap();
+    await round;
+  }
+  stop(s);
+});
+
+test('the road is only there for order rounds', async () => {
+  for (const level of [1, 2, 3, 4, 5]) {
+    const s = scene(level);
+    s.round(1);
+    assert.equal(roadThings(s).length, 0, `level ${level}`);
+    stop(s);
+  }
+});
+
+test('a place on the road says its name when tapped, and is not an answer', async () => {
+  const s = scene(6);
+  s.pick = () => 'space:venus';
+  const round = s.round(1);
+  const venus = roadThings(s).find((o) => o.userData.road === 'venus');
+  assert.ok(s.tappables.includes(venus));
+  await venus.userData.onTap();
+  assert.equal(globalThis.__lines.at(-1), 'To jest Wenus.');
+  assert.equal(s.learn.current.wrong, 0);
+  assert.equal(s.answers.length, 0);
+  await roadThings(s).find((o) => o.userData.road === 'sun').userData.onTap();
+  assert.equal(globalThis.__lines.at(-1), 'To jest Słońce.');
+  await roadThings(s).find((o) => o.userData.road === 'gap').userData.onTap();
+  assert.deepEqual(globalThis.__lines.slice(-1), ['Co jest po Wenus?'], 'the empty place asks the question again');
+  await s.choices.find((o) => o.userData.place === 'earth').userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('the clue for an order round walks the road from the Sun to the empty place, and never shows the answer', async () => {
+  const s = scene(6);
+  s.pick = () => 'space:venus';
+  const round = s.round(1);
+  const lit = [];
+  const gap = roadThings(s).find((o) => o.userData.road === 'gap');
+  const before = new Map(roadThings(s).map((o) => [o.userData.road, o.scale.x]));
+  s.runAssist('hint');
+  assert.deepEqual(globalThis.__lines.slice(-1), ['Co jest po Wenus?']);
+  for (let i = 0; i < 80; i++) {
+    for (const o of roadThings(s)) if (o.scale.x > before.get(o.userData.road) * 1.3) lit.push(o.userData.road);
+    await flush();
+  }
+  const seen = [...new Set(lit)].filter((k) => k !== 'gap');
+  assert.ok(seen.includes('sun') && seen.includes('venus'), `the walk lit ${seen.join(', ')}`);
+  assert.ok(!seen.includes('earth') && !seen.includes('mars'));
+  assert.equal(s.choices.filter((o) => o.userData.hinting).length, 0, 'no choice is shown');
+  assert.ok(gap);
+  await s.choices.find((o) => o.userData.place === 'earth').userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('the road leaves room: the choices stay 120 px wide and apart, below the road, at both iPad sizes', async () => {
+  for (const [width, height] of [[1180, 820], [1366, 1024]]) {
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 500);
+    const s = scene(6);
+    camera.position.copy(s.view.pos); camera.lookAt(s.view.look); camera.updateMatrixWorld(true);
+    for (const after of ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus']) {
+      s.pick = () => `space:${after}`;
+      const round = s.round(1);
+      const roadBottom = Math.max(...roadThings(s).map((o) => bounds(o, camera, width, height).bottom));
+      const placesWide = roadThings(s).map((o) => bounds(o, camera, width, height)).map((b) => b.right - b.left);
+      assert.ok(Math.min(...placesWide) >= 44, `${width}: a road place is ${Math.min(...placesWide).toFixed(0)} px`);
+      for (const obj of s.choices) {
+        const b = bounds(obj, camera, width, height);
+        assert.ok(b.right - b.left >= 120);
+        assert.ok(b.top > roadBottom, `${width} ${after}: a choice reaches up to ${b.top.toFixed(0)} px, the road ends at ${roadBottom.toFixed(0)}`);
+        for (const other of s.choices.filter((o) => o !== obj)) {
+          const c = bounds(other, camera, width, height);
+          assert.ok(b.right < c.left || b.left > c.right || b.bottom < c.top || b.top > c.bottom, 'choices overlap');
+        }
+      }
+      await s.choices.find((o) => o.userData.place === s.last).userData.onTap();
+      await round;
+    }
+    stop(s);
+  }
+});
+
 test('every telescope level completes with the real picker, progress, session and base celebration', async () => {
   for (let level = 1; level <= 6; level++) {
     CONFIG.level = level;
@@ -218,6 +340,21 @@ test('the telescope has no shadows or point lights and stays below the medium dr
   s.scene.traverseVisible((o) => {
     assert.equal(o.castShadow, false);
     assert.equal(o.receiveShadow, false);
+    assert.ok(!o.isPointLight);
+    if (!o.isMesh && !o.isSprite && !o.isPoints && !o.isLine) return;
+    for (const m of [o.material].flat()) if (m.visible) draws += m.transparent && m.side === THREE.DoubleSide && !m.forceSinglePass ? 2 : 1;
+  });
+  assert.ok(draws + 20 < 100, `${draws} plus 20 medium post passes`);
+  stop(s);
+});
+
+test('an order round with its whole road stays below the medium draw budget', () => {
+  const s = scene(6);
+  s.pick = () => 'space:saturn';
+  s.round(1);
+  let draws = 0;
+  s.scene.traverseVisible((o) => {
+    assert.equal(o.castShadow, false);
     assert.ok(!o.isPointLight);
     if (!o.isMesh && !o.isSprite && !o.isPoints && !o.isLine) return;
     for (const m of [o.material].flat()) if (m.visible) draws += m.transparent && m.side === THREE.DoubleSide && !m.forceSinglePass ? 2 : 1;

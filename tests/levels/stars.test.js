@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { starRounds, PICTURES } from '../../src/levels/stars.js';
+import { starRounds, numerals, PICTURES, ORDERS } from '../../src/levels/stars.js';
 import { parseGame } from '../../src/levels/parse.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
@@ -12,10 +12,12 @@ const { levels, letterSets, errors } = parseGame(md, { childName: 'Zosia' });
 test('Star Pictures level rows parse to the specified literal settings', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(levels.stars, [
-    { stars: [3, 4], labels: 'both', rounds: 2 },
-    { stars: [4, 5], labels: 'both', rounds: 2 },
-    { stars: [5, 6], labels: 'numeral', rounds: 2 },
-    { stars: [6, 7], labels: 'numeral', rounds: 2 },
+    { stars: [3, 4], order: 'up', labels: 'both', rounds: 2 },
+    { stars: [4, 5], order: 'up', labels: 'both', rounds: 2 },
+    { stars: [5, 6], order: 'up', labels: 'numeral', rounds: 2 },
+    { stars: [6, 7], order: 'up', labels: 'numeral', rounds: 2 },
+    { stars: [4, 5], order: 'down', labels: 'numeral', rounds: 2 },
+    { stars: [3, 4], order: 'twos', labels: 'numeral', rounds: 2 },
   ]);
 });
 
@@ -44,8 +46,8 @@ test('the five outlines have one star per corner', () => {
   assert.ok([3, 4, 5, 6].every((n) => PICTURES[n].closed));
 });
 
-const table = (row) => `### Test · \`stars\`\n\n| Level | stars | labels | rounds |\n|---|---|---|---|\n| 1 | ${row} |\n`;
-const rowErrors = (row) => parseGame(table(row)).errors.filter((e) => e.includes('(Test'));
+const table = (row, head = 'stars | labels | rounds') => `### Test · \`stars\`\n\n| Level | ${head} |\n|${'---|'.repeat(head.split('|').length + 1)}\n| 1 | ${row} |\n`;
+const rowErrors = (row, head) => parseGame(table(row, head)).errors.filter((e) => e.includes('(Test'));
 
 test('Star Pictures schema checks the star range, labels and round count', () => {
   assert.deepEqual(rowErrors('3–4 | both | 2'), []);
@@ -54,9 +56,28 @@ test('Star Pictures schema checks the star range, labels and round count', () =>
     '3–4 | dots | 2', '3–4 | both | 5', '3–4 | both | 0']) assert.ok(rowErrors(row).length > 0, row);
 });
 
-test('a gentler Star Pictures run shows both labels and one smaller picture', () => {
-  assert.deepEqual(EASIER.stars(levels.stars[3]), { stars: [6, 6], labels: 'both', rounds: 1 });
-  assert.deepEqual(levels.stars[3], { stars: [6, 7], labels: 'numeral', rounds: 2 });
+test('the order column takes up, down or twos, and twos stop at four stars', () => {
+  const head = 'stars | order | labels | rounds';
+  for (const order of ORDERS) assert.deepEqual(rowErrors(`3–4 | ${order} | numeral | 2`, head), [], order);
+  assert.ok(rowErrors('3–4 | backwards | numeral | 2', head).length > 0);
+  assert.deepEqual(rowErrors('3–5 | down | numeral | 2', head), []);
+  assert.ok(rowErrors('3–5 | twos | numeral | 2', head).length > 0, 'twos reach 10 with five stars');
+  assert.deepEqual(rowErrors('3–4 | both | 2'), [], 'an older table without the column counts up');
+});
+
+test('the numerals run up from 1, down to 1, or by twos along the picture', () => {
+  assert.deepEqual(numerals('up', 4), [1, 2, 3, 4]);
+  assert.deepEqual(numerals('down', 5), [5, 4, 3, 2, 1]);
+  assert.deepEqual(numerals('twos', 4), [2, 4, 6, 8]);
+  assert.deepEqual(starRounds({ stars: [4, 5], rounds: 2, order: 'down' }, () => 0), [5, 4]);
+  assert.deepEqual(starRounds({ stars: [6, 7], rounds: 2, order: 'down' }, () => 0), [7, 6], 'only counting up ends on the Wielki Wóz');
+});
+
+test('a gentler Star Pictures run counts up with both labels and one smaller picture', () => {
+  assert.deepEqual(EASIER.stars(levels.stars[3]), { stars: [6, 6], order: 'up', labels: 'both', rounds: 1 });
+  assert.deepEqual(EASIER.stars(levels.stars[4]), { stars: [4, 4], order: 'up', labels: 'both', rounds: 1 }, 'a countdown goes back to counting up');
+  assert.deepEqual(EASIER.stars(levels.stars[5]), { stars: [3, 3], order: 'up', labels: 'both', rounds: 1 }, 'so does counting by twos');
+  assert.deepEqual(levels.stars[3], { stars: [6, 7], order: 'up', labels: 'numeral', rounds: 2 });
 });
 
 test('Star Pictures lines are full Polish sentences and every one reaches recording', () => {
@@ -72,6 +93,10 @@ test('Star Pictures lines are full Polish sentences and every one reaches record
   assert.deepEqual(T.starsPicture('dipper'), ['To Wielki Wóz! Wielki Wóz to siedem gwiazd.']);
   assert.deepEqual(T.starsDone(), ['Brawo! Gwiazdy świecą obrazki!']);
   assert.equal(HOME_TASKS.stars, 'Poszukajcie wieczorem gwiazd na niebie!');
+  assert.deepEqual(T.starsAsk([5, 4], 'down'), ['Pięć!', 'Cztery!', 'A dalej?']);
+  assert.deepEqual(T.starsAsk([2, 4, 6, 8], 'twos'), ['Cztery!', 'Sześć!', 'Osiem!', 'A dalej?'], 'the last three numbers');
+  assert.deepEqual(T.starsRule('down'), ['Liczymy od tyłu!']);
+  assert.deepEqual(T.starsRule('twos'), ['Liczymy co dwa!']);
 
   const recorded = allSegments(levels, letterSets.ALL);
   for (const line of [
@@ -81,5 +106,19 @@ test('Star Pictures lines are full Polish sentences and every one reaches record
     'To góra!', 'To latawiec!', 'To domek!', 'To rakieta!',
     'To Wielki Wóz! Wielki Wóz to siedem gwiazd.', 'Brawo! Gwiazdy świecą obrazki!',
     'Poszukajcie wieczorem gwiazd na niebie!',
+    'Liczymy od tyłu!', 'Liczymy co dwa!', 'Pięć!', 'Cztery!', 'Osiem!', 'A dalej?', 'Teraz numer osiem!',
   ]) assert.ok(recorded.includes(line), line);
+});
+
+test('every question a level can ask reaches recording, as a line or as clips of numbers', () => {
+  const recorded = new Set(allSegments(levels, letterSets.ALL));
+  for (const { stars: [lo, hi], order } of levels.stars) {
+    for (const count of [3, 4, 5, 6, 7].filter((n) => n >= lo && n <= hi)) {
+      const seq = numerals(order, count);
+      for (let i = 1; i < count; i++) {
+        for (const line of [...T.starsAsk(seq.slice(0, i), order), ...T.starsHelp(seq[i])]) assert.ok(recorded.has(line), `${order} ${count}: ${line}`);
+        if (i === 1 && order !== 'up') for (const line of T.starsRule(order)) assert.ok(recorded.has(line), line);
+      }
+    }
+  }
 });

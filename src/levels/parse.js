@@ -8,6 +8,7 @@
 import { parseNeeds } from './gate.js';
 import { SPACE_PLACES, PLANETS, FEATURES, distractors, itemsFor } from './telescope.js';
 import { BOATS } from './port.js';
+import { ORDERS } from './stars.js';
 
 /** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
 export const SOUNDABLE = 'AEFHILMNORSUWZ';
@@ -108,6 +109,7 @@ export const SCHEMA = {
   },
   stars: {
     stars: { type: 'range', min: 3, max: 7 },
+    order: { type: 'enum', values: ORDERS, optional: true, default: 'up' },
     labels: { type: 'enum', values: ['both', 'numeral'] },
     rounds: { type: 'int', min: 1, max: 4, optional: true, default: 2 },
   },
@@ -461,6 +463,7 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (s.types && !s.types.includes(action)) errors.push(`${where}: types needs ${action} for the easy last round`);
     if (s.types && s.rounds < s.types.length) errors.push(`${where}: every kind of round comes up each time, so rounds must be at least ${s.types.length}`);
   }
+  if (kind === 'stars' && s.order === 'twos' && s.stars?.[1] > 4) errors.push(`${where}: counting by twos reaches ${2 * s.stars[1]} with ${s.stars[1]} stars; at most 4 stars (the numeral is one digit)`);
   if (kind === 'shallows') {
     if (s.mode === 'surprise' && s.things !== 'all') errors.push(`${where}: "surprise" needs things "all" (the big log and the little coin)`);
     if (s.mode === 'surprise' && s.rounds < 2) errors.push(`${where}: "surprise" needs at least 2 rounds (the big log and the little coin)`);

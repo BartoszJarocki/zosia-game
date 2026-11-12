@@ -12,8 +12,8 @@ const { levels, letterSets, errors } = parseGame(md, { childName: 'Zosia' });
 test('Moon level rows parse to the specified literal settings', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(levels.moon, [
-    { types: ['jump', 'howMany'], jump: [1, 3], howMany: [1, 3], auto: true, slots: true, rounds: 3 },
-    { types: ['jump', 'howMany'], jump: [1, 4], howMany: [1, 4], auto: true, slots: false, rounds: 3 },
+    { types: ['jump', 'howMany'], jump: [1, 3], howMany: [1, 3], auto: true, slots: true, rounds: 4 },
+    { types: ['jump', 'howMany'], jump: [1, 4], howMany: [1, 4], auto: true, slots: false, rounds: 4 },
     { types: ['jump', 'howMany'], jump: [2, 5], howMany: [2, 5], auto: false, slots: false, rounds: 4 },
     { types: ['jump', 'howMany'], jump: [3, 7], howMany: [3, 6], auto: false, slots: false, rounds: 4 },
   ]);
@@ -21,8 +21,9 @@ test('Moon level rows parse to the specified literal settings', () => {
 
 test('Moon rounds alternate when possible and always finish with automatic jumps', () => {
   const order = levels.moon.map((l) => moonRounds(l, () => 0));
-  assert.deepEqual(order[0], [{ type: 'jump', auto: true }, { type: 'howMany', auto: false }, { type: 'jump', auto: true }]);
-  assert.deepEqual(order[1], [{ type: 'jump', auto: true }, { type: 'howMany', auto: false }, { type: 'jump', auto: true }]);
+  const alternating = [{ type: 'howMany', auto: false }, { type: 'jump', auto: true }, { type: 'howMany', auto: false }, { type: 'jump', auto: true }];
+  assert.deepEqual(order[0], alternating);
+  assert.deepEqual(order[1], alternating);
   assert.deepEqual(order[3], [{ type: 'howMany', auto: false }, { type: 'jump', auto: false }, { type: 'howMany', auto: false }, { type: 'jump', auto: true }]);
   for (const l of levels.moon) for (const random of [() => 0, () => 0.49, () => 0.999]) {
     const plan = moonRounds(l, random);
@@ -32,6 +33,16 @@ test('Moon rounds alternate when possible and always finish with automatic jumps
     if (l.types.length > 1) assert.ok(plan.every((r, i) => !i || r.type !== plan[i - 1].type));
   }
   assert.deepEqual(moonRounds({ types: ['jump'], rounds: 1, auto: false }), [{ type: 'jump', auto: true }]);
+});
+
+test('every Moon level asks at least two scored questions, however the rounds fall', () => {
+  levels.moon.forEach((l, i) => {
+    for (const random of [() => 0, () => 0.49, () => 0.999]) {
+      const plan = moonRounds(l, random);
+      const scored = plan.filter((r) => r.type === 'howMany' || !r.auto).length;
+      assert.ok(scored >= 2, `level ${i + 1} asks ${scored}`);
+    }
+  });
 });
 
 test('Moon ranges include both ends', () => {
@@ -63,10 +74,12 @@ test('Moon schema checks ranges, listed types, flags and round count', () => {
     'jump | 1-3 | - | yes | - | 3', 'jump | 1-3 | - | yes | yes | 0', 'jump | 1-3 | - | yes | yes | 9']) assert.ok(rowErrors(row).length > 0, row);
 });
 
-test('a gentler Moon run turns on auto and slots without changing ranges or types', () => {
+test('a gentler Moon run turns on auto and slots and takes one number off the top, so level 1 gets an easier step too', () => {
   assert.deepEqual(EASIER.moon(levels.moon[3]), {
-    types: ['jump', 'howMany'], jump: [3, 7], howMany: [3, 6], auto: true, slots: true, rounds: 4,
+    types: ['jump', 'howMany'], jump: [3, 6], howMany: [3, 5], auto: true, slots: true, rounds: 4,
   });
+  assert.deepEqual(EASIER.moon(levels.moon[0]), { ...levels.moon[0], jump: [1, 2], howMany: [1, 2] });
+  assert.deepEqual(EASIER.moon({ ...levels.moon[0], jump: [2, 2], howMany: [2, 2] }).jump, [2, 2], 'a range never goes below its start');
   assert.equal(levels.moon[3].auto, false);
   assert.equal(levels.moon[3].slots, false);
 });
@@ -83,7 +96,7 @@ test('Moon instructions use Polish number forms and every new line reaches recor
   const recorded = allSegments(levels, letterSets.ALL);
   for (const line of [
     'Jesteśmy na Księżycu! Tu skacze się wysoko i powoli.', 'Dotknij Czejsa, to skoczy!',
-    'Dotknij flagi, kiedy skończysz!', 'Za mało! Skacz dalej!', 'Za dużo! Teraz dobrze? Dotknij flagi!',
+    'Dotknij flagi, kiedy skończysz!', 'Za mało! Skacz dalej!', 'Za dużo! Teraz dobrze?',
     'Patrz, jak skacze!', 'Ile było skoków?', 'Brawo! Ale wysoko skakaliśmy!',
     'Jeszcze raz czy lecimy dalej?', 'Poszukaj z mamą Księżyca na niebie!',
     ...Array.from({ length: 9 }, (_, i) => [...T.moonJump(i + 1), ...T.moonJumpShort(i + 1)]).flat(),
