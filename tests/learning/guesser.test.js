@@ -25,7 +25,8 @@ test('a level whose runs hold one scored question is called thin', () => {
   assert.notEqual(edited, game, 'the Moon level 3 row moved: update this test');
   fs.writeFileSync(path.join(dir, 'GAME.md'), edited);
   const out = run({ GAME_MD: path.join(dir, 'GAME.md') });
-  assert.match(row(out, 'moon'), /L1,2,3/);
-  assert.ok(!/L1,2,3/.test(row(run(), 'moon')), 'the real Moon level 3 is not thin');
+  const thin = (line) => line.trim().split(/\s+/)[8]; // (the "thin" column)
+  assert.match(thin(row(out, 'moon')), /\bL3\b/);
+  assert.equal(thin(row(run(), 'moon')), '-', 'no real Moon level is thin (levels 1 and 2 ask two scored questions)');
   fs.rmSync(dir, { recursive: true });
 });
