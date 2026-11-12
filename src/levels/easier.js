@@ -1,7 +1,7 @@
 import { easier as easierGarage } from './garage.js';
 import { gentler as gentlerRiver } from './river.js';
 
-const lower = ([lo, hi]) => [lo, Math.max(lo, hi - 1)];
+const lower = (range) => range && [range[0], Math.max(range[0], range[1] - 1)];
 
 /** Order and feature fall back to names with one choice fewer; names with two choices left fall back to matching; matching with two choices is a shorter run. */
 function gentlerTelescope(s) {
@@ -19,7 +19,7 @@ export const EASIER = {
   cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }), // one cone fewer: easier even where a level already shows both
   mars: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: 'match', rock: 'both' }), // one rock fewer, numeral and dots shown
   stones: gentlerRiver,
-  counting: (s) => ({ ...s, auto: true }),
+  counting: (s) => ({ ...s, auto: true, slots: true, give: lower(s.give), howMany: lower(s.howMany), share: lower(s.share), flash: lower(s.flash), hidden: lower(s.hidden) }), // (rings, and one number less at the top of every range: the first levels are no longer the same as their gentler run)
   moon: (s) => ({ ...s, auto: true, slots: true, jump: lower(s.jump), howMany: s.howMany && lower(s.howMany) }), // (level 1 already has both on: one number fewer at the top)
   stars: (s) => ({ ...s, order: 'up', labels: 'both', stars: [s.stars[0], s.stars[0]], rounds: 1 }), // one smaller picture, counted up
   mercury: (s) => ({ ...s, show: 'stay', labels: 'both', choices: Math.max(2, s.choices - 1) }),
@@ -28,9 +28,9 @@ export const EASIER = {
   blackhole: (s) => ({ ...s, auto: true, slots: true, away: [s.away[0], Math.max(s.away[0], s.away[1] - 1)], fall: [s.fall[0], Math.max(s.fall[0], s.fall[1] - 1)] }), // (smaller numbers too: level 1 has auto and slots already)
   saturn: (s) => (s.sort === 'both' ? { ...s, sort: 'kind' } : { ...s, named: true, sizes: 'same', pieces: s.named ? Math.max(2, s.pieces - 2) : s.pieces }), // (named already: fewer pieces)
   venus: (s) => ({ ...s, reveal: 'full', turned: false }),
-  lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
+  lookout: (s) => (s.mode === 'pickup' && s.bubble === 'both' && s.max <= 3 ? { ...s, rounds: 1 } : { ...s, bubble: 'both', mode: 'go' }), // (the first level is already one easy kitten a ride: a gentler run is one ride)
   delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false, rounds: Math.min(3, s.rounds) }), // (level 1 has no fewer choices to give: a shorter run)
-  picnic: (s) => ({ ...s, close: false, numerals: false }),
+  picnic: (s) => ({ ...s, close: false, numerals: false, max: Math.max(4, s.max - 1) }), // (one treat fewer at the top, so the first levels have a gentler run too)
   garage: easierGarage,
   pluto: (s) => ({ ...s, shapes: s.shapes.slice(0, Math.max(2, s.shapes.length - 1)), ask: 'match', choices: Math.max(2, s.choices - 1), similar: false, turned: false }), // (the newest shape stays out)
   lighthouse: (s) => ({ ...s, choices: Math.max(2, (s.choices ?? 2) - 1), numbers: [s.numbers[0], Math.max(s.numbers[0], s.numbers[1] - 1)] }),

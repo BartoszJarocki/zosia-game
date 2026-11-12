@@ -344,6 +344,9 @@ time, each row one hop nearer Chase: the next number and one or two others side 
   (help counts the stones so far, "Jeden! Dwa!", and asks again; the stone pulses last) · `missing`: the stones lie in order with one gap ("1 2 ? 4"); she puts the right
   stone in (drag it or tap it) and Zosia hops across by herself (3–9 stones; help counts the stones up to
   the gap)
+- No number ever lies behind Zosia: she hides the ground behind her from the child's eye (the layout works out
+  where, for a 4:3 iPad lying down and one standing up), so the next row comes up clear of her, and a tap that
+  lands on her and on a stone goes to the stone.
 - After a rough run the next one is gentler: 2 stones a row, far foils, one stone shorter, the number in the
   bubble (`missing` keeps its gap, with a far foil). On Chase's bank the river is praised ("Policzyłaś do
   pięciu!") as she leaps back for the next one. After the last river Zosia stays with Chase for the badge.
@@ -354,9 +357,9 @@ Counting for real, at Chase's pup house.
 
 | Level | types | give | howMany | share | hidden | flash | auto | slots | rounds |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | give, howMany, share | 1–3 | 1–3 | 2–3 | — | — | yes | yes | 3 |
-| 2 | give, howMany, share | 1–3 | 1–3 | 2–3 | — | — | yes | no | 3 |
-| 3 | give, howMany, share | 2–5 | 1–4 | 2–4 | — | — | yes | no | 3 |
+| 1 | give, howMany, share, howMany | 1–3 | 1–3 | 2–3 | — | — | yes | yes | 4 |
+| 2 | give, howMany, share, howMany | 1–3 | 1–3 | 2–3 | — | — | yes | no | 4 |
+| 3 | give, howMany, share, howMany | 2–5 | 1–4 | 2–4 | — | — | yes | no | 4 |
 | 4 | give, howMany, share | 1–3 | 1–4 | 2–4 | — | — | no | no | 3 |
 | 5 | give, howMany, flash, share | 1–3 | 1–4 | 2–4 | — | 1–3 | no | no | 4 |
 | 6 | give, howMany, flash, hidden, share | 1–3 | 1–4 | 2–4 | 2–3 | 1–3 | no | no | 5 |
@@ -365,9 +368,11 @@ Counting for real, at Chase's pup house.
 
 The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so every one is easy to see.
 
-- **types** — the kinds of round. Each comes up once per mission (extra rounds repeat one), in a new order
-  each time, never the same kind twice in a row, and the mission ends on an easy one (`share`, or `give`
-  when `auto` is yes):
+- **types** — the kinds of round. Each comes up once per mission (a kind listed twice comes up twice; extra
+  rounds beyond the list repeat one), in a new order each time, never the same kind twice in a row, and the
+  mission ends on an easy one (`share`, or `give` when `auto` is yes). Levels 1 to 3 list `howMany` twice: with
+  `auto` on, the give and the share can't be got wrong and don't count, so one lucky tap on a numeral would
+  have been the whole run; with two counted questions a blind tapper moves up in about one run in nine, not one in three:
   - `give` ("Daj mu trzy smakołyki!"): move the treats from the pile to Chase — drag them, or tap one and it hops over
   - `howMany` ("Ile smakołyków?"): count the bones on the tray (tapping one counts it aloud), then pick the
     numeral; wrong choices are ±1. Then Chase eats them one by one while they are counted, ending on her number
@@ -381,20 +386,23 @@ The treats she gives land on Chase's blue tray in rows of five (a ten-frame), so
 
   In `flash` and `hidden` she gives Chase the same number and taps him. When it is right, the bowl lifts and
   its treats line up next to hers, one under each, so she sees it is the same. Too few: "Za mało! Jeszcze!"
-  and the bowl stays shut.
+  and the bowl stays shut. Too many: every treat she gave hops back ("Oj, za dużo! Oddaję wszystkie smakołyki."),
+  because giving back only the extra ones would leave exactly the hidden number lying on the tray.
 
   When she is right Chase eats every treat, one by one ("Trzy smakołyki! Mniam, mniam! Dziękuję!"). She can tap
-  along: a treat she taps, he eats at once.
+  along: a treat she taps, he eats at once. A treat that is still in the air (the bones tumbling onto the tray in
+  `howMany`) cannot be tapped; it counts once it lies still.
 - **give** / **howMany** / **share** / **hidden** / **flash** — the number ranges (give up to 10, howMany up to 9,
   share 2–4 friends, hidden 2–4 treats under the bowl in the end, flash 1–4; `—` if unused)
 - **auto** — `yes`: done as soon as the right number is there · `no`: she decides when to stop and taps Chase
-  (too few: "Za mało! Jeszcze!"; too many: Chase gives the extra ones back, "Teraz dobrze? Dotknij Czejsa!",
-  and she taps him again herself). `flash` and `hidden` always need `no`
+  (too few: "Za mało! Jeszcze!"; too many in `give`, where the number is in the bubble: Chase gives the extra ones
+  back, "Teraz dobrze? Dotknij Czejsa!", and she taps him again herself). `flash` and `hidden` always need `no`
 - **slots** — the helping hand. `yes`: ghost rings show where the treats go (○ ○ ○), and the "how many?"
   numerals have their dots under them · `no`: neither (help shows the rings)
-- **rounds** — how many tasks (1–8), at least one per kind in **types**
+- **rounds** — how many tasks (1–8), at least as many as **types** lists
 - Rounds that can't really be got wrong (`give` with auto, `share`) are played but don't count towards the next
-  level, so every level has a `howMany`, `flash` or `hidden` round (a gentler run after a rough one turns `auto` on).
+  level, so every level has a `howMany`, `flash` or `hidden` round. A gentler run after a rough one turns `auto`
+  and the rings on and takes one number off the top of every range (give 1–3 becomes 1–2, flash 1–3 becomes 1–2).
 
 ### 🌑 Mercury's Craters · `mercury`
 
@@ -854,10 +862,11 @@ comes meanwhile), and at the end everyone goes to the very top and down the slid
   goes there from wherever it is, counting up or down · `find`: a kitten waits on a floor, "Na którym piętrze
   czeka kotek?" (only the kitten in the bubble: she reads the sign beside it) · `relative`: the first ride is a
   `pickup`, then "Jesteśmy na piętrze trzy. Kotek czeka jedno piętro wyżej!" (one more / one less; needs 3+
-  floors and 2+ rounds) · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
+  floors and 2+ rounds). The kitten is not on the floor yet: it appears when the lift arrives, so no sign beside it
+  gives the floor away · `dice`: a big dot die beside the car, "Dotknij kostki!" (or Chase rolls it); it says how many floors up
   ("Dwa piętra w górę! Na które piętro?") and she presses the floor they land on, counting on from where the
   car is; the kitten is a surprise on that floor (age 4+) · `go`: one easy kitten on floors 1–3, numeral and
-  dots (the gentler run after a rough one). A wrong floor: "Nie, to nie ten." and the question again. Help
+  dots (the gentler run after a rough one; at level 1, which is that already, it is one ride). A wrong floor: "Nie, to nie ten." and the question again. Help
   lights the floors one by one without saying the number (`find`: the sign beside the kitten; `relative`: the
   floors up to the car; `dice`: as many floors as the die says); `pickup` adds the dots to the number in the
   bubble; last the right button pulses
@@ -894,22 +903,27 @@ A picnic with Chase: more, less, the same — by looking, before numbers.
 
 | Level | max | modes | close | numerals | rounds |
 |---|---|---|---|---|---|
-| 1 | 5 | more | no | no | 3 |
-| 2 | 5 | more, less | no | no | 3 |
-| 3 | 5 | more, less, same | no | no | 3 |
-| 4 | 5 | more, less, same | no | yes | 3 |
-| 5 | 5 | more, less, same | yes | yes | 3 |
-| 6 | 10 | more, less, same | yes | yes | 3 |
+| 1 | 5 | more | no | no | 5 |
+| 2 | 5 | more, less | no | no | 5 |
+| 3 | 5 | more, less, same | no | no | 5 |
+| 4 | 5 | more, less, same | no | yes | 5 |
+| 5 | 5 | more, less, same | yes | yes | 5 |
+| 6 | 10 | more, less, same | yes | yes | 5 |
 
 - **max** — the biggest amount (3–10)
 - **modes** — the questions, taking turns: `more` ("Gdzie jest więcej smakołyków?", hungry Chase eats them) ·
   `less` (a kitten with a small tummy: "Kotek ma mały brzuszek! Gdzie jest mniej smakołyków?") · `same`
   (Chase has his own treats on a plate: "Gdzie jest tyle samo, co u Czejsa?")
 - **close** — `no`: the amounts are far apart (2+ difference) · `yes`: they differ by one
+- **rounds** — five questions a visit. There are only two blankets, so a blind tap is right half the time; at
+  three questions a blind tapper moved up in one run in two, at five it is about one in five.
 - **numerals** — `yes`: the blankets show numerals instead of treats (3 or 5?); the treats appear after
   (no < > signs). The clue lines each group up on its own blanket, one row each from the middle outwards: the
   longer row has more. With numerals the clue puts the dots under each numeral. Right: "Tak! Tu jest więcej!
   Pięć!" as the eater trots over and eats them ("Mniam, mniam! Dziękuję!" once a visit).
+- The treats lie in neat rows of up to five and never touch (also in the clue's rows and on Chase's plate). The
+  blankets are what she taps; the kitten, Chase and Zosia behind them are theirs: a tap on the kitten meows, it is
+  not an answer. A gentler run takes one treat off the top (never below four) as well as the closeness and the numerals.
 
 ### 🔧 The Garage · `garage`
 
@@ -928,6 +942,11 @@ the blocks into baskets, then the mended cruiser flashes its lights.
 | 7 | shapes, pattern, sort | turned | ABB | switch | 3 |
 
 - **modes** — the jobs, taking turns, one per round: `shapes` (the door), `pattern` (the flags), `sort` (the blocks)
+- **a shape counts where she drops it** — a piece let go over a hole is tried in that hole: the asked piece over its
+  own hole goes in; over another shape's hole it does not fit ("Nie, to nie ten."); another shape than the asked one
+  is named ("Nie, to koło.") wherever it goes; let go away from the door it floats back and nothing is counted.
+  Tapping a piece still tries it in the asked hole. A gentler run takes every mode one rung down, and level 1, which
+  has none, one job fewer.
 - **shapes** — `shown`: one hole in the door, the shape in the bubble and named ("Który kształt pasuje? Koło!") ·
   `name`: a hole for each of koło, kwadrat, trójkąt; she hears which one ("Gdzie jest kwadrat?"), twice, and the
   last one hops in by itself · `turned`: as `name`, but the pieces lie turned and bigger or smaller, the square

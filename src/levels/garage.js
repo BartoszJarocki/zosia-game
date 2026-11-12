@@ -12,11 +12,38 @@ export const ODD_TRIANGLES = ['right', 'flat', 'tall'];
 const shuffle = (a, rng) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const one = (a, rng) => a[Math.floor(rng() * a.length)];
 
-/** The same level row, one rung easier in every mode (after a rough run). */
+/**
+ * The same level row, one rung easier in every mode (after a rough run). Where every rung is already the lowest (level
+ * 1) a run is one job shorter instead, so a rough run always gets a lighter one.
+ */
 export function easier(row) {
   const out = { ...row };
   for (const [key, ladder] of Object.entries(LADDERS)) if (row[key]) out[key] = ladder[Math.max(0, ladder.indexOf(row[key]) - 1)];
+  if (Object.keys(LADDERS).every((key) => out[key] === row[key])) out.rounds = Math.max(2, row.rounds - 1);
   return out;
+}
+
+/**
+ * The hole a piece lands on when it is dropped at x: the nearest one, if it is close enough to count as over it
+ * (the outer holes also catch a piece dropped a little beyond them). holeXs: where the holes are, left to right.
+ * A door with one hole catches a wide drop, so a piece from either side can be carried to it.
+ */
+export function holeUnder(x, holeXs) {
+  const reach = holeXs.length > 1 ? (holeXs[1] - holeXs[0]) / 2 + 1 : 2.7;
+  const near = holeXs.map((hx, i) => [Math.abs(hx - x), i]).sort((a, b) => a[0] - b[0])[0];
+  return near && near[0] <= reach ? near[1] : -1;
+}
+
+/**
+ * What dropping a piece means for the question "where is `asked`?": 'fits' (the asked piece over its own hole),
+ * 'wrongPiece' (it was another shape: "Nie, to koło."), 'wrongHole' (the right piece, but this hole is another
+ * shape's) or 'back' (not over a hole: it floats back, nothing counted). shape: the piece; hole: the shape of the
+ * hole it is over, or null.
+ */
+export function dropVerdict(shape, hole, asked) {
+  if (!hole) return 'back';
+  if (shape !== asked) return 'wrongPiece';
+  return hole === asked ? 'fits' : 'wrongHole';
 }
 
 /**

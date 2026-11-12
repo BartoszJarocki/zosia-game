@@ -38,3 +38,26 @@ test('round order: every Treat House level shows every kind, never twice in a ro
     }
   }
 });
+
+test('round order: a kind listed twice comes up twice, never next to itself, and the run still ends easy', () => {
+  const types = ['give', 'howMany', 'share', 'howMany'];
+  const orders = new Set();
+  for (let s = 1; s <= 300; s++) {
+    const order = roundOrder(types, 4, { easy: ['give', 'share'], random: seeded(s * 7919003) });
+    assert.deepEqual([...order].sort(), ['give', 'howMany', 'howMany', 'share'], order.join(' '));
+    assert.ok(order.every((k, j) => j === 0 || order[j - 1] !== k), `repeats: ${order}`);
+    assert.ok(['give', 'share'].includes(order.at(-1)), `ends on ${order.at(-1)}`);
+    orders.add(order.join(' '));
+  }
+  assert.ok(orders.size > 1, 'the order changes from run to run');
+});
+
+test('a blind tapper cannot level up the Treat House on one lucky answer: every level counts at least two questions', () => {
+  const { levels } = parseGame(readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8'), { childName: 'Zosia' });
+  for (const [i, L] of levels.counting.entries()) {
+    // a give with auto and a share can't be got wrong, so they are played but not counted (scenes/counting.js)
+    const counted = L.types.filter((t) => ['howMany', 'flash', 'hidden'].includes(t) || (t === 'give' && !L.auto)).length;
+    assert.ok(counted >= 2, `level ${i + 1} counts ${counted}`);
+    assert.ok(L.rounds >= L.types.length);
+  }
+});

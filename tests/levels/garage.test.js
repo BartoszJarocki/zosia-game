@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
-import { shapePieces, patternRound, sortRound, basketFor, easier, COLOURS, ODD_TRIANGLES } from '../../src/levels/garage.js';
+import { shapePieces, patternRound, sortRound, basketFor, easier, holeUnder, dropVerdict, COLOURS, ODD_TRIANGLES } from '../../src/levels/garage.js';
 import { createSession, completeMission, suggestNext } from '../../src/session/director.js';
 
 /** A seeded generator (mulberry32), so a failure can be replayed. */
@@ -126,10 +126,31 @@ test('shape pieces: textbook shapes until "turned", then turned, resized and an 
   assert.deepEqual(new Set(turned.map((ps) => ps.find((p) => p.shape === 'triangle').odd)), new Set(ODD_TRIANGLES));
 });
 
-test('a gentler run is one rung easier in every mode, and the first rung stays', () => {
+test('a gentler run is one rung easier in every mode; where every rung is the first one it is a job shorter', () => {
   assert.deepEqual(easier({ modes: ['shapes', 'pattern', 'sort'], shapes: 'turned', pattern: 'ABB', sort: 'switch', rounds: 3 }),
     { modes: ['shapes', 'pattern', 'sort'], shapes: 'name', pattern: 'gap', sort: 'size', rounds: 3 });
-  assert.deepEqual(easier({ modes: ['shapes'], shapes: 'shown', rounds: 2 }), { modes: ['shapes'], shapes: 'shown', rounds: 2 });
+  assert.deepEqual(easier({ modes: ['shapes', 'pattern', 'sort'], shapes: 'shown', pattern: 'AB', sort: 'colour', rounds: 3 }),
+    { modes: ['shapes', 'pattern', 'sort'], shapes: 'shown', pattern: 'AB', sort: 'colour', rounds: 2 });
+  assert.deepEqual(easier({ modes: ['shapes'], shapes: 'shown', rounds: 2 }), { modes: ['shapes'], shapes: 'shown', rounds: 2 }, 'never fewer than two jobs');
+});
+
+test('the door: a shape counts where it is dropped (the hole it is over decides)', () => {
+  // asked for the square
+  assert.equal(dropVerdict('square', 'square', 'square'), 'fits');
+  assert.equal(dropVerdict('square', 'circle', 'square'), 'wrongHole', 'the right piece over another shape\'s hole does not fit');
+  assert.equal(dropVerdict('circle', 'circle', 'square'), 'wrongPiece', 'a piece that fits its own hole is still not the one asked for');
+  assert.equal(dropVerdict('circle', 'square', 'square'), 'wrongPiece');
+  assert.equal(dropVerdict('square', null, 'square'), 'back', 'not over a hole: it floats back, nothing counted');
+});
+
+test('the hole a piece is over is the nearest one; the outer holes catch a drop a little past them; one hole catches a wide drop', () => {
+  const holes = [-2.15, 0, 2.15];
+  assert.equal(holeUnder(0.3, holes), 1);
+  assert.equal(holeUnder(1.2, holes), 2, 'closer to the right-hand hole');
+  assert.equal(holeUnder(-2.9, holes), 0, 'a little past the outer hole');
+  assert.equal(holeUnder(-4.5, holes), -1, 'far from the door');
+  assert.equal(holeUnder(2.45, [0]), 0, 'one hole: a piece carried straight up from the side still counts');
+  assert.equal(holeUnder(3.5, [0]), -1);
 });
 
 const md = readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8');

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { riverRows, foilsFor, missingFoil, gentler, KEEP_CLEAR, START, LAND, SIDEWAYS } from '../../src/levels/river.js';
+import * as THREE from 'three';
+import { riverRows, foilsFor, missingFoil, gentler, KEEP_CLEAR, START, LAND, SIDEWAYS, VIEW, eyeFor } from '../../src/levels/river.js';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
 
@@ -88,8 +89,36 @@ for (const L of rowLevels) {
           assert.ok(!(s.z < -1.9 + d / 2 && s.x < -3.9 + d / 2), `not under the bubble: ${s.x}, ${s.z}`);
           for (const o of row.stones) if (o !== s) assert.ok(Math.abs(o.x - s.x) >= d, 'side by side, not on top of each other');
           if (prev) assert.ok(Math.hypot(prev.x - s.x, prev.z - s.z) >= d * 0.95, `clear of the stone she stands on (${prev.x},${prev.z}) → (${s.x},${s.z})`);
-          assert.ok(Math.abs(s.x - (prev || START).x) >= 0.45 + 0.6 * (d / 2) - 1e-6, `not hidden behind her: she is at x ${(prev || START).x}, the stone at ${s.x}`);
         }
+      });
+    }
+  });
+
+  test(`n=${L.n}, ${L.choices} choices, ${L.foils} foils: no number lies behind Zosia, on any iPad`, () => {
+    const body = (at, bank) => [-0.43, 0.43].flatMap((dx) => [-0.5, 0.5].flatMap((dz) => [bank ? 0 : 0.4, (bank ? 0 : 0.4) + 2.0].map((y) => new THREE.Vector3(at.x + dx, y, at.z + dz))));
+    const cameras = [1.33, 1.44, 2, 0.75, 0.69].map((aspect) => {
+      const cam = new THREE.PerspectiveCamera(VIEW.fov, aspect, 0.1, 500);
+      cam.position.set(...eyeFor(aspect));
+      cam.lookAt(...VIEW.look);
+      cam.updateMatrixWorld();
+      return cam;
+    });
+    const screen = (cam, p) => { const v = p.clone().project(cam); return [v.x, v.y]; };
+    const inside = (pt, poly) => poly.every((a, i) => { const b = poly[(i + 1) % poly.length]; return (b[0] - a[0]) * (pt[1] - a[1]) - (b[1] - a[1]) * (pt[0] - a[0]) >= 0; });
+    const hullOf = (pts) => { // gift wrapping, counter-clockwise
+      const start = pts.reduce((m, p) => (p[0] < m[0] ? p : m), pts[0]), out = [];
+      let cur = start;
+      do { out.push(cur); cur = pts.reduce((best, p) => (best === cur || (best[0] - cur[0]) * (p[1] - cur[1]) - (best[1] - cur[1]) * (p[0] - cur[0]) < 0 ? p : best), pts[0] === cur ? pts[1] : pts[0]); } while (cur !== start && out.length < 20);
+      return out;
+    };
+    for (const river of many(L, 100)) {
+      let from = START;
+      river.rows.forEach((row, k) => {
+        for (const cam of cameras) {
+          const outline = hullOf(body(from, k === 0).map((p) => screen(cam, p)));
+          for (const s of row.stones) assert.ok(!inside(screen(cam, new THREE.Vector3(s.x, 0.2, s.z)), outline), `the stone ${s.num} at ${s.x}, ${s.z} is behind her at ${from.x}, ${from.z} (aspect ${cam.aspect})`);
+        }
+        from = row.stones.find((s) => s.right);
       });
     }
   });

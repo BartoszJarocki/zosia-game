@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, wait, hop } from '../engine.js';
+import { animate, ease, wait, hop, shakeNo } from '../engine.js';
 import { mesh, mat, rbox } from '../models.js';
 import { makeBush } from '../world/nature.js';
 import { sparkle } from '../fx/particles.js';
@@ -7,7 +7,7 @@ import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
 import { T } from '../lang/pl.js';
-import { SHAPES, shapePieces, patternRound, sortRound, basketFor } from '../levels/garage.js';
+import { SHAPES, shapePieces, patternRound, sortRound, basketFor, holeUnder, dropVerdict } from '../levels/garage.js';
 import { makeGarage, makeGarageCruiser, makeDoorBoard, makeShapePiece, makeBunting, makePennant, makeGhostPennant, makeFlagStand, makeBasket, makeBlock, shapeSVG, blockSVG, COLOUR_HEX } from '../world/garage-props.js';
 import { Mission } from './mission.js';
 
@@ -121,11 +121,13 @@ export class GarageMission extends Mission {
       let solved = false, lastWrong = null;
       this.last = target;
       this.item('G:' + target);
-      const choose = async (o) => {
+      // over: the hole she dropped it on (a tap tries the piece in the asked one)
+      const choose = async (o, over = hole) => {
         if (solved) return;
         this.poke();
         this.lookAt(o);
-        if (o === right) {
+        const verdict = dropVerdict(o.userData.choice, over.shape, target);
+        if (verdict === 'fits') {
           solved = true;
           this.correct(target);
           this.stopIdle();
@@ -138,16 +140,23 @@ export class GarageMission extends Mission {
           resolve();
         } else {
           lastWrong = o;
-          this.wrong(o.userData.choice, { obj: o, said: T.noShape(o.userData.choice) }); // "Nie, to trójkąt."
-          if (o.position.distanceTo(o.userData.home) > 0.1) this.jumpTo(o, o.userData.home, { height: 0.5, ms: 350 });
+          if (verdict === 'wrongPiece') this.wrongTry(o, o.userData.choice, T.noShape(o.userData.choice)); // "Nie, to trójkąt."
+          else this.wrongTry(o, over.shape); // the right piece over another shape's hole: "Nie, to nie ten."
         }
       };
+      const holeXs = board.userData.holes.map((h) => board.position.x + h.at.x);
       for (const o of live()) {
         this.draggable(o, {
           height: o.userData.home.y,
           lift: 0.4,
           onPick: () => { this.poke(); sfx.pop(); },
-          onDrop: (x, at) => (at.z < FRONT_Z - 1.2 ? (choose(o), true) : false), // carried up towards the door
+          // carried up to the door, it counts where it is let go: over a hole, that hole's shape is the shape it is tried in
+          onDrop: (x, at) => {
+            const i = at.z < FRONT_Z - 1.2 ? holeUnder(at.x, holeXs) : -1;
+            if (i < 0) return false;
+            choose(o, board.userData.holes[i]);
+            return true;
+          },
           onTap: () => choose(o), // the fallback: tapping a piece tries it
         });
       }
@@ -164,6 +173,16 @@ export class GarageMission extends Mission {
       }, { options: live().length });
       this.askAfter(this.talk, intro ? [...T.doorBroken(), ...prompt] : prompt);
     });
+  }
+
+  /**
+   * A wrong try with a piece or a flag: "no". One she carried off floats back first and then shakes its head (shaking
+   * on the way left it where she dropped it).
+   */
+  wrongTry(o, chosen, said) {
+    const away = o.position.distanceTo(o.userData.home) > 0.1;
+    this.wrong(chosen, { obj: away ? null : o, said });
+    if (away) this.jumpTo(o, o.userData.home, { height: 0.5, ms: 350 }).then(() => shakeNo(o));
   }
 
   /** The piece flies into its hole, turning upright and to the hole's size, and stays in the door. */
@@ -267,8 +286,7 @@ export class GarageMission extends Mission {
           resolve();
         } else {
           lastWrong = s;
-          this.wrong(s.userData.choice, { obj: s, said: T.noFlag(s.userData.choice) }); // "Nie, ta jest żółta."
-          if (s.position.distanceTo(s.userData.home) > 0.1) this.jumpTo(s, s.userData.home, { height: 0.5, ms: 350 });
+          this.wrongTry(s, s.userData.choice, T.noFlag(s.userData.choice)); // "Nie, ta jest żółta."
         }
       };
       for (const s of stands) {
@@ -286,7 +304,7 @@ export class GarageMission extends Mission {
       this.question('pattern', p.item, {
         short,
         // say the row aloud: the rhythm is the clue ("…Zielona! Czerwona! A teraz? Co jest dalej?")
-        hint: () => this.chant(p.row, hung, p.gap).then(() => this.alive && !solved && this.say(p.item === 'gap' ? short : T.riverWhatNext())),
+        hint: () => this.chant(p.row, hung, p.gap).then((whole) => whole && !solved && this.say(p.item === 'gap' ? short : T.riverWhatNext())),
         simplify: () => this.removeOption(lastWrong?.parent && lastWrong !== right ? lastWrong : foil),
         reveal: () => this.hint(right, () => solved, right.userData.flag),
       }, { options: stands.length });
@@ -294,15 +312,23 @@ export class GarageMission extends Mission {
     });
   }
 
-  /** Say the row flag by flag, each one bobbing as it is named. skip: the empty place (a beat of silence). */
+  /**
+   * Say the row flag by flag, each one bobbing as it is named. skip: the empty place (a beat of silence). It stops
+   * the moment anything newer is said (her answer, the "no"), and resolves true only when the whole row was said.
+   */
   async chant(row, flags, skip = -1) {
-    for (let i = 0; i < row.length && this.alive; i++) {
+    let mine = this.sayToken;
+    for (let i = 0; i < row.length; i++) {
+      if (!this.alive || this.sayToken !== mine) return false;
       const f = flags[i];
       const s0 = f.scale.x;
       animate(320, (t) => { f.rotation.z = Math.sin(t * Math.PI * 2) * 0.25; f.scale.setScalar(s0 * (1 + Math.sin(t * Math.PI) * 0.18)); }, ease.linear);
       if (i === skip) { sfx.bubble(); await wait(700); continue; }
-      await this.say(T.flag(row[i]));
+      const line = this.say(T.flag(row[i]));
+      mine = this.sayToken;
+      await line;
     }
+    return this.alive && this.sayToken === mine;
   }
 
   /** The finished flags go up over the garage door and stay there for the rest of the visit. */
