@@ -43,7 +43,7 @@ registerHooks({ load(url, context, next) {
 const { ShallowsMission, makeThing } = await import('../src/scenes/shallows.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { thingById, THINGS } = await import('../src/levels/shallows.js');
-const EDGE = new THREE.Vector3(0, 1.78, 1.05);
+const PLANK = new THREE.Vector3(0, 5.66, -0.55); // where a thing waits, on the plank above the pool
 const { optimizeScene } = await import('../src/fx/optimize.js');
 const flush = () => new Promise(setImmediate);
 const until = async (predicate) => {
@@ -162,12 +162,12 @@ test('every shelf, its sign and the things on it sit 24 px inside the screen at 
   const s = await scene(1, [thingById('jabłko')]);
   const log = makeThing('kłoda', s.hitMat);
   s.shelves.float.attach(log);
-  log.position.set(-1.5, 0.54, 0.35);
+  log.position.set(-1.5, 1.72, 0.35);
   log.rotation.set(0, 0, 0);
   log.scale.setScalar(log.userData.shelfScale);
   const coin = makeThing('moneta', s.hitMat);
   s.shelves.sink.attach(coin);
-  coin.position.set(1.5, 0.54, 0.35);
+  coin.position.set(1.5, 0.52, 0.35);
   coin.rotation.set(0, 0, 0);
   coin.scale.setScalar(coin.userData.shelfScale);
 
@@ -192,56 +192,55 @@ test('every shelf, its sign and the things on it sit 24 px inside the screen at 
   s.alive = false; s.exit();
 });
 
-test('the water surface and the sandy bottom are both visible, and a floating or sinking thing ends where it should', async () => {
+test('side on: blue water under a white surface line, a floating apple across the line, a sunk key on the sand', async () => {
   const s = await scene(1, [thingById('jabłko')]);
   const camera = cameraFor(s, 1180, 820);
   s.scene.updateMatrixWorld(true);
-  const surfaceAhead = new THREE.Vector3(0, 1.75, 6.5).project(camera);
-  const surfaceBehind = new THREE.Vector3(0, 1.75, 2.0).project(camera);
-  const bottom = new THREE.Vector3(0, 0.04, 6.5).project(camera);
-  assert.ok(Math.abs(surfaceAhead.y - surfaceBehind.y) * 820 / 2 > 10, 'the surface is visible from the camera');
-  assert.ok(bottom.y < surfaceAhead.y, 'the sandy bottom sits below the surface on screen');
   const water = s.surface.material;
-  assert.equal(water.transparent, true, 'the water is see-through');
-  assert.equal(water.depthWrite, false, 'the water does not hide the bottom');
-  assert.ok(water.opacity >= 0.35 && water.opacity <= 0.45, `water opacity ${water.opacity}`);
+  assert.equal(water.transparent, true, 'the things inside are seen through the water');
+  assert.equal(water.depthWrite, false);
+  assert.ok(s.surface.renderOrder > 0, 'the water is drawn over what is inside it');
+  const top = new THREE.Vector3(0, 4.2, 1.3).project(camera), floor = new THREE.Vector3(0, 0.34, 1.3).project(camera);
+  assert.ok((top.y - floor.y) * 820 / 2 > 150, `the water is ${((top.y - floor.y) * 410).toFixed(0)} px deep on screen`);
+  const view = new THREE.Vector3().subVectors(s.view.look, s.view.pos).normalize();
+  assert.ok(Math.abs(view.y) < 0.15, 'the camera looks from the side, not down');
 
   const round = s.round(0);
   await until(() => s.phase === 'dropping');
-  const item = s.thing;
+  const apple = s.thing;
   s.tappables.find((o) => o.userData.choice === 'drop').userData.onTap();
-  await until(() => s.phase === 'placing');
-  assert.ok(item.position.y < 1.75 && item.position.y + item.userData.half > 1.75, 'the apple rests at the surface');
+  await until(() => s.phase === 'sorting');
+  assert.ok(apple.position.y < 4.2 && apple.position.y + apple.userData.half > 4.2, 'the apple rests across the surface line');
+  assert.ok(Math.abs(apple.position.z) < 1.3, 'inside the pool, behind the glass');
   stop(s);
 
   const sink = await scene(1, [thingById('klucz')]);
-  const b = sink.round(0);
+  sink.round(0);
   await until(() => sink.phase === 'dropping');
   const key = sink.thing;
   sink.tappables.find((o) => o.userData.choice === 'drop').userData.onTap();
-  await until(() => sink.phase === 'placing');
-  assert.ok(key.position.y <= 0.1, `the key ends on the bottom (y ${key.position.y})`);
+  await until(() => sink.phase === 'sorting');
+  assert.ok(key.position.y <= 0.4, `the key ends on the sand (y ${key.position.y})`);
   for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
-    assert.ok(key.position.y <= 0.1, `the key is on the sand at ${w}x${h}`);
     const r = drawnRect(key, cameraFor(sink, w, h), w, h);
     assert.ok(r.x0 >= 0 && r.x1 <= w && r.y0 >= 0 && r.y1 <= h, `the sunk key stays on screen at ${w}x${h}`);
   }
   stop(sink);
-  s.alive = false;
+  void round;
 });
 
-test('every thing is at least 90 px across on the sand and 60 px on a shelf', async () => {
+test('every thing is at least 90 px across on the plank and 60 px on a shelf', async () => {
   const s = await scene(1);
   for (const [w, h] of [[1180, 820], [1366, 1024], [820, 1180]]) {
     const camera = cameraFor(s, w, h);
     for (const thing of THINGS) {
       const obj = makeThing(thing.id, s.hitMat);
-      obj.position.copy(EDGE);
+      obj.position.copy(PLANK);
       const onSand = drawnRect(obj, camera, w, h);
       const [sw, sh] = size(onSand);
-      assert.ok(sw >= 90, `${thing.id} ${sw.toFixed(0)}x${sh.toFixed(0)} on the sand at ${w}x${h}`);
+      assert.ok(sw >= 90, `${thing.id} ${sw.toFixed(0)}x${sh.toFixed(0)} on the plank at ${w}x${h}`);
       obj.scale.setScalar(obj.userData.shelfScale);
-      obj.position.set(-6, 1.45 + 0.54, 1.2);
+      obj.position.set(-7.45, 1.72, 0.95);
       const onShelf = drawnRect(obj, camera, w, h);
       const [gw, gh] = size(onShelf);
       assert.ok(gw >= 60, `${thing.id} ${gw.toFixed(0)}x${gh.toFixed(0)} on a shelf at ${w}x${h}`);

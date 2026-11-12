@@ -34,7 +34,7 @@ export const EASIER = {
   garage: easierGarage,
   pluto: (s) => ({ ...s, shapes: s.shapes.slice(0, Math.max(2, s.shapes.length - 1)), ask: 'match', choices: Math.max(2, s.choices - 1), similar: false, turned: false }), // (the newest shape stays out)
   lighthouse: (s) => ({ ...s, choices: Math.max(2, (s.choices ?? 2) - 1), numbers: [s.numbers[0], Math.max(s.numbers[0], s.numbers[1] - 1)] }),
-  shallows: (s) => ({ ...s, mode: 'watch', things: 'familiar' }),
+  shallows: (s) => ({ ...s, mode: 'watch', things: 'familiar', tell: s.mode === 'watch' }), // (already watching: it also says what it saw first)
   reef: (s) => ({ ...s, mode: 'see', choices: Math.max(2, s.choices - 1) }),
   port: (s) => ({ ...s, mode: 'together', syllables: [1, 2], rounds: Math.min(3, s.rounds) }),
 };

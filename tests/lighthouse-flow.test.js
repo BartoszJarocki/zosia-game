@@ -192,22 +192,91 @@ test('make: three quick taps give three flashes and three dots one after another
   stop(s);
 });
 
-test('more: the lamp shows two, she makes three, and the sequence is scored', async () => {
-  const before = globalThis.__sfx.filter((x) => x === 'ding').length;
-  const s = await scene(4, 2);
+const looks = (s) => s.dots.map((d) => d.userData.look);
+const dings = () => globalThis.__sfx.filter((x) => x === 'ding').length;
+
+test('more: the lamp shows two, a pale dot stays for each and one empty place waits; she makes three and the sequence is scored', async () => {
+  const before = dings();
+  const s = await scene(4, 3);
   const round = s.round(0);
   await until(() => s.phase === 'making');
+  assert.equal(dings() - before, 2, 'the lamp flashed two');
   assert.equal(s.target, 3);
   assert.equal(s.last, 3);
   assert.equal(s.boat.userData.numeral, undefined);
-  assert.equal(globalThis.__sfx.filter((x) => x === 'ding').length - before, 2);
-  for (let i = 0; i < 3; i++) await s.lamp.userData.onTap();
+  assert.deepEqual(looks(s), ['seen', 'seen', 'empty']);
+  await s.lamp.userData.onTap();
+  assert.deepEqual(looks(s), ['lit', 'seen', 'empty'], 'her flash lights the first place');
+  await s.lamp.userData.onTap();
+  await s.lamp.userData.onTap();
+  assert.deepEqual(looks(s), ['lit', 'lit', 'lit'], 'her third flash fills the empty place');
   assert.equal(s.last, 'done');
   await s.boat.userData.onTap();
   await round;
   assert.equal(s.answers[0].skill, 'sequence');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].firstTry, true);
+  stop(s);
+});
+
+test('more: asks among the counts she makes and records the same one', async () => {
+  const s = await scene(4);
+  let asked = null;
+  s.pick = (skill, pool) => { asked = [skill, pool]; return 5; };
+  const before = dings();
+  const round = s.round(0);
+  await until(() => s.phase === 'making');
+  assert.deepEqual(asked, ['sequence', [2, 3, 4, 5]]);
+  assert.equal(dings() - before, 4, 'five to make: the lamp shows four');
+  assert.equal(s.learn.current.item, '5');
+  for (let i = 0; i < 5; i++) await s.lamp.userData.onTap();
+  await s.boat.userData.onTap();
+  await round;
+  assert.equal(s.answers[0].item, '5');
+  stop(s);
+});
+
+test('more: a wrong try keeps what she saw and asks again; the second replays what she saw, never the answer; the third shows it', async () => {
+  const s = await scene(4, 3);
+  const round = s.round(0);
+  await until(() => s.phase === 'making');
+  await s.lamp.userData.onTap();
+  await s.lamp.userData.onTap();
+  let from = globalThis.__lines.length, flashed = dings();
+  await s.boat.userData.onTap();
+  for (let i = 0; i < 20; i++) await flush();
+  assert.deepEqual(globalThis.__lines.slice(from), ['Za mało! Policz jeszcze raz!', 'Mrugnij o jeden raz więcej!']);
+  assert.equal(dings(), flashed, 'the first wrong try flashes nothing');
+  assert.deepEqual(looks(s), ['seen', 'seen', 'empty'], 'her flashes go out, the lamp\'s stay');
+  assert.equal(s.phase, 'making');
+
+  const phaseOf = new Map(); // (the play check reads phase 'helping' as the answer being shown)
+  const say = s.say.bind(s);
+  s.say = (segments) => { for (const line of [segments].flat()) phaseOf.set(line, s.phase); return say(segments); };
+  await s.lamp.userData.onTap();
+  flashed = dings();
+  await s.boat.userData.onTap();
+  await until(() => s.phase === 'making' && dings() === flashed + 2);
+  for (let i = 0; i < 20; i++) await flush();
+  assert.equal(dings() - flashed, 2, 'the clue replays the two flashes she saw');
+  assert.equal(phaseOf.get('Za mało! Policz jeszcze raz!'), 'watching', 'replaying what she saw is not showing the answer');
+  assert.deepEqual(looks(s), ['seen', 'seen', 'empty'], 'the empty place stays empty');
+  assert.equal(s.learn.current.assist, 2);
+
+  flashed = dings();
+  from = globalThis.__lines.length;
+  await s.boat.userData.onTap();
+  await until(() => s.phase === 'making' && dings() === flashed + 3);
+  for (let i = 0; i < 20; i++) await flush();
+  assert.equal(dings() - flashed, 3, 'the answer: three flashes');
+  assert.equal(phaseOf.get('Za mało! Policz jeszcze raz!'), 'helping');
+  assert.ok(globalThis.__lines.slice(from).includes('Mrugnij trzy razy!'));
+  assert.equal(s.learn.current.assist, 3);
+  for (let i = 0; i < 3; i++) await s.lamp.userData.onTap();
+  await s.boat.userData.onTap();
+  await round;
+  assert.equal(s.answers[0].firstTry, false);
   stop(s);
 });
 

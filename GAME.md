@@ -725,25 +725,29 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 
 - **mode**: `marks` keeps a yellow dot on the board for every flash (things that stay); `flashes` has no dots, so
   she counts what she saw, and tapping the bubble replays the flashes; `make` puts the number on the boat's sail,
-  she taps the lamp that many times and then the boat; `more` flashes a number and she makes one flash more.
-  The flashes she makes are quick and each leaves a dot; quick taps flash one after another, every one counted,
+  she taps the lamp that many times and then the boat; `more` flashes a number, keeps a pale dot on the board for
+  each flash and shows one empty place after them ("Mrugnij o jeden raz więcej!"): she makes as many flashes and one
+  more, each lighting the next place, the empty one last, and then taps the boat.
+  The flashes she makes are quick and each lights a dot; quick taps flash one after another, every one counted,
   and the boat is judged once they have all played.
-- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows.
+- **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows (2 to 5),
+  and that count is what it records.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
 - **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
   a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
   after the praise. Wrong: the boat bobs, "Nie, to nie ten." (`make` and `more`: "Za mało! Policz jeszcze
-  raz!" and the dots reset) and the question again. Help: the dots light one by one (`marks`), or the flashes
-  again (`flashes`, and `more`: the ones she saw), or the lamp shows itself (`make`); last the right buoy
-  pulses, or the lamp flashes the answer ("Mrugnij trzy razy!") and she makes it herself. A boat is never lost.
+  raz!" and her dots go out; the pale ones stay) and the question again, nothing more. Help: the dots light one by
+  one (`marks`), or the flashes again (`flashes`, and `more`: the ones she saw, each pale dot glowing with its
+  flash, the empty place still empty), or the lamp shows itself (`make`); last the right buoy pulses, or the lamp
+  flashes the answer ("Mrugnij trzy razy!") and she makes it herself. A boat is never lost.
 
 ### 🦆 Pływa czy tonie? · `shallows`
 
-A sunny sandy beach at the edge of clear shallow water. The water surface and the sandy bottom are both
-in view, from a low side-on camera. One thing waits at the water's edge; when it drops in, it splashes,
-then floats at the surface or sinks slowly to the bottom. Two little shelves stand on the sand, one under
-a duck on the waves ("pływa"), one under a stone on the bottom ("tonie"). Things already sorted stay on
-the shelves, so she sees the groups grow.
+A sunny beach with a glass pool on it, seen from the side: blue water up to a clear white surface line, sand on
+the bottom. One thing waits on a plank above the water; when it drops in, it splashes, then rests across the
+surface line or sinks slowly to the sand. Two big shelves stand on the beach, each under a large picture of the
+same pool: a duck sitting on the surface line ("pływa"), a stone lying on the bottom ("tonie"). Things already
+sorted stay on the shelves, so she sees the groups grow.
 
 | Level | mode | things | rounds |
 |---|---|---|---|
@@ -751,21 +755,25 @@ the shelves, so she sees the groups grow.
 | 2 | guess | familiar | 4 |
 | 3 | surprise | all | 5 |
 
-- **mode** — `watch`: she taps the thing, watches it float or sink, hears "Jabłko pływa!", then "Gdzie to położymy?"
-  and taps the matching shelf. `guess`: first "Pływa czy tonie?" and she taps a shelf as her guess, then the
-  thing drops in and shows the answer. `surprise`: as `guess`, with the big log and the little coin among the
-  things. A wrong guess is not punished: the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to
-  its shelf, then the next round.
+- **mode** — `watch`: "Wrzuć to do wody!", she taps the thing and watches it float or sink, then "Pływa czy
+  tonie?" and she taps the shelf for what she saw; only then "Brawo! Jabłko pływa!". `guess`: first "Pływa czy
+  tonie?" and she taps a shelf as her guess, then the thing drops in and shows the answer. `surprise`: as
+  `guess`, with the big log and the little coin among the things. A guess is one try: a wrong one gets no "no",
+  the thing shows what it does ("Popatrz! Kłoda pływa!") and goes to its shelf, then the next round. Help in
+  `watch`: "Nie, to nie ten." and the question again, then the thing bobs ("Popatrz uważnie!"), then the right
+  shelf pulses. A gentler run is `watch` with the familiar things; one after a rough `watch` run also says what
+  the thing did before it asks.
 - **things** — `familiar`: an apple, a ball, a rubber duck, a stone, a key and a spoon. `all`: also a leaf,
   a wooden block, a big log (clearly the biggest) and a little coin (clearly the smallest), so the log floats
   and the coin sinks. Chase never says heavy or light.
-- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap; `guess` and
-  `surprise` are scored on the guess. Every level has at least one scored question.
+- **rounds** — things dropped per mission (1 to 8). `watch` is scored on the shelf tap (the tap that drops it
+  is not scored); `guess` and `surprise` are scored on the guess, once: a right guess is right first time, a
+  wrong one counts against the run. Every level has at least one scored question.
 ### 🦀 The Reef · `reef`
 
-Looking down through the boat's round glass floor at a bright, shallow reef: sandy sea floor, green sea grass,
-a grey rock and a big pink shell. A crab, a starfish, a little fish and an octopus take turns hiding on, under,
-in and next to them.
+Under water at a bright, shallow reef, seen from the side: blue water, a sandy floor, green sea grass, a big
+grey rock with a dark hollow under its ledge, and a big pink shell lying open. A crab, a starfish, a little fish
+and an octopus take turns hiding on, under, in and next to them.
 
 | Level | mode | words | choices | rounds |
 |---|---|---|---|---|
@@ -774,20 +782,27 @@ in and next to them.
 | 3 | hear | na, pod, w, obok | 3 | 4 |
 | 4 | place | na, pod, w, obok | 3 | 3 |
 
-- **mode**: `see` shows a small picture of the asked position in the bubble, to match with what she sees;
-  `hear` gives the words only; `place` shows one big scene, the animal waits above it and three glowing spots
-  mark places. She taps the spot and the animal swims there.
-- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock or shell, under the rock,
-  in the shell, and next to the rock or shell.
-- **choices**: how many small scenes side by side (2 to 4), or how many glowing spots in `place`.
+- **mode**: one scene each round. `see` and `hear`: the same animal sits in two or three places at once,
+  "Który krab jest pod kamieniem?", and she taps the one that is; `see` shows a small picture of the asked
+  place in the bubble, to match with what she sees; `hear` gives the words only (the bubble shows the animal).
+  `place`: the animal waits above the scene and three large bright rings mark places ("Połóż kraba pod
+  kamieniem."). She taps a ring and the animal swims there.
+- **words**: `na`, `pod`, `w`, `obok`. Only real places are used: on the rock, under the rock (in the hollow,
+  only its eyes showing in the dark), in the shell, and next to the rock or the shell. `na` is only on the rock
+  and `w` only in the shell, so they never share a spot. Where the scene can, another animal (or ring) is on the
+  same thing as the asked one (on and under the rock), so the thing alone does not tell which.
+- **choices**: how many places the animal sits in (2 to 4), or how many rings in `place`.
 - **rounds**: questions per mission (1 to 8). Each is one scored question, skill `position`, item the word.
   Right: the animal celebrates and the answer is said in a full sentence. Wrong: a gentle bounce, "Nie, to nie
-  ten." and the question again; the right scene or spot pulses only at the end of the help. The right word is never the same three times in a row.
+  ten." and the question again; then one wrong animal swims away (with two to pick from, the animals hop one by
+  one: "Popatrz uważnie!"); the right animal or ring pulses only at the end of the help. Each round's word is
+  picked at random, never the same three times in a row.
 
 ### 📯 The Port · `port`
 
-A little sunny port with a wooden quay, five small moored boats bobbing, each with its name painted on a white
-board, and Chase watching from his round window. A big round horn stands on the quay. One boat comes forward,
+A little sunny port with a wooden quay, five small moored boats bobbing, each with its animal painted on a white
+board (the boat is named after it: a seal is Foka), and Chase watching from his round window. Every board is the
+same width, so it never tells how long a name is. A big round horn stands on the quay. One boat comes forward,
 and she toots its name once for each syllable.
 
 | Level | mode | syllables | rounds |
@@ -798,14 +813,17 @@ and she toots its name once for each syllable.
 
 - **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
   `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
-  `which`: three boats come forward, "Która łódka ma dwa kawałki?", and she taps the tick under a boat.
+  `which`: three boats come forward, each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka
+  ma dwa kawałki?", and green ticks appear under the boats with the question; she taps the tick under a boat.
+  Tapping a boat itself says its name again, and stops the names if they are still going.
 - **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the boat's name again, and
   she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
   kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
-  pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right name pulses. Right:
+  pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right board pulses; a long
+  wait brings the three names again. Right:
   the boat sails out happily, saying its name once; the next boat comes in meanwhile. The name is said once
   before her toots (Chase's clap, or the whole name) and once after. A boat is never lost.
 

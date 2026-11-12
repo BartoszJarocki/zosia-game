@@ -48,7 +48,8 @@ registerHooks({ load(url, context, next) {
   return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
 } });
 
-const { PortMission } = await import('../src/scenes/port.js');
+const { PortMission, BOAT_PICTURES } = await import('../src/scenes/port.js');
+const { BOATS } = await import('../src/levels/port.js');
 const { CONFIG } = await import('../src/config.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { T } = await import('../src/lang/pl.js');
@@ -131,15 +132,29 @@ test('too few toots get "Za mało!" and the name again, not the clap, then a fre
   stop(s);
 });
 
-test('which asks for a count and each boat carries it for the walker', async () => {
+test('every boat has its animal for its board', () => {
+  for (const boat of BOATS) assert.ok(BOAT_PICTURES[boat.word], boat.word);
+});
+
+test('which says the three names first, each boat hopping, then asks for a count; a tapped boat says its name', async () => {
   const s = await scene(3);
   s.pick = () => 2;
+  const before = globalThis.__lines.length;
   const round = s.round(0);
-  await until(() => s.phase === 'choosing');
+  await until(() => s.phase === 'choosing' && globalThis.__lines.at(-1) === 'Która łódka ma dwa kawałki?');
+  const names = [...s.boats].sort((a, b) => a.position.x - b.position.x).map((b) => `${b.userData.boatName[0]}${b.userData.boatName.slice(1).toLowerCase()}!`);
+  assert.deepEqual(globalThis.__lines.slice(before).slice(-4), [...names, 'Która łódka ma dwa kawałki?']);
   assert.equal(s.last, 2);
   const ticks = s.tappables.filter((o) => o.userData.num !== undefined && o.parent);
   assert.equal(ticks.length, 3);
   assert.deepEqual(ticks.map((o) => o.userData.num).sort(), [1, 2, 3]);
+
+  const seal = s.boats[0];
+  const said = globalThis.__lines.length;
+  await s.tappables.find((o) => o === seal).userData.onTap();
+  assert.deepEqual(globalThis.__lines.slice(said), [`${seal.userData.boatName[0]}${seal.userData.boatName.slice(1).toLowerCase()}!`]);
+  assert.equal(s.learn.current.wrong, 0, 'a tap on a boat is not an answer');
+
   await ticks.find((o) => o.userData.num !== 2).userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(s.learn.current.wrong, 1);
@@ -154,7 +169,31 @@ test('which asks for a count and each boat carries it for the walker', async () 
   stop(s);
 });
 
-test('a done boat exposes only choice and a which boat exposes only its count for the walker', async () => {
+test('which: the ticks come with the question; a tap on a boat during the names says its name, then the question comes', async () => {
+  const s = await scene(3);
+  s.pick = () => 2;
+  const held = [], say = s.say.bind(s);
+  s.say = (segments) => { say(segments); return new Promise((resolve) => held.push(resolve)); }; // (each line plays until let go)
+  const round = s.round(0);
+  const naming = () => s.phase === 'choosing' && /^\p{Lu}\p{Ll}+!$/u.test(globalThis.__lines.at(-1));
+  await until(() => naming() || (held.splice(0).forEach((go) => go()), false)); // (the start line plays; the first name holds)
+  assert.ok(s.tickButtons.every((t) => !t.visible), 'nothing to answer before the question');
+  const before = globalThis.__lines.length;
+  await s.boats.at(-1).userData.onTap();
+  held.splice(0).forEach((go) => go());
+  await until(() => globalThis.__lines.at(-1) === 'Która łódka ma dwa kawałki?');
+  held.splice(0).forEach((go) => go());
+  const said = globalThis.__lines.slice(before);
+  assert.equal(said.length, 2, `the tapped boat's name, then the question: ${said}`);
+  assert.ok(s.tickButtons.every((t) => t.visible), 'the ticks came with the question');
+  s.say = say;
+  await count(s, 2).userData.onTap();
+  await round;
+  assert.equal(s.answers[0].firstTry, true);
+  stop(s);
+});
+
+test('a done boat exposes only choice, and a which boat no answer, for the walker', async () => {
   const s = await scene(1);
   s.pick = () => 'MEWA';
   const round = s.round(0);
@@ -176,8 +215,8 @@ test('a done boat exposes only choice and a which boat exposes only its count fo
   const which = q.round(0);
   await until(() => q.phase === 'choosing');
   assert.equal(q.boats.length, 3);
-  for (const b of q.boats) {
-    assert.equal(typeof b.userData.num, 'number');
+  for (const b of q.boats) { // (a boat says its name: nothing on it reads as an answer)
+    assert.equal(b.userData.num, undefined);
     assert.equal(b.userData.word, undefined);
     assert.equal(b.userData.letter, undefined);
     assert.equal(b.userData.choice, undefined);

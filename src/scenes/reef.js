@@ -1,25 +1,18 @@
 import * as THREE from 'three';
-import { animate, ease, hop, wait, camera } from '../engine.js';
+import { animate, ease, hop, wait } from '../engine.js';
 import { mat, mesh } from '../models.js';
 import { portrait } from '../world/portrait.js';
 import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { reefPlan, reefChoices, reefSpots, placeKey, placeAt } from '../levels/reef.js';
+import { reefPlan, reefChoices, placeAt } from '../levels/reef.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-const MINI_WIDTH = 4.8, MINI_GAP = 0.3;
 const SEEN_MS = 800; // the animal in its place, in view, before the next scene
-const MINI_AT = {
-  'na:rock': { x: -1.2, y: 2.55, z: 0 },
-  'na:shell': { x: 1.05, y: 1.12, z: 0.1 },
-  'pod:rock': { x: -1.2, y: 0.15, z: 0.95 },
-  'w:shell': { x: 1.05, y: 1.05, z: 0.15 },
-  'obok:rock': { x: -2.1, y: 0.15, z: 1.35 },
-  'obok:shell': { x: 2.45, y: 0.15, z: 1.1 },
-};
-const ANIMAL_SCALE = { crab: 1.65, starfish: 1.7, fish: 1.85, octopus: 2.3 };
+const ANIMAL_SCALE = { crab: 1.85, starfish: 1.45, fish: 1.75, octopus: 1.75 };
+const WAIT_AT = { x: 0, y: 4.7, z: 0.6 }; // the place round: the animal swims here first, above the scene
+const RING = 1.2; // a place round's spot: a bright ring this wide (world units) round where the animal would sit
 
 let factCursor = 0;
 
@@ -57,20 +50,20 @@ function animalPicture(kind) {
   return `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true">${ANIMAL_PICTURES[kind]}</svg>`;
 }
 
-/** A little bubble picture of the asked position: the animal, a rock or shell, and where they are. */
+/** A little bubble picture of the asked position, drawn as the scene is: the rock with its hollow, or the open shell. */
 function positionPicture(word, on) {
   const base = on === 'shell'
-    ? '<path d="M28 62 C28 45 72 45 72 62 C72 78 60 85 50 85 C40 85 28 78 28 62 Z" fill="#f9a8d4" stroke="#ec4899" stroke-width="2"/>'
-    : '<ellipse cx="50" cy="64" rx="22" ry="14" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>';
+    ? '<path d="M24 66 Q50 98 76 66 Z" fill="#f9a8d4" stroke="#ec4899" stroke-width="2"/><path d="M26 64 Q36 30 70 40" fill="none" stroke="#ec4899" stroke-width="5" stroke-linecap="round"/>'
+    : '<path d="M18 86 L22 60 L30 56 L32 86 Z M66 86 L68 56 L76 60 L80 86 Z" fill="#94a3b8"/><rect x="26" y="66" width="44" height="20" fill="#334155"/><path d="M14 60 Q16 40 48 38 Q82 40 84 60 Z" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>';
   const dot = (x, y) => `<circle cx="${x}" cy="${y}" r="7" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>`;
-  const animal = { na: dot(50, 42), pod: dot(50, 82), w: dot(50, 66), obok: dot(76, 70) }[word];
+  const animal = { na: dot(49, 30), pod: dot(49, 77), w: dot(50, 70), obok: dot(on === 'shell' ? 90 : 8, 80) }[word];
   return `<svg viewBox="0 0 100 100" width="1em" height="1em" aria-hidden="true">${base}${animal}</svg>`;
 }
 
 export class ReefMission extends Mission {
   constructor(game) {
     super(game, 'reef');
-    this.view = { pos: new THREE.Vector3(0, 9.5, 18), look: new THREE.Vector3(0, 0.8, 0), minWidth: 18 };
+    this.view = { pos: new THREE.Vector3(0, 4.4, 18), look: new THREE.Vector3(0, 3.5, 0), minWidth: 19.6 }; // (side on, as if diving)
     this.post = { tilt: 0, ao: false };
     this.drift = 0;
     this.bubbleAt = 'left';
@@ -87,10 +80,25 @@ export class ReefMission extends Mission {
   }
 
   build() {
-    this.scene.background = new THREE.Color('#8fe6e0');
-    this.scene.add(new THREE.HemisphereLight('#f7ffff', '#87dcc8', 2.4));
-    const sun = new THREE.DirectionalLight('#fff6d8', 2.1);
-    sun.position.set(-8, 16, 12);
+    this.waterMap = texture(512, (c, size) => {
+      const g = c.createLinearGradient(0, 0, 0, size);
+      g.addColorStop(0, '#a5f3fc');
+      g.addColorStop(0.5, '#38bdf8');
+      g.addColorStop(1, '#0e7490');
+      c.fillStyle = g;
+      c.fillRect(0, 0, size, size);
+      c.fillStyle = 'rgba(255, 255, 255, 0.12)'; // light from the surface
+      for (const [x, w] of [[60, 50], [190, 80], [330, 60], [440, 40]]) {
+        c.beginPath();
+        c.moveTo(x, 0); c.lineTo(x + w, 0); c.lineTo(x + w * 2.2, size); c.lineTo(x + w * 1.2, size);
+        c.fill();
+      }
+    });
+    this.maps.push(this.waterMap);
+    this.scene.background = this.waterMap;
+    this.scene.add(new THREE.HemisphereLight('#f0fdff', '#4fb3c8', 2.5));
+    const sun = new THREE.DirectionalLight('#fffbe8', 1.9);
+    sun.position.set(-6, 16, 12);
     this.scene.add(sun);
 
     this.world = new THREE.Group();
@@ -109,77 +117,65 @@ export class ReefMission extends Mission {
     });
     this.maps.push(this.sandMap);
     const sand = new THREE.MeshStandardMaterial({ map: this.sandMap, roughness: 1 });
-    this.world.add(mesh(new THREE.CircleGeometry(32, 64), sand, { y: -0.06, rx: -Math.PI / 2, shadow: false }));
+    this.world.add(mesh(new THREE.PlaneGeometry(80, 60), sand, { y: 0, z: -4, rx: -Math.PI / 2, shadow: false }));
 
-    this.rippleMap = texture(512, (c, size) => {
-      c.clearRect(0, 0, size, size);
-      c.strokeStyle = 'rgba(255, 252, 216, 0.55)';
-      c.lineWidth = 8;
-      c.lineCap = 'round';
-      for (let i = 0; i < 14; i++) {
-        const y = 20 + i * 36;
-        c.beginPath();
-        c.moveTo(-20, y);
-        for (let x = -20; x <= size + 20; x += 42) c.quadraticCurveTo(x + 21, y + (i % 2 ? 13 : -13), x + 42, y);
-        c.stroke();
-      }
-    });
-    this.maps.push(this.rippleMap);
-    this.rippleMap.wrapS = this.rippleMap.wrapT = THREE.RepeatWrapping;
-    this.rippleMap.repeat.set(2, 2);
-    const rippleMat = new THREE.MeshBasicMaterial({ map: this.rippleMap, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending });
-    this.world.add(mesh(new THREE.PlaneGeometry(30, 30), rippleMat, { y: 0.01, rx: -Math.PI / 2, shadow: false }));
-    this.onUpdate((dt) => { this.rippleMap.offset.x = (this.rippleMap.offset.x + dt * 0.004) % 1; });
+    const grassMats = [mat('#34d399', { roughness: 1 }), mat('#16a34a', { roughness: 1 })];
+    for (const [x, z, h] of [[-9.6, -1.5, 2.4], [-8.9, -2.6, 3.2], [-0.4, -2.2, 2.6], [0.5, -2.8, 3.4], [1.1, -1.8, 2.1], [9.3, -2.2, 2.9], [9.9, -1.2, 2.2]]) {
+      this.world.add(mesh(new THREE.ConeGeometry(0.16, h, 5), grassMats[Math.round(h * 10) % 2], { x, y: h / 2, z, rz: (x % 2) * 0.05, shadow: false }));
+    }
+    this.world.add(this.rock());
+    this.world.add(this.shell());
 
     this.spotMap = texture(128, (c, size) => {
       c.clearRect(0, 0, size, size);
       const g = c.createRadialGradient(64, 64, 4, 64, 64, 64);
-      g.addColorStop(0, 'rgba(255, 251, 214, 0.95)');
-      g.addColorStop(0.55, 'rgba(253, 224, 102, 0.6)');
+      g.addColorStop(0, 'rgba(255, 251, 214, 0.9)');
+      g.addColorStop(0.6, 'rgba(253, 224, 71, 0.55)');
       g.addColorStop(1, 'rgba(250, 204, 21, 0)');
       c.fillStyle = g;
       c.fillRect(0, 0, size, size);
     });
     this.maps.push(this.spotMap);
 
-    const grassGeo = new THREE.ConeGeometry(0.11, 1.2, 5);
-    const grassMats = [mat('#34d399', { roughness: 1 }), mat('#16a34a', { roughness: 1 })];
-    for (let i = 0; i < 18; i++) {
-      const a = i / 18 * Math.PI * 2, r = 5.8 + (i % 4) * 0.7;
-      this.world.add(mesh(grassGeo, grassMats[i % 2], {
-        x: Math.cos(a) * r, y: 0.58, z: Math.sin(a) * r * 0.62, rz: (i % 5 - 2) * 0.08, shadow: false,
-      }));
-    }
-
-    this.frame = new THREE.Group();
-    this.frame.add(mesh(new THREE.TorusGeometry(1, 0.05, 12, 64), mat('#e8fffa', { metalness: 0.1, roughness: 0.45 }), { shadow: false }));
-    this.frame.add(mesh(new THREE.TorusGeometry(0.945, 0.012, 8, 64), mat('#76d9c9', { roughness: 0.5 }), { z: 0.01, shadow: false }));
-    this.world.add(this.frame);
-
     this.portrait = portrait();
     const face = new THREE.MeshBasicMaterial({ map: this.portrait.texture });
     this.window = new THREE.Group();
     this.window.add(mesh(new THREE.CircleGeometry(1.0, 48), face, { shadow: false }));
     this.window.add(mesh(new THREE.TorusGeometry(1.06, 0.09, 12, 48), mat('#f8e7b5', { metalness: 0.1, roughness: 0.45 }), { z: 0.01, shadow: false }));
-    this.window.position.set(5, 1, 5.5);
-    this.window.scale.setScalar(0.8);
+    this.window.position.set(5.6, 6.6, -1);
+    this.window.lookAt(this.view.pos);
     this.world.add(this.window);
     this.tappable(this.window, () => { sfx.bark(); hop(this.window, 0.18); });
 
-    this.onUpdate(() => this.layoutFrame());
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
   }
 
-  layoutFrame() {
-    const look = this.view.look;
-    const dir = camera.position.clone().sub(look);
-    const distance = Math.max(6, Math.min(12, dir.length() * 0.58));
-    dir.normalize();
-    this.frame.position.copy(look).addScaledVector(dir, distance);
-    const half = distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.min(1, camera.aspect);
-    this.frame.scale.setScalar(half * 0.94);
-    this.frame.lookAt(camera.position);
-    this.window.lookAt(camera.position);
+  /** A big grey rock on two feet, with a dark hollow under its ledge: "pod kamieniem" is in there. */
+  rock() {
+    const group = new THREE.Group();
+    const grey = mat('#8b95a1', { roughness: 1 });
+    const geo = new THREE.DodecahedronGeometry(1, 1);
+    group.add(mesh(new THREE.PlaneGeometry(3.1, 2.3), new THREE.MeshBasicMaterial({ color: '#1e293b' }), { y: 1.15, z: -0.5, shadow: false })); // the hollow
+    for (const x of [-1.95, 1.95]) group.add(mesh(geo, grey, { x, y: 1.05, s: [0.8, 1.15, 1.0], shadow: false }));
+    group.add(mesh(geo, grey, { y: 2.6, s: [2.75, 0.62, 1.15], shadow: false }));
+    group.position.set(-3.3, 0, 0);
+    return group;
+  }
+
+  /** A big pink shell lying open, its lid up: "w muszli" is inside. */
+  shell() {
+    const group = new THREE.Group();
+    const pink = mat('#f9a8d4', { roughness: 0.5, side: THREE.DoubleSide });
+    const rim = mat('#ec4899', { roughness: 0.5 });
+    group.add(mesh(new THREE.SphereGeometry(1.55, 28, 14, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), pink, { y: 1.45, s: [1, 0.9, 0.75], shadow: false }));
+    group.add(mesh(new THREE.TorusGeometry(1.55, 0.08, 8, 40), rim, { y: 1.45, rx: Math.PI / 2, s: [1, 0.75, 1], shadow: false }));
+    const lid = new THREE.Group();
+    lid.add(mesh(new THREE.SphereGeometry(1.55, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), pink, { z: 1.16, s: [1, 0.6, 0.75], shadow: false }));
+    lid.position.set(0, 1.45, -1.16);
+    lid.rotation.x = -1.15;
+    group.add(lid);
+    group.position.set(3.4, 0, 0.1);
+    return group;
   }
 
   material(color, options = {}) {
@@ -193,153 +189,140 @@ export class ReefMission extends Mission {
     return geometry;
   }
 
-  rock(scale = 1) {
-    const group = new THREE.Group();
-    group.add(mesh(this.geo(new THREE.DodecahedronGeometry(1, 1)), this.material('#8b95a1', { roughness: 1 }), {
-      y: 1.05 * scale, s: [1.05 * scale, 0.62 * scale, 0.9 * scale], shadow: false,
-    }));
-    group.add(mesh(this.geo(new THREE.SphereGeometry(0.16 * scale, 8, 6)), this.material('#68737f', { roughness: 1 }), {
-      x: -0.48 * scale, y: 0.12 * scale, z: 0.3 * scale, s: [1.2, 0.6, 1], shadow: false,
-    }));
-    return group;
-  }
-
-  shell(scale = 1) {
-    const group = new THREE.Group();
-    const pink = this.material('#f9a8d4', { roughness: 0.5, side: THREE.DoubleSide });
-    group.add(mesh(this.geo(new THREE.SphereGeometry(0.85 * scale, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2)), pink, {
-      y: 0.72 * scale, shadow: false,
-    }));
-    group.add(mesh(this.geo(new THREE.TorusGeometry(0.85 * scale, 0.06 * scale, 8, 32)), this.material('#fbcfe8', { roughness: 0.5 }), {
-      y: 0.72 * scale, rx: Math.PI / 2, shadow: false,
-    }));
-    return group;
-  }
-
+  /** The animals look at her: big white eyes, so the one hiding under the rock still shows its eyes in the dark. */
   animal(kind) {
     const group = new THREE.Group();
     group.userData.kind = kind;
-    const black = this.material('#1f2937', { roughness: 0.6 });
-    const face = (y, z) => {
-      group.add(mesh(this.geo(new THREE.SphereGeometry(0.055, 8, 6)), black, { x: -0.12, y, z, shadow: false }));
-      group.add(mesh(this.geo(new THREE.SphereGeometry(0.055, 8, 6)), black, { x: 0.12, y, z, shadow: false }));
-      group.add(mesh(this.geo(new THREE.TorusGeometry(0.055, 0.012, 6, 10, Math.PI)), black, { y: y - 0.09, z: z + 0.02, rz: Math.PI, shadow: false }));
+    const white = this.material('#ffffff', { roughness: 0.3 });
+    const black = this.material('#111827', { roughness: 0.4 });
+    const face = (y, z, apart = 0.15) => {
+      for (const x of [-apart, apart]) {
+        const eye = mesh(this.geo(new THREE.SphereGeometry(0.1, 12, 8)), white, { x, y, z, shadow: false });
+        eye.add(mesh(this.geo(new THREE.SphereGeometry(0.055, 10, 6)), black, { z: 0.07, shadow: false }));
+        eye.userData.eye = true;
+        group.add(eye);
+      }
+      group.add(mesh(this.geo(new THREE.TorusGeometry(0.06, 0.014, 6, 10, Math.PI)), black, { y: y - 0.15, z: z + 0.02, rz: Math.PI, shadow: false }));
     };
     if (kind === 'crab') {
       const red = this.material('#ef4444', { roughness: 0.55 });
       const dark = this.material('#991b1b', { roughness: 0.7 });
-      group.add(mesh(this.geo(new THREE.SphereGeometry(0.34, 16, 12)), red, { y: 0.32, s: [1.2, 0.72, 0.95], shadow: false }));
+      group.add(mesh(this.geo(new THREE.SphereGeometry(0.34, 16, 12)), red, { y: 0.32, s: [1.25, 0.75, 0.9], shadow: false }));
       for (const side of [-1, 1]) {
-        group.add(mesh(this.geo(new THREE.SphereGeometry(0.16, 10, 8)), red, { x: side * 0.42, y: 0.3, z: 0.2, s: [0.75, 0.55, 0.55], shadow: false }));
-        for (let i = 0; i < 3; i++) group.add(mesh(this.geo(new THREE.CylinderGeometry(0.022, 0.022, 0.36, 6)), dark, {
-          x: side * 0.4, y: 0.15, z: -0.16 + i * 0.16, rz: side * 1.1, shadow: false,
+        group.add(mesh(this.geo(new THREE.SphereGeometry(0.17, 10, 8)), red, { x: side * 0.52, y: 0.42, z: 0.12, s: [0.8, 0.6, 0.6], shadow: false }));
+        for (let i = 0; i < 3; i++) group.add(mesh(this.geo(new THREE.CylinderGeometry(0.024, 0.024, 0.36, 6)), dark, {
+          x: side * 0.38, y: 0.12, z: -0.14 + i * 0.14, rz: side * 1.1, shadow: false,
         }));
       }
-      face(0.5, 0.28);
+      face(0.52, 0.24);
       return group;
     }
     if (kind === 'starfish') {
       const shape = new THREE.Shape();
       for (let i = 0; i < 10; i++) {
-        const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.22 : 0.58;
+        const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.24 : 0.6;
         const x = Math.cos(a) * r, y = Math.sin(a) * r;
         if (i) shape.lineTo(x, y); else shape.moveTo(x, y);
       }
       shape.closePath();
-      const star = this.geo(new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 1 }));
-      group.add(mesh(star, this.material('#fb7185', { roughness: 0.5 }), { rx: -Math.PI / 2, y: 0.08, shadow: false }));
-      face(0.22, 0.12);
+      const star = this.geo(new THREE.ExtrudeGeometry(shape, { depth: 0.14, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 }));
+      group.add(mesh(star, this.material('#fb7185', { roughness: 0.5 }), { y: 0.5, shadow: false })); // standing, facing her
+      face(0.56, 0.2, 0.12);
       return group;
     }
     if (kind === 'fish') {
       const blue = this.material('#60a5fa', { roughness: 0.5 });
       const orange = this.material('#fb923c', { roughness: 0.55 });
-      group.add(mesh(this.geo(new THREE.SphereGeometry(0.34, 16, 12)), blue, { y: 0.36, s: [1.2, 0.68, 0.52], shadow: false }));
-      group.add(mesh(this.geo(new THREE.ConeGeometry(0.2, 0.35, 8)), orange, { x: -0.47, y: 0.36, rz: Math.PI / 2, shadow: false }));
-      group.add(mesh(this.geo(new THREE.SphereGeometry(0.12, 10, 8)), orange, { x: 0.05, y: 0.55, z: 0.02, s: [1, 0.5, 0.4], shadow: false }));
-      face(0.45, 0.27);
+      group.add(mesh(this.geo(new THREE.SphereGeometry(0.34, 16, 12)), blue, { y: 0.4, s: [1.3, 0.85, 0.55], shadow: false }));
+      group.add(mesh(this.geo(new THREE.ConeGeometry(0.24, 0.38, 8)), orange, { x: -0.55, y: 0.4, rz: Math.PI / 2, shadow: false }));
+      group.add(mesh(this.geo(new THREE.SphereGeometry(0.13, 10, 8)), orange, { x: 0.02, y: 0.68, z: 0.02, s: [1, 0.5, 0.35], shadow: false }));
+      face(0.48, 0.2, 0.12);
       return group;
     }
     const purple = this.material('#a78bfa', { roughness: 0.55 });
-    group.add(mesh(this.geo(new THREE.SphereGeometry(0.34, 16, 12)), purple, { y: 0.55, s: [1, 0.88, 0.9], shadow: false }));
+    group.add(mesh(this.geo(new THREE.SphereGeometry(0.36, 16, 12)), purple, { y: 0.62, s: [1, 0.9, 0.9], shadow: false }));
     for (let i = 0; i < 8; i++) {
       const a = i / 8 * Math.PI * 2;
-      group.add(mesh(this.geo(new THREE.CylinderGeometry(0.035, 0.075, 0.4, 6)), purple, {
-        x: Math.cos(a) * 0.22, y: 0.23, z: Math.sin(a) * 0.2, rz: Math.cos(a) * 0.65, rx: Math.sin(a) * 0.65, shadow: false,
+      group.add(mesh(this.geo(new THREE.CylinderGeometry(0.04, 0.08, 0.42, 6)), purple, {
+        x: Math.cos(a) * 0.24, y: 0.24, z: Math.sin(a) * 0.2, rz: Math.cos(a) * 0.65, rx: Math.sin(a) * 0.65, shadow: false,
       }));
     }
-    face(0.6, 0.3);
+    face(0.68, 0.3);
     return group;
   }
 
-  seat(animal, place, mini) {
-    const at = mini ? MINI_AT[placeKey(place)] : placeAt(place);
-    animal.position.set(at.x, at.y, at.z);
-    const scale = mini ? ANIMAL_SCALE[animal.userData.kind] : (place.word === 'w' ? 0.85 : 1.05);
-    animal.scale.setScalar(scale);
+  /** In the hollow under the rock the animal is in the dark: only its eyes keep their light. */
+  shade(animal) {
+    animal.traverse((o) => {
+      if (!o.isMesh || o.userData.eye || o.parent?.userData.eye) return;
+      o.material = o.material.clone();
+      o.material.color.multiplyScalar(0.3);
+      this.roundMaterials.add(o.material);
+    });
   }
 
-  makeMini(place, animalKind) {
+  seat(animal, place) {
+    const at = placeAt(place);
+    animal.position.set(at.x, at.y, at.z);
+    animal.scale.setScalar(ANIMAL_SCALE[animal.userData.kind]);
+    if (place.word === 'pod') this.shade(animal);
+  }
+
+  /** An animal she can tap where it sits, with a hit box over its place (for "pod", the mouth of the hollow). */
+  makeChoice(place, kind) {
     const group = new THREE.Group();
-    group.add(mesh(this.geo(new THREE.CircleGeometry(2.4, 48)), this.material('#fbe7b4', { roughness: 1 }), {
-      y: 0.015, rx: -Math.PI / 2, shadow: false,
-    }));
-    group.add(mesh(this.geo(new THREE.TorusGeometry(2.38, 0.04, 6, 48)), this.material('#a7f3d0', { roughness: 0.6 }), {
-      y: 0.03, rx: -Math.PI / 2, shadow: false,
-    }));
-    const rock = this.rock(1.55);
-    rock.position.set(-1.2, 0, 0);
-    group.add(rock);
-    const shell = this.shell(1.55);
-    shell.position.set(1.05, 0, 0.1);
-    group.add(shell);
-    const animal = this.animal(animalKind);
-    this.seat(animal, place, true);
+    const at = placeAt(place);
+    group.position.set(at.x, at.y, at.z);
+    const animal = this.animal(kind);
+    this.seat(animal, place);
+    animal.position.set(0, 0, 0);
     group.add(animal);
-    const hit = mesh(this.geo(new THREE.BoxGeometry(4.4, 5, 0.3)), this.material('#ffffff', { visible: false }), {
-      y: 2.45, z: 0.25, shadow: false,
-    });
+    const hit = mesh(this.geo(new THREE.BoxGeometry(2.9, 2.2, 0.4)), this.material('#ffffff', { visible: false }), { y: 0.95, z: 0.4, shadow: false });
     group.add(hit);
     group.userData.hit = hit;
     group.userData.animal = animal;
     group.userData.choice = place.word;
-    group.userData.tapHeight = 2.2;
+    group.userData.tapHeight = 0.8;
     return group;
   }
 
+  newRound(target) {
+    this.phase = 'asking';
+    this.last = target.word;
+    this.item('R:' + target.word);
+    const root = new THREE.Group();
+    root.userData.dynamic = true;
+    this.roundRoot = root;
+    this.scene.add(root);
+    return root;
+  }
+
+  /** One scene: the same animal in two or three places. "Który krab jest pod kamieniem?" She taps the one that is. */
   choiceRound(target) {
     return new Promise((resolve) => {
-      this.phase = 'asking';
-      this.last = target.word;
-      this.item('R:' + target.word);
-      const root = new THREE.Group();
-      root.userData.dynamic = true;
-      this.roundRoot = root;
-      this.scene.add(root);
-
-      const choices = reefChoices(target.place, this.L.words, this.L.choices);
-      const width = choices.length >= 4 ? 3.0 : MINI_WIDTH;
-      const step = width + MINI_GAP;
-      const start = -((choices.length - 1) / 2) * step;
-      this.choices = choices.map((place, i) => {
-        const group = this.makeMini(place, target.animal);
-        group.position.set(start + i * step, 0, 0);
-        group.scale.setScalar(width / MINI_WIDTH);
+      const root = this.newRound(target);
+      const places = reefChoices(target.place, this.L.words, this.L.choices);
+      this.choices = places.map((place) => {
+        const group = this.makeChoice(place, target.animal);
         root.add(group);
         this.tappable(group, () => this.tapChoice(group, target, resolve));
         this.roundTappables.push(group);
         return group;
       });
       const right = this.choices.find((group) => group.userData.choice === target.word);
-
       this.question('position', target.word, {
         short: () => T.reefAsk(target.animal, target.place.word, target.place.on),
-        hint: () => T.reefLook(),
+        hint: (said = []) => { // each animal hops in turn: look at every one, no word said
+          const asked = this.learn.current;
+          this.say([...said, ...T.lookCarefully()]).then(() => this.pointAlong(this.choices.filter((c) => c.parent), (c) => { hop(c, 0.35); }))
+            .then(() => { if (this.learn.current === asked) this.ask(T.reefAsk(target.animal, target.place.word, target.place.on)); });
+          return Promise.resolve();
+        },
         simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.choices.find((group) => group !== right && group.parent)),
         reveal: () => this.hint(right, () => this.phase !== 'asking'),
       }, { options: this.choices.length });
 
-      const bubble = { big: '?', onTap: () => this.replay(), passthrough: true };
+      const bubble = { big: '?', pic: animalPicture(target.animal), onTap: () => this.replay(), passthrough: true };
       if (this.L.mode === 'see') Object.assign(bubble, { big: target.word, pic: positionPicture(target.word, target.place.on) });
       ui.bubble(bubble);
       this.askAfter(this.talk, T.reefAsk(target.animal, target.place.word, target.place.on));
@@ -349,7 +332,6 @@ export class ReefMission extends Mission {
   async tapChoice(group, target, resolve) {
     if (!this.alive || this.phase !== 'asking') return;
     this.poke();
-    this.lookAt(group);
     if (group.userData.choice !== target.word) {
       this.lastWrong = group;
       this.wrong(group.userData.choice, { obj: group });
@@ -360,9 +342,10 @@ export class ReefMission extends Mission {
     this.correct(target.word);
     this.stopIdle();
     this.choices.forEach((choice) => this.untap(choice));
+    this.choices.filter((c) => c !== group && c.parent).forEach((c) => this.shrinkAway(c, 500));
     sfx.good();
-    const s0 = group.userData.animal.scale.x;
-    await animate(420, (t) => group.userData.animal.scale.setScalar(s0 * (1 + Math.sin(t * Math.PI) * 0.2)), ease.linear);
+    const animal = group.userData.animal, s0 = animal.scale.x;
+    await animate(420, (t) => animal.scale.setScalar(s0 * (1 + Math.sin(t * Math.PI) * 0.2)), ease.linear);
     if (!this.alive) return;
     this.success(group.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
     this.talk = this.say([this.praise(), ...T.reefRight(target.animal, target.place.word, target.place.on)]);
@@ -371,51 +354,44 @@ export class ReefMission extends Mission {
     resolve();
   }
 
+  /** A bright ring where the animal would sit: large and pulsing, so she can see every place she may pick. */
   makeSpot(place) {
     const at = placeAt(place);
     const group = new THREE.Group();
-    group.position.set(at.x, at.y, at.z);
+    group.position.set(at.x, at.y, at.z + 0.6);
     group.userData.choice = place.word;
     group.userData.spot = true;
-    group.userData.tapHeight = 0.7;
-    const glowMat = new THREE.MeshBasicMaterial({ map: this.spotMap, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+    group.userData.tapHeight = 0.85;
+    // (drawn over the rock and the sand: a ring is never half hidden)
+    const glowMat = new THREE.MeshBasicMaterial({ map: this.spotMap, transparent: true, opacity: 0.85, depthWrite: false, depthTest: false });
+    const ringMat = new THREE.MeshBasicMaterial({ color: '#fde047', depthTest: false });
     this.roundMaterials.add(glowMat);
-    const disc = mesh(this.geo(new THREE.CircleGeometry(1.3, 40)), glowMat, { rx: -Math.PI / 2, shadow: false });
-    group.add(disc);
-    group.add(mesh(this.geo(new THREE.BoxGeometry(2.65, 1.5, 0.5)), this.material('#ffffff', { visible: false }), { y: 0.75, shadow: false }));
-    group.userData.ring = disc;
-    group.userData.disc = disc;
+    this.roundMaterials.add(ringMat);
+    const disc = mesh(this.geo(new THREE.CircleGeometry(RING * 1.25, 40)), glowMat, { y: 0.85, shadow: false });
+    const ring = mesh(this.geo(new THREE.RingGeometry(RING * 0.86, RING, 48)), ringMat, { y: 0.85, z: 0.01, shadow: false });
+    disc.renderOrder = ring.renderOrder = 3;
+    group.add(disc, ring);
+    group.add(mesh(this.geo(new THREE.BoxGeometry(RING * 2.3, RING * 2.1, 0.4)), this.material('#ffffff', { visible: false }), { y: 0.85, shadow: false }));
+    group.userData.ring = ring;
     const off = this.onUpdate((dt, t) => {
-      const k = 1 + Math.sin(t * 5 + at.x) * 0.08;
+      const k = 1 + Math.sin(t * 5 + at.x) * 0.07;
       disc.scale.setScalar(k);
-      glowMat.opacity = 0.65 + Math.sin(t * 5 + at.x) * 0.2;
+      glowMat.opacity = 0.7 + Math.sin(t * 5 + at.x) * 0.2;
     });
     this.roundOffs.push(off);
     return group;
   }
 
+  /** The top level: the animal waits above the scene, three rings mark places, and she sends it to one. */
   placeRound(target) {
     return new Promise((resolve) => {
-      this.phase = 'asking';
-      this.last = target.word;
-      this.item('R:' + target.word);
-      const root = new THREE.Group();
-      root.userData.dynamic = true;
-      this.roundRoot = root;
-      this.scene.add(root);
-
-      const rock = this.rock(1.25);
-      rock.position.set(-3.8, 0, 0);
-      root.add(rock);
-      const shell = this.shell(1.35);
-      shell.position.set(2.4, 0, 0.6);
-      root.add(shell);
+      const root = this.newRound(target);
       this.animalObj = this.animal(target.animal);
-      this.animalObj.position.set(0, 3.6, 0.3);
-      this.animalObj.scale.setScalar(1.05);
+      this.animalObj.position.set(WAIT_AT.x, WAIT_AT.y, WAIT_AT.z);
+      this.animalObj.scale.setScalar(ANIMAL_SCALE[target.animal]);
       root.add(this.animalObj);
 
-      this.spots = reefSpots(target.place, this.L.words, this.L.choices).map((place) => {
+      this.spots = reefChoices(target.place, this.L.words, this.L.choices).map((place) => {
         const spot = this.makeSpot(place);
         root.add(spot);
         this.tappable(spot, () => this.tapSpot(spot, target, resolve));
@@ -426,7 +402,12 @@ export class ReefMission extends Mission {
 
       this.question('position', target.word, {
         short: () => T.reefPlaceAsk(target.animal, target.place.word, target.place.on),
-        hint: () => T.reefPlaceLook(),
+        hint: (said = []) => {
+          const asked = this.learn.current;
+          this.say([...said, ...T.reefPlaceLook()]).then(() => this.pointAlong(this.spots.filter((x) => x.parent), (x) => { hop(x, 0.25); }))
+            .then(() => { if (this.learn.current === asked) this.ask(T.reefPlaceAsk(target.animal, target.place.word, target.place.on)); });
+          return Promise.resolve();
+        },
         simplify: () => this.removeOption(this.lastWrong?.parent ? this.lastWrong : this.spots.find((spot) => spot !== right && spot.parent)),
         reveal: () => this.hint(right, () => this.phase !== 'asking'),
       }, { options: this.spots.length });
@@ -440,19 +421,17 @@ export class ReefMission extends Mission {
     const animal = this.animalObj;
     const to = placeAt(place);
     const from = animal.position.clone();
-    const s0 = animal.scale.x, s1 = place.word === 'w' ? 0.85 : 1.05;
     await animate(900, (t) => {
       animal.position.lerpVectors(from, new THREE.Vector3(to.x, to.y, to.z), t);
       animal.position.y += Math.sin(t * Math.PI) * 0.6;
-      animal.scale.setScalar(s0 + (s1 - s0) * t);
     }, ease.inOut);
     animal.position.set(to.x, to.y, to.z);
+    if (place.word === 'pod') this.shade(animal);
   }
 
   async tapSpot(spot, target, resolve) {
     if (!this.alive || this.phase !== 'asking') return;
     this.poke();
-    this.lookAt(spot);
     if (spot.userData.choice !== target.word) {
       this.lastWrong = spot;
       this.wrong(spot.userData.choice, { obj: spot });
@@ -462,7 +441,7 @@ export class ReefMission extends Mission {
     this.phase = 'solved';
     this.correct(target.word);
     this.stopIdle();
-    this.spots.forEach((choice) => this.untap(choice));
+    this.spots.forEach((choice) => { this.untap(choice); choice.visible = false; }); // (the place is chosen: the rings go)
     sfx.good();
     await this.swim(target.place);
     if (!this.alive) return;

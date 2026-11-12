@@ -69,6 +69,17 @@ test('rule 2 fails when one wrong tap raises the help above 1, shows the answer,
   }
 });
 
+test('rule 2 reads a guess row as a prediction: the game may show the answer after the one guess, nothing more', () => {
+  const guessed = [run('shallows', 'wrong-first', { rounds: [tried({ tapped: 'sink', closed: true, help: 0 })] })];
+  assert.equal(questionIsHers(guessed, { mode: 'guess' }).pass, true);
+  assert.equal(questionIsHers(guessed, { mode: 'surprise' }).pass, true);
+  assert.equal(questionIsHers(guessed, { mode: 'watch' }).pass, false, 'sorting what she saw is not a guess');
+  for (const w of [{ help: 3 }, { shown: ['pulsed'] }]) {
+    assert.equal(questionIsHers([run('shallows', 'wrong-first', { rounds: [tried({ ...w, closed: true })] })], { mode: 'guess' }).pass, false, JSON.stringify(w));
+  }
+  assert.equal(questionIsHers([run('reef', 'wrong-first', { rounds: [tried({ closed: true })] })], { mode: 'guess' }).pass, false, 'only the places that make guesses');
+});
+
 test('the answer counts as named aloud only when the question had not named it', () => {
   assert.equal(answerNamed('circle', ['Popatrz jeszcze raz. To jest koło.'], ['Chmury się rozsuwają. Jaki to kształt?']), true);
   assert.equal(answerNamed('B', ['Nie, to nie ten.', 'Znajdź Be!'], ['Kotek się schował! Znajdź Be!']), false);

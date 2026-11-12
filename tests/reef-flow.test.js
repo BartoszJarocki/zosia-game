@@ -102,12 +102,41 @@ test('see shows the word and a little position picture; a wrong tap gets a "no" 
   stop(s);
 });
 
-test('hear asks with words only, and every scene carries its word for the walker', async () => {
+test('one scene: the same animal sits in each place asked about; the one under the rock is in the dark, its eyes showing', async () => {
+  const s = await scene(2);
+  s.plan = [{ word: 'na', animal: 'crab', place: { word: 'na', on: 'rock' } }];
+  const round = s.round(0);
+  await until(() => s.phase === 'asking');
+  const animals = s.choices.map((c) => c.userData.animal);
+  assert.equal(animals.length, 3);
+  assert.ok(animals.every((a) => a.userData.kind === 'crab'), 'one kind: the question is about the place');
+  assert.deepEqual(s.choices.map((c) => c.userData.choice).sort(), ['na', 'pod', 'w'], 'na with pod: the rock alone does not tell');
+  for (const c of s.choices) {
+    const at = placeAt({ word: c.userData.choice, on: { na: 'rock', pod: 'rock', w: 'shell' }[c.userData.choice] });
+    assert.ok(c.position.distanceTo(new THREE.Vector3(at.x, at.y, at.z)) < 0.01, c.userData.choice);
+  }
+  const look = (word) => {
+    const body = [], eyes = [];
+    s.choices.find((c) => c.userData.choice === word).userData.animal.traverse((o) => {
+      if (!o.isMesh) return;
+      (o.userData.eye ? eyes : o.parent?.userData.eye ? [] : body).push(o.material.color.r + o.material.color.g + o.material.color.b);
+    });
+    return { body: Math.max(...body), eyes: Math.min(...eyes) };
+  };
+  const under = look('pod'), on = look('na');
+  assert.ok(under.body < on.body * 0.5, 'in the dark under the rock');
+  assert.ok(under.eyes > 2.9, 'its eyes still white');
+  await pick(s, 'na').userData.onTap();
+  await round;
+  stop(s);
+});
+
+test('hear asks with words only, and every animal carries its word for the walker', async () => {
   const s = await scene(3);
   const round = s.round(0);
   await until(() => s.phase === 'asking');
   assert.equal(globalThis.__bubble.big, '?');
-  assert.equal(globalThis.__bubble.pic, undefined);
+  assert.ok(!globalThis.__bubble.pic.includes('#fbbf24'), 'the bubble shows the animal, not the place');
   const words = s.tappables.filter((o) => o.userData.choice).map((o) => o.userData.choice).sort();
   assert.equal(words.length, 3);
   assert.deepEqual([...new Set(words)], words);
