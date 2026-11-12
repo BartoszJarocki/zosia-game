@@ -123,6 +123,49 @@ test('part rounds keep the clouds closed over all but a peek, then open them on 
   s.alive = false; s.exit();
 });
 
+test('the question never says the clouds are opening; the help that opens them on a part level does', async () => {
+  const s = await scene(3);
+  globalThis.__lines = [];
+  const round = s.round(0);
+  await until(() => s.phase === 'asking' && tiles(s).length);
+  await until(() => globalThis.__lines.at(-1) === T.venusAsk()[0]);
+  assert.deepEqual(T.venusAsk(), ['Jaki to kształt?']);
+  assert.ok(globalThis.__lines.every((line) => !/Chmury się rozsuwają/.test(line)), 'the clouds stay shut, and nothing says they open');
+  assert.notEqual(s.clouds.userData.open, true);
+  s.runAssist('hint');
+  assert.equal(s.clouds.userData.open, true, 'the clue opens the clouds');
+  assert.deepEqual(globalThis.__lines.slice(-2), [T.venusOpen()[0], T.venusAsk()[0]], 'and says so, then asks again');
+  tiles(s).find((tile) => tile.userData.choice === s.last).userData.onTap();
+  await round;
+  s.alive = false; s.exit();
+});
+
+test('a tap on the right tile while the clouds are still sliding apart counts', async () => {
+  const s = await scene(1);
+  const shape = s.shapeRound('circle');
+  assert.equal(s.phase, 'opening');
+  tiles(s).find((tile) => tile.userData.choice === 'circle').userData.onTap();
+  await shape;
+  assert.equal(s.answers.length, 1);
+  assert.equal(s.answers[0].item, 'circle');
+  s.alive = false; s.exit();
+});
+
+test('the shape and the tiles are dark blue, not the yellow of the window they sit on', async () => {
+  const s = await scene(1);
+  const round = s.shapeRound('square');
+  const colour = (obj) => obj.userData.body.material.color.getHexString();
+  assert.equal(colour(s.target), '1e40af');
+  assert.ok(tiles(s).every((tile) => colour(tile) === '1e40af'));
+  const window = s.revealWindow.children[0].material.color;
+  const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  const blue = s.target.userData.body.material.color;
+  assert.ok((lum(window) + 0.05) / (lum(blue) + 0.05) >= 4.5, 'at least 4.5 to 1 against the window');
+  tiles(s).find((tile) => tile.userData.choice === 'square').userData.onTap();
+  await round;
+  s.alive = false; s.exit();
+});
+
 test('a turned level shows a turned, resized Garage piece', async () => {
   const s = await scene(4);
   s.plan = ['square', 'triangle', 'circle'];

@@ -441,23 +441,26 @@ about one a second to count along; the ones she makes are quick hops, over by th
 
 The rocket lands on Mars, under a pinkish-violet sky with two tiny moons. Chase sits in a six-wheeled rover
 with a dish on top. Big red rocks ahead show white numerals (and dots under them early on). Tap the rock the
-bubble asks for and the rover drives there, scans it and sparkles.
+bubble asks for and the rover drives there, scans it and sparkles, then drives back to where it started
+while the rocks clear, so it never stands in front of the next round's rocks.
 
 | Level | max | choices | ask | rock | rounds |
 |---|---|---|---|---|---|
-| 1 | 3 | 3 | both | both | 3 |
-| 2 | 5 | 3 | both | numeral | 3 |
-| 3 | 5 | 3 | numeral | numeral | 3 |
+| 1 | 3 | 3 | match | both | 3 |
+| 2 | 5 | 3 | match | both | 3 |
+| 3 | 5 | 3 | name | numeral | 3 |
 | 4 | 6 | 3 | dots | numeral | 3 |
 | 5 | 9 | 4 | name | numeral | 3 |
 
 - **max**: numbers go from 1 to max (2–9)
 - **choices**: how many rocks (2–4, not more than max); from level 2 the wrong ones are neighbours (±1)
-- **ask**: `both` shows a numeral and dots; `numeral` shows only the numeral; `dots` shows dots in the
-  bubble, so she counts them and finds the numeral (help lights the dots one by one; the number is named
-  only when the answer is shown); `name` shows nothing, only speaks ("Jedziemy do kamienia z numerem trzy!")
+- **ask**: `match` shows the numeral in the bubble (with its dots when the rocks show dots): find the same, as on
+  Cone Road · `dots` shows dots in the bubble, so she counts them and finds the numeral (help lights the dots one
+  by one; the number is named only when the answer is shown) · `name` shows nothing, only speaks
+  ("Jedziemy do kamienia z numerem trzy!"); help shows the dots
 - **rock**: what the rocks show: `both` (numeral + dots) or `numeral`
 - **rounds**: how many rocks she visits (1–8)
+- **A gentler run** after a rough one has one rock fewer, the numeral and its dots in the bubble and on the rocks
 
 ### 🪐 Saturn's Rings · `saturn`
 
@@ -574,8 +577,12 @@ The last level asks what comes next along the road from the Sun.
 ### ☁️ Venus's Clouds · `venus`
 
 Venus is a big, friendly ball under thick, soft, creamy clouds. A few clouds slide apart
-and show a big glowing shape: which one is it? Chase watches from his round window.
+and show a big shape in a pale window: which one is it? Chase watches from his round window.
 In a `part` level only a corner or a curve peeks out until she answers.
+The shape and the tiles are all one deep blue, which reads against the pale window and the cream tiles
+(yellow on yellow did not), and a colour never says which shape it is. The question is "Jaki to kształt?"; "Chmury
+się rozsuwają!" is said only when a clue opens the clouds (the first clue of a `part` level). A tap while the clouds
+are still sliding apart counts.
 
 | Level | reveal | turned | choices | rounds |
 |---|---|---|---|---|
@@ -604,10 +611,13 @@ and the Sun with Earth.
 
 - **types**: each kind comes up once; extra rounds repeat `stripes`, and no kind comes twice in a
   row unless there is no other room for it.
-- **pattern**: `AB` white, orange, white, orange, which next · `ABB` white, orange, orange (or
-  white, white, orange), which next · `gap` an AB or ABB row with one stripe missing in the middle
-  instead of at the end · `ABC` white, orange, brown, which next. At least two full repeats come
-  before the blank. The pots are the row's colours plus one extra, red.
+- **pattern**: `AB` two colours taking turns (white, orange, white, orange, which next) · `ABB` white, orange,
+  orange (or white, white, orange), which next · `gap` an AB or ABB row with one stripe missing in the middle
+  instead of at the end · `ABC` white, orange, brown, which next. At least two full repeats come before the blank.
+  A row does not always start with white or end on the same stripe: it starts with any of the four colours (white,
+  orange, brown, red) and is one of two or three lengths, so the missing stripe is sometimes the first colour of the
+  repeat and sometimes another, and every colour is the right one in some rows. The pots are the row's colours plus
+  one colour that is not in the row. A gentler run has only the row's own colours (two pots)
 - **bigger**: `big` always asks for the bigger · `both` asks bigger or smaller at random. Earth is
   small on purpose; the huge ball is Jupiter or the Sun.
 - **rounds**: tasks per mission, 1 to 8, with at least one per kind. `stripes` is scored as
@@ -619,19 +629,29 @@ and the Sun with Earth.
 
 Comets with letters glide slowly past. Catch every comet with the asked letter, counting them as you go.
 
-| Level | pool | targets | total | speed | similar | rounds |
-|---|---|---|---|---|---|---|
-| 1 | START | 2 | 4 | 0.25–0.4 | no | 3 |
-| 2 | MORE | 2 | 5 | 0.25–0.4 | no | 3 |
-| 3 | MORE | 3 | 6 | 0.3–0.5 | no | 2 |
-| 4 | ALL | 3 | 6 | 0.3–0.5 | yes | 2 |
+| Level | pool | ask | targets | total | speed | similar | rounds |
+|---|---|---|---|---|---|---|---|
+| 1 | START | match | 2 | 4 | 0.25–0.4 | no | 3 |
+| 2 | START | name | 2 | 5 | 0.25–0.4 | no | 3 |
+| 3 | MORE | name | 3 | 6 | 0.3–0.5 | no | 2 |
+| 4 | ALL | name | 3 | 6 | 0.3–0.5 | yes | 2 |
 
-Levels add new letters (2), more comets to catch and a little more speed (3), then lookalikes (4).
+Level 1 shows the asked letter in the bubble to match; from level 2 she has to know it by name (2), then
+new letters and more comets to catch with a little more speed (3), then lookalikes (4).
 
-- **targets** — how many comets have the right letter (1–4) · **total** — comets in the sky (3–9)
-- **speed** — how fast they glide, a range (each lane picks a speed inside it). They cross in five lanes
-  that never touch, from right to left below the speech bubble, then leave and come back later in another lane
+- **ask** — `match`: the letter is in the speech bubble and is named ("Złap komety z literą Be!"): find the same.
+  `name`: the bubble shows only a question mark, the letter is only said. Help shows its picture word in the bubble
+  ("Be jak banan!") and only the answer shows the letter
+- **targets** — how many comets have the right letter (1–4) · **total** — comets in the sky (3–8)
+- **speed** — how fast they glide, a range (a round picks one speed inside it, the same for every comet). They glide
+  in four lanes that never touch, from right to left below the speech bubble. A comet leaves past the left edge,
+  tail and all, and comes back in from the right edge: it never appears or disappears in the middle of the sky.
+  The comets are spread evenly round that loop, and the ones with the asked letter are as far apart from each other
+  as they can be, so one is always in reach while two or more are left. A comet is caught only while its whole
+  letter is in view; outside that it flies several times faster, so the last one is back within about 6 seconds
 - **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
+- **A gentler run** after a rough one has two fewer comets (never fewer than one wrong comet beside the right ones),
+  slower, no lookalikes, and the letter in the bubble
 
 ### 💡 The Lighthouse · `lighthouse`
 

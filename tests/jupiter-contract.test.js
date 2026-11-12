@@ -224,3 +224,24 @@ test('all controls stay inside both iPads and the scene stays below the draw bud
   await round;
   s.alive = false; s.exit();
 });
+
+test('a row of every length the mission paints, up to nine stripes, stays on screen and above the pots at every iPad size', async () => {
+  const { stripeRows } = await import('../src/levels/jupiter.js');
+  const s = await build();
+  const pots = s.makePots(['white', 'orange', 'red', 'brown']);
+  const byLength = new Map(['AB', 'ABB', 'gap', 'ABC'].flatMap((k) => stripeRows(k)).map((r) => [r.row.length, r]));
+  assert.ok(byLength.has(9), 'the table has a nine-stripe row');
+  for (const [width, height] of [[1180, 820], [1366, 1024], [820, 1180]]) {
+    const camera = cameraFor(s, width, height);
+    const potTop = Math.min(...pots.map((p) => bounds(p.userData.body, camera, width, height).top));
+    for (const { row, gap } of byLength.values()) {
+      const boxes = s.makeRow({ row, gap }).map((b) => bounds(b, camera, width, height));
+      const lowest = Math.max(...boxes.map((b) => b.bottom));
+      assert.ok(boxes.every((b) => b.left >= 0 && b.right <= width && b.top >= 0 && b.bottom <= height), `${width}x${height}: ${row.length} stripes inside the screen`);
+      assert.ok(lowest < potTop, `${width}x${height}: ${row.length} stripes end at ${lowest.toFixed(0)}, the pots start at ${potTop.toFixed(0)}`);
+      assert.ok(boxes.every((b) => b.bottom - b.top >= 12), `${width}x${height}: each of ${row.length} stripes is at least 12 px tall`);
+      s.clearRound();
+    }
+  }
+  s.alive = false; s.exit();
+});

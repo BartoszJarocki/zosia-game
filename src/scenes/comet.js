@@ -1,23 +1,30 @@
 import * as THREE from 'three';
-import { animate, ease, wait } from '../engine.js';
+import { animate, ease, wait, camera } from '../engine.js';
 import { mat, mesh } from '../models.js';
 import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { labelTexture, texture } from '../textures.js';
-import { showLetter } from '../config.js';
+import { showLetter, letterWord } from '../config.js';
 import { say, sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { cometLetters, cometPlan } from '../levels/comet.js';
+import { cometLetters, cometPlan, skyEdge } from '../levels/comet.js';
 import { ALL_LETTERS } from '../levels/data.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
-// Comets stay fully in view at every iPad size (the narrowest view is 15 wide): the tail reaches
-// 2.8 right of the centre and the body 0.6 left of it, plus the hint pulse.
-const X0 = 3.8, X1 = -6.0;
-// Five lanes below the speech bubble, clear of the rocket below them. A comet is 1.16 tall,
-// so 1.55 apart never touches.
-const LANES = [1.65, 3.2, 4.75, 6.3, 7.85];
+// A comet leaves once its tail (it reaches 2.8 right of the centre) is past the left edge and comes in from beyond the
+// right edge (its glow is 1.05 round it), so it never appears or disappears inside the sky. SWAY is the camera's
+// drift. A comet can be caught while its whole letter (0.6 either side of the centre, standing 0.6 in front of the
+// comet, where the screen is 0.3 narrower) is on screen. Outside that it flies up to 7 times faster, so one that has
+// left is soon back.
+const TAIL = 2.8, GLOW = 1.05, LABEL = 0.6, NEAR = 0.3, SWAY = 0.3;
+const OUT_LEFT = TAIL + SWAY, OUT_RIGHT = GLOW + SWAY, READ = LABEL + NEAR + SWAY;
+const RAMP = 1.2, SURGE = 6;
+const smooth = (t) => t * t * (3 - 2 * t);
+// Four lanes, all below the speech bubble (it fills the top left, down to a third of the screen: a lane above these
+// passed under it, hid the comet and sent a tap on it to the bubble), clear of the rocket below them.
+// A comet is 1.16 tall, so 1.25 apart never touches.
+const LANES = [1.65, 2.9, 4.15, 5.4];
 
 function tailTexture() {
   const canvas = document.createElement('canvas');
@@ -59,6 +66,7 @@ function makeComet(letter, tailMap, haloMap) {
   label.renderOrder = 2;
   g.add(tail, halo, body, label);
   g.userData.body = body;
+  g.userData.label = label;
   return g;
 }
 
@@ -73,6 +81,7 @@ export class CometMission extends Mission {
     this.comets = [];
     this.maps = [];
     this.speedK = 1;
+    this.pace = 0;
   }
 
   build() {
@@ -121,50 +130,30 @@ export class CometMission extends Mission {
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
   }
 
+  /** How far right of the middle the screen reaches in each lane, for the screen as it is now. */
+  edges() {
+    return LANES.map((y) => skyEdge(this.view, camera.aspect, camera.fov, y));
+  }
+
   glide(dt, t) {
+    if (!this.comets.length) return;
+    const edges = this.edges();
     for (const c of this.comets) {
-      const d = c.userData;
-      if (d.wait > 0) {
-        d.wait -= dt;
-        if (d.wait <= 0) this.respawn(c);
-        continue;
-      }
-      c.position.x -= d.speed * this.speedK * dt;
-      c.position.y = LANES[d.lane] + Math.sin(t * 0.9 + d.phase) * 0.1;
+      const d = c.userData, edge = edges[d.lane], x = c.position.x;
+      const out = Math.max(0, Math.abs(x) - (edge - READ));
+      c.position.x -= this.pace * this.speedK * (1 + SURGE * smooth(Math.min(1, out / RAMP))) * dt;
+      if (c.position.x < -edge - OUT_LEFT) c.position.x = edge + OUT_RIGHT; // (gone off the left: in from the right)
+      c.position.y = LANES[d.lane] + Math.sin(t * 0.9 + d.phase) * 0.06;
       c.rotation.z = Math.sin(t * 1.1 + d.phase) * 0.05 + Math.sin(t * 18) * 0.2 * d.wobble;
       d.wobble = Math.max(0, d.wobble - dt * 2.5);
-      d.inflate = Math.min(1, d.inflate + dt * 3);
-      c.scale.setScalar(Math.max(0.001, d.inflate));
-      if (c.position.x < X1) this.wrap(c);
+      this.catchable(c, Math.abs(c.position.x) <= edge - READ);
     }
   }
 
-  /** Back to the right edge: all `total` comets keep drifting through the view. */
-  wrap(c) {
-    c.position.set(X0, LANES[c.userData.lane], 0);
-    if (this.tapComet && !c.userData.onTap) this.tappable(c, () => this.tapComet(c));
-  }
-
-  /** Off the left edge: rest for a moment, then come back from the right in another lane. */
-  sendAway(c) {
-    if (c.userData.popped || c.userData.wait > 0) return;
-    this.untap(c);
-    c.visible = false;
-    c.userData.wait = 0.7 + Math.random() * 0.9;
-    c.userData.inflate = 0;
-  }
-
-  respawn(c) {
-    if (!this.comets.includes(c) || c.userData.popped) return;
-    const d = c.userData;
-    const lanes = LANES.map((_, i) => i).filter((i) => i !== d.lane);
-    d.lane = lanes[Math.floor(Math.random() * lanes.length)];
-    d.phase = Math.random() * 6;
-    d.inflate = 0;
-    c.position.set(X0, LANES[d.lane], 0);
-    c.scale.setScalar(0.001);
-    c.visible = true;
-    if (this.tapComet) this.tappable(c, () => this.tapComet(c));
+  /** A comet can be tapped while its letter is on screen. */
+  catchable(c, on) {
+    if (on && !c.userData.onTap) this.tappable(c, () => this.tapComet?.(c));
+    else if (!on && c.userData.onTap) this.untap(c);
   }
 
   catchComet(c) {
@@ -185,16 +174,21 @@ export class CometMission extends Mission {
     }
     return new Promise((resolve) => {
       const pool = [...this.L.pool];
-      const target = this.pick('letterVisual', pool);
+      const named = this.L.ask === 'name'; // the letter is only said: she has to know it
+      const skill = named ? 'letterAudio' : 'letterVisual';
+      const target = this.pick(skill, pool);
       this.last = target;
       this.phase = 'catch';
       this.speedK = 1;
       let popped = 0, done = false, lastWrong = null, help = 0;
 
       const letters = cometLetters({ ...this.L, alphabet: ALL_LETTERS }, target, pool);
-      const { laneOf, speeds, starts } = cometPlan(this.L);
-      const inLane = LANES.map((_, i) => laneOf.filter((l) => l === i).length);
-      const seen = LANES.map(() => 0);
+      const plan = cometPlan(this.L);
+      this.pace = plan.speed;
+
+      const letter = showLetter(target), emoji = letterWord(target)[1];
+      const bubble = (big, pic = '') => ui.bubble({ big, pic, onTap: () => this.replay() });
+      const showAsked = () => (named ? bubble('?', '☄️') : bubble(letter));
 
       const floatAway = (c) => {
         if (!c || c.userData.popped) return;
@@ -208,7 +202,7 @@ export class CometMission extends Mission {
       };
 
       const tap = async (c) => {
-        if (done || c.userData.popped || c.userData.wait > 0) return;
+        if (done || c.userData.popped) return;
         this.poke();
         if (c.userData.letter !== target) {
           lastWrong = c;
@@ -223,8 +217,9 @@ export class CometMission extends Mission {
         popped++;
         this.correct(target);
         if (popped < this.L.targets) {
-          this.question('letterVisual', target, hooks, { options: choices() });
+          this.question(skill, target, hooks, { options: choices() });
           if (help) this.helped(help);
+          if (named && help > 1) showAsked(); // (the next comet is a new question: the clue's picture or the shown letter goes)
           return say([...this.yes(), ...T.number(popped)]);
         }
         done = true;
@@ -240,40 +235,45 @@ export class CometMission extends Mission {
         resolve();
       };
 
-      const rest = letters.map((letter, i) => {
-        const lane = laneOf[i];
-        const step = inLane[lane] ? 1 / inLane[lane] : 0;
-        const c = makeComet(letter, this.tailMap, this.haloMap);
-        Object.assign(c.userData, {
-          letter, lane, speed: speeds[lane], phase: Math.random() * 6, tapHeight: 0,
-          inflate: 1, wait: 0, wobble: 0,
-        });
-        // Each comet starts inside the view. Two in one lane sit half a lane apart, so wrapping
-        // never brings them together.
-        c.position.set(X1 + ((starts[lane] + seen[lane]++ * step) % 1) * (X0 - X1), LANES[lane], 0);
+      const edges = this.edges();
+      const rest = letters.map((l, i) => {
+        const { lane, phase } = plan.comets[i], edge = edges[lane], from = -edge - OUT_LEFT;
+        const c = makeComet(l, this.tailMap, this.haloMap);
+        Object.assign(c.userData, { letter: l, lane, phase: Math.random() * 6, tapHeight: 0, wobble: 0 });
+        c.position.set(from + phase * (2 * edge + OUT_LEFT + OUT_RIGHT), LANES[lane], 0);
         this.scene.add(c);
-        this.tappable(c, () => tap(c));
+        this.catchable(c, Math.abs(c.position.x) <= edge - READ);
         return c;
       });
       this.comets = rest;
       this.tapComet = tap;
 
+      const live = (x) => x.userData.onTap !== undefined;
       const hooks = {
         short: T.cometAsk(target),
-        hint: () => { help = Math.max(help, 2); this.speedK = 0.6; return T.letterLike(target); },
-        simplify: () => floatAway(lastWrong?.parent ? lastWrong : this.comets.find((x) => x.userData.letter !== target)),
+        hint: () => { // her letter's picture word, said ("Be jak banan!") and shown when the letter was not
+          help = Math.max(help, 2);
+          this.speedK = 0.6;
+          if (named) bubble('', emoji);
+          return T.letterLike(target);
+        },
+        simplify: () => {
+          const wrong = this.comets.filter((x) => x.userData.letter !== target);
+          floatAway(lastWrong?.parent ? lastWrong : wrong.find(live) ?? wrong[0]);
+        },
         reveal: () => {
           help = 3;
+          if (named) bubble(letter, emoji);
           this.comets.filter((x) => x.userData.letter === target).forEach((x) => {
-            this.hint(x, () => done || x.userData.popped || x.userData.wait > 0);
+            this.hint(x, () => done || x.userData.popped);
           });
         },
       };
       // Several comets can be right at once, so a guess is right more often than 1 in n.
       const choices = () => this.comets.length / (this.L.targets - popped);
 
-      this.question('letterVisual', target, hooks, { options: choices() });
-      ui.bubble({ big: showLetter(target), onTap: () => this.replay() });
+      this.question(skill, target, hooks, { options: choices() });
+      showAsked();
       wait(500).then(() => {
         if (this.alive && this.phase === 'catch') this.ask(T.cometAsk(target));
       });

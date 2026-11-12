@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseGame } from '../../src/levels/parse.js';
-import { jupiterRounds, stripeRound, biggerRound, patternUnit, STRIPE_ROWS, EXTRA_POT, JUPITER_COLOURS } from '../../src/levels/jupiter.js';
+import { jupiterRounds, stripeRound, stripeRows, biggerRound, patternUnit, UNITS, PALETTE, JUPITER_COLOURS } from '../../src/levels/jupiter.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
 
@@ -39,16 +39,16 @@ test('round order brings each kind once and fills extra rounds with stripes', ()
   assert.deepEqual(jupiterRounds({ types: ['stripes'], rounds: 3 }, () => 0.5), ['stripes', 'stripes', 'stripes']);
 });
 
-test('AB and ABB rows repeat their unit, with the blank at the end', () => {
-  for (const p of runs(100, (rng) => stripeRound('AB', rng))) {
-    assert.equal(p.row.length, 6);
-    assert.equal(p.gap, 5);
+test('AB and ABB rows repeat their unit, with the blank at the end and the answer the stripe that comes next', () => {
+  for (const p of runs(200, (rng) => stripeRound('AB', rng))) {
+    assert.ok(p.row.length === 5 || p.row.length === 6);
+    assert.equal(p.gap, p.row.length - 1);
     p.row.forEach((c, i) => assert.equal(c, p.row[i % 2]));
     assert.notEqual(p.row[0], p.row[1]);
-    assert.equal(p.answer, p.row[5]);
+    assert.equal(p.answer, p.row[p.gap]);
     assert.equal(p.item, 'AB');
   }
-  const rounds = runs(220, (rng) => stripeRound('ABB', rng));
+  const rounds = runs(300, (rng) => stripeRound('ABB', rng));
   for (const p of rounds) {
     assert.ok(p.row.length === 7 || p.row.length === 8);
     assert.equal(p.gap, p.row.length - 1);
@@ -59,11 +59,41 @@ test('AB and ABB rows repeat their unit, with the blank at the end', () => {
   assert.deepEqual(new Set(rounds.map((p) => p.item)), new Set(['ABB', 'AAB']));
 });
 
+test('every row that ends in the blank has at least two full repeats before it', () => {
+  for (const kind of ['AB', 'ABB', 'ABC']) {
+    for (const { row, gap } of stripeRows(kind)) assert.ok(gap >= patternUnit(row).length * 2, `${kind}: ${row.join(' ')} blank at ${gap}`);
+  }
+});
+
+test('the answer is not always orange: every colour is the right pot in some row of every kind of round', () => {
+  for (const kind of ['AB', 'ABB', 'gap', 'ABC']) {
+    const answers = new Set(stripeRows(kind).map(({ row, gap }) => row[gap]));
+    assert.deepEqual([...answers].sort(), [...PALETTE].sort(), `${kind}: ${[...answers].join(', ')}`);
+  }
+  for (const kind of ['AB', 'ABB', 'gap', 'ABC']) {
+    const seen = new Set(runs(400, (rng) => stripeRound(kind, rng).answer));
+    assert.deepEqual([...seen].sort(), [...PALETTE].sort(), `${kind}: drawn ${[...seen].join(', ')}`);
+  }
+});
+
+test('rows start with different colours and come in different lengths, so which pot is right cannot be read off the pots', () => {
+  for (const kind of ['AB', 'ABB', 'ABC']) {
+    const rows = stripeRows(kind);
+    assert.ok(new Set(rows.map(({ row }) => row[0])).size >= (kind === 'ABC' ? 2 : 3), `${kind} starts`);
+    assert.ok(new Set(rows.map(({ row }) => row.length)).size >= 2, `${kind} lengths`);
+  }
+  const first = stripeRows('AB').filter(({ row }) => row[0] === 'white' || row[0] === 'orange');
+  assert.notEqual(new Set(first.map(({ row, gap }) => row[gap])).size, 1, 'a row of white and orange can end on either');
+});
+
 test('the stripes said after her answer are the row\'s repeating unit, once', () => {
-  assert.deepEqual(patternUnit(STRIPE_ROWS.AB[0]), ['white', 'orange']);
-  assert.deepEqual(STRIPE_ROWS.ABB.map(patternUnit), [['white', 'orange', 'orange'], ['white', 'orange', 'orange'], ['white', 'white', 'orange'], ['white', 'white', 'orange']]);
-  assert.deepEqual(STRIPE_ROWS.ABC.map(patternUnit), [['white', 'orange', 'brown'], ['white', 'orange', 'brown']]);
-  assert.deepEqual(T.jupiterRow(patternUnit(STRIPE_ROWS.ABB[0])), ['Biały, pomarańczowy, pomarańczowy!']);
+  assert.deepEqual(patternUnit(['white', 'orange', 'white', 'orange', 'white']), ['white', 'orange']);
+  assert.deepEqual(patternUnit(['red', 'brown', 'brown', 'red', 'brown', 'brown', 'red', 'brown']), ['red', 'brown', 'brown']);
+  for (const kind of ['AB', 'ABB', 'ABC']) {
+    for (const { row } of stripeRows(kind)) assert.ok(UNITS[kind === 'ABB' ? 'ABB' : kind].some((u) => u.join() === patternUnit(row).join()));
+  }
+  assert.deepEqual(T.jupiterRow(patternUnit(stripeRows('ABB')[0].row)), ['Biały, pomarańczowy, pomarańczowy!']);
+  assert.deepEqual(T.jupiterRow(['red', 'white']), ['Czerwony, biały!']);
 });
 
 test('gap rows miss a stripe in the middle of an AB or ABB row', () => {
@@ -85,20 +115,20 @@ test('gap rows miss a stripe in the middle of an AB or ABB row', () => {
   assert.deepEqual(new Set(rounds.map((p) => p.row.length)), new Set([6, 8]));
 });
 
-test('ABC rows use white, orange and brown, and red is only ever the extra pot', () => {
+test('the pots are the row\'s colours and one colour that is not in the row, or only the row\'s colours when the foil is off', () => {
   for (const kind of ['AB', 'ABB', 'gap', 'ABC']) {
-    for (const p of runs(100, (rng) => stripeRound(kind, rng))) {
+    for (const p of runs(150, (rng) => stripeRound(kind, rng))) {
       assert.ok(p.choices.includes(p.answer));
-      assert.equal(p.choices.filter((c) => c === EXTRA_POT).length, 1);
-      assert.ok(!p.row.includes(EXTRA_POT));
       assert.equal(p.choices.length, new Set(p.row).size + 1);
+      assert.equal(p.choices.filter((c) => !p.row.includes(c)).length, 1);
       assert.ok(p.choices.every((c) => JUPITER_COLOURS[c]));
     }
+    for (const p of runs(50, (rng) => stripeRound(kind, rng, { foil: false }))) {
+      assert.deepEqual([...p.choices].sort(), [...new Set(p.row)].sort());
+      assert.ok(p.choices.includes(p.answer));
+    }
   }
-  for (const p of runs(30, (rng) => stripeRound('ABC', rng))) {
-    assert.deepEqual(new Set(p.row), new Set(['white', 'orange', 'brown']));
-    assert.equal(p.choices.length, 4);
-  }
+  for (const p of runs(60, (rng) => stripeRound('ABC', rng))) assert.equal(p.choices.length, 4, 'three colours and the one left');
 });
 
 test('bigger: the huge ball is Jupiter or the Sun, Earth is on the other side', () => {
@@ -119,10 +149,11 @@ test('bigger: the huge ball is Jupiter or the Sun, Earth is on the other side', 
   assert.deepEqual(new Set(both.map((p) => p.left)), new Set(['earth', 'jupiter', 'sun']));
 });
 
-test('a gentler Jupiter run uses the AB row and always asks for the bigger', () => {
+test('a gentler Jupiter run uses the AB row, always asks for the bigger and has no pot that is not in the row', () => {
   assert.deepEqual(EASIER.jupiter(levels.jupiter[3]), {
-    types: ['stripes', 'bigger'], pattern: 'AB', bigger: 'big', rounds: 4,
+    types: ['stripes', 'bigger'], pattern: 'AB', bigger: 'big', foil: false, rounds: 4,
   });
+  assert.notDeepEqual(EASIER.jupiter(levels.jupiter[0]), levels.jupiter[0], 'level 1\'s gentler run is easier than level 1');
   assert.equal(levels.jupiter[3].pattern, 'ABC');
   assert.equal(levels.jupiter[3].bigger, 'both');
 });
@@ -142,8 +173,8 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
   assert.deepEqual(T.jupiterStart(), ['Jesteśmy przy Jowiszu! To największa planeta. Pomalujemy jej paski!']);
   assert.deepEqual(T.jupiterWhich(), ['Który kolor teraz?']);
   assert.deepEqual(T.jupiterGap(), ['Którego paska brakuje?']);
-  assert.deepEqual(T.jupiterHelp(STRIPE_ROWS.AB[0], 3), ['Biały, pomarańczowy, biały, i...?']);
-  assert.deepEqual(T.jupiterRow(patternUnit(STRIPE_ROWS.AB[0])), ['Biały, pomarańczowy!']);
+  assert.deepEqual(T.jupiterHelp(stripeRows('gap')[0].row, 3), ['Biały, pomarańczowy, biały, i...?']);
+  assert.deepEqual(T.jupiterRow(patternUnit(stripeRows('AB')[0].row)), ['Biały, pomarańczowy!']);
   assert.deepEqual(T.jupiterTryAgain(), ['Ojej! Spróbuj jeszcze raz.']);
   assert.deepEqual(T.jupiterBigger(), ['Która jest większa?']);
   assert.deepEqual(T.jupiterSmaller(), ['Która jest mniejsza?']);
@@ -161,10 +192,8 @@ test('every Jupiter line is a full sentence and reaches the voice list', () => {
     ...T.jupiterSpot(), ...T.jupiterDone(),
     HOME_TASKS.jupiter,
   ];
-  Object.values(STRIPE_ROWS).flat().forEach((row) => {
-    lines.push(...T.jupiterRow(patternUnit(row)));
-    const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
-    gaps.forEach((gap) => lines.push(...T.jupiterHelp(row, gap)));
+  ['AB', 'ABB', 'ABC', 'gap'].flatMap(stripeRows).forEach(({ row, gap }) => {
+    lines.push(...T.jupiterRow(patternUnit(row)), ...T.jupiterHelp(row, gap));
   });
   for (const line of lines) {
     assert.ok(recorded.includes(line), line);

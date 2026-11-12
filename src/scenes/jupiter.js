@@ -5,7 +5,6 @@ import { makeRocket } from '../world/rocket.js';
 import { sparkle } from '../fx/particles.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { PLACES } from '../places.js';
 import { portrait } from '../world/portrait.js';
 import { jupiterRounds, stripeRound, biggerRound, patternUnit, JUPITER_COLOURS } from '../levels/jupiter.js';
 import * as ui from '../ui.js';
@@ -138,7 +137,7 @@ export class JupiterMission extends Mission {
 
   async stripesRound() {
     this.clearRound();
-    const p = stripeRound(this.L.pattern, this.random);
+    const p = stripeRound(this.L.pattern, this.random, { foil: this.L.foil !== false });
     const bars = this.makeRow(p);
     const blank = bars[p.gap];
     const pots = this.makePots(p.choices);
@@ -174,14 +173,18 @@ export class JupiterMission extends Mission {
       this.draggable(pot, {
         height: 0, lift: 0.45,
         onPick: () => { this.poke(); sfx.pop(); },
-        onDrop: (obj, at) => (at.z < 1.2 ? (choose(pot), true) : false),
+        onDrop: (obj, at) => {
+          if (at.z >= 1.2) return false;
+          choose(pot);
+          return pot === right; // (a wrong pot floats back to its place)
+        },
         onTap: () => choose(pot),
       });
       this.tappable(pot, () => choose(pot));
     }
 
     const short = p.item === 'gap' ? T.jupiterGap() : T.jupiterWhich();
-    ui.bubble({ big: rowSVG(p.row, p.gap), pic: PLACES.jupiter.badge.label, onTap: () => this.replay() });
+    ui.bubble({ big: rowSVG(p.row, p.gap), pic: '🎨', onTap: () => this.replay() }); // (not the orange disc of Jupiter's badge: that is a colour in the question)
     this.question('pattern', p.item, {
       short,
       hint: () => T.jupiterHelp(p.row, p.gap),
@@ -234,7 +237,7 @@ export class JupiterMission extends Mission {
 
     balls.forEach((ball) => this.tappable(ball, () => choose(ball)));
     const short = p.ask === 'smaller' ? T.jupiterSmaller() : T.jupiterBigger();
-    ui.bubble({ big: '?', pic: PLACES.jupiter.badge.label, onTap: () => this.replay() });
+    ui.bubble({ big: '?', pic: '📏', onTap: () => this.replay() }); // (not the orange disc: it points at Jupiter)
     this.question('comparison', p.ask, {
       short,
       hint: () => T.lookCarefully(), // (two balls: the clue is also the middle step)
@@ -250,7 +253,7 @@ export class JupiterMission extends Mission {
       const outline = mesh(rbox(BAR_W + 0.12, BAR_H + 0.12, 0.1, 0.07), new THREE.MeshBasicMaterial({ color: '#f7c66a' }), { shadow: false });
       const inner = mesh(rbox(BAR_W, BAR_H, 0.2, 0.06), new THREE.MeshStandardMaterial({ color: COLOUR_HEX[colour], roughness: 0.85 }), { shadow: false });
       group.add(outline, inner);
-      group.position.set(0, 2.15 + ((p.row.length - 1) / 2 - i) * STEP, ROW_Z);
+      group.position.set(0, 2.15 + (p.row.length > 8 ? 0.35 : 0) + ((p.row.length - 1) / 2 - i) * STEP, ROW_Z); // (nine stripes sit higher, clear of the pots)
       group.userData.dynamic = true;
       group.userData.inner = inner;
       group.userData.outline = outline;

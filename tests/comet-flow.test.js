@@ -54,6 +54,7 @@ registerHooks({ load(url, context, next) {
 
 const { CometMission } = await import('../src/scenes/comet.js');
 const { CONFIG } = await import('../src/config.js');
+const { T } = await import('../src/lang/pl.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { learning } = await import('../src/learning/events.js');
 const { startSession, getSession } = await import('../src/session/session.js');
@@ -76,36 +77,45 @@ async function scene(level = 1) {
   return s;
 }
 
+const live = (s) => s.comets.filter((o) => o.userData.onTap);
+/** Fly on until a comet with this letter can be tapped. */
+async function reach(s, letter) {
+  for (let i = 0; i < 1200; i++) {
+    const c = live(s).find((x) => x.userData.letter === letter && !x.userData.popped);
+    if (c) return c;
+    s.update(0.1, i * 0.1);
+    await flush();
+  }
+  assert.fail(`no comet with ${letter} came into reach`);
+}
+
 test('a right tap catches and counts; a wrong letter wobbles and gets a "no", and the answer is not shown', async () => {
   const s = await scene(2);
   globalThis.__lines = [];
   const round = s.round(0);
   await until(() => s.phase === 'catch' && s.comets.length === s.L.total);
   assert.equal(s.last, s.L.pool[0]);
-  const all = s.tappables.filter((o) => o.userData.letter);
-  assert.equal(all.length, s.L.total);
-  assert.ok(all.every((o) => typeof o.userData.letter === 'string'));
+  assert.ok(s.comets.every((o) => typeof o.userData.letter === 'string'));
   const target = s.last;
-  const wrong = all.find((o) => o.userData.letter !== target);
-  const right = all.find((o) => o.userData.letter === target);
+  s.update(0.01, 0);
+  const wrong = live(s).find((o) => o.userData.letter !== target);
+  const right = await reach(s, target);
   assert.ok(wrong && right);
   const linesBefore = globalThis.__lines.length;
   await wrong.userData.onTap();
   assert.equal(s.answers.length, 0);
   assert.equal(wrong.userData.wobble, 1);
   assert.ok(globalThis.__lines.slice(linesBefore).some((line) => /^Nie/.test(line)));
-  assert.ok(!all.some((o) => o.userData.hinting), 'no comet pulses after one wrong tap');
+  assert.ok(!s.comets.some((o) => o.userData.hinting), 'no comet pulses after one wrong tap');
   assert.equal(s.aid.state.level, 1, 'help is at "try again"');
   assert.ok(s.learn.current.assist <= 1);
   await right.userData.onTap();
   assert.equal(s.answers.length, 1);
-  assert.equal(s.answers[0].skill, 'letterVisual');
+  assert.equal(s.answers[0].skill, 'letterAudio', 'a level that only says the letter asks for its name');
   assert.equal(s.answers[0].item, target);
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(globalThis.__lines.at(-1), 'Jeden!');
-  while (s.comets.some((x) => x.userData.letter === target && !x.userData.popped && x.userData.wait <= 0)) {
-    await s.comets.find((x) => x.userData.letter === target && !x.userData.popped && x.userData.wait <= 0).userData.onTap();
-  }
+  while (s.comets.some((x) => x.userData.letter === target && !x.userData.popped)) await (await reach(s, target)).userData.onTap();
   await round;
   assert.equal(s.answers.length, s.L.targets);
   assert.ok(s.answers.slice(1).every((a) => a.firstTry));
@@ -113,20 +123,66 @@ test('a right tap catches and counts; a wrong letter wobbles and gets a "no", an
   stop(s);
 });
 
-test('a comet that leaves the screen comes back later in another lane', async () => {
-  const s = await scene(1);
-  s.round(1);
+test('the first level shows the asked letter in the bubble; the others show only a question mark and say the letter', async () => {
+  for (const level of [1, 2, 3, 4]) {
+    const s = await scene(level);
+    globalThis.__lines = [];
+    s.round(0);
+    await until(() => s.phase === 'catch' && s.comets.length === s.L.total);
+    await until(() => globalThis.__lines.includes(T.cometAsk(s.last)[0]));
+    assert.equal(globalThis.__bubble.big, level === 1 ? s.last : '?', `level ${level}`);
+    assert.equal(s.learn.current.skill, level === 1 ? 'letterVisual' : 'letterAudio', `level ${level}`);
+    stop(s);
+  }
+});
+
+test('a level that only says the letter helps with its picture word first, and shows the letter only with the answer', async () => {
+  const s = await scene(2);
+  s.round(0);
   await until(() => s.phase === 'catch' && s.comets.length === s.L.total);
-  const c = s.comets.find((x) => x.userData.letter !== s.last);
-  const lane = c.userData.lane;
-  s.sendAway(c);
-  assert.equal(c.visible, false);
-  assert.equal(c.userData.onTap, undefined);
-  assert.ok(c.userData.wait > 0);
-  s.update(2, 2);
-  assert.equal(c.visible, true);
-  assert.notEqual(c.userData.lane, lane);
-  assert.equal(typeof c.userData.onTap, 'function');
+  s.update(0.01, 0);
+  const target = s.last;
+  const wrong = live(s).find((o) => o.userData.letter !== target);
+  await wrong.userData.onTap();
+  assert.equal(globalThis.__bubble.big, '?', 'one wrong tap shows nothing more');
+  s.runAssist('hint');
+  assert.equal(globalThis.__bubble.big, '', 'the clue: the picture word, not the letter');
+  assert.ok(globalThis.__bubble.pic);
+  assert.ok(globalThis.__lines.at(-1).includes(' jak '), 'and says it: "Em jak mama"');
+  s.runAssist('reveal');
+  assert.equal(globalThis.__bubble.big, target, 'the answer shows the letter');
+  assert.ok(s.comets.filter((o) => o.userData.letter === target).every((o) => o.userData.hinting));
+  stop(s);
+});
+
+test('the next comet with the asked letter is a new question: the bubble goes back to a question mark', async () => {
+  const s = await scene(2);
+  s.round(0);
+  await until(() => s.phase === 'catch' && s.comets.length === s.L.total);
+  const target = s.last;
+  s.runAssist('reveal');
+  assert.equal(globalThis.__bubble.big, target, 'the answer shows the letter');
+  await (await reach(s, target)).userData.onTap();
+  assert.equal(s.learn.current.item, target, 'the same letter is asked again, for the next comet');
+  assert.equal(globalThis.__bubble.big, '?', 'and it starts without the answer in the bubble');
+  stop(s);
+});
+
+test('the comets go round and round: each flies off the left and comes back at the right, none is lost', async () => {
+  const s = await scene(1);
+  s.round(0);
+  await until(() => s.phase === 'catch' && s.comets.length === s.L.total);
+  const laps = new Map(s.comets.map((c) => [c, 0]));
+  let last = new Map(s.comets.map((c) => [c, c.position.x]));
+  for (let i = 0; i < 1500; i++) {
+    s.update(0.1, i * 0.1);
+    for (const c of s.comets) {
+      if (c.position.x > last.get(c)) laps.set(c, laps.get(c) + 1);
+      last.set(c, c.position.x);
+    }
+  }
+  assert.ok([...laps.values()].every((n) => n >= 1), 'every comet went all the way round');
+  assert.equal(s.comets.length, s.L.total, 'none was lost or added');
   stop(s);
 });
 
@@ -144,7 +200,7 @@ test('every Comet level runs through the real Mission loop to celebration and co
     optimizeScene(s.scene);
     for (let step = 0; step < 600 && !globalThis.__celebration; step++) {
       if (s.phase === 'catch' && s.last) {
-        const c = s.comets.find((x) => x.userData.letter === s.last && !x.userData.popped && x.userData.wait <= 0);
+        const c = s.comets.find((x) => x.userData.letter === s.last && !x.userData.popped && x.userData.onTap);
         if (c) await c.userData.onTap();
       }
       s.update(0.05, step * 0.05);

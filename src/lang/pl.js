@@ -3,7 +3,7 @@
 // Mixing segments ("To jest em." + "Gdzie jest be?") keeps the clip count small.
 import { CONFIG, WORDS, letterWord, wordChoices, letterName, sayWord } from '../config.js';
 import { gapCount } from '../levels/train.js';
-import { STRIPE_ROWS, patternUnit } from '../levels/jupiter.js';
+import { stripeRows, patternUnit } from '../levels/jupiter.js';
 import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
 import { BOATS } from '../levels/port.js';
 
@@ -358,7 +358,8 @@ export const T = {
   mercuryWrong: () => ['Popatrz jeszcze raz.'],
   mercuryDone: () => ['Brawo! Policzyłaś kratery na Merkurym!'],
   venusStart: () => ['Jesteśmy przy Wenus! Wenus to najgorętsza planeta. Jest cała w chmurach.'],
-  venusAsk: () => ['Chmury się rozsuwają. Jaki to kształt?'],
+  venusOpen: () => ['Chmury się rozsuwają!'],
+  venusAsk: () => ['Jaki to kształt?'],
   venusRight: (s) => [`To jest ${SHAPE[s]}!`],
   venusDone: () => ['Brawo! Znalazłaś wszystkie kształty w chmurach Wenus!'],
   jupiterStart: () => ['Jesteśmy przy Jowiszu! To największa planeta. Pomalujemy jej paski!'],
@@ -675,16 +676,15 @@ export function allSegments(levels, allLetters) {
   nums.slice(0, 6).forEach((n) => add(T.mercuryRight(n)));
   [T.mercuryStart, T.mercuryStayAsk, T.mercuryWrong, T.mercuryDone].forEach((f) => add(f()));
   Object.keys(SHAPE).forEach((sh) => { add(T.venusRight(sh)); });
-  [T.venusStart, T.venusAsk, T.venusDone].forEach((f) => add(f()));
+  [T.venusStart, T.venusOpen, T.venusAsk, T.venusDone].forEach((f) => add(f()));
   [T.telescopeStart, T.telescopeMatch, T.telescopeDone].forEach((f) => add(f()));
   Object.keys(TELESCOPE_NAMES).forEach((kind) => { add(T.telescopeName(kind)); add(T.telescopeRight(kind)); });
   Object.keys(TELESCOPE_FEATURES).forEach((kind) => add(T.telescopeFeature(kind)));
   Object.keys(TELESCOPE_AFTER).forEach((kind) => add(T.telescopeOrder(kind)));
-  // Jupiter: every stripe row's repeating stripes, said aloud, and the row as a help prefix
-  Object.values(STRIPE_ROWS).flat().forEach((row) => {
+  // Jupiter: every stripe row's repeating stripes, said aloud, and the row up to its blank as a help prefix
+  ['AB', 'ABB', 'ABC', 'gap'].flatMap(stripeRows).forEach(({ row, gap }) => {
     add(T.jupiterRow(patternUnit(row)));
-    const gaps = row.length === 6 ? [2, 3, 5] : row.length === 7 ? [6] : [3, 4, 7];
-    gaps.forEach((gap) => add(T.jupiterHelp(row, gap)));
+    add(T.jupiterHelp(row, gap));
   });
   [T.jupiterStart, T.jupiterWhich, T.jupiterGap, T.jupiterTryAgain, T.jupiterBigger, T.jupiterSmaller, T.jupiterSmall, T.jupiterSpot, T.jupiterDone].forEach((f) => add(f()));
   [T.jupiterBig('jupiter'), T.jupiterBig('sun')].forEach(add);

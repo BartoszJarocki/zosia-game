@@ -16,6 +16,7 @@ const WINDOW_R = 2.1, CLOUD_R = 2.25, CLOUD_Z = 2.25;
 const CLOUD_OPEN = 1.9, CLOUD_SHRINK = 0.8;
 const SEEN_MS = 1000; // the shape in view after her answer, before the next one
 const TILE_Y = -3.65, TILE_Z = 2.55;
+const SHAPE_COLOUR = '#1e40af'; // deep blue: on the pale window and on the cream tiles it reads at about 7 to 1 (yellow on yellow did not)
 
 function paint(w, h, draw) {
   const canvas = document.createElement('canvas');
@@ -150,7 +151,7 @@ export class VenusMission extends Mission {
     const group = new THREE.Group();
     group.position.set(0, SHAPE_Y, 0.95);
     group.userData.dynamic = true;
-    const glow = new THREE.MeshStandardMaterial({ color: '#f7cf72', emissive: '#f0b84a', emissiveIntensity: 0.35, roughness: 0.85 });
+    const glow = new THREE.MeshStandardMaterial({ color: '#ffeab0', emissive: '#ffd88a', emissiveIntensity: 0.3, roughness: 0.85 });
     this.ownedMaterials.push(glow);
     const disk = mesh(new THREE.CircleGeometry(WINDOW_R, 64), glow, { shadow: false });
     const rim = mesh(new THREE.TorusGeometry(WINDOW_R, 0.075, 10, 64), mat('#ffe7a8', { metalness: 0.1, roughness: 0.5 }), { z: 0.03, shadow: false });
@@ -214,14 +215,12 @@ export class VenusMission extends Mission {
       this.roundRoot = root;
       this.scene.add(root);
 
-      const shape = makeShapePiece({ ...piece, colour: 'yellow' });
+      const shape = makeShapePiece({ ...piece, colour: SHAPE_COLOUR });
       shape.position.set(0, SHAPE_Y, SHAPE_Z);
       shape.scale.setScalar(piece.size * 1.85);
       shape.updateMatrixWorld(true);
       const body = shape.userData.body;
       body.material = body.material.clone();
-      body.material.emissive.set('#f59e0b');
-      body.material.emissiveIntensity = 0.55;
       this.roundMaterials.push(body.material);
       root.add(shape);
       this.target = shape;
@@ -238,7 +237,7 @@ export class VenusMission extends Mission {
 
       const xs = choices.length === 2 ? [-1.55, 1.55] : [-2.5, 0, 2.5];
       this.tiles = choices.map((choice, i) => {
-        const tile = makeShapePiece({ shape: choice, colour: 'yellow', turn: 0, size: 1, odd: null });
+        const tile = makeShapePiece({ shape: choice, colour: SHAPE_COLOUR, turn: 0, size: 1, odd: null });
         tile.add(mesh(rbox(1.5, 1.5, 0.16, 0.16), mat('#fff7e6', { roughness: 0.9 }), { z: -0.32, shadow: false }));
         tile.position.set(xs[i], TILE_Y, TILE_Z);
         tile.scale.setScalar(1.35);
@@ -263,7 +262,7 @@ export class VenusMission extends Mission {
 
       let solved = false, lastWrong = null;
       const choose = async (tile) => {
-        if (!this.alive || solved || this.phase !== 'asking') return;
+        if (!this.alive || solved || !['opening', 'asking'].includes(this.phase)) return; // (a tap while the clouds still slide apart counts)
         this.poke();
         this.lookAt(tile);
         if (tile === right) {
@@ -290,7 +289,7 @@ export class VenusMission extends Mission {
         hop(tile, 0.35);
       };
       for (const tile of this.tiles) this.tappable(tile, () => choose(tile));
-      const openUp = () => { this.openClouds(); }; // a part level's first help: the whole shape shows ("Chmury się rozsuwają…")
+      const openUp = () => { this.openClouds(); return [...T.venusOpen(), ...T.venusAsk()]; }; // a part level's first help: the whole shape shows
 
       this.question('shape', target, {
         short: T.venusAsk(),
@@ -345,17 +344,18 @@ export class VenusMission extends Mission {
 
   openClouds(ms = 900) {
     const clouds = this.clouds;
-    if (!clouds || clouds.userData.open) return Promise.resolve();
+    if (!clouds) return Promise.resolve();
+    if (clouds.userData.open) return clouds.userData.opening;
     clouds.userData.open = true;
     const { left, right } = clouds.userData;
     const l0 = left.position.x, r0 = right.position.x;
     sfx.whoosh();
-    return animate(ms, (t) => {
+    return (clouds.userData.opening = animate(ms, (t) => {
       left.position.x = l0 + (-CLOUD_OPEN - l0) * t;
       right.position.x = r0 + (CLOUD_OPEN - r0) * t;
       left.scale.setScalar(1 + (CLOUD_SHRINK - 1) * t);
       right.scale.setScalar(1 + (CLOUD_SHRINK - 1) * t);
-    }, ease.inOut);
+    }, ease.inOut));
   }
 
   clearRound() {
