@@ -169,6 +169,31 @@ test('which says the three names first, each boat hopping, then asks for a count
   stop(s);
 });
 
+test('which: a tick tapped before the question is said is not an answer; a tap on a boat stops the names, then the question comes', async () => {
+  const s = await scene(3);
+  s.pick = () => 2;
+  const held = [], say = s.say.bind(s);
+  s.say = (segments) => { say(segments); return new Promise((resolve) => held.push(resolve)); }; // (each line plays until let go)
+  const round = s.round(0);
+  const naming = () => s.phase === 'choosing' && /^\p{Lu}\p{Ll}+!$/u.test(globalThis.__lines.at(-1));
+  await until(() => naming() || (held.splice(0).forEach((go) => go()), false)); // (the start line plays; the first name holds)
+  await count(s, 2).userData.onTap();
+  assert.equal(s.answers.length, 0, 'not an answer yet');
+  assert.equal(s.learn.current.wrong, 0);
+  const before = globalThis.__lines.length;
+  await s.boats.at(-1).userData.onTap();
+  held.splice(0).forEach((go) => go());
+  await until(() => globalThis.__lines.at(-1) === 'Która łódka ma dwa kawałki?');
+  held.splice(0).forEach((go) => go());
+  const said = globalThis.__lines.slice(before);
+  assert.equal(said.length, 2, `the tapped boat's name, then the question: ${said}`);
+  s.say = say;
+  await count(s, 2).userData.onTap();
+  await round;
+  assert.equal(s.answers[0].firstTry, true);
+  stop(s);
+});
+
 test('a done boat exposes only choice, and a which boat no answer, for the walker', async () => {
   const s = await scene(1);
   s.pick = () => 'MEWA';

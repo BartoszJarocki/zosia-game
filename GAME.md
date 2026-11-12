@@ -736,7 +736,8 @@ and she toots its name once for each syllable.
 - **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
   `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
   `which`: three boats come forward, each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka
-  ma dwa kawałki?", and she taps the tick under a boat. Tapping a boat itself says its name again.
+  ma dwa kawałki?", and she taps the tick under a boat (a tick tapped before the question is said is not an answer
+  yet). Tapping a boat itself says its name again, and stops the names if they are still going.
 - **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked

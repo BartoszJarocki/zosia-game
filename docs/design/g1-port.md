@@ -30,6 +30,11 @@ nearly always "three pieces". A picture carries no length. It also lets her keep
 "Foka!" and sees the seal. The syllable blocks still appear when the name is clapped or tooted back, and every
 board is the same width (room for three blocks).
 
+## Taps during the names
+
+A tick tapped while the names are still being said is not an answer yet (she has not heard what is asked): it gets
+the usual tick and bounce. Any tap of hers stops the names; a tap on a boat says that name, then the question.
+
 ## A wrong tap at level 3
 
 The ladder: "Ta łódka ma trzy kawałki." and the question again; a second wrong boat sails off; then the right board

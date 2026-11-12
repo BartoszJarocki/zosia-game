@@ -54,27 +54,29 @@ function drawGull(c, cx, cy, r) {
 /** What each boat's board shows: its animal, so she knows its name without reading it. */
 export const BOAT_PICTURES = { KOT: '🐱', SŁOŃ: '🐘', MEWA: drawGull, FOKA: '🦭', RYBKA: '🐟', KACZKA: '🦆', ŻYRAFA: '🦒', MOTYLEK: '🦋', BIEDRONKA: '🐞' };
 
-/** The board's face: the animal on white. Narrowed in the canvas so the wide board does not stretch it. */
+/** The board's face: the animal on white, on a canvas as wide as the board, so the picture stays sharp. */
 function pictureTexture(word, aspect) {
   const picture = BOAT_PICTURES[word];
-  return texture(512, (c, size) => {
-    c.fillStyle = '#ffffff';
-    c.fillRect(0, 0, size, size);
-    c.strokeStyle = '#c7d2fe';
-    c.lineWidth = 10;
-    c.strokeRect(5, 5, size - 10, size - 10);
-    c.save();
-    c.translate(size / 2, size * 0.52);
-    c.scale(1 / aspect, 1);
-    if (typeof picture === 'function') picture(c, 0, 0, size * 0.42);
-    else {
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = `${Math.round(size * 0.84)}px "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
-      c.fillText(picture, 0, size * 0.03);
-    }
-    c.restore();
-  });
+  const h = 300, w = Math.round(h * aspect);
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, w, h);
+  c.strokeStyle = '#c7d2fe';
+  c.lineWidth = 8;
+  c.strokeRect(4, 4, w - 8, h - 8);
+  if (typeof picture === 'function') picture(c, w / 2, h * 0.52, h * 0.42);
+  else {
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = `${Math.round(h * 0.8)}px "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+    c.fillText(picture, w / 2, h * 0.56);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 export class PortMission extends Mission {
@@ -92,6 +94,7 @@ export class PortMission extends Mission {
     this.target = null;
     this.boats = [];
     this.tickButtons = [];
+    this.naming = 0; // which run of the boats' names is going on (a tap of hers stops it)
     this.moored = [];
     this.used = [];
     this.puffs = new Set();
@@ -447,15 +450,14 @@ export class PortMission extends Mission {
       this.tappable(boat, () => { // (a tap on the tick answers: it is nearer the finger; the rest of the boat says its name)
         if (this.phase !== 'choosing') return;
         this.poke();
-        this.sayName(boat);
+        this.naming++; // (her own question first: the names stop, and the asked one follows if it was not said yet)
+        const q = this.learn.current;
+        this.sayName(boat).then(() => { if (!this.prompt && this.learn.current === q) this.ask(T.portWhich(this.asked)); });
       });
     }
     this.question('syllables', this.asked, {
       short: () => T.portWhich(this.asked),
-      hint: (said = []) => { // the names again, each boat hopping: who is who, not how many pieces
-        const q = this.learn.current;
-        return this.say(said).then(() => this.nameBoats(q)).then(() => { if (this.learn.current === q) this.ask(T.portWhich(this.asked)); });
-      },
+      hint: (said = []) => this.say(said).then(() => this.nameBoats()).then((all) => { if (all) this.ask(T.portWhich(this.asked)); }), // the names again: who is who, not how many pieces
       simplify: () => {
         const wrongs = this.boats.filter((b) => b.userData.pieces !== this.asked && !b.userData.gone);
         const boat = wrongs.includes(this.lastWrong) ? this.lastWrong : wrongs[0];
@@ -470,17 +472,18 @@ export class PortMission extends Mission {
       },
     }, { options: 3 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
-    const q = this.learn.current;
-    this.askAfter(Promise.resolve(this.talk).then(() => this.nameBoats(q)), T.portWhich(this.asked)); // the three names, then the question
+    Promise.resolve(this.talk).then(() => this.nameBoats()).then((all) => { if (all) this.ask(T.portWhich(this.asked)); }); // the three names, then the question
     await new Promise((resolve) => { this.resolveRound = resolve; });
   }
 
-  /** Each boat says its name as it hops, left to right; stops once she has answered. */
-  async nameBoats(q) {
+  /** Each boat says its name as it hops, left to right. Resolves true when all were said; any tap of hers stops it. */
+  async nameBoats() {
+    const run = ++this.naming, q = this.learn.current, still = () => this.alive && this.learn.current === q && this.naming === run;
     for (const boat of [...this.boats].sort((a, b) => a.position.x - b.position.x)) {
-      if (!this.alive || this.learn.current !== q) return;
+      if (!still()) return false;
       if (!boat.userData.gone) await this.sayName(boat);
     }
+    return still();
   }
 
   sayName(boat) {
@@ -489,7 +492,8 @@ export class PortMission extends Mission {
   }
 
   async pickBoat(boat) {
-    if (this.phase !== 'choosing') return;
+    if (this.phase !== 'choosing' || !this.prompt) return; // (before the question is said there is nothing to answer yet)
+    this.naming++;
     const num = boat.userData.pieces;
     this.poke();
     this.lookAt(boat);
