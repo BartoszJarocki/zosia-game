@@ -169,7 +169,7 @@ test('which says the three names first, each boat hopping, then asks for a count
   stop(s);
 });
 
-test('which: a tick tapped before the question is said is not an answer; a tap on a boat stops the names, then the question comes', async () => {
+test('which: the ticks come with the question; a tap on a boat during the names says its name, then the question comes', async () => {
   const s = await scene(3);
   s.pick = () => 2;
   const held = [], say = s.say.bind(s);
@@ -177,9 +177,7 @@ test('which: a tick tapped before the question is said is not an answer; a tap o
   const round = s.round(0);
   const naming = () => s.phase === 'choosing' && /^\p{Lu}\p{Ll}+!$/u.test(globalThis.__lines.at(-1));
   await until(() => naming() || (held.splice(0).forEach((go) => go()), false)); // (the start line plays; the first name holds)
-  await count(s, 2).userData.onTap();
-  assert.equal(s.answers.length, 0, 'not an answer yet');
-  assert.equal(s.learn.current.wrong, 0);
+  assert.ok(s.tickButtons.every((t) => !t.visible), 'nothing to answer before the question');
   const before = globalThis.__lines.length;
   await s.boats.at(-1).userData.onTap();
   held.splice(0).forEach((go) => go());
@@ -187,6 +185,7 @@ test('which: a tick tapped before the question is said is not an answer; a tap o
   held.splice(0).forEach((go) => go());
   const said = globalThis.__lines.slice(before);
   assert.equal(said.length, 2, `the tapped boat's name, then the question: ${said}`);
+  assert.ok(s.tickButtons.every((t) => t.visible), 'the ticks came with the question');
   s.say = say;
   await count(s, 2).userData.onTap();
   await round;

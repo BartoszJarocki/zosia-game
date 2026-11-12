@@ -10,7 +10,7 @@ the name was long, so the widest board was always "three pieces".
 |---|---|---|
 | 1 `together` | A boat comes in. Chase claps its name ("Me! Wa!"), she toots it on the horn, then taps the boat. | The board shows the boat's animal, not its written name. |
 | 2 `alone` | "Ta łódka nazywa się Foka." She toots it, a dot for each toot, then taps the boat. | The same picture board. |
-| 3 `which` | Three boats come in. Each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka ma dwa kawałki?". She taps the tick under a boat. Tapping a boat says its name again. | The names are said before the question. A boat says its name when tapped. The boards show pictures. |
+| 3 `which` | Three boats come in. Each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka ma dwa kawałki?" and the ticks appear. She taps the tick under a boat. Tapping a boat says its name again. | The names are said before the question. A boat says its name when tapped. The boards show pictures. |
 
 ```
                                    [Chase's house]
@@ -32,8 +32,9 @@ board is the same width (room for three blocks).
 
 ## Taps during the names
 
-A tick tapped while the names are still being said is not an answer yet (she has not heard what is asked): it gets
-the usual tick and bounce. Any tap of hers stops the names; a tap on a boat says that name, then the question.
+The green ticks she answers with appear with the question, not before: while the names are said there is nothing to
+answer yet, and a tap on a boat says its name. Any tap of hers stops the names; a tap on a boat during them says that
+name, then the question.
 
 ## A wrong tap at level 3
 

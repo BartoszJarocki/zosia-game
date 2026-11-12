@@ -444,20 +444,21 @@ export class PortMission extends Mission {
     for (const boat of this.boats) {
       const tick = this.makeTick(boat.userData.pieces);
       tick.position.set(0, 0.62, 0.72);
+      tick.visible = false; // (the ticks come with the question: before it there is nothing to answer)
       boat.add(tick);
       this.tickButtons.push(tick);
       this.tappable(tick, () => this.pickBoat(boat));
       this.tappable(boat, () => { // (a tap on the tick answers: it is nearer the finger; the rest of the boat says its name)
         if (this.phase !== 'choosing') return;
         this.poke();
+        const asked = this.tickButtons.some((t) => t.visible), q = this.learn.current;
         this.naming++; // (her own question first: the names stop, and the asked one follows if it was not said yet)
-        const q = this.learn.current;
-        this.sayName(boat).then(() => { if (!this.prompt && this.learn.current === q) this.ask(T.portWhich(this.asked)); });
+        this.sayName(boat).then(() => { if (!asked && this.learn.current === q) this.askWhich(); });
       });
     }
     this.question('syllables', this.asked, {
-      short: () => T.portWhich(this.asked),
-      hint: (said = []) => this.say(said).then(() => this.nameBoats()).then((all) => { if (all) this.ask(T.portWhich(this.asked)); }), // the names again: who is who, not how many pieces
+      short: () => { this.showTicks(); return T.portWhich(this.asked); },
+      hint: (said = []) => this.say(said).then(() => this.nameBoats()).then((all) => { if (all) this.askWhich(); }), // the names again: who is who, not how many pieces
       simplify: () => {
         const wrongs = this.boats.filter((b) => b.userData.pieces !== this.asked && !b.userData.gone);
         const boat = wrongs.includes(this.lastWrong) ? this.lastWrong : wrongs[0];
@@ -466,14 +467,23 @@ export class PortMission extends Mission {
         this.removeOption(boat);
       },
       reveal: () => {
+        this.showTicks();
         const right = this.boats.find((b) => b.userData.pieces === this.asked);
         if (right) this.hint(right.userData.board, () => this.phase !== 'choosing');
         return T.portWhich(this.asked);
       },
     }, { options: 3 });
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
-    Promise.resolve(this.talk).then(() => this.nameBoats()).then((all) => { if (all) this.ask(T.portWhich(this.asked)); }); // the three names, then the question
+    Promise.resolve(this.talk).then(() => this.nameBoats()).then((all) => { if (all) this.askWhich(); }); // the three names, then the question
     await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  showTicks() { for (const tick of this.tickButtons) tick.visible = true; }
+
+  /** "Która łódka ma dwa kawałki?", and the ticks to answer with appear. */
+  askWhich() {
+    this.showTicks();
+    this.ask(T.portWhich(this.asked));
   }
 
   /** Each boat says its name as it hops, left to right. Resolves true when all were said; any tap of hers stops it. */
@@ -492,7 +502,7 @@ export class PortMission extends Mission {
   }
 
   async pickBoat(boat) {
-    if (this.phase !== 'choosing' || !this.prompt) return; // (before the question is said there is nothing to answer yet)
+    if (this.phase !== 'choosing') return;
     this.naming++;
     const num = boat.userData.pieces;
     this.poke();
