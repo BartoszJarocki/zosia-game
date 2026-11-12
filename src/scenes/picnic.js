@@ -224,7 +224,6 @@ export class PicnicMission extends Mission {
     if (kitten) sfx.meow();
     await hop(who, 0.6, 350);
     who.rotation.y = Math.atan2(home.x - who.position.x, home.z - who.position.z);
-    await this.jumpTo(who, home, { height: 0.6, ms: 500 });
-    who.rotation.y = turn;
+    this.jumpTo(who, home, { height: 0.6, ms: 500 }).then(() => { who.rotation.y = turn; }); // (home again while the next question opens)
   }
 }

@@ -35,7 +35,7 @@ registerHooks({ load(url, context, next) {
     export const shakeNo = (o) => { (globalThis.__shakes ||= []).push(o.position.distanceTo(o.userData.home || o.position)); };
     export const addSkyAndLights = () => {};
     ${stage}`;
-  if (url.endsWith('/src/audio.js')) source = `export const say = async (s) => { globalThis.__lines.push(...[s].flat()); await new Promise(setImmediate); };
+  if (url.endsWith('/src/audio.js')) source = `export const say = async (s) => { globalThis.__lines.push(...[s].flat()); await (globalThis.__gate || new Promise(setImmediate)); };
     export const hush = () => {}; export const sfx = new Proxy({}, { get: () => () => {} });`;
   if (url.endsWith('/src/ui.js')) source = `
     export const badges = { get: () => ({}), add: () => ({}) };
@@ -259,6 +259,22 @@ test('River: a new river shows its first number at once, not the number the last
   stop(s);
 });
 
+test('River: the next number is asked while the one she landed on is still being said (she need not wait for the voice)', async () => {
+  CONFIG.level = 1;
+  const s = new StonesMission({});
+  s.build(); s.collect();
+  const round = s.round(0);
+  await until(() => s.tappables.filter((o) => o.userData.num !== undefined).length === 2 && s.learn.current);
+  globalThis.__gate = new Promise(() => {}); // the voice never finishes
+  const right = s.tappables.find((o) => o.userData.num === 1);
+  right.userData.onTap(right);
+  await until(() => s.learn.current?.item === '2');
+  assert.ok(s.tappables.some((o) => o.userData.num === 2), 'the next row is there to tap');
+  globalThis.__gate = null;
+  void round;
+  stop(s);
+});
+
 test('River: Zosia never takes a tap a stone could take (a stone behind her is still the stone)', () => {
   CONFIG.level = 1;
   const s = new StonesMission({});
@@ -308,6 +324,22 @@ test('Picnic gentler run: amounts are always farther apart than the level\'s, an
 test('Lookout gentler run: the first level is one ride; the others are one easy kitten per ride on floors 1 to 3', () => {
   assert.deepEqual(EASIER.lookout(GAME.lookout[0]), { ...GAME.lookout[0], rounds: 1 });
   assert.equal(EASIER.lookout(GAME.lookout[3]).mode, 'go');
+});
+
+test('Picnic: the next question does not wait for Chase to trot back home from his treats', async () => {
+  CONFIG.level = 1;
+  const s = new PicnicMission({});
+  s.build(); s.collect();
+  const real = s.jumpTo.bind(s);
+  let jumps = 0;
+  s.jumpTo = (...args) => (++jumps === 1 ? real(...args) : new Promise(() => {})); // (the trot home never ends)
+  const bone = makeBone(1);
+  s.scene.add(bone);
+  const eating = s.feast(s.pup, [bone], new THREE.Vector3(3.5, 0, 0.6));
+  const done = await Promise.race([eating.then(() => true), (async () => { await flush(80); return false; })()]);
+  assert.ok(done, 'the feast is over once he has eaten');
+  assert.equal(jumps, 2, 'he does go home');
+  stop(s);
 });
 
 test('Picnic: five questions a visit on every level, so a blind tap between two blankets does not level her up in half of the runs', () => {
