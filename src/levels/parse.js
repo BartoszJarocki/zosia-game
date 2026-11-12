@@ -26,6 +26,7 @@ export const SCHEMA = {
   },
   balloons: {
     pool: { type: 'letters' },
+    ask: { type: 'enum', values: ['match', 'audio'] }, // (match shows the letter in the bubble, audio only names it)
     targets: { type: 'int', min: 1, max: 4 },
     total: { type: 'int', min: 3, max: 9 },
     speed: { type: 'range', min: 0.1, max: 2, float: true },

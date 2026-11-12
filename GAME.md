@@ -166,28 +166,29 @@ When the answer is shown, the kitten peeks out over its block.
 | Level | pool | choices | ask | similar | rounds | needs |
 |---|---|---|---|---|---|---|
 | 1 | START | 3 | match | no | 4 | — |
-| 2 | START | 3 | name | no | 4 | — |
-| 3 | MORE | 3 | name | no | 4 | — |
+| 2 | START | 3 | audio | no | 4 | — |
+| 3 | MORE | 3 | word | no | 4 | — |
 | 4 | MORE | 3 | audio | no | 4 | — |
-| 5 | MORE | 3 | name | yes | 4 | — |
-| 6 | ALL | 3 | name | no | 4 | — |
-| 7 | ALL | 3 | word | no | 4 | — |
+| 5 | MORE | 3 | audio | yes | 4 | — |
+| 6 | ALL | 3 | word | no | 4 | — |
+| 7 | ALL | 3 | audio | no | 4 | — |
 | 8 | SOUNDS | 3 | sound | no | 4 | letterAudio 0.4 |
 | 9 | ALL | 3 | word | yes | 4 | — |
 | 10 | ALL | 4 | word | yes | 4 | — |
 
 Each level brings one new thing: new letters (3, 6), a harder way of asking (2, 4, 7, 8), lookalikes (5, 9) or
-a fourth block (10). When it brings one, another may get easier again: lookalikes come with letters shown and
-named (5), and all the letters arrive shown and named (6) before they are asked by their word (7).
+a fourth block (10). Only the first level shows the letter. New letters arrive with their picture word (3, 6),
+and the next level asks the same letters by name alone (4, 7).
 
 - **pool** — which letters can be asked (a letter set, letters, or both with `+`)
 - **choices** — how many blocks (2–4)
-- **ask** — how the question is asked (each level a different way of meeting a letter):
+- **ask** — how the question is asked (each level a different way of meeting a letter). Only `match` shows the
+  letter, so only a `match` row may have the answer on screen:
   `match` the letter is in the bubble: "find the same one" (no name) ·
-  `name` shown and named: "Znajdź Be!" ·
-  `audio` only named, nothing shown ·
+  `audio` only named, nothing shown: "Znajdź Be!" ·
   `word` named with its picture word, the picture in the bubble: "Be jak banan! Znajdź Be!" ·
-  `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold, so `SOUNDS` are consonants)
+  `sound` its sound: "Która literka robi: mmmm?" (only letters you can hold, so `SOUNDS` are consonants) ·
+  `name` shown and named: no level asks it; it is the help of a gentler run
 - **similar** — `yes` puts lookalike letters (B/P/R, E/F, M/W, O/C…) among the wrong answers on purpose
 - **needs** — optional: the level opens only once that skill is known well enough over the level's letters
   (average mastery, 0–1, over the ones she has been asked, once that is at least half of them), not just after
@@ -197,20 +198,28 @@ named (5), and all the letters arrive shown and named (6) before they are asked 
 
 ### 🎈 Balloon Hill · `balloons`
 
-Balloons with letters float up. Pop every balloon with the asked letter, counting them as you go.
+Balloons with letters float up. Pop every balloon with the asked letter, counting them as you go. Only the
+first two levels show the letter in the bubble ("Przebij balony z literą Be!" with a big B); from the third
+level on the bubble holds a balloon and she pops the letter she hears. When the last right balloon is gone she
+hears "Tak! Trzy!" and the next letter is named at once; the other balloons drift up and away, and for that
+moment she can pop them for fun: nothing counts and nothing is wrong.
 
-| Level | pool | targets | total | speed | similar | rounds |
-|---|---|---|---|---|---|---|
-| 1 | START | 2 | 5 | 0.3–0.45 | no | 3 |
-| 2 | MORE | 2 | 5 | 0.3–0.45 | no | 3 |
-| 3 | MORE | 3 | 7 | 0.3–0.45 | no | 2 |
-| 4 | MORE | 3 | 7 | 0.45–0.65 | no | 2 |
-| 5 | ALL | 3 | 7 | 0.45–0.65 | no | 2 |
-| 6 | ALL | 3 | 7 | 0.45–0.65 | yes | 2 |
-| 7 | ALL | 4 | 9 | 0.45–0.65 | yes | 2 |
+| Level | pool | ask | targets | total | speed | similar | rounds |
+|---|---|---|---|---|---|---|---|
+| 1 | START | match | 2 | 5 | 0.3–0.45 | no | 3 |
+| 2 | MORE | match | 2 | 5 | 0.3–0.45 | no | 3 |
+| 3 | MORE | audio | 3 | 7 | 0.3–0.45 | no | 2 |
+| 4 | MORE | audio | 3 | 7 | 0.45–0.65 | no | 2 |
+| 5 | ALL | audio | 3 | 7 | 0.45–0.65 | no | 2 |
+| 6 | ALL | audio | 3 | 7 | 0.45–0.65 | yes | 2 |
+| 7 | ALL | audio | 4 | 9 | 0.45–0.65 | yes | 2 |
 
-Each level changes one thing: the letters (2, 5), how many balloons (3, 7), how fast (4) or lookalikes (6).
+Each level changes one thing: the letters (2, 5), asking by name (3, with more balloons), how fast (4),
+lookalikes (6) or more balloons (7). New letters are shown first (2); from level 3 only the name is said.
 
+- **ask** — `match`: the letter is in the bubble, so she pops the same ones (it is also named) ·
+  `audio`: only named, the bubble shows a balloon. Only `match` shows the letter. A gentler run shows it again
+  (the help of a rough run)
 - **targets** — how many balloons have the right letter (1–4) · **total** — balloons in the air (3–9)
 - **speed** — how fast they rise, a range (each lane of balloons picks a speed inside it). They rise in five
   lanes that never touch, up to just under the speech bubble (top left) and the top bar, then float away and
@@ -219,18 +228,19 @@ Each level changes one thing: the letters (2, 5), how many balloons (3, 7), how 
 
 ### 🚂 Name Train · `name`
 
-Load the letters of a word onto the train in order. Each letter is named as it goes on ("Tak! Zet!"); then the
-train toots once per syllable while Chase bounces and the voice says them, then the word ("Zo! Sia! Zosia!"),
-and the train drives off. Nothing is spelled from memory: the word is always there to look at (in the bubble,
+Load the letters of a word onto the train in order. Each letter is named as it goes on ("Tak! Zet!"), and the next
+one is asked at once, while the block is still hopping onto its wagon; then the train toots once per syllable
+while Chase bounces and the voice says them, then the word ("Zo! Sia! Zosia!"), and the train drives off. Nothing is spelled from memory: the word is always there to look at (in the bubble,
 or as faint letters on the wagons). A finished word turns into its thing before the train leaves: KOT a kitten
 hops onto the last wagon, DOM a little house pops up, MAMA, TATA and the family names a heart floats up
 ("Buziaczek dla Kasi!"), and her own name makes her cheer (the pictures live in `src/scenes/name.js`, the lines
 in `src/lang/pl.js`).
 
 The `whose` levels are about whole names: three trains roll in with name boards and she finds the one asked for
-("Który pociąg jest Zosi?"): her own name first, then MAMA or TATA, then a family name. A miss gets "Nie, to
-nie ten." and the question again; help shows the name in the bubble so she can match it, then a wrong train
-drives off, and last the right train's board pulses ("To pociąg Zosi!").
+("Który pociąg jest Zosi?"): her own name first, then MAMA or TATA, then a family name. A wrong train says
+whose it is ("To pociąg mamy!", or its word for KOT and DOM) and the question comes again; help shows the name
+in the bubble so she can match it, then a wrong train drives off, and last the right train's board pulses
+("To pociąg Zosi!").
 
 | Level | words | mode | gaps | extras | similar |
 |---|---|---|---|---|---|
@@ -240,8 +250,8 @@ drives off, and last the right train's board pulses ("To pociąg Zosi!").
 | 4 | {name}, MAMA, TATA | highlight | — | 1 | no |
 | 5 | {name}, MAMA, TATA | word | — | 1 | no |
 | 6 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | word | — | 1 | no |
-| 7 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 1 | no |
-| 8 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 1 | yes |
+| 7 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 2 | no |
+| 8 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 3 | yes |
 | 9 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | whose | — | — | — |
 
 - **words** — the words (2–8 letters, only letters from `ALL`; names may also use Y, "Igrek", which no other
@@ -855,7 +865,9 @@ The post office: Chase delivers parcels. First sounds: which word starts with wh
 - **choices** — how many parcels / mailboxes (2–4)
 - **mode** — `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat ·
   `soundLetter`: letter mailboxes and one parcel with a picture, "Do której skrzynki pójdzie kot?" →
-  drag the parcel into K (or tap the mailbox)
+  drag the parcel into K (or tap the mailbox). The parcel is posted when its middle is over a mailbox; a small
+  lift, or a drop anywhere else, floats it back and posts nothing. The parcel waits well in front of the
+  mailboxes, so a small lift is nowhere near one
 - **similar** — optional: `yes` lets sound-alikes (P/B, T/D, K/G, S/Z, W/F, M/N) be choices together
 
 ### 🧺 Pup Picnic · `picnic`

@@ -437,7 +437,6 @@ export const T = {
 
   // Balloon Hill
   balloonAsk: (l) => [`Przebij balony z literą ${L(l)}! Ile ich znajdziesz?`],
-  balloonDone: (l, w = word(l)) => [`Wszystkie balony z literą ${L(l)}! ${L(l)} jak ${w}!`],
 
   // Comet Catch
   cometStart: () => ['Komety lecą! Kometa to kula lodu i pyłu.'],
@@ -609,7 +608,7 @@ export function allSegments(levels, allLetters) {
   PRAISE.forEach((_, i) => add(T.praise(i)));
   letters.forEach((l) => { add(T.noLookalike(l)); add(T.whereLetter(l)); add(T.findLetter(l)); add(T.letter(l)); add(T.balloonAsk(l)); add(T.cometAsk(l)); add(T.spellNext(l)); });
   // every word a grown-up can pick for a letter (#parent) is recorded, so the voice never changes
-  letters.forEach((l) => wordChoices(l).forEach(([w]) => { add(T.letterLike(l, w)); add(T.kittyFound(l, w)); add(T.balloonDone(l, w)); }));
+  letters.forEach((l) => wordChoices(l).forEach(([w]) => { add(T.letterLike(l, w)); add(T.kittyFound(l, w)); }));
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundIs(l)); wordChoices(l).forEach(([w]) => add(T.soundLike(l, w))); });

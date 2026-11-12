@@ -59,5 +59,5 @@ test('a picture word picked on #parent is the one a letter goes with; an unknown
 test('every pickable picture word is recorded with the lines that say it', () => {
   const { levels, letterSets } = parseGame(readFileSync('GAME.md', 'utf8'), { childName: 'Zosia' });
   const lines = new Set(allSegments(levels, letterSets.ALL));
-  for (const line of ['Be jak balon!', 'Znalazłaś kotka! Be jak balon!', 'Wszystkie balony z literą Be! Be jak balon!']) assert.ok(lines.has(line), line);
+  for (const line of ['Be jak balon!', 'Znalazłaś kotka! Be jak balon!']) assert.ok(lines.has(line), line);
 });

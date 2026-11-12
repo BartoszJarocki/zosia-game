@@ -13,9 +13,9 @@ function gentlerTelescope(s) {
 /** What a mission easier by one notch looks like after a rough run. */
 export const EASIER = {
   letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),
-  balloons: (s) => ({ ...s, total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }),
+  balloons: (s) => ({ ...s, ask: 'match', total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }), // (the letter shown again)
   comet: (s) => ({ ...s, total: Math.max(s.targets + 1, s.total - 2), speed: s.speed.map((v) => v * 0.7), similar: false, ask: 'match' }), // (one wrong comet stays, the letter shown)
-  name: (s) => ({ ...s, mode: ['missing', 'whose'].includes(s.mode) ? s.mode : 'ghost', extras: s.mode === 'missing' ? 1 : 0, similar: false }), // (whose: two trains)
+  name: (s) => ({ ...s, ...(s.mode === 'missing' ? { gaps: Math.max(1, (s.gaps ?? 2) - 1), extras: 1 } : { mode: s.mode === 'whose' ? 'whose' : 'ghost', extras: 0 }), similar: false }), // (whose: two trains)
   cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }), // one cone fewer: easier even where a level already shows both
   mars: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: 'match', rock: 'both' }), // one rock fewer, numeral and dots shown
   stones: gentlerRiver,
@@ -29,7 +29,7 @@ export const EASIER = {
   saturn: (s) => (s.sort === 'both' ? { ...s, sort: 'kind' } : { ...s, named: true, sizes: 'same', pieces: s.named ? Math.max(2, s.pieces - 2) : s.pieces }), // (named already: fewer pieces)
   venus: (s) => ({ ...s, reveal: 'full', turned: false }),
   lookout: (s) => ({ ...s, bubble: 'both', mode: 'go' }),
-  delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false }),
+  delivery: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), mode: 'pictureSound', similar: false, rounds: Math.min(3, s.rounds) }), // (level 1 has no fewer choices to give: a shorter run)
   picnic: (s) => ({ ...s, close: false, numerals: false }),
   garage: easierGarage,
   pluto: (s) => ({ ...s, shapes: s.shapes.slice(0, Math.max(2, s.shapes.length - 1)), ask: 'match', choices: Math.max(2, s.choices - 1), similar: false, turned: false }), // (the newest shape stays out)
