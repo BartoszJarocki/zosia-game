@@ -28,11 +28,11 @@ const nFloors = (n) => (n === 1 ? 'jedno piętro' : n <= 4 ? `${NUM[n]} piętra`
 
 /**
  * What the end of a mission says she won: by the levels she gained (0, 1 or 2), and whether the badge is new to her shelf.
- * Stars are the reward, so a run that gained none says nothing here. One statement that stands alone, so it works
- * after any place's line; a level number would only repeat the stars.
+ * A run that gained no star and no new badge says nothing here. One statement that stands alone, so it works after
+ * any place's line; a level number would only repeat the stars.
  */
 const REWARD = [
-  [null, null],
+  [null, 'Zdobywasz odznakę!'],
   ['Zdobywasz nową gwiazdkę!', 'Zdobywasz odznakę i nową gwiazdkę!'],
   ['Zdobywasz dwie nowe gwiazdki!', 'Zdobywasz odznakę i dwie nowe gwiazdki!'],
 ];

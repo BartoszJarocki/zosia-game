@@ -112,7 +112,7 @@ test('every place ends in whole statements for 0, 1 and 2 levels, with and witho
 test('the reward says what she won: one star or two, with the badge when it is new', () => {
   const said = (gained, badgeNew) => T.reward(gained, badgeNew).join(' ');
   assert.equal(said(0, false), '', 'no stars won, nothing said');
-  assert.equal(said(0, true), '', 'a badge alone is on the screen, not in the ending');
+  assert.equal(said(0, true), 'Zdobywasz odznakę!', 'her first badge in a place is named even with no star');
   assert.equal(said(1, false), 'Zdobywasz nową gwiazdkę!');
   assert.equal(said(2, false), 'Zdobywasz dwie nowe gwiazdki!');
   assert.equal(said(1, true), 'Zdobywasz odznakę i nową gwiazdkę!');
@@ -126,9 +126,10 @@ test('Star Pictures ends in a sentence she can follow, then the stars she won', 
   assert.deepEqual(stars.ending({ gained: 2, badgeNew: false }), ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz dwie nowe gwiazdki!']);
 });
 
-test('the default ending thanks her, and no longer repeats the badge on every run', () => {
+test('the default ending thanks her, and names the badge only when it is new', () => {
   const cones = places.find((s) => s.kind === 'cones');
-  assert.deepEqual(cones.ending({ gained: 0, badgeNew: true }), T.done());
+  assert.deepEqual(cones.ending({ gained: 0, badgeNew: false }), T.done());
+  assert.deepEqual(cones.ending({ gained: 0, badgeNew: true }), [...T.done(), 'Zdobywasz odznakę!']);
   assert.deepEqual(cones.ending({ gained: 1, badgeNew: false }), [...T.done(), 'Zdobywasz nową gwiazdkę!']);
   assert.deepEqual(cones.ending({ gained: 1, badgeNew: true }), [...T.done(), 'Zdobywasz odznakę i nową gwiazdkę!']);
 });
@@ -170,10 +171,13 @@ test('finish says the ending as one list, with the badge only the first time', a
   assert.deepEqual(heard.said[0], ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz nową gwiazdkę!'], 'the second run: the badge is on her shelf already');
 });
 
-test('a run that gained no level says its place line and nothing about stars', async () => {
+test('a run that gained no level says nothing about stars, and names only a first badge', async () => {
+  delete heard.earned.port;
   const { ask } = await ending('port');
   assert.equal(ask.gained, 0);
-  assert.deepEqual(heard.said[0], ['Brawo! Wszystkie łódki wypłynęły w morze!']);
+  assert.deepEqual(heard.said[0], ['Brawo! Wszystkie łódki wypłynęły w morze!', 'Zdobywasz odznakę!'], 'her first run of the place');
+  await ending('port');
+  assert.deepEqual(heard.said[0], ['Brawo! Wszystkie łódki wypłynęły w morze!'], 'the badge is on her shelf already');
 });
 
 test('a clean run that leaps two levels says two stars', async () => {
