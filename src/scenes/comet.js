@@ -8,7 +8,9 @@ import { showLetter, letterWord } from '../config.js';
 import { say, sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
 import { cometLetters, cometPlan, skyEdge } from '../levels/comet.js';
-import { ALL_LETTERS } from '../levels/data.js';
+import { ALL_LETTERS, LEVELS } from '../levels/data.js';
+import { paced } from '../levels/easier.js';
+import { getTargetSpeed } from '../progress.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
@@ -74,6 +76,7 @@ function makeComet(letter, tailMap, haloMap) {
 export class CometMission extends Mission {
   constructor(game) {
     super(game, 'comet');
+    this.L = paced(this.L, LEVELS.comet[this.level - 1], getTargetSpeed());
     this.view = { pos: new THREE.Vector3(0, 8, 14), look: new THREE.Vector3(0, 4.6, 0), minWidth: 15 };
     this.post = { tilt: 0, ao: false };
     this.bubbleAt = 'left';

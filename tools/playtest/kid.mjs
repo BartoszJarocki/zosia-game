@@ -11,7 +11,10 @@
 // every 600 ms, and a die to roll is tapped before the answer. rounds[].alongMs: the part of the wait she tapped along.
 // Every plan logs each tap and the first sound after it (summary.json taps[]). tools/playtest/playcheck.mjs judges them.
 // env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
-//   FINALE=1 makes the session's finale due first (play it with `lookout`), LEAVE=n holds the house after n rounds
+//   FINALE=1 makes the session's finale due first (play it with `lookout`), LEAVE=n holds the house after n rounds,
+//   GENTLE=1 seeds a rough last run in the mission (lastAcc 0.2), so the run is a gentler one,
+//   TARGET_SPEED=slow|auto seeds the grown-ups' target speed for Balloon Hill and Comet Catch (default: none saved, which reads auto)
+// summary.json pace: the setting, the speed range the level flies at, and a gentler run; each round's speed: the comets' pace or the balloon lanes'
 // The save it leaves (progress and badges, as the grown-ups' page copies them) goes to save.json: parent.mjs SAVE= opens it.
 import { chromium } from 'playwright-core';
 import { VERSION } from '../../src/progress/migrations.js';
@@ -23,12 +26,15 @@ mkdirSync(process.env.TMPDIR, { recursive: true });
 const [kind, levelArg = '1', plan = 'fast'] = process.argv.slice(2);
 const level = Number(levelArg);
 const W = Number(process.env.W || 1180), H = Number(process.env.H || 820);
-const OUT = `${process.env.OUTDIR || 'out'}/${kind}-L${level}-${plan}${process.env.FINALE ? '-finale' : ''}/`;
+const OUT = `${process.env.OUTDIR || 'out'}/${kind}-L${level}-${plan}${process.env.FINALE ? '-finale' : ''}${process.env.GENTLE ? '-gentle' : ''}/`;
 mkdirSync(`${OUT}film`, { recursive: true });
 const BASE = process.env.BASE || 'http://localhost:4190';
 const FILM = Number(process.env.FILM ?? 3);
 const QUICK_MS = 300, WATCH_MS = 4000, ALONG_MS = 600; // (the first idle help comes 6 s after a tap)
 const LEAVE = Number(process.env.LEAVE || 0);
+const GENTLE = Boolean(process.env.GENTLE);
+const TARGET_SPEED = process.env.TARGET_SPEED || null;
+if (TARGET_SPEED && !['auto', 'slow'].includes(TARGET_SPEED)) { console.error(`TARGET_SPEED is auto or slow, not "${TARGET_SPEED}"`); process.exit(2); }
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: Number(process.env.DSF || 1), hasTouch: true, isMobile: false });
@@ -37,7 +43,7 @@ const errors = [], consoleErrors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
 
-await page.addInitScript(([kind, level, v]) => {
+await page.addInitScript(([kind, level, v, targetSpeed, lastAcc]) => {
   const t0 = performance.now();
   const T = () => Math.round(performance.now() - t0);
   const log = (window.__timeline = []);
@@ -82,12 +88,12 @@ await page.addInitScript(([kind, level, v]) => {
   let n = 0, mark = performance.now();
   const frame = () => { n++; const now = performance.now(); if (now - mark >= 1000) { fps.push(Math.round(n * 1000 / (now - mark))); n = 0; mark = now; } requestAnimationFrame(frame); };
   requestAnimationFrame(frame);
-  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { [kind]: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
+  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { [kind]: { level, good: 0, lastAcc } }, items: {}, skills: {}, sessions: { count: 0, recent: [] }, ...(targetSpeed && { targetSpeed }) }));
   window.__mark = (text) => log.push({ t: T(), type: 'me', text });
   window.__T = T;
   window.__t0 = t0;
   window.__epoch0 = Date.now() - (performance.now() - t0); // (learning events carry Date.now())
-}, [kind, level, VERSION]); // (the current save version: an older one is migrated and may move the level)
+}, [kind, level, VERSION, TARGET_SPEED, GENTLE ? 0.2 : 1]); // (the current save version: an older one is migrated and may move the level)
 
 await page.goto(`${BASE}/?q=${process.env.Q || 'high'}`);
 const st = (fn, a) => page.evaluate(fn, a);
@@ -145,6 +151,13 @@ const tap = async (o, why, aim = 'thing') => {
 const qState = () => st(() => { const s = window.__pup.getStage(); const q = s?.learn?.current; return { kind: s?.kind, open: Boolean(q), along: Boolean(s?.along?.()), id: q ? `${q.skill}:${q.item}:${q.round}:${q.openedAt}` : null, skill: q?.skill, item: q?.item, round: s?.roundIndex, rounds: s?.rounds, speaking: Boolean(s?.speaking), celebrated: Boolean(window.__celebrated), t: window.__T(), opened: q ? Math.round(q.openedAt - window.__t0) : null, bubble: document.querySelector('.bubble')?.innerText.replace(/\s+/g, ' ').trim() }; });
 const waitFor = async (pred, ms, every = 100) => { const end = Date.now() + ms; for (;;) { const s = await qState(); if (pred(s)) return s; if (Date.now() > end) return null; await page.waitForTimeout(every); } };
 const solved = (id) => (s) => s.celebrated || s.id !== id;
+/** How fast the targets fly this round, in units a second before the help ladder slows them: a comet round's pace, or each balloon lane's. */
+const flying = () => st(() => {
+  const s = window.__pup.getStage();
+  if (s?.kind === 'comet') return { pace: s.pace, speedK: s.speedK };
+  if (s?.kind === 'balloons') return { lanes: [...new Set(s.balloons.map((b) => b.userData.speed))].sort(), speedK: s.speedK };
+  return null;
+});
 /** What she can tap along with now (the lit floor sign, the next treat, the die), on screen. */
 const alongThing = () => st(() => {
   const s = window.__pup.getStage(), o = s?.along?.();
@@ -348,8 +361,9 @@ if (process.env.FINALE) await st(() => { const s = window.__pup.session(); s.mis
 for (let i = 0; i < 20 && (await st(() => window.__pup.getStage()?.kind)) !== kind; i++) { await st((k) => window.__pup.game.startMission(k), kind); await page.waitForTimeout(700); }
 const played = await st(() => window.__pup.getStage()?.level);
 if (played !== level) { console.error(`${kind}: asked for level ${level} but the game plays level ${played}`); process.exit(2); }
+const pace = await st(() => { const s = window.__pup.getStage(); return { targetSpeed: JSON.parse(localStorage.getItem('pup-patrol-progress') || 'null')?.targetSpeed ?? 'auto', range: s.L?.speed ?? null, gentler: Boolean(s.L?.assist) }; });
 const tStart = await now();
-await mark(`mission ${kind} L${level} started, plan ${plan}`);
+await mark(`mission ${kind} L${level} started, plan ${plan}${pace.range ? `, target speed ${pace.targetSpeed}${pace.gentler ? ' in a gentler run' : ''}: ${pace.range.map((v) => +v.toFixed(3)).join('-')}` : ''}`);
 await page.waitForTimeout(600);
 await snap('mission-open');
 
@@ -362,7 +376,7 @@ for (let r = 0; r < 24; r++) {
   if (plan === 'polite') await waitFor((s) => !s.speaking || s.celebrated, 30000);
   const q = await qState();
   // times are the game's own: when the question opened and when her answer counted (the player's screenshots take no part)
-  const rec = { r: r + 1, q: `${q.skill}:${q.item}`, bubble: q.bubble, tOpen: q.opened ?? q.t, tSeen: q.t, spokeWhenOpen: q.speaking, taps: 0, ignored: 0 };
+  const rec = { r: r + 1, q: `${q.skill}:${q.item}`, bubble: q.bubble, tOpen: q.opened ?? q.t, tSeen: q.t, spokeWhenOpen: q.speaking, taps: 0, ignored: 0, speed: await flying() };
   await mark(`QUESTION ${rec.q} bubble="${q.bubble}" speaking=${q.speaking}`);
   await answerable(q);
   await page.waitForTimeout(350);
@@ -524,7 +538,7 @@ const taps = (await st(() => window.__taps)).map((t) => {
 });
 const sorted = [...fps].sort((x, y) => x - y);
 const summary = {
-  kind, level, savedLevel, plan, viewport: `${W}x${H}`, celebrated: Boolean(done), missionSeconds: celebratedAt ? Math.round((celebratedAt - tStart) / 100) / 10 : null,
+  kind, level, savedLevel, plan, pace, viewport: `${W}x${H}`, celebrated: Boolean(done), missionSeconds: celebratedAt ? Math.round((celebratedAt - tStart) / 100) / 10 : null,
   rounds, taps, errors, consoleErrors: consoleErrors.slice(0, 10), fps: { min: sorted[0], median: sorted[sorted.length >> 1], n: fps.length }, tier,
   cutClips: timeline.filter((e) => e.type === 'clip' && e.cut).length, clips: timeline.filter((e) => e.type === 'clip').length,
   wrongEvents: events.filter((e) => !e.correct).map((e) => e.errorType).reduce((m, k) => ({ ...m, [k]: (m[k] || 0) + 1 }), {}),
@@ -542,5 +556,5 @@ const lines = timeline.map((e) => {
 });
 writeFileSync(`${OUT}transcript.txt`, lines.join('\n') + `\n\nerrors: ${JSON.stringify(errors)}\nconsole: ${JSON.stringify(consoleErrors.slice(0, 10))}\n`);
 const quick = rounds.filter((x) => x.quick), wrongs = rounds.filter((x) => x.wrongFirst);
-console.log(`${kind} L${level} ${plan}: ${done ? 'celebrated' : 'NO CELEBRATION'} in ${summary.missionSeconds}s, saved level ${savedLevel}, ${rounds.length} rounds, ignored taps ${rounds.reduce((n, x) => n + (x.ignored || 0), 0)}, silent taps ${silent.length}/${taps.filter((t) => t.aim === 'thing' && t.hit).length}${quick.length ? `, quick counted ${quick.map((x) => `${x.quick.counted}/${x.quick.made}`).join(' ')}` : ''}${wrongs.length ? `, after one wrong: ${wrongs.map((x) => `help ${x.wrongFirst.help}${x.wrongFirst.shown.length ? ` ${x.wrongFirst.shown.join('+')}` : ''}${x.wrongFirst.closed ? ' moved on' : ''}`).join('; ')}` : ''}, stuck ${rounds.some((x) => x.stuck)}, errors ${errors.length}, fps median ${summary.fps.median}`);
+console.log(`${kind} L${level} ${plan}: ${done ? 'celebrated' : 'NO CELEBRATION'} in ${summary.missionSeconds}s, saved level ${savedLevel}, ${rounds.length} rounds, ignored taps ${rounds.reduce((n, x) => n + (x.ignored || 0), 0)}, silent taps ${silent.length}/${taps.filter((t) => t.aim === 'thing' && t.hit).length}${quick.length ? `, quick counted ${quick.map((x) => `${x.quick.counted}/${x.quick.made}`).join(' ')}` : ''}${wrongs.length ? `, after one wrong: ${wrongs.map((x) => `help ${x.wrongFirst.help}${x.wrongFirst.shown.length ? ` ${x.wrongFirst.shown.join('+')}` : ''}${x.wrongFirst.closed ? ' moved on' : ''}`).join('; ')}` : ''}, stuck ${rounds.some((x) => x.stuck)}${pace.range ? `, target speed ${pace.targetSpeed}${pace.gentler ? ' gentler' : ''} ${pace.range.map((v) => +v.toFixed(3)).join('-')}` : ''}, errors ${errors.length}, fps median ${summary.fps.median}`);
 await browser.close();

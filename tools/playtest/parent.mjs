@@ -2,6 +2,8 @@
 // env: BASE, OUTDIR (default .), W, H (viewport, default 1180x820),
 //   SAVE=file  start from that save: kid.mjs's save.json, or { progress, badges } as the page's "Copy progress" gives it
 //   RELOAD=1   then reload the game and open the page again (the same save, read afresh)
+//   SET_SPEED=slow|auto  taps that target speed on the page (Balloon Hill, Comet Catch), prints the saved value and the lit chip
+//              (again after RELOAD), and saves speed-setting.png (and speed-setting-reload.png)
 // Writes parent.txt (the page's text), parent-1.jpg (the top), parent-full.jpg (the whole page), parent-explain.jpg (the
 // Missions part), then parent-2/3.jpg from the level tools; with RELOAD also parent-reload.txt and parent-reload-full.jpg.
 import { chromium } from 'playwright-core';
@@ -59,6 +61,9 @@ async function record(name) {
   console.log(`${name}: places`, JSON.stringify(await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.pv-mission')].map((m) => [m.dataset.kind, m.querySelector('.pv-played')?.textContent])))));
 }
 
+const speedNow = () => page.evaluate(() => ({ saved: JSON.parse(localStorage.getItem('pup-patrol-progress') || 'null')?.targetSpeed ?? null, chipOn: document.querySelector('.pv-pace .pv-chip.on')?.dataset.speed ?? null }));
+const speedShot = async (name) => { await page.locator('.pv-pace').evaluate((e) => e.scrollIntoView({ block: 'center' })); await page.waitForTimeout(200); await page.screenshot({ path: `${OUT}${name}.png` }); };
+
 await page.goto(`${process.env.BASE || 'http://localhost:4190'}/?q=high`);
 const open = await openPage();
 if (open) {
@@ -66,9 +71,18 @@ if (open) {
   await record('parent');
   await page.locator('.pv-explain, .pv-missions').first().scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {}); // (.pv-explain: since FX1)
   await page.screenshot({ path: `${OUT}parent-explain.jpg`, type: 'jpeg', quality: 70 });
+  if (process.env.SET_SPEED) {
+    await page.locator(`.pv-pace [data-speed="${process.env.SET_SPEED}"]`).click();
+    await page.waitForTimeout(400);
+    console.log('target speed after the tap:', JSON.stringify(await speedNow()));
+    await speedShot('speed-setting');
+  }
   if (process.env.RELOAD) {
     await page.reload();
-    if (await openPage()) await record('parent-reload');
+    if (await openPage()) {
+      await record('parent-reload');
+      if (process.env.SET_SPEED) { console.log('target speed after the reload:', JSON.stringify(await speedNow())); await speedShot('speed-setting-reload'); }
+    }
   }
   await page.locator('.pv-link').click();
   await page.waitForTimeout(500);

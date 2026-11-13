@@ -10,6 +10,19 @@ function gentlerTelescope(s) {
   return { ...s, ask, choices, rounds: ask === s.ask && choices === s.choices ? Math.max(2, s.rounds - 1) : s.rounds };
 }
 
+/** What a grown-up can set for how fast Balloon Hill's balloons and Comet Catch's comets move: a share of the level's own speed. */
+export const TARGET_SPEED = { auto: 1, slow: 0.5 };
+
+/**
+ * `run` is the level as it plays now (a gentler run's included), `row` the level's own row in GAME.md. A fixed speed
+ * replaces the gentler run's speed and is never taken on top of it, so a run is not slowed twice. Nothing but the
+ * speed changes: the letters and the rest of a gentler run stay as `run` has them.
+ */
+export function paced(run, row, targetSpeed) {
+  const share = TARGET_SPEED[targetSpeed] ?? 1;
+  return share === 1 ? run : { ...run, speed: row.speed.map((v) => v * share) };
+}
+
 /** What a mission easier by one notch looks like after a rough run. */
 export const EASIER = {
   letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),

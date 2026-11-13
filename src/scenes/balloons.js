@@ -10,7 +10,9 @@ import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle, pick } from '../util.js';
 import { T } from '../lang/pl.js';
-import { distractors } from '../levels.js';
+import { distractors, LEVELS } from '../levels.js';
+import { paced } from '../levels/easier.js';
+import { getTargetSpeed } from '../progress.js';
 import { Mission } from './mission.js';
 
 const BOTTOM = 1.3;
@@ -33,6 +35,7 @@ function box(el) {
 export class BalloonsMission extends Mission {
   constructor(game) {
     super(game, 'balloons');
+    this.L = paced(this.L, LEVELS.balloons[this.level - 1], getTargetSpeed());
     this.view = { pos: new THREE.Vector3(0, 3.8, 13), look: new THREE.Vector3(0, 3.9, 0), minWidth: 14.5 };
     this.post = { tilt: 0.3, focus: 0.5, band: 0.3 };
     this.bubbleAt = 'left'; // the balloons rise in the middle
