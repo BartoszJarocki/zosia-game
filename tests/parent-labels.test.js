@@ -145,7 +145,8 @@ test('every solve counted at the top has a row: the Port\'s counts, Jupiter\'s b
   seed();
   const { learning } = await open();
   const solve = (mission, skill, item, options = 3) => learning.emit({ mission, skill, item, correct: true, firstTry: true, options });
-  solve('port', 'syllables', 'FOKA');
+  learning.emit({ mission: 'port', skill: 'syllables', item: 'FOKA', correct: false, errorType: 'wrongChoice', chosen: 1, options: 3 }); // one toot
+  learning.emit({ mission: 'port', skill: 'syllables', item: 'FOKA', correct: true, firstTry: false, options: 3 });
   solve('port', 'syllables', 2);
   solve('jupiter', 'comparison', 'bigger', 2);
   solve('jupiter', 'comparison', 'smaller', 2);
@@ -154,6 +155,8 @@ test('every solve counted at the top has a row: the Port\'s counts, Jupiter\'s b
   const html = (await open()).page();
   assert.deepEqual(counted(html), { rows: 6, tile: 6 });
   assert.match(section(html, 'Syllables'), /which boat has 2 syllables splits into syllables 40% 1 solved/);
+  assert.match(section(html, 'Syllables'), /Foka splits into syllables 0% 1 solved \(1 after an error\) · – · mixes up with 1 /);
+  assert.doesNotMatch(html, /mixes up with which boat/, 'her one toot is a count, not a boat');
   assert.match(section(html, 'Space'), /after Mars order 40% 1 solved/);
 });
 

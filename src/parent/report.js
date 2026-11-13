@@ -52,6 +52,9 @@ export function itemLabel(skill, item) {
   return /^\d+$/.test(s) ? s : showLetter(s);
 }
 
+/** What she picked instead, in words: at the Port it is always a count (her toots, or the pieces of the boat she tapped). */
+export const confusionLabel = (skill, chosen) => (skill === 'syllables' ? String(chosen) : itemLabel(skill, chosen));
+
 /** Fewer answers than this: shown, but marked as "not much to go on yet". */
 export const FEW = 3;
 

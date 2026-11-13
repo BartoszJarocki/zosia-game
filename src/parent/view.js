@@ -6,7 +6,7 @@ import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, STARTS, maxLevel } from '../levels/data.js';
-import { COMPARE_ITEMS, POSITION_ITEMS, SYLLABLE_ITEMS, FEW, sectionReports, overview, maxNumber, sessionStats, recentChanges, itemLabel, neverAsked, missionStatus, solvedText, solvesHow } from './report.js';
+import { COMPARE_ITEMS, POSITION_ITEMS, SYLLABLE_ITEMS, FEW, sectionReports, overview, maxNumber, sessionStats, recentChanges, itemLabel, confusionLabel, neverAsked, missionStatus, solvedText, solvesHow } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
 
@@ -32,7 +32,7 @@ function bar(row, since) {
     <span class="pv-skill">${esc(row.label)}</span>
     <span class="pv-bar"><i style="width:${Math.round(row.mastery * 100)}%"></i></span>
     <span class="pv-pct">${masteryPct(row)}</span>
-    <span class="pv-meta">${esc(solvedText(row, since))} · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(itemLabel(row.skill, c))).join(', ')}` : ''}</span>
+    <span class="pv-meta">${esc(solvedText(row, since))} · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(confusionLabel(row.skill, c))).join(', ')}` : ''}</span>
   </div>`;
 }
 
