@@ -30,7 +30,7 @@ import { LighthouseMission } from './scenes/lighthouse.js';
 import { ShallowsMission } from './scenes/shallows.js';
 import { ReefMission } from './scenes/reef.js';
 import { PortMission } from './scenes/port.js';
-import { resetProgress } from './progress.js';
+import { resetProgress, recordVisit } from './progress.js';
 import { allSegments } from './lang/pl.js';
 import { LEVELS, ALL_LETTERS } from './levels/data.js';
 import { learning } from './learning/events.js';
@@ -125,6 +125,7 @@ const game = {
       const mission = new MISSIONS[kind](game);
       if (kind === 'telescope') mission.at = at;
       setStage(mission);
+      recordVisit(kind); // (here, not before the wipe: a start asked for while a wipe runs does not happen)
     });
   },
 };

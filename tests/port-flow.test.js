@@ -103,6 +103,7 @@ test('together claps the name once first, each horn toot lights a block, and the
   assert.equal(s.answers[0].item, 'MEWA');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
+  assert.equal(s.answers[0].options, 2, 'level 1 names have one or two pieces: a blind tooter is right one time in two');
   assert.deepEqual(globalThis.__lines.slice(-2), ['Mewa!', 'Brawo! Łódka wypływa w morze!']);
   assert.equal(globalThis.__lines.filter((l) => l === 'Me!').length, 1, 'no syllables sung back: the boat toots them');
   stop(s);
@@ -129,7 +130,68 @@ test('too few toots get "Za mało!" and the name again, not the clap, then a fre
   assert.equal(s.answers[0].item, 'FOKA');
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 3, 'level 2 names have one to three pieces');
   stop(s);
+});
+
+test('a second wrong boat tap shows the horn to toot, not the pieces', async () => {
+  const s = await scene(2);
+  s.pick = () => 'FOKA';
+  const round = s.round(0);
+  await until(() => s.phase === 'asking');
+  await choice(s, 'done').userData.onTap();
+  await until(() => s.phase === 'asking');
+  const before = globalThis.__lines.length;
+  await choice(s, 'done').userData.onTap();
+  await until(() => globalThis.__lines.length > before + 1);
+  assert.ok(globalThis.__lines.slice(before).includes('Dotknij rogu i zatrąb raz na każdy kawałek!'));
+  assert.equal(s.learn.current.assist, 2);
+  assert.ok(s.boats[0].userData.board.userData.blocks.every((b) => b.material.emissiveIntensity < 0.9), 'no piece lit for her');
+  s.alive = false;
+  s.resolveRound?.();
+  await round;
+  s.exit();
+});
+
+const { applyEvent } = await import('../src/learning/mastery.js');
+const { categorize } = await import('../src/learning/scheduler.js');
+const { sectionReports, SYLLABLE_ITEMS } = await import('../src/parent/report.js');
+
+test('together leaves the pieces on the board, so five copied names are five solves that leave the name new', async () => {
+  const skills = {};
+  for (let r = 0; r < 5; r++) {
+    const s = await scene(1);
+    s.pick = () => 'MEWA';
+    try {
+      const round = s.round(0);
+      await until(() => s.phase === 'asking' && globalThis.__lines.at(-1) === 'Gotowe? Dotknij łódki!');
+      const blocks = s.boats[0].userData.board.userData.blocks;
+      assert.equal(blocks.filter((b) => b.visible).length, 2, 'both pieces on the board before her first toot');
+      while (blocks.some((b) => b.material.emissiveIntensity < 0.9)) await choice(s, 'horn').userData.onTap();
+      await choice(s, 'done').userData.onTap();
+      await round;
+      applyEvent(skills, s.answers[0]);
+    } finally { stop(s); }
+  }
+  const mewa = skills.syllables.MEWA;
+  assert.deepEqual([mewa.solved, mewa.firstTry, mewa.attempts, mewa.mastery, categorize(mewa)], [5, 5, 0, 0, 'new']);
+});
+
+test('alone shows only the name, so a right count moves its mastery', async () => {
+  const s = await scene(2);
+  s.pick = () => 'FOKA';
+  const skills = {};
+  try {
+    const round = s.round(0);
+    await until(() => s.phase === 'asking' && globalThis.__lines.at(-1) === 'Gotowe? Dotknij łódki!');
+    assert.ok(s.boats[0].userData.board.userData.blocks.every((b) => !b.visible), 'no pieces on the board');
+    await choice(s, 'horn').userData.onTap();
+    await choice(s, 'horn').userData.onTap();
+    await choice(s, 'done').userData.onTap();
+    await round;
+    applyEvent(skills, s.answers[0]);
+  } finally { stop(s); }
+  assert.deepEqual([skills.syllables.FOKA.solved, skills.syllables.FOKA.attempts, skills.syllables.FOKA.mastery], [1, 1, 0.4]);
 });
 
 test('every boat has its animal for its board', () => {
@@ -167,6 +229,10 @@ test('which says the three names first, each boat hopping, then asks for a count
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].options, 3);
   stop(s);
+  const skills = {};
+  applyEvent(skills, s.answers[0]);
+  const card = sectionReports(skills, 'syllables', SYLLABLE_ITEMS).find((r) => r.seen);
+  assert.deepEqual([card?.item, card?.rows[0].solved], ['2', 1], 'the grown-ups\' page has a row for it');
 });
 
 test('which: the ticks come with the question; a tap on a boat during the names says its name, then the question comes', async () => {

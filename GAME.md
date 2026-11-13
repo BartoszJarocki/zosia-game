@@ -741,8 +741,9 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 - **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows (2 to 5),
   and that count is what it records.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
-- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question. Right: the lamp shines
-  a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
+- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question; in `more` the board keeps
+  a place for every flash she makes, so the grown-ups' page counts it as solved but it does not move mastery. Right:
+  the lamp shines a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
   after the praise. Wrong: the boat bobs, "Nie, to nie ten." (`make` and `more`: "Za mało! Policz jeszcze
   raz!" and her dots go out; the pale ones stay) and the question again, nothing more. Help: the dots light one by
   one (`marks`), or the flashes again (`flashes`, and `more`: the ones she saw, each pale dot glowing with its
@@ -827,8 +828,9 @@ and she toots its name once for each syllable.
 - **syllables** — the range of syllable counts in the names this level uses (1 to 3). Every syllable block
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
-  count in `which`). Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the boat's name again, and
-  she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
+  count in `which`). In `together` the name's pieces are on the board as she toots, so the grown-ups' page counts
+  the boat as solved but it does not move her mastery of the name. Too few or too many toots: "Za mało! Posłuchaj
+  jeszcze raz.", the boat's name again, and she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
   kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
   pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right board pulses; a long
   wait brings the three names again. Right:
@@ -984,6 +986,17 @@ session length (`session`), picture words for letters, voice and graphics qualit
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
 (e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.
 The page's title shows which version is running (the same small label as at the bottom right of the start screen).
+It counts every question she solves, apart: right first time, after an error, or after help (a clue or the answer
+shown; hearing the question again is not help). Only an answer a guess could miss moves mastery; one it could not
+(the last star of a picture, a Port name whose pieces are on the board, a Lighthouse `more` count) is counted as
+solved and leaves mastery as it is. A tap that only moves the game on (the drop in Pływa czy tonie?, an automatic
+give, jump or drop, the Treat House share) is not a question and is not counted at all. A count she makes (Port
+toots, Lighthouse flashes) is scored against the counts the level asks for, the outcomes a blind tapper has, and
+"a guess" on the page adds up one in the options of each answer a guess could miss. Each place reads not started,
+started (she went in), or completed (it has a badge), and the page says what the stars, paws and badges on her
+screen mean. Single answers are not stored, so a save from before these counts (13 November 2026) cannot have its
+earlier solves counted: the page says when the counts began, and there a place with no badge and no start reads
+not completed yet.
 
 **New versions.** The installed app is suspended, not closed, so it can sit on an old build for days. Each time it
 comes back to the front it asks for a new version, and switches to it only on the start screen or on the island with

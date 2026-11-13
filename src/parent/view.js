@@ -1,12 +1,12 @@
 // The grown-ups' page: what she knows (from play), her sessions, and developer tools. Opened with #parent or a
 // 3-second press on the badge shelf; never shown during normal play. Anything that erases needs a long press.
-import { getSkills, getSessions, levelFor, assistFor, getAge, setAge, startFor, dev as progressDev } from '../progress.js';
+import { getSkills, getSessions, getVisited, getCountsFrom, levelFor, assistFor, getAge, setAge, startFor, dev as progressDev } from '../progress.js';
 import { SKILLS } from '../learning/events.js';
 import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, STARTS, maxLevel } from '../levels/data.js';
-import { LETTER_SKILLS, NUMBER_SKILLS, COMPARE_SKILLS, COMPARE_ITEMS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, POSITION_SKILLS, POSITION_ITEMS, SYLLABLE_SKILLS, SYLLABLE_ITEMS, metItems, FEW, itemReports, overview, maxNumber, sessionStats, recentChanges, totalAssisted, itemLabel, neverAsked, missionStatus } from './report.js';
+import { COMPARE_ITEMS, POSITION_ITEMS, SYLLABLE_ITEMS, FEW, sectionReports, overview, maxNumber, sessionStats, recentChanges, itemLabel, confusionLabel, neverAsked, missionStatus, solvedText, solvesHow } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
 
@@ -14,6 +14,9 @@ import { setDevNext } from './next.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const pct = (x) => `${Math.round(x * 100)}%`;
+/** Mastery as a share, or a dash before any answer a guess could miss. */
+const masteryPct = (x) => (x.attempts ? pct(x.mastery) : '–');
+const share = (n) => (n == null ? '–' : `${n}%`);
 const secs = (s) => (s == null ? '–' : `${s.toFixed(1)} s`);
 const label = (item) => (/^\d+$/.test(item) ? item : showLetter(item));
 const ageLabel = (age) => String(age).replace('.5', '½');
@@ -23,33 +26,33 @@ const KINDS = () => Object.keys(MISSIONS).filter((k) => LEVELS[k]);
 /** The saved progress as stored (for the copy button, and each mission's good runs and last run). */
 function readSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { return null; } }
 
-function bar(row) {
-  const chance = row.chancePct ? ` (a guess: ${row.chancePct}%)` : '';
-  const tip = `${row.attempts}× solved · ${row.firstTryPct}% first try${chance} · ${row.assistPct}% with help · ${secs(row.avgLatencyS)}`;
+function bar(row, since) {
+  const tip = `${solvedText(row, since)} · ${secs(row.avgLatencyS)}${row.attempts ? '' : ' · no answer yet that a guess could miss, so no mastery yet'}`;
   return `<div class="pv-row${row.few ? ' few' : ''}" title="${esc(tip)}">
     <span class="pv-skill">${esc(row.label)}</span>
     <span class="pv-bar"><i style="width:${Math.round(row.mastery * 100)}%"></i></span>
-    <span class="pv-pct">${pct(row.mastery)}</span>
-    <span class="pv-meta">${row.attempts}× · ${row.firstTryPct}% first try${chance} · ${row.assistPct}% help · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(itemLabel(row.skill, c))).join(', ')}` : ''}</span>
+    <span class="pv-pct">${masteryPct(row)}</span>
+    <span class="pv-meta">${esc(solvedText(row, since))} · ${secs(row.avgLatencyS)}${row.confusions.length ? ` · mixes up with ${row.confusions.map((c) => esc(confusionLabel(row.skill, c))).join(', ')}` : ''}</span>
   </div>`;
 }
 
-function grid(reports, name = (r) => label(r.item)) {
+function grid(reports, name = (r) => label(r.item), since = null) {
   const seen = reports.filter((r) => r.seen), unseen = reports.filter((r) => !r.seen);
   return `${seen.length ? `<div class="pv-grid">${seen.map((r) => `
-    <div class="pv-card"><b class="pv-item">${esc(name(r))}</b>${r.rows.map(bar).join('')}</div>`).join('')}</div>` : ''}
+    <div class="pv-card"><b class="pv-item">${esc(name(r))}</b>${r.rows.map((row) => bar(row, since)).join('')}</div>`).join('')}</div>` : ''}
     ${unseen.length ? `<p class="pv-unseen"><span class="pv-none">Not practised yet:</span> ${unseen.map((r) => `<b>${esc(name(r))}</b>`).join(' ')}</p>` : ''}`;
 }
 
 /** Each mission: its stars, how far to the next one, the last run, whether the next run is gentler. */
 function missionCards(got) {
   const saved = readSave()?.missions || {};
+  const visited = getVisited(), older = getCountsFrom() != null;
   return KINDS().map((k) => {
-    const m = missionStatus({ level: levelFor(k), max: maxLevel(k), good: saved[k]?.good ?? 0, lastAcc: saved[k]?.lastAcc ?? null, runs: got[k] || 0, need: CONFIG.goodRunsPerLevel, gentle: assistFor(k) });
-    return `<div class="pv-mission"><span>${esc(MISSION_INFO[k]?.title || k)}</span>
+    const m = missionStatus({ level: levelFor(k), max: maxLevel(k), good: saved[k]?.good ?? 0, lastAcc: saved[k]?.lastAcc ?? null, runs: got[k] || 0, starts: visited[k] || 0, older, need: CONFIG.goodRunsPerLevel, gentle: assistFor(k) });
+    return `<div class="pv-mission" data-kind="${k}"><span>${esc(MISSION_INFO[k]?.title || k)}</span>
       <span class="pv-stars">${'★'.repeat(m.level)}<i>${'★'.repeat(Math.max(0, m.max - m.level))}</i></span>
       <small>Level ${m.level} of ${m.max} · starts at ${startFor(k)} · ${esc(m.next)}</small>
-      <small>${esc(m.last)} · ${m.gentle ? '<b class="pv-gentle">gentle mode on</b> (the last run was hard)' : 'gentle mode off'} · ${got[k] || 0} badge${got[k] === 1 ? '' : 's'}</small></div>`;
+      <small><b class="pv-played">${esc(m.played)}</b>${m.last ? ` · ${esc(m.last)}` : ''} · ${m.gentle ? '<b class="pv-gentle">gentle mode on</b> (the last run was hard)' : 'gentle mode off'} · ${got[k] || 0} badge${got[k] === 1 ? '' : 's'}</small></div>`;
   }).join('');
 }
 
@@ -82,7 +85,7 @@ function pictureWords() {
 }
 
 const chips = (list) => (list.length
-  ? list.map((x) => `<span class="pv-chip">${esc(x.name)} <small>${esc(x.label)} · ${pct(x.mastery)}</small></span>`).join('')
+  ? list.map((x) => `<span class="pv-chip">${esc(x.name)} <small>${esc(x.label)} · ${masteryPct(x)}</small></span>`).join('')
   : '<span class="pv-none">nothing yet</span>');
 
 function changesList(list) {
@@ -191,6 +194,10 @@ export function showParentView({ onClose }) {
   const sessions = getSessions();
   const ss = sessionStats(sessions);
   const never = neverAsked(skills, ALL_LETTERS);
+  const countsFrom = getCountsFrom();
+  const since = countsFrom && new Date(countsFrom).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const cards = (section, fixed, name) => grid(sectionReports(skills, section, fixed), name, since);
+  const met = (section) => sectionReports(skills, section).length > 0;
 
   const page = document.createElement('div');
   page.className = 'parent-view';
@@ -199,19 +206,27 @@ export function showParentView({ onClose }) {
       <h1>${name}'s progress <small class="pv-build">${esc(ui.buildLabel())}</small></h1>
       <span class="pv-head-btns"><button class="pv-copy">Copy progress</button><button class="pv-close">Back to the game</button></span>
     </header>
-    <p class="pv-note">Estimates from play, not a test. Mastery moves a little with every answer: right first time without help counts most,
-      answers after a clue or a reveal count less. Faded rows have fewer than ${FEW} answers, so there is not much to go on yet.
-      "A guess" is how often tapping at random would be right first time on the same questions.</p>
+    <p class="pv-note">Estimates from play, not a test. Every question she solves is counted: right first time (nothing wrong
+      before, no clue and no answer shown; hearing the question again is fine), after an error, or after help (a clue or
+      the answer shown). Mastery moves a little with every answer a guess could miss: right first time counts most,
+      answers after an error or help count less. Faded rows have fewer than ${FEW} of those, so there is not much to go on yet.
+      "A guess" is how often tapping at random would be right first time on the same questions.
+      An answer a guess could not miss, such as the last star of a picture or a count whose places are on the screen,
+      is counted but does not move mastery, so a row with only those shows a dash. A tap that only moves the game on
+      (dropping a thing into the water, a count that finishes by itself) is not a question and is not counted.</p>
+    ${since ? `<p class="pv-note">Solved questions and started places are counted from ${esc(since)}, when this version came.
+      Earlier answers were not stored one by one, so they cannot be counted now: a row with none since then says so,
+      and a place with no badge that she has not gone into since reads not completed yet.
+      The mastery bars still include the earlier answers a guess could miss.</p>` : ''}
 
     <section class="pv-sum">
-      <div><b>${o.attempts}</b><span>questions solved</span></div>
-      <div><b>${o.firstTryPct}%</b><span>right first time (a guess: ${o.chancePct}%)</span></div>
-      <div><b>${o.assistPct}%</b><span>needed some help</span></div>
+      <div><b>${o.solves.solved}</b><span>questions solved${since ? ` since ${esc(since)}` : ''}${o.solves.solved ? ` (${esc(solvesHow(o.solves))})` : ''}</span></div>
+      <div><b>${share(o.firstTryPct)}</b><span>right first time where a guess could miss (a guess: ${share(o.chancePct)})</span></div>
+      <div><b>${share(o.helpPct)}</b><span>needed some help</span></div>
       <div><b>${secs(o.avgLatencyS)}</b><span>average answer time</span></div>
       <div><b>${o.familiar}</b><span>items she knows well</span></div>
       <div><b>${sessions.count}</b><span>play sessions</span></div>
       <div><b>${ss.avgMinutes == null ? '–' : `${ss.avgMinutes} min`}</b><span>a session, on average</span></div>
-      <div><b>${totalAssisted(skills)}</b><span>answers with some help</span></div>
     </section>
 
     <section class="pv-two">
@@ -223,6 +238,9 @@ export function showParentView({ onClose }) {
 
     <section><h2>Missions</h2>
       <div class="pv-age"><b>${name} ma lat</b>${STARTS.ages.map((a) => `<button class="pv-chip${a === getAge() ? ' on' : ''}" data-age="${a}">${ageLabel(a)}</button>`).join('')}</div>
+      <p class="pv-never pv-explain">In a place, the stars at the top of her screen are her level there: the first ones come
+        from her age, and good runs add more. The paw prints beside them are the rounds of this run and fill in as she plays.
+        A badge is a run she finished. Each place below reads not started, started, or completed (it has a badge).</p>
       <p class="pv-never">A place she has not played yet starts at the level for her age. An older age moves the places below
         their new start up to it; a younger age takes no stars away. One place can be lowered in Developer tools.</p>
       <div class="pv-missions">${missionCards(got)}</div></section>
@@ -233,17 +251,17 @@ export function showParentView({ onClose }) {
     </section>
 
     <section><h2>Letters</h2>${never.length ? `<p class="pv-never">Never asked yet: <b>${never.length} of ${ALL_LETTERS.length}</b> letters (${never.map((l) => esc(label(l))).join(' ')}). New letters come in as she levels up.</p>` : ''}
-      ${grid(itemReports(skills, LETTER_SKILLS, [...ALL_LETTERS]))}</section>
+      ${cards('letters', [...ALL_LETTERS])}</section>
     <section><h2>Picture words <small class="pv-build">Kitty Park, Balloon Hill</small></h2>
       <p class="pv-never">Tap the word she knows best for each letter. Every word is recorded, so the voice stays the same.</p>
       <div class="pv-words">${pictureWords()}</div></section>
-    ${metItems(skills, SPACE_SKILLS).length ? `<section><h2>Space</h2>${grid(itemReports(skills, SPACE_SKILLS, metItems(skills, SPACE_SKILLS)), (r) => itemLabel('space', r.item))}</section>` : ''}
-    <section><h2>Where things are <small class="pv-build">The Reef</small></h2>${grid(itemReports(skills, POSITION_SKILLS, POSITION_ITEMS), (r) => itemLabel('position', r.item))}</section>
-    <section><h2>Syllables <small class="pv-build">The Port</small></h2>${grid(itemReports(skills, SYLLABLE_SKILLS, SYLLABLE_ITEMS), (r) => itemLabel('syllables', r.item))}</section>
-    <section><h2>Numbers</h2>${grid(itemReports(skills, NUMBER_SKILLS, nums))}</section>
-    <section><h2>More, less, the same <small class="pv-build">Pup Picnic</small></h2>${grid(itemReports(skills, COMPARE_SKILLS, COMPARE_ITEMS), (r) => itemLabel('comparison', r.item))}</section>
-    ${metItems(skills, WORD_SKILLS).length ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${grid(itemReports(skills, WORD_SKILLS, metItems(skills, WORD_SKILLS)), (r) => r.item)}</section>` : ''}
-    ${metItems(skills, GARAGE_SKILLS).length ? `<section><h2>Shapes, patterns, sorting <small class="pv-build">Garage</small></h2>${grid(itemReports(skills, GARAGE_SKILLS, metItems(skills, GARAGE_SKILLS)), (r) => r.item)}</section>` : ''}
+    ${met('space') ? `<section><h2>Space</h2>${cards('space', [], (r) => itemLabel('space', r.item))}</section>` : ''}
+    <section><h2>Where things are <small class="pv-build">The Reef</small></h2>${cards('position', POSITION_ITEMS, (r) => itemLabel('position', r.item))}</section>
+    <section><h2>Syllables <small class="pv-build">The Port</small></h2>${cards('syllables', SYLLABLE_ITEMS, (r) => itemLabel('syllables', r.item))}</section>
+    <section><h2>Numbers</h2>${cards('numbers', nums)}</section>
+    <section><h2>More, less, the same <small class="pv-build">Pup Picnic, Jupiter</small></h2>${cards('compare', COMPARE_ITEMS, (r) => itemLabel('comparison', r.item))}</section>
+    ${met('names') ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${cards('names', [], (r) => r.item)}</section>` : ''}
+    ${met('garage') ? `<section><h2>Shapes, patterns, sorting <small class="pv-build">Garage</small></h2>${cards('garage', [], (r) => r.item)}</section>` : ''}
 
     <p class="pv-devlink"><button class="pv-link">Developer tools</button></p>
     ${devTools()}

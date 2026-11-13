@@ -22,7 +22,7 @@ export class QuestionTracker {
 
   /**
    * Start a question. An unresolved previous question is dropped silently (e.g. the scene moved on).
-   * scored: false when it can't really be got wrong · options: how many things she can pick from
+   * scored: false for a step that is not her answer (it counts for nothing) · options: how many things she can pick from
    */
   open({ mission, skill, item, level, round, scored = true, options }) {
     this.q = { mission, skill, item: String(item), level, round, scored, options, openedAt: this.now(), promptEndAt: null, wrong: 0, assist: 0, taps: [] };
@@ -37,6 +37,11 @@ export class QuestionTracker {
   /** Help was shown. Levels only go up: 1 question repeated · 2 clue · 3 answer revealed. */
   assist(level) {
     if (this.q) this.q.assist = Math.max(this.q.assist, Math.min(3, Math.max(0, level | 0)));
+  }
+
+  /** The answer is on screen while she answers (she can copy it): a right answer is solved but shows nothing she knows. */
+  answerOnScreen() {
+    if (this.q) this.q.answerOnScreen = true;
   }
 
   /** The same question, now about another item (she picked the other missing letter): its wrong taps and help stay. */
@@ -108,6 +113,7 @@ export class QuestionTracker {
       round: q.round,
       scored: q.scored,
       options: q.options,
+      answerOnScreen: q.answerOnScreen,
       latencyMs: this.now() - from,
       assistLevel: q.assist,
       at: this.clock(),

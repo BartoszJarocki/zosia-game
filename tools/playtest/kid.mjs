@@ -11,7 +11,8 @@
 // every 600 ms, and a die to roll is tapped before the answer. rounds[].alongMs: the part of the wait she tapped along.
 // Every plan logs each tap and the first sound after it (summary.json taps[]). tools/playtest/playcheck.mjs judges them.
 // env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
-//   FINALE=1 makes the session's finale due first (play it with `lookout`)
+//   FINALE=1 makes the session's finale due first (play it with `lookout`), LEAVE=n holds the house after n rounds
+// The save it leaves (progress and badges, as the grown-ups' page copies them) goes to save.json: parent.mjs SAVE= opens it.
 import { chromium } from 'playwright-core';
 import { VERSION } from '../../src/progress/migrations.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -27,6 +28,7 @@ mkdirSync(`${OUT}film`, { recursive: true });
 const BASE = process.env.BASE || 'http://localhost:4190';
 const FILM = Number(process.env.FILM ?? 3);
 const QUICK_MS = 300, WATCH_MS = 4000, ALONG_MS = 600; // (the first idle help comes 6 s after a tap)
+const LEAVE = Number(process.env.LEAVE || 0);
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: Number(process.env.DSF || 1), hasTouch: true, isMobile: false });
@@ -473,8 +475,19 @@ for (let r = 0; r < 24; r++) {
   await page.waitForTimeout(500);
   await snap(`r${r + 1}-answered`);
   rounds.push(rec);
+  if (LEAVE && rounds.length >= LEAVE) break;
 }
-const done = await waitFor((s) => s.celebrated, 60000);
+if (LEAVE) {
+  await mark(`LEAVE: hold the house after ${rounds.length} rounds`);
+  const home = await page.locator('.round-btn.home').boundingBox();
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: home.x + home.width / 2, y: home.y + home.height / 2 }] });
+  await page.waitForTimeout(1200);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const left = await page.waitForFunction(() => window.__pup.getStage()?.markers, null, { timeout: 15000 }).then(() => true, () => false);
+  await mark(left ? 'back on the island' : 'STUCK: still in the mission after the hold');
+}
+const done = LEAVE ? false : await waitFor((s) => s.celebrated, 60000);
 await page.waitForTimeout(2500);
 await snap('end');
 filming = false;
@@ -517,6 +530,7 @@ const summary = {
   wrongEvents: events.filter((e) => !e.correct).map((e) => e.errorType).reduce((m, k) => ({ ...m, [k]: (m[k] || 0) + 1 }), {}),
 };
 writeFileSync(`${OUT}summary.json`, JSON.stringify(summary, null, 1));
+writeFileSync(`${OUT}save.json`, JSON.stringify(await st(() => ({ progress: JSON.parse(localStorage.getItem('pup-patrol-progress') || 'null'), badges: JSON.parse(localStorage.getItem('pup-patrol-badges') || '{}') }))));
 const silent = taps.filter((t) => t.aim === 'thing' && t.hit && (t.soundMs == null || t.soundMs > 200));
 const lines = timeline.map((e) => {
   const t = (e.t / 1000).toFixed(1).padStart(6);

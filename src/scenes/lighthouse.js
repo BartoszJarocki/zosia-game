@@ -468,11 +468,14 @@ export class LighthouseMission extends Mission {
       await this.say(line);
     };
     const lamp = () => { this.pulseUntil(this.lamp, () => this.phase !== 'making' || this.count > 0); return T.lighthouseCountHelp(); };
+    const hint = mode === 'more' ? (said = []) => showing(n - 1, 'watching', said, short()) : lamp; // more: the flashes she saw, again
     this.question(SKILL[mode], n, {
       short,
-      hint: mode === 'more' ? (said = []) => showing(n - 1, 'watching', said, short()) : lamp, // more: the flashes she saw, again
+      hint,
+      simplify: hint, // (a count she makes has no option to take away)
       reveal: (said = []) => showing(n, 'helping', said, T.lighthouseMake(n)), // the answer: as many flashes as she makes
-    }, { options: 1 });
+    }, { options: this.L.numbers[1] - this.L.numbers[0] + 1 }); // (a blind tapper makes any count the level asks for)
+    if (mode === 'more') this.learn.answerOnScreen(); // the board keeps a place for every flash she makes, the empty one last
     ui.bubble({ big: mode === 'more' ? '?' : String(n), dots: mode === 'more' ? 0 : n, pic: '💡', onTap: () => this.replay(), passthrough: true });
     if (show) await show();
     if (!this.alive) return;

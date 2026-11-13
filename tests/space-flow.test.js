@@ -175,7 +175,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     if (gameStops[kind]) {
       assert.deepEqual(started, gameStops[kind].started);
       assert.equal(started.at(-1), kind);
-      assert.equal(getVisited()[kind], 1);
+      assert.equal(getVisited()[kind], undefined, 'the mission start records the visit (main.js), so the map does not count it twice');
       assert.equal(s.routeIndex, gameStops[kind].routeIndex);
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
@@ -183,7 +183,7 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
     }
     if (kind === 'comet') {
       assert.ok(started.includes('comet'));
-      assert.equal(getVisited().comet, 1);
+      assert.equal(getVisited().comet, undefined);
       assert.equal(s.routeIndex, 12);
       await s.backToMap(); frame(s);
       assert.equal(s.state, 'waiting');
@@ -229,14 +229,14 @@ test('the trip waits for START, visits every stop, leaves idle visits and return
   launch.exit();
 });
 
-test('a Moon arrival records its visit and starts the mission; returning parks there and asks what next', async () => {
+test('a Moon arrival starts the mission, which records the visit; returning parks there and asks what next', async () => {
   const missions = [];
-  const before = getVisited().moon || 0;
+  const before = getVisited().moon;
   const s = new Space({ startMission(kind) { missions.push(kind); } });
   s.enter(); frame(s);
   await s.tapStop('moon');
   assert.deepEqual(missions, ['moon']);
-  assert.equal(getVisited().moon, before + 1);
+  assert.equal(getVisited().moon, before, 'left to startMission, so one arrival is one visit');
   assert.equal(getSession().visited.moon, 1);
   assert.equal(s.routeIndex, 4);
   assert.equal(s.road.visible, true);

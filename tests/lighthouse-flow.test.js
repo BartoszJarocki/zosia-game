@@ -163,6 +163,7 @@ test('make: the boat waits, too few resets the dots and asks again without flash
   assert.equal(s.answers[0].skill, 'counting');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 4, 'she makes a count of 2 to 5: a blind tapper is right one time in four');
   assert.equal(s.answers[0].firstTry, false);
   stop(s);
 });
@@ -216,8 +217,45 @@ test('more: the lamp shows two, a pale dot stays for each and one empty place wa
   assert.equal(s.answers[0].skill, 'sequence');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 4);
   assert.equal(s.answers[0].firstTry, true);
   stop(s);
+});
+
+const { applyEvent } = await import('../src/learning/mastery.js');
+const { categorize } = await import('../src/learning/scheduler.js');
+
+test('more: the board shows a place for every flash, so five counts made by filling it are solved and leave the count new', async () => {
+  const skills = {};
+  for (let r = 0; r < 5; r++) {
+    const s = await scene(4, 4);
+    try {
+      const round = s.round(0);
+      await until(() => s.phase === 'making');
+      assert.deepEqual(looks(s), ['seen', 'seen', 'seen', 'empty'], 'the answer on the board before her first tap');
+      while (looks(s).some((l) => l !== 'lit')) await s.lamp.userData.onTap();
+      await s.boat.userData.onTap();
+      await round;
+      applyEvent(skills, s.answers[0]);
+    } finally { stop(s); }
+  }
+  const four = skills.sequence['4'];
+  assert.deepEqual([four.solved, four.firstTry, four.attempts, four.mastery, categorize(four)], [5, 5, 0, 0, 'new']);
+});
+
+test('make: the board shows only her flashes, so a right count moves its mastery', async () => {
+  const s = await scene(3, 3);
+  const skills = {};
+  try {
+    const round = s.round(0);
+    await until(() => s.phase === 'making');
+    assert.deepEqual(looks(s), [], 'nothing on the board before her first tap');
+    for (let i = 0; i < 3; i++) await s.lamp.userData.onTap();
+    await s.boat.userData.onTap();
+    await round;
+    applyEvent(skills, s.answers[0]);
+  } finally { stop(s); }
+  assert.deepEqual([skills.counting['3'].solved, skills.counting['3'].attempts, skills.counting['3'].mastery], [1, 1, 0.4]);
 });
 
 test('more: asks among the counts she makes and records the same one', async () => {

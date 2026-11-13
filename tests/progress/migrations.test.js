@@ -115,12 +115,30 @@ test('v5 save keeps every old field and adds empty visits in v6', () => {
   const v5 = { ...migrate(v1).state, v: 5, extra: { keep: ['this'] } };
   delete v5.visited;
   delete v5.age;
+  delete v5.countsFrom;
   const before = structuredClone(v5);
-  const { state, changed } = migrate(v5);
+  const { state, changed } = migrate(v5, { now: 5000 });
   assert.equal(state.v, VERSION);
   assert.equal(changed, true);
-  assert.deepEqual(state, { ...before, v: VERSION, visited: {}, age: null });
+  assert.deepEqual(state, { ...before, v: VERSION, visited: {}, age: null, countsFrom: 5000 });
   assert.deepEqual(v5, before);
+});
+
+test('v7 → v8: a save with play says when its solved counts began; nothing else moves, and nothing is rebuilt', () => {
+  const v7 = { ...migrate(v1, { age: 4, start }).state, v: 7, visited: { moon: 3 } };
+  delete v7.countsFrom;
+  const { state, changed } = migrate(v7, { age: 4, start, now: 1234 });
+  assert.equal(changed, true);
+  assert.equal(state.countsFrom, 1234);
+  assert.deepEqual({ ...state, countsFrom: undefined, v: 7 }, { ...v7, countsFrom: undefined });
+  assert.deepEqual([state.skills.letterVisual.B.attempts, state.skills.letterVisual.B.solved || 0], [6, 0], 'old solves are not made up');
+  assert.equal(migrate(state, { age: 4, start, now: 9999 }).changed, false, 'and it happens once');
+});
+
+test('a first save counts from its first day; one rebuilt from badges had play before', () => {
+  assert.equal(migrate(null, { now: 1 }).state.countsFrom, undefined);
+  assert.equal(migrate(null, { badges: { letters: 0 }, now: 1 }).state.countsFrom, undefined);
+  assert.equal(migrate(null, { badges: { letters: 2 }, now: 1 }).state.countsFrom, 1);
 });
 
 // where each mission starts for her age (GAME.md "Starting levels" looks like this)

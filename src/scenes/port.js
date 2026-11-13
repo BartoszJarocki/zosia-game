@@ -359,12 +359,14 @@ export class PortMission extends Mission {
     this.boats[0].userData.choice = 'done';
     this.tappable(this.horn, () => this.toot());
     this.tappable(this.boats[0], () => this.checkBoat());
+    const hint = () => { // the horn to toot, once a piece; the pieces themselves only when the answer is shown
+      this.pulseUntil(this.horn, () => this.phase !== 'asking' || this.count > 0);
+      return T.portHelp();
+    };
     this.question('syllables', this.word, {
       short: () => [...T.portName(this.word), ...T.portToot()],
-      hint: () => { // the horn to toot, once a piece; the pieces themselves only when the answer is shown
-        this.pulseUntil(this.horn, () => this.phase !== 'asking' || this.count > 0);
-        return T.portHelp();
-      },
+      hint,
+      simplify: hint, // (a count she makes has no option to take away)
       reveal: async (said = []) => { // Chase claps the name slowly ("Fo! Ka!"); she toots it herself
         this.phase = 'helping';
         this.resetHorn();
@@ -374,7 +376,8 @@ export class PortMission extends Mission {
         this.phase = 'asking';
         this.ask(T.portToot());
       },
-    }, { options: 1 });
+    }, { options: this.L.syllables[1] - this.L.syllables[0] + 1 }); // (a blind tooter makes any count the level asks for)
+    if (this.mode === 'together') this.learn.answerOnScreen(); // Chase's clap leaves the pieces on the board: she toots until each is lit
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
   }
 
