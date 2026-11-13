@@ -11,10 +11,13 @@ import { T } from '../lang/pl.js';
 import { countVerdict } from '../levels/moon.js';
 import { BOATS, boatFor, countOf, namesIn, whichBoats } from '../levels/port.js';
 import { shuffle } from '../util.js';
+import { demoSeen, markDemoSeen } from '../progress.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const TOOT_BACK = 300; // ms between the boat's toots back
+const CONFIRM_MS = 1400; // her toots stop this long, and the boat is what to touch next
+const DEMO = 'port.together'; // the guided boat, once per save (progress.js)
 const BLOCK_W = 0.98, BLOCK_STEP = 1.1;
 const BOARD_W = 3 * BLOCK_STEP + 0.3; // every board fits three pieces, so its width never tells how many a name has
 const BOAT_COLORS = ['#ef4444', '#2563eb', '#0ea5e9', '#f59e0b', '#14b8a6'];
@@ -87,6 +90,7 @@ export class PortMission extends Mission {
     this.drift = 0;
     this.bubbleAt = 'left';
     this.phase = 'waiting';
+    this.step = null; // a horn boat's steps, in order: 'demo' (Chase claps the name) → 'toot' → 'confirm' (after her first toot and a pause)
     this.mode = null;
     this.word = null;
     this.asked = null;
@@ -191,6 +195,7 @@ export class PortMission extends Mission {
     this.scene.add(this.horn);
 
     this.moored = shuffle(BOATS).slice(0, 5).map((b, i) => this.makeBoatFor(b.word, { x: -9.4 + i * 2.8, z: -7, scale: 0.5 })); // (far back, above the boats that come forward)
+    this.onUpdate(() => this.tickConfirm());
     this.onUpdate((dt, t) => {
       this.moored.forEach((b, i) => {
         b.position.y = b.userData.baseY + Math.sin(t * 2 + i) * 0.05;
@@ -313,7 +318,7 @@ export class PortMission extends Mission {
       await this.say(T.portStart());
       if (!this.alive) return;
     }
-    this.mode = this.L.mode;
+    this.mode = this.L.mode === 'alone' && !demoSeen(DEMO) ? 'together' : this.L.mode; // (the first boat she toots alone is the guided one)
     if (this.mode === 'which') await this.whichRound();
     else await this.hornRound();
     if (!this.alive) return;
@@ -321,7 +326,8 @@ export class PortMission extends Mission {
   }
 
   async hornRound() {
-    const pool = namesIn(this.L.syllables);
+    const guided = this.mode === 'together';
+    const pool = namesIn(guided && this.L.mode === 'alone' ? [2, 2] : this.L.syllables); // (the demo is a name of two pieces: the plainest to hear in pieces)
     let fresh = pool.filter((w) => !this.used.includes(w));
     if (!fresh.length) { this.used = []; fresh = pool; }
     this.word = this.pick('syllables', fresh);
@@ -334,24 +340,44 @@ export class PortMission extends Mission {
     this.boats = [boat];
     await this.enterBoat(boat, -1);
     if (!this.alive) return;
-    if (this.mode !== 'together') boat.userData.board.userData.dots.visible = true;
-    const prompt = [...T.portToot(), ...T.portDone()];
+    if (!guided) boat.userData.board.userData.dots.visible = true;
     this.beginHorn();
-    // the name once before: Chase claps it ("Kacz! Ka!", she may toot along), or the voice says it whole
-    if (this.mode === 'together') {
-      const q = this.learn.current;
-      const clapped = Promise.resolve(this.talk).then(async () => {
-        if (!this.alive || this.learn.current !== q) return;
-        await this.clapSyllables(this.word);
-        this.boats[0]?.userData.board.userData.blocks.slice(0, this.count).forEach((b) => this.light(b)); // (her toots during the clap)
-      });
-      this.askAfter(clapped, prompt);
-    } else this.askAfter(this.talk, [...T.portName(this.word), ...prompt]);
+    if (guided) this.demo();
+    else this.askAfter(this.talk, this.lines());
     await new Promise((resolve) => { this.resolveRound = resolve; });
+  }
+
+  /** What she is told about this boat: its name, how to toot it, and once she has started, what to touch when she is done. */
+  lines() {
+    return [...T.portName(this.word), ...T.portToot(), ...(this.step === 'confirm' ? T.portDone() : [])];
+  }
+
+  /** Chase claps the name ("Kacz! Ka!"), the pieces lighting, and she may toot along; then the one question. After the first guided boat she has solved, a toot ends the clap. */
+  async demo() {
+    const q = this.learn.current, closed = () => this.learn.current !== q;
+    this.prompt = T.portToot();
+    await this.talk;
+    if (!this.alive || closed()) return;
+    await this.clapSyllables(this.word, { stopped: () => closed() || (this.step !== 'demo' && demoSeen(DEMO)) });
+    if (!this.alive || closed()) return;
+    if (this.step === 'demo') this.step = 'toot';
+    this.boats[0]?.userData.board.userData.blocks.slice(0, this.count).forEach((b) => this.light(b)); // (her toots during the clap)
+    if (!this.count) this.ask(this.prompt);
+  }
+
+  /** She tooted and paused: "Gotowe? Dotknij łódki!" once, and the boat hops to show what to touch. */
+  tickConfirm() {
+    if (this.step !== 'toot' || this.phase !== 'asking' || !this.alive || !this.count || !this.aid || this.speaking) return;
+    if (performance.now() - this.aid.quietFrom < CONFIRM_MS) return;
+    this.step = 'confirm';
+    hop(this.boats[0], 0.3);
+    this.ask(T.portDone());
+    this.prompt = this.lines(); // (a replay says all of it)
   }
 
   beginHorn() {
     this.phase = 'asking';
+    this.step = this.mode === 'together' ? 'demo' : 'toot';
     this.count = 0;
     this.last = this.target;
     this.horn.visible = true;
@@ -364,7 +390,7 @@ export class PortMission extends Mission {
       return T.portHelp();
     };
     this.question('syllables', this.word, {
-      short: () => [...T.portName(this.word), ...T.portToot()],
+      short: () => this.lines(),
       hint,
       simplify: hint, // (a count she makes has no option to take away)
       reveal: async (said = []) => { // Chase claps the name slowly ("Fo! Ka!"); she toots it herself
@@ -387,6 +413,7 @@ export class PortMission extends Mission {
     this.count++;
     sfx.toot();
     this.puff();
+    if (this.step === 'demo' && demoSeen(DEMO)) this.step = 'toot'; // (a demo she has seen ends with her toot)
     const board = this.boats[0]?.userData.board;
     if (this.mode === 'together') this.light(board?.userData.blocks[this.count - 1]);
     else this.addDot(board);
@@ -404,6 +431,8 @@ export class PortMission extends Mission {
 
   /** She toots it again from the start: no toots, no lit pieces. */
   resetHorn() {
+    this.step = 'toot';
+    this.prompt = this.lines();
     this.count = 0;
     this.last = this.target;
     this.unlight(this.boats[0]);
@@ -413,7 +442,9 @@ export class PortMission extends Mission {
   async solveHorn() {
     const boat = this.boats[0];
     this.phase = 'solved';
+    this.step = null;
     this.correct(this.word);
+    if (this.mode === 'together') markDemoSeen(DEMO);
     this.stopIdle();
     this.untap(this.horn);
     this.untap(boat);
@@ -530,13 +561,14 @@ export class PortMission extends Mission {
     this.resolveRound = null;
   }
 
-  async clapSyllables(word, { merge = false } = {}) {
+  async clapSyllables(word, { merge = false, stopped = () => false } = {}) {
     const boat = this.boats.find((b) => b.userData.boatName === word);
     const board = boat?.userData.board;
     this.splitBoard(board);
     const blocks = board?.userData.blocks || [];
     for (const [i, syllable] of boatFor(word).syllables.entries()) {
       if (!this.alive) return;
+      if (stopped()) break;
       this.light(blocks[i]);
       sfx.toot();
       await this.say(T.syllable(syllable));
@@ -638,6 +670,7 @@ export class PortMission extends Mission {
     this.target = null;
     this.asked = null;
     this.word = null;
+    this.step = null;
     this.phase = 'waiting';
   }
 

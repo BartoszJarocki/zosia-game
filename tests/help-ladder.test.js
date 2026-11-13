@@ -73,6 +73,7 @@ const { LookoutMission } = await import('../src/scenes/lookout.js');
 const { StonesMission } = await import('../src/scenes/stones.js');
 const { CountingMission } = await import('../src/scenes/counting.js');
 const { BOATS } = await import('../src/levels/port.js');
+const { markDemoSeen } = await import('../src/progress.js');
 
 const flush = () => new Promise(setImmediate);
 let clock = 0;
@@ -171,7 +172,7 @@ const PLACES = [
     shown: (s) => (s.boats.some((b) => b.userData.board.userData.hinting) ? "the right boat's board pulses" : ''),
   },
   {
-    name: 'The Port, toot the name', open: async () => { const s = await make(PortMission, 2, (x) => { x.pick = () => 'FOKA'; }); s.round(0); await until(s, () => s.phase === 'asking' && s.aid, 'the horn'); return s; },
+    name: 'The Port, toot the name', open: async () => { const s = await make(PortMission, 2, (x) => { x.pick = () => 'FOKA'; markDemoSeen('port.together'); }); s.round(0); await until(s, () => s.phase === 'asking' && s.aid, 'the horn'); return s; },
     wrong: (s) => tap(s.boats[0]),
     right: () => [],
     shown: (s, since) => (since.said.some((l) => BOATS.some((b) => b.syllables.some((y) => T.syllable(y)[0] === l))) ? 'Chase claps the name' : ''),

@@ -820,8 +820,12 @@ and she toots its name once for each syllable.
 | 2 | alone | 1–3 | 4 |
 | 3 | which | 1–3 | 4 |
 
-- **mode** — `together`: Chase claps the name first ("Me! Wa!") and she copies it with the horn ·
-  `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and toots it herself ·
+- **mode** — `together`: Chase claps the name first ("Me! Wa!"), then asks "Zatrąb jej imię po kawałku!", and she
+  copies it with the horn. Once she has solved a `together` boat, a later clap ends at her first toot ·
+  `alone`: she hears only the whole name ("Ta łódka nazywa się Foka.") and "Zatrąb jej imię po kawałku!", and toots it
+  herself. A save that has not yet solved a `together` boat opens its first `alone` round with one: a name of two
+  pieces, so she sees how a name is tooted in pieces before she does it alone. It is one of the level's rounds,
+  and the save remembers it (`port.together`), so it comes once ·
   `which`: three boats come forward, each hops as its name is said ("Kot!", "Motylek!", "Foka!"), then "Która łódka
   ma dwa kawałki?", and green ticks appear under the boats with the question; she taps the tick under a boat.
   Tapping a boat itself says its name again, and stops the names if they are still going.
@@ -829,9 +833,12 @@ and she toots its name once for each syllable.
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). In `together` the name's pieces are on the board as she toots, so the grown-ups' page counts
-  the boat as solved but it does not move her mastery of the name. Too few or too many toots: "Za mało! Posłuchaj
-  jeszcze raz.", the boat's name again, and she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
-  kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
+  the boat as solved but it does not move her mastery of the name. A boat asks one thing first. After her first
+  toot, and a pause of a second and a half, the game says "Gotowe? Dotknij łódki!" once, whatever the count, and the
+  boat hops. Her toot marks stay through a replay of the question (which says the whole of it once that line has
+  been said) and clear when the next boat comes. Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the
+  boat's name again, and she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz
+  na każdy kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
   pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right board pulses; a long
   wait brings the three names again. Right:
   the boat sails out happily, saying its name once; the next boat comes in meanwhile. The name is said once
