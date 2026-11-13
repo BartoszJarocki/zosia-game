@@ -8,11 +8,13 @@
 //   v5  mastery on the scale that takes guessing out (learning/mastery.js); old values rescaled; the island keepsakes added in v5 seeded from badges
 //   v6  + visited: { [placeKind]: count }
 //   v7  + age: her age band (GAME.md "Starting levels"); every mission below its start for that age moves up to it
+//   v8  every solved question is counted (SkillStat solved, firstTry, helped) and every mission start goes in visited;
+//       + countsFrom: epoch ms, only on a save that had play before then (those counts begin there; nothing is rebuilt)
 
 import { emptyStat, rateAfter } from '../learning/mastery.js';
 import { emptyWorld, normalizeWorld, applyReward, rewardsFromBadges } from '../adventure/world.js';
 
-export const VERSION = 7;
+export const VERSION = 8;
 
 /** Which skill the old item prefixes measured. */
 const LEGACY_PREFIX = { 'L:': 'letterVisual', 'N:': 'numeral', 'Q:': 'counting', 'H:': 'quantity' };
@@ -65,14 +67,16 @@ export function placeForAge(s, age, start) {
 /**
  * Bring any saved state (or nothing) up to the current version.
  * @param {any} raw            parsed JSON from storage (may be null, old or broken)
- * @param {{ badges?: Record<string, number>, maxLevel?: (kind: string) => number, age?: number|null, start?: (kind: string, age: number) => number }} ctx
+ * @param {{ badges?: Record<string, number>, maxLevel?: (kind: string) => number, age?: number|null, start?: (kind: string, age: number) => number, now?: number }} ctx
  *   age: her age band for a save that has none (CONFIG.childAge) · start: where a mission starts at an age
  * @returns {{ state: object, changed: boolean }}
  */
-export function migrate(raw, { badges = {}, maxLevel = () => 3, age = null, start = () => 1 } = {}) {
+export function migrate(raw, { badges = {}, maxLevel = () => 3, age = null, start = () => 1, now = Date.now() } = {}) {
   let s = raw && typeof raw === 'object' && !Array.isArray(raw) ? structuredClone(raw) : null;
   const before = JSON.stringify(s);
-  if (!s || !Number.isInteger(s.v) || s.v < 1) {
+  const unusable = !s || !Number.isInteger(s.v) || s.v < 1;
+  const fresh = unusable && !Object.values(badges || {}).some((n) => n > 0);
+  if (unusable) {
     // nothing usable (first run, or progress from before levels existed): rebuild levels from badges
     s = { v: 1, missions: {} };
     for (const [kind, n] of Object.entries(badges || {})) {
@@ -110,6 +114,10 @@ export function migrate(raw, { badges = {}, maxLevel = () => 3, age = null, star
   if (s.v === 6) {
     placeForAge(s, age, start);
     s.v = 7;
+  }
+  if (s.v === 7) {
+    if (!fresh) s.countsFrom = now;
+    s.v = 8;
   }
   // defaults for anything missing (also protects against hand-edited or partial saves)
   if (!s.visited || typeof s.visited !== 'object' || Array.isArray(s.visited)) s.visited = {};

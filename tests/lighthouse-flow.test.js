@@ -163,6 +163,7 @@ test('make: the boat waits, too few resets the dots and asks again without flash
   assert.equal(s.answers[0].skill, 'counting');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 4, 'she makes a count of 2 to 5: a blind tapper is right one time in four');
   assert.equal(s.answers[0].firstTry, false);
   stop(s);
 });
@@ -216,6 +217,7 @@ test('more: the lamp shows two, a pale dot stays for each and one empty place wa
   assert.equal(s.answers[0].skill, 'sequence');
   assert.equal(s.answers[0].item, '3');
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 4);
   assert.equal(s.answers[0].firstTry, true);
   stop(s);
 });

@@ -40,7 +40,10 @@ export const getWorld = () => state.world;
 
 /** All skill stats: { [skill]: { [item]: SkillStat } } (read-only use please). */
 export const getSkills = () => state.skills;
+/** How often she has arrived at each place: every mission start (main.js), and the look-only stops on a map. */
 export const getVisited = () => state.visited;
+/** When solved counts and mission starts began for a save that had play before them (null: they count from its first day). */
+export const getCountsFrom = () => state.countsFrom ?? null;
 
 export function recordVisit(kind) {
   state.visited[kind] = (state.visited[kind] || 0) + 1;

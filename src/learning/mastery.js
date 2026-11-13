@@ -33,7 +33,10 @@ export const rateAfter = (answered) => Math.max(RATE, 1 / (answered + 1 + PRIOR)
 
 /**
  * @typedef {object} SkillStat
- * @property {number} attempts         scored questions solved
+ * @property {number} solved           questions solved, scored or not (what she did, for the grown-ups' page)
+ * @property {number} firstTry         of those: right with nothing wrong before and no clue or answer shown
+ * @property {number} helped           of those: right after a clue or the answer shown (the rest came after a wrong tap)
+ * @property {number} attempts         scored questions solved (the ones that move mastery)
  * @property {number} correctFirstTry  solved with no wrong choice before
  * @property {number} assisted         solved with some help shown
  * @property {number} wrong            wrong choices (incl. rapid random taps)
@@ -45,7 +48,7 @@ export const rateAfter = (answered) => Math.max(RATE, 1 / (answered + 1 + PRIOR)
  * @property {Record<string, number>} confusions  what she picks instead, e.g. { P: 3 }
  */
 export function emptyStat() {
-  return { attempts: 0, correctFirstTry: 0, assisted: 0, wrong: 0, missTaps: 0, timeouts: 0, mastery: 0, avgLatencyMs: 0, latencyN: 0, lastSeenAt: 0, confusions: {} };
+  return { solved: 0, firstTry: 0, helped: 0, attempts: 0, correctFirstTry: 0, assisted: 0, wrong: 0, missTaps: 0, timeouts: 0, mastery: 0, avgLatencyMs: 0, latencyN: 0, lastSeenAt: 0, confusions: {} };
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;
@@ -58,8 +61,11 @@ export function applyEvent(skills, ev) {
   const s = (bySkill[ev.item] ||= emptyStat());
   s.lastSeenAt = Math.max(s.lastSeenAt || 0, ev.at || 0);
   if (ev.correct) {
+    s.solved = (s.solved || 0) + 1;
+    if (ev.assistLevel >= 2) s.helped = (s.helped || 0) + 1;
+    else if (ev.firstTry) s.firstTry = (s.firstTry || 0) + 1;
     const x = evidence(ev);
-    if (x === null) return s; // it couldn't be got wrong: she saw it, nothing more
+    if (x === null) return s; // it couldn't be got wrong: solved, but it says nothing about knowing it
     s.mastery = round3(clamp01(s.mastery + rateAfter(s.attempts) * (x - s.mastery)));
     s.attempts++;
     if (ev.firstTry) s.correctFirstTry++;

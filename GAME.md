@@ -984,6 +984,14 @@ session length (`session`), picture words for letters, voice and graphics qualit
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
 (e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.
 The page's title shows which version is running (the same small label as at the bottom right of the start screen).
+It counts every question she solves, apart: right first time, after an error, or after help (a clue or the answer
+shown). Only a question that could be got wrong moves mastery; one that could not (the last star of a picture, an
+automatic give) is counted as solved and leaves mastery as it is. A count she makes (Port toots, Lighthouse flashes)
+is scored against the counts the level asks for, the outcomes a blind tapper has. Each place reads not started,
+started (she went in), or completed (it has a badge), and the page says what the stars, paws and badges on her
+screen mean. Single answers are not stored, so a save from before these counts (13 November 2026) cannot have its
+earlier solves counted: the page says when the counts began, and there a place with no badge and no start reads
+not completed yet.
 
 **New versions.** The installed app is suspended, not closed, so it can sit on an old build for days. Each time it
 comes back to the front it asks for a new version, and switches to it only on the start screen or on the island with

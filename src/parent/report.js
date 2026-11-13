@@ -53,22 +53,36 @@ export function itemLabel(skill, item) {
  */
 // Telescope has two or three choices; use 1 / 3 like letters for the per-skill estimate.
 export const GUESS = { space: 1 / 3, position: 1 / 3, syllables: 1 / 3, letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2, wordVisual: 1 / 3, shape: 1 / 3, pattern: 1 / 3, sorting: 1 / 2 };
-export const chancePct = (skill) => Math.round(100 * (GUESS[skill] ?? 1 / 3));
 
 /** Fewer answers than this: shown, but marked as "not much to go on yet". */
 export const FEW = 3;
 
 const pct = (a, b) => (b ? Math.round((100 * a) / b) : 0);
 
+/** How her solves went, apart: right first time, right after a wrong tap, right after a clue or the answer shown. */
+export function solves(stat) {
+  const solved = stat.solved || 0, firstTry = stat.firstTry || 0, helped = stat.helped || 0;
+  return { solved, firstTry, afterError: Math.max(0, solved - firstTry - helped), helped };
+}
+
+/** "2 first try, 1 after help": the kinds of solve she had, with how many of each. */
+export const solvesHow = (s) => [[s.firstTry, 'first try'], [s.afterError, 'after an error'], [s.helped, 'after help']]
+  .filter(([n]) => n).map(([n, how]) => `${n} ${how}`).join(', ');
+
+/** A row's solves in words. Solves before these counts began (an older save) show only in mastery. */
+export function solvedText(row) {
+  if (row.solved) return `${row.solved} solved (${solvesHow(row)})`;
+  return row.attempts ? 'solved before these counts began' : 'not solved yet';
+}
+
 /** One skill + item, in parent terms. null when it never came up. */
 export function summarize(stat) {
-  if (!stat || !(stat.attempts || stat.wrong || stat.timeouts)) return null;
+  if (!stat || !(stat.solved || stat.attempts || stat.wrong || stat.timeouts)) return null;
   const confusions = Object.entries(stat.confusions || {}).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k);
   return {
     mastery: stat.mastery || 0,
     attempts: stat.attempts || 0,
-    firstTryPct: pct(stat.correctFirstTry || 0, stat.attempts || 0),
-    assistPct: pct(stat.assisted || 0, stat.attempts || 0),
+    ...solves(stat),
     avgLatencyS: stat.avgLatencyMs ? Math.round(stat.avgLatencyMs / 100) / 10 : null,
     wrong: stat.wrong || 0,
     confusions,
@@ -81,7 +95,7 @@ export function summarize(stat) {
 export function itemReports(skills, skillList, items) {
   return items.map((item) => {
     const rows = skillList
-      .map(([skill, label]) => ({ skill, label, chancePct: chancePct(skill), ...summarize(skills?.[skill]?.[String(item)]) }))
+      .map(([skill, label]) => ({ skill, label, ...summarize(skills?.[skill]?.[String(item)]) }))
       .filter((r) => r.mastery !== undefined);
     return { item: String(item), rows, seen: rows.length > 0 };
   });
@@ -90,9 +104,10 @@ export function itemReports(skills, skillList, items) {
 /** Totals over everything, plus what to practise and what came up lately. */
 export function overview(skills) {
   let attempts = 0, firstTry = 0, assisted = 0, latSum = 0, latN = 0, chance = 0;
-  const all = [];
+  const all = [], solved = { solved: 0, firstTry: 0, afterError: 0, helped: 0 };
   for (const [skill, items] of Object.entries(skills || {})) {
     for (const [item, s] of Object.entries(items)) {
+      for (const [k, n] of Object.entries(solves(s))) solved[k] += n;
       attempts += s.attempts || 0;
       chance += (s.attempts || 0) * (GUESS[skill] ?? 1 / 3);
       firstTry += s.correctFirstTry || 0;
@@ -103,6 +118,7 @@ export function overview(skills) {
   }
   return {
     attempts,
+    solves: solved, // every solve, scored or not
     firstTryPct: pct(firstTry, attempts),
     chancePct: pct(chance, attempts), // what guessing alone would get right first time, on the same questions
     assistPct: pct(assisted, attempts),
@@ -163,18 +179,30 @@ export function totalAssisted(skills) {
 
 /** Letters no question has asked yet (in any letter skill). */
 export function neverAsked(skills, letters) {
-  return [...letters].filter((l) => !LETTER_SKILLS.some(([skill]) => skills?.[skill]?.[l]?.attempts || skills?.[skill]?.[l]?.wrong));
+  return [...letters].filter((l) => !LETTER_SKILLS.some(([skill]) => summarize(skills?.[skill]?.[l])));
+}
+
+/**
+ * Whether she has played a place: a badge is a finished run, a start is any time she went in. A save from before
+ * starts were recorded (older) cannot tell a place she never went into from one she left, so it says less.
+ */
+export function placeLabel({ runs = 0, starts = 0, older = false }) {
+  if (runs) return 'Completed';
+  if (starts) return 'Started';
+  return older ? 'Not completed yet' : 'Not started';
 }
 
 /**
  * One mission for the grown-ups. saved: its record { level, good, lastAcc } (progress.js; may be missing),
- * runs: badges earned (0 = never played), need: good runs per level, gentle: is the next run gentler (progress.assistFor).
+ * runs: badges earned, starts: times she went in (progress.getVisited), older: the save predates start records,
+ * need: good runs per level, gentle: is the next run gentler (progress.assistFor).
  */
-export function missionStatus({ level = 1, max = 1, good = 0, lastAcc = null, runs = 0, need = 2, gentle = false }) {
+export function missionStatus({ level = 1, max = 1, good = 0, lastAcc = null, runs = 0, starts = 0, older = false, need = 2, gentle = false }) {
   const top = level >= max;
   return {
     level, max, top, gentle,
+    played: placeLabel({ runs, starts, older }),
     next: top ? 'top level' : `${Math.min(good, need)} of ${need} good runs to the next star`,
-    last: runs && lastAcc != null ? `last run ${Math.round(lastAcc * 100)}% right first time` : 'not played yet',
+    last: runs && lastAcc != null ? `last run ${Math.round(lastAcc * 100)}% right first time` : null,
   };
 }

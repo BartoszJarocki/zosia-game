@@ -103,6 +103,7 @@ test('together claps the name once first, each horn toot lights a block, and the
   assert.equal(s.answers[0].item, 'MEWA');
   assert.equal(s.answers[0].scored, true);
   assert.equal(s.answers[0].firstTry, true);
+  assert.equal(s.answers[0].options, 2, 'level 1 names have one or two pieces: a blind tooter is right one time in two');
   assert.deepEqual(globalThis.__lines.slice(-2), ['Mewa!', 'Brawo! Łódka wypływa w morze!']);
   assert.equal(globalThis.__lines.filter((l) => l === 'Me!').length, 1, 'no syllables sung back: the boat toots them');
   stop(s);
@@ -129,7 +130,27 @@ test('too few toots get "Za mało!" and the name again, not the clap, then a fre
   assert.equal(s.answers[0].item, 'FOKA');
   assert.equal(s.answers[0].firstTry, false);
   assert.equal(s.answers[0].scored, true);
+  assert.equal(s.answers[0].options, 3, 'level 2 names have one to three pieces');
   stop(s);
+});
+
+test('a second wrong boat tap shows the horn to toot, not the pieces', async () => {
+  const s = await scene(2);
+  s.pick = () => 'FOKA';
+  const round = s.round(0);
+  await until(() => s.phase === 'asking');
+  await choice(s, 'done').userData.onTap();
+  await until(() => s.phase === 'asking');
+  const before = globalThis.__lines.length;
+  await choice(s, 'done').userData.onTap();
+  await until(() => globalThis.__lines.length > before + 1);
+  assert.ok(globalThis.__lines.slice(before).includes('Dotknij rogu i zatrąb raz na każdy kawałek!'));
+  assert.equal(s.learn.current.assist, 2);
+  assert.ok(s.boats[0].userData.board.userData.blocks.every((b) => b.material.emissiveIntensity < 0.9), 'no piece lit for her');
+  s.alive = false;
+  s.resolveRound?.();
+  await round;
+  s.exit();
 });
 
 test('every boat has its animal for its board', () => {

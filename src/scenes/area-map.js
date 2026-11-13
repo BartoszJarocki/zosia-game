@@ -272,12 +272,12 @@ export class AreaMap extends Stage {
 
   async visit(kind) {
     this.changeState('visiting', kind);
-    recordVisit(kind);
     const session = getSession();
     session.lastActiveAt = Date.now();
     const visited = (session.visited ||= {});
     visited[kind] = (visited[kind] || 0) + 1;
-    if (PLACES[kind].game) return this.game.startMission(kind);
+    if (PLACES[kind].game) return this.game.startMission(kind); // (which records the visit)
+    recordVisit(kind);
     const revision = this.revision;
     this.hideOtherStops(kind);
     await this.moveView(this.visitView(kind));

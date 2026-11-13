@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize, itemReports, overview, maxNumber, LETTER_SKILLS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, metItems, FEW } from '../../src/parent/report.js';
+import { summarize, solvedText, itemReports, overview, maxNumber, LETTER_SKILLS, WORD_SKILLS, GARAGE_SKILLS, SPACE_SKILLS, metItems, FEW } from '../../src/parent/report.js';
 import { emptyStat } from '../../src/learning/mastery.js';
 
 const stat = (o) => ({ ...emptyStat(), ...o });
@@ -10,21 +10,28 @@ test('summarize: never seen → null', () => {
   assert.equal(summarize(emptyStat()), null);
 });
 
-test('summarize: percentages, seconds, top confusions, little data flag', () => {
-  const s = summarize(stat({ attempts: 4, correctFirstTry: 3, assisted: 1, avgLatencyMs: 2345, mastery: 0.61, wrong: 2, confusions: { P: 1, D: 3, B: 2, R: 1 } }));
-  assert.equal(s.firstTryPct, 75);
-  assert.equal(s.assistPct, 25);
+test('summarize: solves apart, seconds, top confusions, little data flag', () => {
+  const s = summarize(stat({ solved: 5, firstTry: 2, helped: 1, attempts: 4, correctFirstTry: 3, assisted: 1, avgLatencyMs: 2345, mastery: 0.61, wrong: 2, confusions: { P: 1, D: 3, B: 2, R: 1 } }));
+  assert.deepEqual([s.solved, s.firstTry, s.afterError, s.helped], [5, 2, 2, 1]);
+  assert.equal(solvedText(s), '5 solved (2 first try, 2 after an error, 1 after help)');
   assert.equal(s.avgLatencyS, 2.3);
   assert.deepEqual(s.confusions, ['D', 'B', 'P']);
   assert.equal(s.few, false);
   assert.equal(summarize(stat({ attempts: FEW - 1 })).few, true);
 });
 
-test('summarize: only wrong taps so far still shows up (no division by zero)', () => {
+test('summarize: only wrong taps so far still shows up, as not solved yet', () => {
   const s = summarize(stat({ wrong: 2 }));
   assert.equal(s.attempts, 0);
-  assert.equal(s.firstTryPct, 0);
+  assert.equal(solvedText(s), 'not solved yet');
   assert.equal(s.avgLatencyS, null);
+});
+
+test('summarize: a solve that could not be got wrong shows up; solves from before the counts are said so', () => {
+  const lastStar = summarize(stat({ solved: 1, firstTry: 1 }));
+  assert.equal(lastStar.attempts, 0, 'nothing for mastery');
+  assert.equal(solvedText(lastStar), '1 solved (1 first try)');
+  assert.equal(solvedText(summarize(stat({ attempts: 6, mastery: 0.7 }))), 'solved before these counts began');
 });
 
 test('itemReports: one row per practised skill, unseen items marked', () => {
@@ -53,6 +60,8 @@ test('overview: totals, weighted latency, difficult and recent items', () => {
   };
   const o = overview(skills);
   assert.equal(o.attempts, 12);
+  assert.deepEqual(overview({ letterVisual: { A: stat({ solved: 3, firstTry: 2 }) }, sequence: { 6: stat({ solved: 2, firstTry: 1, helped: 1 }) } }).solves,
+    { solved: 5, firstTry: 3, afterError: 1, helped: 1 }, 'every solve, scored or not');
   assert.equal(o.firstTryPct, 58);
   assert.equal(o.assistPct, 33);
   assert.equal(o.avgLatencyS, 2.2); // (6×1 + 4×4 + 2×2) / 12 = 2.17 s
@@ -114,7 +123,6 @@ test('Picnic gets its own rows, and chips name comparisons in words', () => {
   const rows = itemReports(skills, COMPARE_SKILLS, COMPARE_ITEMS);
   assert.deepEqual(rows.filter((r) => r.seen).map((r) => r.item), ['less', 'more#']);
   assert.equal(rows[1].rows[0].label, 'compares');
-  assert.equal(rows[1].rows[0].chancePct, 50);
   const o = overview(skills);
   assert.deepEqual(o.difficult.map((x) => x.name), ['more (with numbers)']);
   assert.equal(o.chancePct, 50);
@@ -132,13 +140,14 @@ test('neverAsked: letters no question has asked yet', () => {
   assert.deepEqual(neverAsked({}, 'AB'), ['A', 'B']);
 });
 
-test('missionStatus: good runs to the next star, the last run, gentler or not', () => {
+test('missionStatus: good runs to the next star, the last run, gentler or not, played or not', () => {
   assert.deepEqual(missionStatus({ level: 2, max: 4, good: 1, lastAcc: 0.75, runs: 5, need: 2, gentle: false }),
-    { level: 2, max: 4, top: false, gentle: false, next: '1 of 2 good runs to the next star', last: 'last run 75% right first time' });
+    { level: 2, max: 4, top: false, gentle: false, played: 'Completed', next: '1 of 2 good runs to the next star', last: 'last run 75% right first time' });
   const top = missionStatus({ level: 3, max: 3, good: 0, lastAcc: 0.4, runs: 9, need: 2, gentle: true });
   assert.equal(top.next, 'top level');
   assert.equal(top.gentle, true);
-  assert.equal(missionStatus({ level: 1, max: 4, lastAcc: 1, runs: 0 }).last, 'not played yet');
+  assert.equal(missionStatus({ level: 1, max: 4, lastAcc: 1, runs: 0 }).last, null);
+  assert.equal(missionStatus({ level: 1, max: 4, lastAcc: 1, runs: 0, starts: 2 }).played, 'Started');
 });
 
 test('names and Garage items are listed as she meets them', () => {
@@ -154,8 +163,8 @@ test('Space lists met places with the usual per-item lines and English names', (
   }, sequence: { 'space:mars': stat({ attempts: 1, mastery: 0.2 }) } };
   assert.deepEqual(metItems(skills, SPACE_SKILLS), ['saturn', 'moon']);
   assert.deepEqual(itemReports(skills, SPACE_SKILLS, ['saturn'])[0], {
-    item: 'saturn', seen: true, rows: [{ skill: 'space', label: 'recognises it', chancePct: 33,
-      mastery: 0.6, attempts: 4, firstTryPct: 75, assistPct: 25, avgLatencyS: 2, wrong: 0,
+    item: 'saturn', seen: true, rows: [{ skill: 'space', label: 'recognises it',
+      mastery: 0.6, attempts: 4, solved: 0, firstTry: 0, afterError: 0, helped: 0, avgLatencyS: 2, wrong: 0,
       confusions: ['moon'], few: false, lastSeenAt: 20 }],
   });
   assert.deepEqual(['saturn', 'moon', 'blackhole'].map((k) => itemLabel('space', k)), ['Saturn', 'the Moon', 'the black hole']);

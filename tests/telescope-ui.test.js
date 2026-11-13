@@ -63,7 +63,7 @@ test('the parent page renders the Space section with English place names and per
   assert.ok(section);
   for (const name of ['Saturn', 'the Moon', 'the black hole']) assert.ok(section.includes(`<b class="pv-item">${name}</b>`), name);
   assert.match(section, /recognises it/);
-  assert.match(section, /a guess: 33%/);
+  assert.match(section, /80%/);
   assert.doesNotMatch(section, /Księżyc|czarna dziura/);
 });
 

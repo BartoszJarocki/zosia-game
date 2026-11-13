@@ -149,10 +149,10 @@ const QUESTIONS = {
   comet: popping,
   stars: (L, rng) => Array.from({ length: L.rounds }, () => { const n = between(L.stars, rng); return Array.from({ length: n - 1 }, (_, k) => ask(n - 1 - k)); }).flat(),
   telescope: (L) => times(L.rounds, ask(L.choices)),
-  lighthouse: (L) => times(L.rounds, L.mode === 'make' || L.mode === 'more' ? ask(1, { blind: span(L.numbers) }) : ask(L.choices)),
+  lighthouse: (L) => times(L.rounds, L.mode === 'make' || L.mode === 'more' ? ask(span(L.numbers)) : ask(L.choices)),
   shallows: (L) => times(L.rounds, ask(2)),
   reef: (L) => times(L.rounds, ask(L.choices)),
-  port: (L) => times(L.rounds, L.mode === 'which' ? ask(3) : ask(1, { blind: span(L.syllables) })),
+  port: (L) => times(L.rounds, L.mode === 'which' ? ask(3) : ask(span(L.syllables))),
 };
 
 /** One level: `runs` runs by a random tapper, scored by the game's own scoreRun. */
