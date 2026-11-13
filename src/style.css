@@ -67,7 +67,7 @@ svg { display: block; }
   padding: 8px 12px; border-radius: 22px;
   background: rgba(255,255,255,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
-.shelf:empty { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; min-width: 84px; min-height: 84px; } /* invisible, still pressable */
+.shelf.bare { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; min-width: 84px; min-height: 84px; } /* invisible, still pressable */
 .shelf { --item: min(8vw, 8vh, 64px); --room: min(40vw, 460px); max-width: var(--room); }
 @media (orientation: portrait) { .shelf { --room: min(84vw, 680px); } } /* (the Lookout sits lower in portrait) */
 .shelf-item { position: relative; width: var(--item); flex: 0 0 auto; }
@@ -173,11 +173,12 @@ svg { display: block; }
 .celebrate.asking .home { animation: askPop .7s 1.15s; }
 @keyframes askPop { 40% { transform: scale(1.18); } }
 
-/* hold to leave: a ring fills round the home button while it is held */
+/* hold to leave: a ring fills round a button while it is held, in --hold (home .8 s, the grown-ups' buttons 3 s) */
 .round-btn.hold { position: relative; }
-.round-btn .hold-ring { position: absolute; inset: -9px; width: calc(100% + 18px); height: calc(100% + 18px); transform: rotate(-90deg); pointer-events: none; }
-.hold-ring circle { fill: none; stroke: #f59e0b; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 290; stroke-dashoffset: 290; opacity: 0; transition: stroke-dashoffset .2s, opacity .2s; }
-.round-btn.holding .hold-ring circle { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset .8s linear, opacity .1s; }
+.round-btn .hold-ring, .shelf .hold-ring { position: absolute; inset: -9px; width: calc(100% + 18px); height: calc(100% + 18px); transform: rotate(-90deg); pointer-events: none; }
+.shelf .hold-ring.pill { transform: none; } /* (the shelf's ring starts at its top left and runs round the pill) */
+.hold-ring :is(circle, rect) { fill: none; stroke: #f59e0b; stroke-width: 7; stroke-linecap: round; stroke-dasharray: var(--ring, 290); stroke-dashoffset: var(--ring, 290); opacity: 0; transition: stroke-dashoffset .2s, opacity .2s; }
+.holding .hold-ring :is(circle, rect) { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset var(--hold, .8s) linear, opacity .1s; }
 .round-btn.holding { transform: scale(.94); }
 
 /* ---------- level stars ---------- */
@@ -334,6 +335,7 @@ svg { display: block; }
 .space-hud, .launch-hud { position: absolute; inset: 0; pointer-events: none; }
 .space-hud button, .launch-hud button { pointer-events: auto; }
 .space-parent { opacity: .7; color: #6552a5; }
+.space-parent.holding { opacity: 1; }
 .space-back { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); font-size: 52px; width: 100px; height: 100px; }
 .rocket-countdown { position: absolute; top: 7%; left: 0; right: 0; text-align: center; font-size: min(24vh, 180px); font-weight: 700; color: #fff5a4; text-shadow: 0 5px 0 #c97029, 0 0 30px #ffcf65; }
 .rocket-countdown.lit { animation: countIn .4s ease-out; }
