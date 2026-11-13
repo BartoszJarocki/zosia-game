@@ -7,16 +7,28 @@ import { sparkle } from '../fx/particles.js';
 import { texture } from '../textures.js';
 import { sfx } from '../audio.js';
 import { T } from '../lang/pl.js';
-import { saturnPieces, saturnSlots, slotOf, SCALE } from '../levels/saturn.js';
+import { saturnPieces, saturnSlots, slotOf, slotAtPoint, SCALE } from '../levels/saturn.js';
 import * as ui from '../ui.js';
 import { Mission } from './mission.js';
 
 const RING_Y = 3.4;
+const PLANET = 2.35;
 const RINGS = { ice: [2.9, 4.05], rock: [4.2, 5.65] };
 const SAMPLE_AT = { ice: 0.35, rock: Math.PI - 0.35 }; // a crystal on the ice ring, a stone on the rock ring, clear of the holes
 const PIC = { ice: '❄️', rock: '🪨' };
 const HOME = new THREE.Vector3(0, 2.5, 6.6);
 const SKY = '#9b77db', HOLE = '#7a58c4', GLOW = new THREE.Color('#fff3b0'); // a hole is a little deeper than the sky
+const LIGHT = '#ffcf6e', LIT = 0.55, FLASH_S = 0.6; // the ring under the piece glows; a drop that landed nowhere glows every ring for a moment
+const REACH = 0.03; // a drop this close to a ring (a share of the screen's short side, 25 px on an iPad) still lands on it
+const AROUND = 8, STEPS = 6;
+/** Where to look for a ring around the piece, in shares of REACH: its own centre, then eight points on each of six rings outward. */
+const PROBES = [[0, 0]];
+for (let step = 1; step <= STEPS; step++) {
+  for (let i = 0; i < AROUND; i++) {
+    const angle = -Math.PI / 2 + (i * Math.PI * 2) / AROUND;
+    PROBES.push([(Math.cos(angle) * step) / STEPS, (Math.sin(angle) * step) / STEPS]);
+  }
+}
 const mid = (ring) => (ring[0] + ring[1]) / 2;
 
 export class SaturnMission extends Mission {
@@ -31,7 +43,13 @@ export class SaturnMission extends Mission {
     this.plan = null;
     this.maps = [];
     this.spin = false;
-    this.ray = new THREE.Raycaster();
+    this.spot = new THREE.Vector3();
+    this.toRings = new THREE.Matrix4();
+    this.eye = new THREE.Vector3();
+    this.sight = new THREE.Vector3();
+    this.lit = null;
+    this.flashUntil = 0;
+    this.now = 0;
   }
 
   build() {
@@ -72,7 +90,7 @@ export class SaturnMission extends Mission {
     this.saturn.position.set(0, RING_Y, -0.7);
     this.saturn.rotation.z = -0.22;
     this.scene.add(this.saturn);
-    this.planet = mesh(new THREE.SphereGeometry(2.35, 48, 32), new THREE.MeshStandardMaterial({ map: planetMap, roughness: 0.82 }), { shadow: false });
+    this.planet = mesh(new THREE.SphereGeometry(PLANET, 48, 32), new THREE.MeshStandardMaterial({ map: planetMap, roughness: 0.82 }), { shadow: false });
     this.saturn.add(this.planet);
     this.tappable(this.planet, () => {}); // not an answer: a tap on it ticks and bounces, and never falls through to a ring behind
     this.rings = { ice: this.makeRing('ice'), rock: this.makeRing('rock', rockMap) };
@@ -102,6 +120,13 @@ export class SaturnMission extends Mission {
     this.onUpdate((dt, t) => {
       if (this.spin) this.saturn.rotation.y += dt * 0.18;
       this.chase.scale.setScalar(t < this.cheerUntil ? 1 + Math.sin(t * 5) * 0.03 : 1);
+      this.now = t;
+      const flash = t < this.flashUntil;
+      for (const slot of this.slots) {
+        slot.glow += ((slot.key === this.lit ? 1 : flash ? 0.5 : 0) - slot.glow) * Math.min(1, dt * 14);
+        slot.tap.material.opacity = slot.glow * LIT;
+        slot.tap.material.visible = slot.glow > 0.01;
+      }
     });
     this.scene.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
   }
@@ -130,13 +155,15 @@ export class SaturnMission extends Mission {
     const tapGeo = new THREE.RingGeometry(...radii, 64, 1, ...slot.tap);
     tapGeo.rotateX(-Math.PI / 2);
     tapGeo.translate(-at.x, 0, -at.z);
-    const tap = new THREE.Mesh(tapGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    const tap = new THREE.Mesh(tapGeo, new THREE.MeshBasicMaterial({
+      color: LIGHT, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    }));
     tap.position.copy(at);
     tap.userData.choice = slot.key;
     tap.userData.tapHeight = 0;
     this.saturn.add(tap);
     this.tappable(tap, () => this.choose?.(slot.key));
-    return { ...slot, radii, gap, tap, need: 0, filled: 0 };
+    return { ...slot, radii, arc: slot.tap, gap, tap, need: 0, filled: 0, glow: 0 };
   }
 
   slot(key) { return this.slots.find((x) => x.key === key); }
@@ -194,6 +221,11 @@ export class SaturnMission extends Mission {
     obj.userData.home = HOME.clone();
     obj.userData.piece = piece.kind;
     obj.userData.size = piece.size;
+    obj.traverse((o) => { // drawn over the rings and the planet: it flies below the ring plane, where they would hide it from her
+      if (!o.isMesh) return;
+      Object.assign(o.material, { transparent: true, depthTest: false, depthWrite: false });
+      o.renderOrder = 4;
+    });
     this.scene.add(obj);
     return obj;
   }
@@ -278,10 +310,12 @@ export class SaturnMission extends Mission {
         height: home.y,
         lift: 0.35,
         onPick: () => { this.poke(); sfx.pop(); },
+        onMove: (o) => { if (this.phase === 'asking') this.light(this.slotAt(o)); },
         onDrop: (o) => {
+          this.light(null);
           if (this.phase !== 'asking') return false;
           const choice = this.slotAt(o);
-          if (!choice) return false;
+          if (!choice) { this.landedNowhere(); return false; }
           choose(choice);
           return true;
         },
@@ -323,11 +357,44 @@ export class SaturnMission extends Mission {
     }, ease.inOut);
   }
 
-  /** The answer whose ring is drawn under the piece, as she sees it (null over the planet or empty sky). */
+  /**
+   * The answer she means by where the piece is drawn: the ring under its centre, else the nearest ring within REACH of
+   * it, looked for in screen space so it is the same on every screen. The planet hides the ring behind it and is never
+   * an answer, so over the planet or empty sky this is null.
+   */
   slotAt(obj) {
-    const eye = camera.position, at = obj.getWorldPosition(new THREE.Vector3());
-    this.ray.set(eye, at.sub(eye).normalize());
-    return this.ray.intersectObjects([this.planet, ...this.slots.map((x) => x.tap)], false)[0]?.object.userData.choice ?? null;
+    const at = obj.getWorldPosition(this.spot).project(camera);
+    const reach = REACH * 2 * Math.min(1, camera.aspect); // (in the screen's own units, -1 to 1 up its height)
+    this.toRings.copy(this.saturn.matrixWorld).invert();
+    const eye = this.eye.setFromMatrixPosition(camera.matrixWorld).applyMatrix4(this.toRings);
+    for (const [x, y] of PROBES) {
+      const sight = this.sight.set(at.x + (x * reach) / camera.aspect, at.y + y * reach, 0.5).unproject(camera).applyMatrix4(this.toRings).sub(eye).normalize();
+      const choice = this.ringUnder(eye, sight);
+      if (choice) return choice;
+    }
+    return null;
+  }
+
+  /** The answer on the ring that a line of sight meets, both in the rings' own frame: none if the planet is in the way. */
+  ringUnder(eye, sight) {
+    if (eye.y <= 0 || sight.y >= 0) return null;
+    const meets = -eye.y / sight.y;
+    const closest = -eye.dot(sight), apart = eye.lengthSq() - closest * closest;
+    if (closest > 0 && apart < PLANET * PLANET && closest - Math.sqrt(PLANET * PLANET - apart) < meets) return null;
+    return slotAtPoint(this.slots, eye.x + sight.x * meets, eye.z + sight.z * meets);
+  }
+
+  /** The ring the piece would land in lights while she drags it (null puts the light out). */
+  light(key) {
+    this.lit = key;
+    this.flashUntil = 0;
+  }
+
+  /** A drop that landed on no ring: every ring glows for a moment, and a soft tick says it was felt. The piece floats back. */
+  landedNowhere() {
+    this.poke();
+    sfx.tick();
+    this.flashUntil = this.now + FLASH_S;
   }
 
   fillGap(slot) {

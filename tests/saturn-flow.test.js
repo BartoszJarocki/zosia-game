@@ -54,7 +54,7 @@ registerHooks({ load(url, context, next) {
 
 const { SaturnMission } = await import('../src/scenes/saturn.js');
 const { camera } = await import('../src/engine.js');
-const { saturnPieces } = await import('../src/levels/saturn.js');
+const { saturnPieces, slotAtPoint } = await import('../src/levels/saturn.js');
 const { CONFIG } = await import('../src/config.js');
 const { LEVELS } = await import('../src/levels/data.js');
 const { learning } = await import('../src/learning/events.js');
@@ -164,6 +164,215 @@ test('a drop counts on the ring drawn under the piece as she sees it; over the p
   assert.equal(s.answers[0].item, 'rock');
   assert.equal(s.answers[0].firstTry, false);
   stop(s);
+});
+
+const SIZES = [[1180, 820], [820, 1180]];
+const pxOf = (s, local, width, height) => {
+  const p = s.saturn.localToWorld(local.clone()).project(camera);
+  return { x: (p.x + 1) / 2 * width, y: (1 - p.y) / 2 * height };
+};
+/** Put the piece where it is drawn at screen point (x, y), at its drag height, as dragging does. */
+function pieceAt(s, x, y, width, height) {
+  const piece = s.pieceObj, ray = new THREE.Raycaster(), at = new THREE.Vector3();
+  ray.setFromCamera(new THREE.Vector2(x / width * 2 - 1, 1 - y / height * 2), camera);
+  ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -(piece.userData.home.y + 0.35)), at);
+  piece.position.copy(at);
+  return piece;
+}
+/** A ring's front band down the middle of the screen, in pixels: where it starts and ends, and its middle. */
+function band(s, key, width, height) {
+  const [inner, outer] = s.slot(key).radii;
+  const at = (r) => pxOf(s, new THREE.Vector3(0, 0, r), width, height);
+  return { x: at(inner).x, top: at(inner).y, bottom: at(outer).y, middle: at((inner + outer) / 2).y };
+}
+const glow = (s, key) => s.slot(key).tap.material.opacity;
+/** Let a bit over half a second of frames pass from time t (the glow eases in and out), and return the new time. */
+function settle(s, t) {
+  for (let i = 1; i <= 12; i++) s.update(0.05, t + i * 0.05);
+  return t + 0.6;
+}
+
+test('a piece drawn on a ring, or just off it, lands on that ring on both iPads in both orientations', async () => {
+  const s = await scene(1, [{ kind: 'rock', size: 'same' }]);
+  s.rounds = 1;
+  const task = s.round(0);
+  await until(() => s.phase === 'asking');
+  for (const [width, height] of SIZES) {
+    frame(s, camera, width, height);
+    const reach = 0.03 * Math.min(width, height);
+    const ice = band(s, 'ice', width, height), rock = band(s, 'rock', width, height);
+    const at = (x, y) => s.slotAt(pieceAt(s, x, y, width, height));
+    const where = (what) => `${width}x${height} ${what}`;
+    assert.equal(at(ice.x, ice.middle), 'ice', where('middle of the ice band'));
+    assert.equal(at(ice.x, ice.top + 1.5), 'ice', where('inside the ice band, top edge'));
+    assert.equal(at(ice.x, ice.bottom - 1.5), 'ice', where('inside the ice band, bottom edge'));
+    assert.equal(at(rock.x, rock.middle), 'rock', where('middle of the rock band'));
+    assert.equal(at(rock.x, rock.top + 1.5), 'rock', where('inside the rock band, top edge'));
+    assert.equal(at(rock.x, rock.bottom - 1.5), 'rock', where('inside the rock band, bottom edge'));
+    assert.equal(at(ice.x, ice.top - 0.6 * reach), 'ice', where('above the ice band, within reach'));
+    assert.equal(at(rock.x, rock.bottom + 0.6 * reach), 'rock', where('below the rock band, within reach'));
+    assert.equal(at(ice.x, ice.top - 1.6 * reach), null, where('well above the ice band'));
+    assert.equal(at(rock.x, rock.bottom + 1.6 * reach), null, where('well below the rock band'));
+    assert.ok(['ice', 'rock'].includes(at(ice.x, (ice.bottom + rock.top) / 2)), where('between the two rings it is one of them'));
+    const planet = pxOf(s, new THREE.Vector3(0, 0, 0), width, height);
+    assert.equal(at(planet.x, planet.y), null, where('on the middle of the planet'));
+    assert.equal(at(planet.x, planet.y - 40), null, where('on the planet, above the middle'));
+    const hidden = pxOf(s, new THREE.Vector3(0, 0, -3.5), width, height);
+    assert.equal(at(hidden.x, hidden.y), null, where('on the planet, where the back of the ice ring is hidden behind it'));
+    s.pieceObj.position.copy(s.pieceObj.userData.home);
+    assert.equal(s.slotAt(s.pieceObj), null, where('the piece let go where it began'));
+  }
+  ring(s, 'rock').userData.onTap();
+  await task;
+  stop(s);
+});
+
+test('with the ring halves of "both", a piece lands on the half it is drawn over, and near it', async () => {
+  const s = await scene(3, [{ kind: 'ice', size: 'big' }]);
+  s.rounds = 1;
+  s.round(0);
+  await until(() => s.phase === 'asking');
+  for (const [width, height] of SIZES) {
+    frame(s, camera, width, height);
+    for (const slot of s.slots) {
+      const [inner, outer] = slot.radii, r = (inner + outer) / 2;
+      const hole = pxOf(s, new THREE.Vector3(Math.cos(slot.angle) * r, 0, -Math.sin(slot.angle) * r), width, height);
+      assert.equal(s.slotAt(pieceAt(s, hole.x, hole.y, width, height)), slot.key, `${width}x${height} ${slot.key}`);
+      assert.equal(s.slotAt(pieceAt(s, hole.x, hole.y - 0.02 * Math.min(width, height), width, height)), slot.key, `${width}x${height} ${slot.key}, a little above`);
+    }
+  }
+  stop(s);
+});
+
+test('while she drags, exactly the ring the piece would land in lights, and the light goes out when she lets go', async () => {
+  const s = await scene(1, [{ kind: 'rock', size: 'same' }]);
+  s.rounds = 1;
+  const [width, height] = SIZES[0];
+  frame(s, camera, width, height);
+  const task = s.round(0);
+  await until(() => s.phase === 'asking');
+  const drag = s.pieceObj.userData.drag;
+  s.pieceObj.traverse((o) => { if (o.isMesh) assert.equal(o.material.depthTest, false, 'the piece is drawn over the rings and the planet, so she sees it while she aims'); });
+  const ice = band(s, 'ice', width, height), rock = band(s, 'rock', width, height);
+  const planet = pxOf(s, new THREE.Vector3(0, 0, 0), width, height);
+  let t = 0;
+  const lit = (x, y) => {
+    drag.onMove(pieceAt(s, x, y, width, height));
+    t = settle(s, t);
+    return ['ice', 'rock'].filter((key) => glow(s, key) > 0.2);
+  };
+  assert.deepEqual(lit(ice.x, ice.middle), ['ice']);
+  assert.deepEqual(lit(rock.x, rock.middle), ['rock']);
+  assert.deepEqual(lit(rock.x, rock.bottom + 8), ['rock'], 'just below the rock ring, it is the ring the piece would land in');
+  assert.deepEqual(lit(planet.x, planet.y), [], 'over the planet no ring lights');
+  assert.deepEqual(lit(ice.x, ice.middle), ['ice']);
+  const piece = pieceAt(s, rock.x, rock.middle, width, height);
+  drag.onMove(piece);
+  assert.equal(drag.onDrop(piece, piece.position.clone()), true);
+  t = settle(s, t);
+  assert.ok(glow(s, 'ice') + glow(s, 'rock') < 0.01, 'letting go puts the light out');
+  await task;
+  assert.equal(s.answers[0].item, 'rock');
+  assert.equal(s.answers[0].firstTry, true, 'the ring that lit is the one that was answered');
+  stop(s);
+});
+
+test('down the border between two rings the lit ring is the one a drop there picks', async () => {
+  const s = await scene(1, [{ kind: 'rock', size: 'same' }]);
+  s.rounds = 1;
+  const [width, height] = SIZES[0];
+  frame(s, camera, width, height);
+  s.round(0);
+  await until(() => s.phase === 'asking');
+  const ice = band(s, 'ice', width, height), rock = band(s, 'rock', width, height);
+  const drag = s.pieceObj.userData.drag;
+  const seen = [];
+  for (let y = ice.bottom - 10; y <= rock.top + 10; y += 0.5) {
+    const piece = pieceAt(s, ice.x, y, width, height);
+    drag.onMove(piece);
+    assert.equal(s.lit, s.slotAt(piece), `at ${y.toFixed(1)}`);
+    if (seen.at(-1) !== s.lit) seen.push(s.lit);
+  }
+  assert.deepEqual(seen, ['ice', 'rock'], 'it goes from one ring to the other once, never to none');
+  stop(s);
+});
+
+test('a drop on no ring floats back with a glow on every ring, counts for nothing, and the piece can be dragged again', async () => {
+  const s = await scene(1, [{ kind: 'ice', size: 'same' }]);
+  s.rounds = 1;
+  const [width, height] = SIZES[0];
+  frame(s, camera, width, height);
+  const task = s.round(0);
+  await until(() => s.phase === 'asking');
+  const drag = s.pieceObj.userData.drag;
+  let t = settle(s, 10);
+  const sky = pieceAt(s, 90, 700, width, height);
+  drag.onMove(sky);
+  t = settle(s, t);
+  assert.equal(glow(s, 'ice') + glow(s, 'rock'), 0, 'nothing lights over empty sky');
+  assert.equal(drag.onDrop(sky, sky.position.clone()), false, 'it is not taken, so the drag floats it back');
+  s.update(0.05, t + 0.05);
+  for (let i = 1; i <= 8; i++) s.update(0.05, t + 0.05 + i * 0.03);
+  assert.ok(glow(s, 'ice') > 0.15 && glow(s, 'rock') > 0.15, 'every ring glows, so no answer is shown');
+  assert.ok(Math.abs(glow(s, 'ice') - glow(s, 'rock')) < 1e-9);
+  t = settle(s, t + 0.5);
+  assert.ok(glow(s, 'ice') + glow(s, 'rock') < 0.02, 'and the glow is gone again');
+  const planet = pxOf(s, new THREE.Vector3(0, 0, 0), width, height);
+  const onPlanet = pieceAt(s, planet.x, planet.y, width, height);
+  assert.equal(drag.onDrop(onPlanet, onPlanet.position.clone()), false, 'on the planet');
+  assert.equal(s.learn.current.wrong, 0, 'neither drop counts as an answer');
+  assert.equal(s.phase, 'asking');
+  assert.ok(s.tappables.includes(s.pieceObj), 'the piece can be taken again');
+  const ice = band(s, 'ice', width, height);
+  const again = pieceAt(s, ice.x, ice.middle, width, height);
+  drag.onMove(again);
+  assert.equal(s.lit, 'ice');
+  assert.equal(drag.onDrop(again, again.position.clone()), true, 'and dropped on its ring');
+  await task;
+  assert.equal(s.answers[0].item, 'ice');
+  stop(s);
+});
+
+test('a ring at rest is not drawn, and still takes a tap', async () => {
+  const s = await scene(1, [{ kind: 'ice', size: 'same' }]);
+  s.rounds = 1;
+  const [width, height] = SIZES[0];
+  frame(s, camera, width, height);
+  const task = s.round(0);
+  await until(() => s.phase === 'asking');
+  settle(s, 0);
+  assert.equal(s.slots.some((slot) => slot.tap.material.visible), false);
+  const ice = band(s, 'ice', width, height), ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2(ice.x / width * 2 - 1, 1 - ice.middle / height * 2), camera);
+  assert.equal(ray.intersectObjects(s.tappables, false)[0]?.object, s.slot('ice').tap, 'a tap on the ring finds it');
+  ring(s, 'ice').userData.onTap();
+  await task;
+  assert.equal(s.answers[0].item, 'ice');
+  stop(s);
+});
+
+test('the bands a drop is judged on are the bands a tap is taken on', async () => {
+  for (const level of [1, 3]) {
+    const s = await scene(level);
+    frame(s);
+    const ray = new THREE.Raycaster(), taps = s.slots.map((slot) => slot.tap);
+    let agreed = 0;
+    for (let radius = 2.5; radius < 6; radius += 0.1) {
+      for (let angle = 0.05; angle < Math.PI * 2; angle += 0.1) {
+        const edge = s.slots.some(({ radii: [inner, outer], arc: [from, length] }) => Math.min(Math.abs(radius - inner), Math.abs(radius - outer)) < 0.06
+          || [from, from + length].some((end) => Math.abs((((angle - end) % (Math.PI * 2)) + Math.PI * 2 + Math.PI) % (Math.PI * 2) - Math.PI) * radius < 0.06));
+        if (edge) continue;
+        const x = Math.cos(angle) * radius, z = -Math.sin(angle) * radius;
+        const seen = s.saturn.localToWorld(new THREE.Vector3(x, 0, z));
+        ray.set(camera.position, seen.sub(camera.position).normalize());
+        const tapped = ray.intersectObjects(taps, false)[0]?.object.userData.choice ?? null;
+        assert.equal(slotAtPoint(s.slots, x, z), tapped, `level ${level}, radius ${radius.toFixed(1)}, angle ${angle.toFixed(2)}`);
+        agreed++;
+      }
+    }
+    assert.ok(agreed > 1000);
+    stop(s);
+  }
 });
 
 test('a tap on the planet is never an answer, also over the back of a ring', async () => {
