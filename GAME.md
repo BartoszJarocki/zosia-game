@@ -741,9 +741,9 @@ flashes, and she counts the flashes or makes the lamp flash as many times as the
 - **numbers**: the flashes shown, or the number on the sail (1 to 5). `more` asks for one more than it shows (2 to 5),
   and that count is what it records.
 - **choices**: how many numeral buoys she picks from (2 to 4). `make` and `more` have none: she produces the count.
-- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question; in `more` the board keeps a
-  place for every flash she makes, so the grown-ups' page counts it as solved but it does not move mastery. Right: the lamp shines
-  a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
+- **rounds**: boats brought home per mission (3 to 5). Every round is one scored question; in `more` the board keeps
+  a place for every flash she makes, so the grown-ups' page counts it as solved but it does not move mastery. Right:
+  the lamp shines a beam and the boat sails into the harbour; the next boat sails in while she is praised, and its flashes start
   after the praise. Wrong: the boat bobs, "Nie, to nie ten." (`make` and `more`: "Za mało! Policz jeszcze
   raz!" and her dots go out; the pale ones stay) and the question again, nothing more. Help: the dots light one by
   one (`marks`), or the flashes again (`flashes`, and `more`: the ones she saw, each pale dot glowing with its
@@ -829,8 +829,8 @@ and she toots its name once for each syllable.
   lights as she toots; the boat toots back once per syllable, then says the whole name.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). In `together` the name's pieces are on the board as she toots, so the grown-ups' page counts
-  the boat as solved but it does not move her mastery of the name. Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the boat's name again, and
-  she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
+  the boat as solved but it does not move her mastery of the name. Too few or too many toots: "Za mało! Posłuchaj
+  jeszcze raz.", the boat's name again, and she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz na każdy
   kawałek!"); last Chase claps the name slowly and she toots it herself. `which`: a wrong boat says how many
   pieces it has ("Ta łódka ma trzy kawałki."), then a wrong boat sails off, then the right board pulses; a long
   wait brings the three names again. Right:
