@@ -54,8 +54,9 @@ registerHooks({ load(url, context, next) {
 } });
 
 const THREE = await import('three');
-const { CONFIG } = await import('../src/config.js');
-const { T } = await import('../src/lang/pl.js');
+const { CONFIG, WORDS, letterName } = await import('../src/config.js');
+const { T, PRAISE } = await import('../src/lang/pl.js');
+const { EASIER } = await import('../src/levels/easier.js');
 const { camera } = await import('../src/engine.js');
 const { learning } = await import('../src/learning/events.js');
 const { LEVELS } = await import('../src/levels/data.js');
@@ -221,6 +222,80 @@ test('Pup Delivery: a parcel dropped over a mailbox is posted into that mailbox,
   assert.equal(parcel.userData.drag.onDrop(parcel), true);
   assert.equal(got.filter((e) => e.correct).length, 1);
   off();
+  stop(s);
+});
+
+const cap = (w) => w.replace(/^./, (c) => c.toUpperCase());
+/** A Pup Delivery round, asked: the lines said so far, the parcels or mailboxes, and the letter. */
+async function askedRound(level, setup, round = 1) {
+  const s = await make(DeliveryMission, level, setup);
+  globalThis.__lines = [];
+  s.round(round);
+  await until(s, () => s.learn.current && s.prompt?.length && globalThis.__lines.length, 'the question');
+  const things = s.tappables.filter((o) => o.userData.letter && !o.userData.drag && o.userData.onTap);
+  return { s, things, right: things.find((o) => o.userData.letter === s.last), wrong: things.find((o) => o.userData.letter !== s.last) };
+}
+
+test('Pup Delivery levels 1 and 2 ask by the letter name, "Co zaczyna się na literę Zet?", and the replay says it again', async () => {
+  for (const level of [1, 2]) {
+    const { s } = await askedRound(level);
+    const asked = T.startsWith(s.last);
+    assert.deepEqual(globalThis.__lines, asked, `level ${level}`);
+    assert.ok(asked[0].includes(`na literę ${cap(letterName(s.last))}?`));
+    globalThis.__lines = [];
+    globalThis.__bubble.onTap();
+    await flush();
+    assert.deepEqual(globalThis.__lines, asked, `level ${level}: the bubble's replay plays the new question`);
+    stop(s);
+  }
+});
+
+test('Pup Delivery levels 1 and 2 praise with the word she found, and the clue is the same skill: the name and the word', async () => {
+  for (const level of [1, 2]) {
+    const { s, right } = await askedRound(level);
+    const wordOf = (said) => WORDS[s.last].find(([w]) => cap(w) + '!' === said)?.[0];
+    const clue = s.aid.hooks.hint();
+    globalThis.__lines = [];
+    await tap(right);
+    await flush();
+    assert.equal(globalThis.__lines[0], 'Tak!', `level ${level}`);
+    assert.ok(wordOf(globalThis.__lines[1]), `level ${level}: the praise says one of ${s.last}'s picture words, not "${globalThis.__lines[1]}"`);
+    assert.equal(globalThis.__lines.length, 2, 'the praise is the word and nothing more: the next question follows at once');
+    assert.deepEqual(clue, [`${cap(letterName(s.last))} jak ${wordOf(globalThis.__lines[1])}!`], 'the clue names the letter and the same word');
+    stop(s);
+  }
+});
+
+test('Pup Delivery level 2: one wrong parcel gets "no" and the same question, with no picture word of the answer', async () => {
+  const { s, wrong } = await askedRound(2);
+  globalThis.__lines = [];
+  await tap(wrong);
+  await flush();
+  assert.equal(globalThis.__lines.length, 2);
+  assert.ok(globalThis.__lines[0].startsWith('Nie'), globalThis.__lines[0]);
+  assert.deepEqual(globalThis.__lines.slice(1), T.startsWith(s.last));
+  assert.ok(s.learn.current.assist <= 1, 'nothing more than the question again');
+  assert.ok(!globalThis.__lines.some((l) => WORDS[s.last].some(([w]) => l.toLowerCase().includes(w))), 'no picture word of the answer');
+  stop(s);
+});
+
+test('Pup Delivery at the mailboxes still asks for the word and praises with the letter and the word', async () => {
+  for (const level of [3, 4, 5]) {
+    const { s, right } = await askedRound(level);
+    assert.ok(/^Do której skrzynki pójdzie .+\?$/.test(globalThis.__lines.at(-1)), `level ${level}: ${globalThis.__lines}`);
+    assert.ok(!globalThis.__lines.some((l) => l.includes('literę')));
+    globalThis.__lines = [];
+    await tap(right);
+    await flush();
+    const word = WORDS[s.last].find(([w]) => globalThis.__lines[1] === `${cap(letterName(s.last))} jak ${w}!`);
+    assert.ok(PRAISE.includes(globalThis.__lines[0]) && word, `level ${level}: ${globalThis.__lines}`);
+    stop(s);
+  }
+});
+
+test('a gentler run of a mailbox level asks by the letter name, as level 2 does', async () => {
+  const { s } = await askedRound(4, (x) => { x.L = EASIER.delivery({ ...x.L }); });
+  assert.deepEqual(globalThis.__lines, T.startsWith(s.last));
   stop(s);
 });
 

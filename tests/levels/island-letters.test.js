@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseGame, startLevel } from '../../src/levels/parse.js';
+import { parseGame, startLevel, SOUNDABLE } from '../../src/levels/parse.js';
 import { EASIER } from '../../src/levels/easier.js';
+import { WORDS, letterName } from '../../src/config.js';
+import { T, LETTER_ROWS, letterRow, allSegments, PRAISE } from '../../src/lang/pl.js';
 
 // The island's letter places (docs/design/g5a-*.md): GAME.md says how each level asks, and what a gentler run changes.
 
 const md = readFileSync(new URL('../../GAME.md', import.meta.url), 'utf8');
-const { levels, errors, starts } = parseGame(md, { childName: 'Zosia' });
+const { levels, errors, starts, letterSets } = parseGame(md, { childName: 'Zosia' });
 
 test('the level tables of the letter places parse', () => {
   assert.deepEqual(errors, []);
@@ -79,4 +81,71 @@ test('where Kitty Park, Balloon Hill, Name Train and Pup Delivery start for each
   assert.deepEqual(at('balloons'), [1, 3, 5, 6]);
   assert.deepEqual(at('name'), [3, 4, 6, 8]);
   assert.deepEqual(at('delivery'), [1, 2, 4, 4]);
+});
+
+const spoken = (lines) => lines.flat().join(' ').toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
+const says = (lines, token) => spoken(lines).includes(token);
+const cap = (s) => s.replace(/^./, (c) => c.toUpperCase());
+const heldSound = (lines) => spoken(lines).find((t) => /^(\p{L})\1+$/u.test(t));
+const rounds = (letters) => [...letters].flatMap((l) => WORDS[l].map(([w]) => [l, w]));
+const holdable = [...letterSets.ALL].filter((l) => letterRow('sound', l) === LETTER_ROWS.sound);
+
+test('Pup Delivery asked by the letter name: "na literę Es", the clue is "Es jak samolot", the praise is the word', () => {
+  for (const [l, w] of rounds(letterSets.ALL)) {
+    const row = letterRow('name', l);
+    assert.deepEqual(row.ask(l, w), [`Co zaczyna się na literę ${cap(letterName(l))}?`], l);
+    assert.deepEqual(row.hint(l, w), [`${cap(letterName(l))} jak ${w}!`], `${l}: the clue names the letter and the word`);
+    assert.deepEqual(row.praise(l, w), ['Tak!', `${cap(w)}!`], `${l}: the praise is the word she found`);
+  }
+});
+
+test('Pup Delivery asked by the held sound: no letter name and no extra vowel in the question, the clue or the praise', () => {
+  assert.deepEqual([...holdable].sort(), [...SOUNDABLE].sort(), 'the letters with a held sound are the ones GAME.md allows for sound rows');
+  for (const [l, w] of rounds(holdable)) {
+    const row = letterRow('sound', l);
+    const lines = { ask: row.ask(l, w), hint: row.hint(l, w), praise: row.praise(l, w) };
+    for (const [what, segments] of Object.entries(lines)) assert.ok(!says(segments, letterName(l).toLowerCase()), `${l} ${what}: "${segments.join(' ')}" says the letter name`);
+    const sound = heldSound(lines.ask);
+    assert.ok(sound?.startsWith(l.toLowerCase()), `${l}: the question holds the sound, "${lines.ask}"`);
+    assert.ok(!says(lines.ask, 'literę'), `${l}: a sound question does not speak of the letter`);
+    assert.ok(says(lines.hint, sound), `${l}: the clue holds the same sound`);
+  }
+});
+
+test('Pup Delivery at the mailboxes asks for the word, and names the letter in the clue and the praise', () => {
+  for (const [l, w] of rounds(letterSets.ALL)) {
+    const row = letterRow('written', l);
+    assert.deepEqual(row.ask(l, w), [`Do której skrzynki pójdzie ${w}?`]);
+    assert.ok(!says(row.ask(l, w), letterName(l).toLowerCase()), `${l}: the question does not name the letter`);
+    assert.deepEqual(row.hint(l, w), [`${cap(letterName(l))} jak ${w}!`]);
+    const praise = row.praise(l, w);
+    assert.ok(PRAISE.includes(praise[0]), `${l}: a cheer first`);
+    assert.deepEqual(praise.slice(1), [`${cap(letterName(l))} jak ${w}!`], `${l}: then the letter and the word`);
+  }
+});
+
+test('a letter with no sound to hold is asked by its name whole, never half by name and half by sound', () => {
+  for (const l of [...letterSets.ALL].filter((c) => !holdable.includes(c))) assert.equal(letterRow('sound', l), LETTER_ROWS.name, l);
+  assert.equal(letterRow('sound', 'S'), LETTER_ROWS.sound);
+  assert.equal(letterRow('name', 'S'), LETTER_ROWS.name);
+  assert.equal(letterRow('written', 'S'), LETTER_ROWS.written);
+});
+
+test('Kitty Park level 8 still asks by the sound alone: no letter name and no extra vowel', () => {
+  assert.equal(levels.letters[7].ask, 'sound');
+  for (const l of levels.letters[7].pool) {
+    const ask = T.whichSound(l);
+    assert.ok(!says(ask, letterName(l).toLowerCase()), `${l}: "${ask}"`);
+    assert.ok(heldSound(ask)?.startsWith(l.toLowerCase()), `${l}: the question holds the held sound`);
+  }
+});
+
+test('the voice list holds what Pup Delivery says now, and not the old question that mixed the name with a sound', () => {
+  const lines = new Set(allSegments(levels, letterSets.ALL));
+  for (const [l, w] of rounds(letterSets.ALL)) {
+    assert.ok(lines.has(`Co zaczyna się na literę ${cap(letterName(l))}?`), `the question for ${l}`);
+    assert.ok(lines.has(`${cap(w)}!`), `the praise for ${w}`);
+    assert.ok(!lines.has(`Co zaczyna się na ${cap(letterName(l))}?`), `the old question for ${l}`);
+  }
+  assert.ok(lines.has('Co zaczyna się na literę Es?') && lines.has('Samolot!') && lines.has('Tak!'));
 });
