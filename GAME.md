@@ -834,7 +834,7 @@ and she toots its name once for each syllable.
 - **rounds** — boats per mission (1 to 8). Each round is one scored `syllables` question, the word (or the asked
   count in `which`). In `together` the name's pieces are on the board as she toots, so the grown-ups' page counts
   the boat as solved but it does not move her mastery of the name. A boat asks one thing first. After her first
-  toot, and a pause of a second and a half, the game says "Gotowe? Dotknij łódki!" once, whatever the count, and the
+  toot, and a pause of about one and a half seconds, the game says "Gotowe? Dotknij łódki!" once, whatever the count, and the
   boat hops. Her toot marks stay through a replay of the question (which says the whole of it once that line has
   been said) and clear when the next boat comes. Too few or too many toots: "Za mało! Posłuchaj jeszcze raz.", the
   boat's name again, and she toots it again from the start. Help: the horn shows itself ("Dotknij rogu i zatrąb raz
