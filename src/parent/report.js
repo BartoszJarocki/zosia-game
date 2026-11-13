@@ -25,39 +25,37 @@ const SPACE_NAMES = { sun: 'the Sun', mercury: 'Mercury', venus: 'Venus', earth:
 /** The Reef: on, under, in and next to (items are the Polish words that were asked). */
 export const POSITION_SKILLS = [['position', 'where it is']];
 export const POSITION_ITEMS = ['na', 'pod', 'w', 'obok'];
-/** The Port: the boat names she splits into syllables. */
+/** The Port: the boat names she splits into syllables, and at level 3 the count she finds a name for (items: 1, 2, 3). */
 export const SYLLABLE_SKILLS = [['syllables', 'splits into syllables']];
 export const SYLLABLE_ITEMS = BOATS.map((b) => b.word);
 /** The Garage: shapes, what comes next in a row, sorting by colour or size (items: what was asked). */
 export const GARAGE_SKILLS = [['shape', 'shape'], ['pattern', 'pattern'], ['sorting', 'sorting']];
-/** The items a skill group has actually met (names and Garage items aren't a fixed list). */
-export const metItems = (skills, list) => [...new Set(list.flatMap(([skill]) => Object.keys(skills?.[skill] || {})))];
-const COMPARE_WORDS = { more: 'more', less: 'less', same: 'the same' };
+
+/** The page's sections and the skills each lists. The planets' order (`sequence` items named `space:…`) is listed in Space. */
+const SECTIONS = { letters: LETTER_SKILLS, space: SPACE_SKILLS, position: POSITION_SKILLS, syllables: SYLLABLE_SKILLS, numbers: NUMBER_SKILLS, compare: COMPARE_SKILLS, names: WORD_SKILLS, garage: GARAGE_SKILLS };
+const HOME = Object.fromEntries(Object.entries(SECTIONS).flatMap(([key, skills]) => skills.map(([skill]) => [skill, key])));
+const ROWS = { ...SECTIONS, space: [...SPACE_SKILLS, ['sequence', 'order']] };
+/** The section that lists this skill + item. */
+export const sectionOf = (skill, item) => (String(item).startsWith('space:') ? 'space' : HOME[skill]);
+
+const COMPARE_WORDS = { more: 'more', less: 'less', same: 'the same', bigger: 'the bigger planet', smaller: 'the smaller planet' };
 const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS, ...SPACE_SKILLS, ...POSITION_SKILLS, ...SYLLABLE_SKILLS]);
 
-/** How an item reads for a grown-up: 4, B, "less (with numbers)". */
+/** How an item reads for a grown-up: 4, B, "less (with numbers)", "after Mars", "which boat has 2 syllables". */
 export function itemLabel(skill, item) {
   const s = String(item);
+  if (s.startsWith('space:')) return `after ${SPACE_NAMES[s.slice(6)] || s.slice(6)}`;
   if (skill === 'space') return SPACE_NAMES[s] || s;
   if (skill === 'position') return s;
-  if (skill === 'syllables') return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-  if (skill === 'sequence' && s.startsWith('space:')) return `after ${SPACE_NAMES[s.slice(6)] || s.slice(6)}`;
+  if (skill === 'syllables') return /^\d+$/.test(s) ? `which boat has ${s} syllable${s === '1' ? '' : 's'}` : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   if (skill === 'comparison') return `${COMPARE_WORDS[s.replace('#', '')] || s}${s.endsWith('#') ? ' (with numbers)' : ''}`;
   return /^\d+$/.test(s) ? s : showLetter(s);
 }
 
-/**
- * How often a pure guess is right first time, per skill, from how the missions ask (GAME.md "choices"):
- * three things to pick from for letters and numbers, two for order and more/less. Giving a number of treats
- * can't be guessed. (An estimate: the saved stats don't keep how many options each question had.)
- */
-// Telescope has two or three choices; use 1 / 3 like letters for the per-skill estimate.
-export const GUESS = { space: 1 / 3, position: 1 / 3, syllables: 1 / 3, letterVisual: 1 / 3, letterAudio: 1 / 3, letterSound: 1 / 3, numeral: 1 / 3, quantity: 1 / 3, counting: 0, sequence: 1 / 2, comparison: 1 / 2, wordVisual: 1 / 3, shape: 1 / 3, pattern: 1 / 3, sorting: 1 / 2 };
-
 /** Fewer answers than this: shown, but marked as "not much to go on yet". */
 export const FEW = 3;
 
-const pct = (a, b) => (b ? Math.round((100 * a) / b) : 0);
+const pct = (a, b) => (b ? Math.round((100 * a) / b) : null);
 
 /** How her solves went, apart: right first time, right after a wrong tap, right after a clue or the answer shown. */
 export function solves(stat) {
@@ -69,10 +67,10 @@ export function solves(stat) {
 export const solvesHow = (s) => [[s.firstTry, 'first try'], [s.afterError, 'after an error'], [s.helped, 'after help']]
   .filter(([n]) => n).map(([n, how]) => `${n} ${how}`).join(', ');
 
-/** A row's solves in words. Solves before these counts began (an older save) show only in mastery. */
-export function solvedText(row) {
+/** A row's solves in words. since: the day the counts began, on a save that had play before them. */
+export function solvedText(row, since = null) {
   if (row.solved) return `${row.solved} solved (${solvesHow(row)})`;
-  return row.attempts ? 'solved before these counts began' : 'not solved yet';
+  return since ? `none solved since ${since}` : 'not solved yet';
 }
 
 /** One skill + item, in parent terms. null when it never came up. */
@@ -92,7 +90,7 @@ export function summarize(stat) {
 }
 
 /** Every item (letter or number) with a row per skill it was practised in. */
-export function itemReports(skills, skillList, items) {
+function itemReports(skills, skillList, items) {
   return items.map((item) => {
     const rows = skillList
       .map(([skill, label]) => ({ skill, label, ...summarize(skills?.[skill]?.[String(item)]) }))
@@ -101,27 +99,38 @@ export function itemReports(skills, skillList, items) {
   });
 }
 
-/** Totals over everything, plus what to practise and what came up lately. */
+/**
+ * One section's cards: its fixed items in order (every letter, the numbers up to the top one), then every other
+ * item of it she has met, so every solve the page counts has a row.
+ */
+export function sectionReports(skills, section, fixed = []) {
+  const items = fixed.map(String);
+  const met = Object.entries(skills || {}).flatMap(([skill, stats]) => Object.keys(stats).filter((item) => sectionOf(skill, item) === section));
+  const more = [...new Set(met)].filter((item) => !items.includes(item)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return itemReports(skills, ROWS[section], [...items, ...more]);
+}
+
+/**
+ * Totals over everything, plus what to practise and what came up lately. Help means a clue or the answer shown,
+ * as in each row; a share with nothing to share yet is null.
+ */
 export function overview(skills) {
-  let attempts = 0, firstTry = 0, assisted = 0, latSum = 0, latN = 0, chance = 0;
-  const all = [], solved = { solved: 0, firstTry: 0, afterError: 0, helped: 0 };
+  const sum = { solved: 0, firstTry: 0, helped: 0, guessable: 0, guessableFirstTry: 0, guessChance: 0 };
+  let latSum = 0, latN = 0;
+  const all = [];
   for (const [skill, items] of Object.entries(skills || {})) {
     for (const [item, s] of Object.entries(items)) {
-      for (const [k, n] of Object.entries(solves(s))) solved[k] += n;
-      attempts += s.attempts || 0;
-      chance += (s.attempts || 0) * (GUESS[skill] ?? 1 / 3);
-      firstTry += s.correctFirstTry || 0;
-      assisted += s.assisted || 0;
+      for (const k of Object.keys(sum)) sum[k] += s[k] || 0;
       if (s.avgLatencyMs && s.attempts) { latSum += s.avgLatencyMs * s.attempts; latN += s.attempts; }
-      all.push({ skill, item, name: itemLabel(skill, item), label: LABEL[skill] || skill, mastery: s.mastery || 0, lastSeenAt: s.lastSeenAt || 0, kind: categorize(s) });
+      all.push({ skill, item, name: itemLabel(skill, item), label: LABEL[skill] || skill, mastery: s.mastery || 0, attempts: s.attempts || 0, lastSeenAt: s.lastSeenAt || 0, kind: categorize(s) });
     }
   }
+  const solved = solves(sum);
   return {
-    attempts,
-    solves: solved, // every solve, scored or not
-    firstTryPct: pct(firstTry, attempts),
-    chancePct: pct(chance, attempts), // what guessing alone would get right first time, on the same questions
-    assistPct: pct(assisted, attempts),
+    solves: solved, // every question she solved
+    firstTryPct: pct(sum.guessableFirstTry, sum.guessable), // of the ones a guess could miss: right first time
+    chancePct: pct(sum.guessChance, sum.guessable), // what guessing alone would get right first time, on the same questions
+    helpPct: pct(solved.helped, solved.solved),
     avgLatencyS: latN ? Math.round(latSum / latN / 100) / 10 : null,
     difficult: all.filter((x) => x.kind === 'difficult').sort((a, b) => a.mastery - b.mastery).slice(0, 8),
     familiar: all.filter((x) => x.kind === 'familiar').length,
@@ -168,13 +177,6 @@ export function recentChanges(sessions, { last = 3, top = 6 } = {}) {
     .filter((c) => Math.abs(c.delta) >= 0.05)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .slice(0, top);
-}
-
-/** Total answers that needed some help (all skills). */
-export function totalAssisted(skills) {
-  let n = 0;
-  for (const items of Object.values(skills || {})) for (const s of Object.values(items)) n += s.assisted || 0;
-  return n;
 }
 
 /** Letters no question has asked yet (in any letter skill). */

@@ -19,10 +19,11 @@ export const isClean = (ev) => ev.correct && ev.firstTry && ev.assistLevel < 2;
 
 /**
  * What one event shows about her knowing the item, from −1 to 1; null when it shows nothing
- * (not solved: she may simply have left; not scored; only one thing to pick).
+ * (not solved: she may simply have left; a step, not her answer; a guess could not miss: one thing to pick, or the
+ * answer on screen as she gave it).
  */
 export function evidence(ev) {
-  if (!ev.correct || ev.scored === false) return null;
+  if (!ev.correct || ev.scored === false || ev.answerOnScreen) return null;
   const n = ev.options ?? DEFAULT_OPTIONS;
   if (n < 2) return null;
   return isClean(ev) ? 1 : -1 / (n - 1);
@@ -33,12 +34,14 @@ export const rateAfter = (answered) => Math.max(RATE, 1 / (answered + 1 + PRIOR)
 
 /**
  * @typedef {object} SkillStat
- * @property {number} solved           questions solved, scored or not (what she did, for the grown-ups' page)
- * @property {number} firstTry         of those: right with nothing wrong before and no clue or answer shown
+ * The first six count from save version 8 (an older save's answers were not stored one by one); the rest from the start.
+ * @property {number} solved           questions she solved, whether a guess could miss them or not (a step is not a question)
+ * @property {number} firstTry         of those: right first time, with nothing wrong before and no clue or answer shown
  * @property {number} helped           of those: right after a clue or the answer shown (the rest came after a wrong tap)
- * @property {number} attempts         scored questions solved (the ones that move mastery)
- * @property {number} correctFirstTry  solved with no wrong choice before
- * @property {number} assisted         solved with some help shown
+ * @property {number} guessable        of those: the ones a guess could miss (they move mastery)
+ * @property {number} guessableFirstTry  of those: right first time
+ * @property {number} guessChance      of those: how many a blind guess would get right first time (the sum of 1 / options)
+ * @property {number} attempts         answers that moved mastery, since the first save
  * @property {number} wrong            wrong choices (incl. rapid random taps)
  * @property {number} missTaps         taps that hit nothing (motor slips, kept apart)
  * @property {number} timeouts         long silences
@@ -48,28 +51,33 @@ export const rateAfter = (answered) => Math.max(RATE, 1 / (answered + 1 + PRIOR)
  * @property {Record<string, number>} confusions  what she picks instead, e.g. { P: 3 }
  */
 export function emptyStat() {
-  return { solved: 0, firstTry: 0, helped: 0, attempts: 0, correctFirstTry: 0, assisted: 0, wrong: 0, missTaps: 0, timeouts: 0, mastery: 0, avgLatencyMs: 0, latencyN: 0, lastSeenAt: 0, confusions: {} };
+  return { solved: 0, firstTry: 0, helped: 0, guessable: 0, guessableFirstTry: 0, guessChance: 0, attempts: 0, wrong: 0, missTaps: 0, timeouts: 0, mastery: 0, avgLatencyMs: 0, latencyN: 0, lastSeenAt: 0, confusions: {} };
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const MAX_CONFUSIONS = 8;
 
-/** Fold one event into skills[skill][item]. Mutates and returns the stat. */
+const add = (s, key, n = 1) => { s[key] = (s[key] || 0) + n; };
+
+/** Fold one event into skills[skill][item]. Mutates and returns the stat; a step is not hers, so it returns null. */
 export function applyEvent(skills, ev) {
+  if (ev.scored === false) return null;
   const bySkill = (skills[ev.skill] ||= {});
   const s = (bySkill[ev.item] ||= emptyStat());
   s.lastSeenAt = Math.max(s.lastSeenAt || 0, ev.at || 0);
   if (ev.correct) {
-    s.solved = (s.solved || 0) + 1;
-    if (ev.assistLevel >= 2) s.helped = (s.helped || 0) + 1;
-    else if (ev.firstTry) s.firstTry = (s.firstTry || 0) + 1;
+    const clean = isClean(ev);
+    add(s, 'solved');
+    if (ev.assistLevel >= 2) add(s, 'helped');
+    else if (clean) add(s, 'firstTry');
     const x = evidence(ev);
-    if (x === null) return s; // it couldn't be got wrong: solved, but it says nothing about knowing it
+    if (x === null) return s; // a guess could not miss: solved, but it says nothing about knowing it
+    add(s, 'guessable');
+    if (clean) add(s, 'guessableFirstTry');
+    add(s, 'guessChance', 1 / (ev.options ?? DEFAULT_OPTIONS));
     s.mastery = round3(clamp01(s.mastery + rateAfter(s.attempts) * (x - s.mastery)));
     s.attempts++;
-    if (ev.firstTry) s.correctFirstTry++;
-    if (ev.assistLevel > 0) s.assisted++;
     s.latencyN = Math.min((s.latencyN || 0) + 1, 20); // running mean, slowly forgetting old answers
     s.avgLatencyMs = Math.round(s.avgLatencyMs + (ev.latencyMs - s.avgLatencyMs) / s.latencyN);
   } else if (ev.errorType === 'wrongChoice' || ev.errorType === 'overTap') {

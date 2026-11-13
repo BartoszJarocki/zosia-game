@@ -1,4 +1,5 @@
-// Every question she solves is counted for the grown-ups, scored or not; only scored answers move mastery.
+// Every question she solves is counted for the grown-ups; only answers a guess could miss move mastery, and a step
+// that is not her answer counts for nothing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LearningBus } from '../../src/learning/events.js';
@@ -7,13 +8,14 @@ import { applyEvent } from '../../src/learning/mastery.js';
 import { categorize } from '../../src/learning/scheduler.js';
 
 /** A question played through the real tracker; returns the events it sent. */
-function play(steps, { skill = 'syllables', item = 'KACZKA', options = 3, scored = true } = {}) {
+function play(steps, { skill = 'syllables', item = 'KACZKA', options = 3, scored = true, onScreen = false } = {}) {
   const bus = new LearningBus();
   const events = [];
   bus.subscribe((ev) => events.push(ev));
   let t = 0;
   const tracker = new QuestionTracker(bus, { now: () => (t += 2000), clock: () => t });
   tracker.open({ mission: 'port', skill, item, scored, options });
+  if (onScreen) tracker.answerOnScreen();
   for (const step of steps) {
     if (step === 'right') tracker.correct();
     else if (step === 'wrong') tracker.wrong({ chosen: 1 });
@@ -56,9 +58,23 @@ test('the last star (one left to tap) is solved, and leaves mastery as it was', 
   assert.equal(s.mastery, before.mastery);
 });
 
-test('an automatic give that is not scored is solved, and leaves mastery as it was', () => {
-  const s = fold(play(['right'], { skill: 'counting', item: '3', scored: false })).counting['3'];
-  assert.deepEqual(counts(s), { solved: 1, firstTry: 1, helped: 0, attempts: 0, mastery: 0 });
+test('a step that is not her answer (the drop tap, an automatic give) is not solved and leaves no row', () => {
+  const skills = fold([...play(['right'], { skill: 'sorting', item: 'drop', options: 1, scored: false }), ...play(['wrong', 'right'], { skill: 'counting', item: '3', scored: false })]);
+  assert.deepEqual(skills, {});
+});
+
+test('an answer copied from the screen is solved, and five of them leave the item new, its mastery as it was', () => {
+  const skills = {};
+  for (let i = 0; i < 5; i++) fold(play(['right'], { item: 'MEWA', options: 2, onScreen: true }), skills);
+  assert.deepEqual(counts(skills.syllables.MEWA), { solved: 5, firstTry: 5, helped: 0, attempts: 0, mastery: 0 });
+  assert.equal(categorize(skills.syllables.MEWA), 'new');
+  fold(play(['right'], { item: 'MEWA', options: 3 }), skills);
+  assert.equal(skills.syllables.MEWA.mastery, 0.4, 'the same name asked without its pieces on the board does move it');
+});
+
+test('each answer a guess could miss keeps what a guess would have got: one in its options', () => {
+  const s = fold([...play(['right'], { options: 4 }), ...play(['wrong', 'right'], { options: 4 }), ...play(['right'], { options: 2 }), ...play(['right'], { options: 1 })]).syllables.KACZKA;
+  assert.deepEqual([s.guessable, s.guessableFirstTry, s.guessChance], [3, 2, 1 / 4 + 1 / 4 + 1 / 2]);
 });
 
 test('the same events folded into two fresh saves give the same counts', () => {

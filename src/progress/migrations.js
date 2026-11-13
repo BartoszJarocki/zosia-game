@@ -8,7 +8,8 @@
 //   v5  mastery on the scale that takes guessing out (learning/mastery.js); old values rescaled; the island keepsakes added in v5 seeded from badges
 //   v6  + visited: { [placeKind]: count }
 //   v7  + age: her age band (GAME.md "Starting levels"); every mission below its start for that age moves up to it
-//   v8  every solved question is counted (SkillStat solved, firstTry, helped) and every mission start goes in visited;
+//   v8  every question she solves is counted, apart (SkillStat solved, firstTry, helped), and the ones a guess could miss
+//       with what a guess would get (guessable, guessableFirstTry, guessChance); every mission start goes in visited;
 //       + countsFrom: epoch ms, only on a save that had play before then (those counts begin there; nothing is rebuilt)
 
 import { emptyStat, rateAfter } from '../learning/mastery.js';

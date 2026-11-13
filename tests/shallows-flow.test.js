@@ -268,3 +268,28 @@ test('every level runs through the base Mission loop to celebration and counts f
   }
   CONFIG.level = null;
 });
+
+test('the tap that drops a thing is not a question: a run counts only her sorts, and the page has no "drop" row', async () => {
+  const { applyEvent } = await import('../src/learning/mastery.js');
+  const { sectionReports, overview } = await import('../src/parent/report.js');
+  CONFIG.level = 1;
+  startSession();
+  const s = new ShallowsMission({ home() {}, startMission() {} });
+  s.L = LEVELS.shallows[0];
+  s.rounds = s.L.rounds;
+  const skills = {};
+  const unsubscribe = learning.subscribe((e) => applyEvent(skills, e));
+  s.enter(); s.collect(); optimizeScene(s.scene);
+  for (let step = 0; step < 400 && !globalThis.__celebration; step++) {
+    if (s.phase === 'dropping') s.tappables.find((o) => o.userData.choice === 'drop')?.userData.onTap();
+    else if (s.phase === 'sorting') s.tappables.find((o) => o.userData.choice === s.last)?.userData.onTap();
+    s.update(0.05, step * 0.05);
+    await flush();
+  }
+  unsubscribe(); stop(s); await flush();
+  CONFIG.level = null;
+  assert.ok(globalThis.__celebration);
+  assert.equal(overview(skills).solves.solved, s.L.rounds, 'one solve per thing she sorted');
+  assert.deepEqual(sectionReports(skills, 'garage').map((r) => r.item).filter((item) => !/^(float|sink):/.test(item)), []);
+  assert.ok(overview(skills).recent.every((x) => x.item !== 'drop'), 'nor a "drop" in Lately');
+});

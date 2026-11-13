@@ -14,6 +14,7 @@ test('evidence: clean +1, anything else −1/(options−1); nothing when it coul
   assert.equal(evidence(ev({ options: 5, firstTry: false })), -0.25);
   assert.equal(evidence(ev({ scored: false })), null);
   assert.equal(evidence(ev({ options: 1 })), null);
+  assert.equal(evidence(ev({ options: 4, answerOnScreen: true })), null, 'the answer was on the screen');
   assert.equal(evidence(ev({ correct: false, errorType: 'wrongChoice' })), null);
 });
 
@@ -30,7 +31,7 @@ test('after the first few answers each one moves mastery by RATE (0.15) of the g
   assert.equal(applyEvent(skills, ev({ options: 3 })).mastery, 0.575);
   assert.equal(applyEvent(skills, ev({ options: 3, assistLevel: 2 })).mastery, 0.414);
   assert.equal(skills.letterAudio.B.attempts, 12);
-  assert.equal(skills.letterAudio.B.assisted, 1);
+  assert.deepEqual([skills.letterAudio.B.solved, skills.letterAudio.B.helped], [2, 1], 'a stat from an older save starts its counts');
 });
 
 test('mastery stays within 0–1', () => {
@@ -38,10 +39,11 @@ test('mastery stays within 0–1', () => {
   assert.equal(masteries(Array.from({ length: 40 }, () => ev({ options: 2, firstTry: false }))).at(-1), 0);
 });
 
-test('a question that could not be got wrong is seen, not scored', () => {
+test('a step that is not her answer leaves nothing behind', () => {
   const skills = {};
-  const s = applyEvent(skills, ev({ scored: false, at: 5000 }));
-  assert.deepEqual([s.attempts, s.correctFirstTry, s.mastery, s.lastSeenAt], [0, 0, 0, 5000]);
+  assert.equal(applyEvent(skills, ev({ scored: false, at: 5000 })), null);
+  assert.equal(applyEvent(skills, ev({ scored: false, correct: false, errorType: 'wrongChoice', chosen: 'P' })), null);
+  assert.deepEqual(skills, {});
 });
 
 test('masteryBefore works the last answer back out', () => {

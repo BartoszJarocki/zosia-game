@@ -114,8 +114,74 @@ test('an old version 7 save with two badges: those read completed, the rest not 
   assert.deepEqual([all.letters, all.cones], ['Completed', 'Completed']);
   assert.deepEqual([...new Set(others(all, ['letters', 'cones']))], ['Not completed yet']);
   assert.match(html, /Solved questions and started places are counted from /);
-  assert.match(html, /<b class="pv-item">B<\/b>[\s\S]*?solved before these counts began/, 'earlier solves are not made up');
+  assert.match(html, /<b class="pv-item">B<\/b>[\s\S]*?none solved since /, 'earlier solves are not made up');
   assert.equal(JSON.parse(stored.get('pup-patrol-progress')).v, 8);
+});
+
+const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const tiles = (html) => text(html.match(/<section class="pv-sum">[\s\S]*?<\/section>/)[0]);
+const section = (html, heading) => text(html.match(new RegExp(`<h2>${heading}[\\s\\S]*?</section>`))[0]);
+const v7stat = (o) => ({ attempts: 0, correctFirstTry: 0, assisted: 0, wrong: 0, missTaps: 0, timeouts: 0, mastery: 0, avgLatencyMs: 0, latencyN: 0, lastSeenAt: 1, confusions: {}, ...o });
+
+test('an old save where the Port was finished but its toots never counted: the boat reads none solved since then, and the note claims nothing more', async () => {
+  seed({
+    progress: { v: 7, age: 3.5, missions: { port: { level: 2, good: 0, lastAcc: 0.75 } }, skills: { syllables: { 'SŁOŃ': v7stat({ wrong: 1 }) } }, sessions: { count: 3, recent: [] }, visited: {}, world: null },
+    badges: { port: 3 },
+  });
+  const html = (await open()).page();
+  assert.equal(labels(html).port, 'Completed');
+  assert.match(section(html, 'Syllables'), /^Syllables The Port Słoń splits into syllables – none solved since /);
+  assert.doesNotMatch(html, /not solved yet/, 'she solved it in each of the three runs');
+  assert.doesNotMatch(html, /Earlier answers still shape mastery/, 'her toots never moved mastery');
+});
+
+/** Every "N solved" on the page's rows, added up, and the number in the first tile. */
+const counted = (html) => ({
+  rows: [...html.matchAll(/<span class="pv-meta">(\d+) solved/g)].reduce((n, m) => n + Number(m[1]), 0),
+  tile: Number(html.match(/<b>(\d+)<\/b><span>questions solved/)[1]),
+});
+
+test('every solve counted at the top has a row: the Port\'s counts, Jupiter\'s bigger planet, the planets\' order', async () => {
+  seed();
+  const { learning } = await open();
+  const solve = (mission, skill, item, options = 3) => learning.emit({ mission, skill, item, correct: true, firstTry: true, options });
+  solve('port', 'syllables', 'FOKA');
+  solve('port', 'syllables', 2);
+  solve('jupiter', 'comparison', 'bigger', 2);
+  solve('jupiter', 'comparison', 'smaller', 2);
+  solve('telescope', 'sequence', 'space:mars');
+  solve('stars', 'sequence', 4, 2);
+  const html = (await open()).page();
+  assert.deepEqual(counted(html), { rows: 6, tile: 6 });
+  assert.match(section(html, 'Syllables'), /which boat has 2 syllables splits into syllables 40% 1 solved/);
+  assert.match(section(html, 'Space'), /after Mars order 40% 1 solved/);
+});
+
+test('the summary means by help what the rows mean: a clue or the answer shown, not hearing the question again', async () => {
+  for (const [assistLevel, first, right, help] of [[1, '1 first try', '100%', '0%'], [3, '1 after help', '0%', '100%']]) {
+    seed();
+    const { learning } = await open();
+    learning.emit({ mission: 'letters', skill: 'letterVisual', item: 'B', correct: true, firstTry: true, assistLevel, options: 3 });
+    const sum = tiles((await open()).page());
+    assert.match(sum, new RegExp(`^1 questions solved \\(${first}\\) ${right} right first time where a guess could miss \\(a guess: 33%\\) ${help} needed some help`), `help level ${assistLevel}`);
+  }
+});
+
+test('the guess figure follows the options the answers had: a count made at the Lighthouse is one of four', async () => {
+  seed();
+  const { learning } = await open();
+  for (const item of [2, 3, 5]) learning.emit({ mission: 'lighthouse', skill: 'counting', item, correct: true, firstTry: true, options: 4 });
+  assert.match(tiles((await open()).page()), /100% right first time where a guess could miss \(a guess: 25%\)/);
+});
+
+test('an item a guess could not miss shows a dash for mastery in Lately too, as in its row', async () => {
+  seed();
+  const { learning } = await open();
+  learning.emit({ mission: 'stars', skill: 'sequence', item: 5, correct: true, firstTry: true, options: 2, at: 1 });
+  learning.emit({ mission: 'stars', skill: 'sequence', item: 6, correct: true, firstTry: true, options: 1, at: 2 });
+  const html = (await open()).page();
+  assert.match(text(html.match(/<h2>Lately<\/h2>[\s\S]*?<\/div><\/div>/)[0]), /^Lately 6 order · – 5 order · 40%$/);
+  assert.match(section(html, 'Numbers'), /6 order – 1 solved/);
 });
 
 test('the page explains the stars, the paws and the badges', async () => {

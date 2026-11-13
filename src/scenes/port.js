@@ -377,6 +377,7 @@ export class PortMission extends Mission {
         this.ask(T.portToot());
       },
     }, { options: this.L.syllables[1] - this.L.syllables[0] + 1 }); // (a blind tooter makes any count the level asks for)
+    if (this.mode === 'together') this.learn.answerOnScreen(); // Chase's clap leaves the pieces on the board: she toots until each is lit
     ui.bubble({ big: '?', pic: '📯', onTap: () => this.replay(), passthrough: true });
   }
 

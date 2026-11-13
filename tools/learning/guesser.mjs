@@ -10,7 +10,8 @@
 //   chance  what a blind tapper really earns per scored question: 1 / the things she can pick, or make (a count she toots or jumps)
 //   share   the share of scored answers the random tapper gets clean (first try, no help), through the real scoring
 //   gap     share - chance. FAIL when guessing pays: the share is more than 15 points above chance
-//   told    chance as the scene tells the scorer (1 / its `options`); it differs where a count is made, with one option declared
+//   told    chance as the scene tells mastery (1 / its `options`), on the answers that move it (not one copied from the screen);
+//           it differs where a count is made, with one option declared
 //   good    the share of runs the tapper wins a level with (at least 65% clean: progress/levelup.js); clean = all clean in 3 or more questions
 //   thin    a run with fewer than 2 scored questions says little (a run with none does not count at all)
 // Each scene's questions per run and options are mirrored here (QUESTIONS below), as tools/learning/sim.mjs does for the island:
@@ -103,8 +104,9 @@ const WITHIN = 0.15;
  * One scored (or not) question of a run. options: how many things she picks from, per right one, as the scene tells the scorer
  * (fractions when several answers are right at once). blind: how many different outcomes a blind tapper can produce, when
  * that is not the same (she makes a count, so a toot or a jump has as many outcomes as the numbers the level asks for).
+ * onScreen: the answer is on the screen as she gives it, so it counts for her level but not for mastery.
  */
-const ask = (options, { blind = options, scored = true } = {}) => ({ options, blind: Math.max(1, blind), scored });
+const ask = (options, { blind = options, scored = true, onScreen = false } = {}) => ({ options, blind: Math.max(1, blind), scored, onScreen });
 const times = (n, question) => Array.from({ length: n }, () => question);
 const size = (pool) => [...pool].length;
 const span = ([lo, hi]) => hi - lo + 1;
@@ -149,21 +151,22 @@ const QUESTIONS = {
   comet: popping,
   stars: (L, rng) => Array.from({ length: L.rounds }, () => { const n = between(L.stars, rng); return Array.from({ length: n - 1 }, (_, k) => ask(n - 1 - k)); }).flat(),
   telescope: (L) => times(L.rounds, ask(L.choices)),
-  lighthouse: (L) => times(L.rounds, L.mode === 'make' || L.mode === 'more' ? ask(span(L.numbers)) : ask(L.choices)),
+  lighthouse: (L) => times(L.rounds, L.mode === 'make' || L.mode === 'more' ? ask(span(L.numbers), { onScreen: L.mode === 'more' }) : ask(L.choices)),
   shallows: (L) => times(L.rounds, ask(2)),
   reef: (L) => times(L.rounds, ask(L.choices)),
-  port: (L) => times(L.rounds, L.mode === 'which' ? ask(3) : ask(span(L.syllables))),
+  port: (L) => times(L.rounds, L.mode === 'which' ? ask(3) : ask(span(L.syllables), { onScreen: L.mode === 'together' })),
 };
 
 /** One level: `runs` runs by a random tapper, scored by the game's own scoreRun. */
 function checkLevel(kind, L, runs, rng) {
-  let scored = 0, clean = 0, chance = 0, told = 0, good = 0, leaps = 0, unscored = 0;
+  let scored = 0, clean = 0, chance = 0, told = 0, toldChance = 0, toldN = 0, good = 0, leaps = 0, unscored = 0;
   for (let r = 0; r < runs; r++) {
     const questions = QUESTIONS[kind](L, rng);
     const events = questions.map((q, i) => {
       const { wrongs, assist } = answer(Math.max(2, Math.ceil(q.blind)), 1 / q.blind, rng);
-      if (q.scored) { chance += 1 / q.blind; told += 1 / q.options; } else unscored++;
-      return makeEvent({ mission: kind, skill: 'quantity', item: String(i), correct: true, firstTry: wrongs === 0, attempt: wrongs + 1, assistLevel: assist, options: q.options, scored: q.scored, at: i + 1 });
+      if (q.scored) chance += 1 / q.blind; else unscored++;
+      if (q.scored && !q.onScreen) { toldN++; told += 1 / q.options; toldChance += 1 / q.blind; }
+      return makeEvent({ mission: kind, skill: 'quantity', item: String(i), correct: true, firstTry: wrongs === 0, attempt: wrongs + 1, assistLevel: assist, options: q.options, scored: q.scored, answerOnScreen: q.onScreen, at: i + 1 });
     });
     const run = scoreRun(events);
     scored += run.scored;
@@ -173,7 +176,7 @@ function checkLevel(kind, L, runs, rng) {
     if (run.clean === run.scored && run.scored >= LEAP_RUN) leaps++;
   }
   const perRun = scored / runs;
-  return { perRun, unscored: unscored / runs, chance: scored ? chance / scored : NaN, told: scored ? told / scored : NaN, share: scored ? clean / scored : NaN, good: good / runs, leaps: leaps / runs, thin: perRun < 2 };
+  return { perRun, unscored: unscored / runs, chance: scored ? chance / scored : NaN, told: toldN ? told / toldN : NaN, toldChance: toldN ? toldChance / toldN : NaN, share: scored ? clean / scored : NaN, good: good / runs, leaps: leaps / runs, thin: perRun < 2 };
 }
 
 const f2 = (x) => (Number.isNaN(x) ? '  - ' : x.toFixed(2));
@@ -188,7 +191,7 @@ for (const kind of MISSIONS) {
   const gaps = judged.map((l) => l.share - l.chance);
   const worst = judged[gaps.indexOf(Math.max(...gaps))];
   const fail = judged.filter((l) => l.share - l.chance > WITHIN);
-  rows.push({ kind, levels, chance: mean('chance'), share: mean('share'), worst, fail, told: judged.filter((l) => Math.abs(l.told - l.chance) > WITHIN).map((l) => l.level),
+  rows.push({ kind, levels, chance: mean('chance'), share: mean('share'), worst, fail, told: judged.filter((l) => Math.abs(l.told - l.toldChance) > WITHIN).map((l) => l.level),
     good: Math.max(...levels.map((l) => l.good)), leaps: Math.max(...levels.map((l) => l.leaps)), thin: levels.filter((l) => l.thin).map((l) => l.level) });
 }
 
