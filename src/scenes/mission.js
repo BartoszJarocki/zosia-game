@@ -54,7 +54,7 @@ export class Mission extends Stage {
 
   enter() {
     this.build();
-    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => { hush(); this.game.home(); } });
+    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => this.leave(() => this.game.home()) });
     this.onUpdate(() => this.tickAssist());
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
@@ -110,26 +110,38 @@ export class Mission extends Stage {
   /** Can this mission be cut short? (Name Train: the word has to be finished.) */
   get canWindDown() { return true; }
 
+  /** Whole statements, each one a clip of its own: the place's line, then the one reward (the stars she won, the badge when it is new). */
+  ending({ gained, badgeNew }) { return [...(this.doneLine?.() || T.done()), ...T.reward(gained, badgeNew)]; }
+
+  /** She goes (home, again, another place): what the ending still meant to say, ask or play stays unsaid. */
+  leave(go) {
+    this.leaving = true;
+    hush();
+    go();
+  }
+
   async finish() {
+    if (this.leaving) return;
     ui.hideBubble();
     const got = ui.badges.add(this.kind);
     const { level, gained } = recordMission(this.kind, scoreRun(this.answers));
     const { finale } = missionDone(this.kind); // the session director counts it (the hub suggests what's next)
     onMissionComplete(this.kind, { completions: got[this.kind], finale }); // Adventure Bay changes (shown in the hub)
     sfx.fanfare();
-    setTimeout(() => sfx.siren(2), 900);
+    setTimeout(() => { if (this.alive && !this.leaving) sfx.siren(2); }, 900);
     this.cheer(6);
     this.pup?.userData.setHappy(8);
     fireworks(this, this.view.look, { bursts: gained || this.bigFinish ? 9 : 6 });
-    const talk = say([...(this.doneLine?.() || T.done()), ...(gained ? T.levelUp(level) : [])]);
+    // a line cut by her leaving never ends, so the celebration does not ask its question after she has gone; a line cut by another one still does
+    const talk = say(this.ending({ gained, badgeNew: got[this.kind] === 1 })).then(() => (this.leaving ? new Promise(() => {}) : undefined));
     ui.celebrate({
       kind: this.kind,
       level,
       total: maxLevel(this.kind),
       gained,
-      talk, // "Jeszcze raz czy na wyspę?" comes right after the badge line
-      onHome: () => { hush(); this.game.home(); },
-      onAgain: () => { hush(); this.game.startMission(this.kind); },
+      talk, // "Jeszcze raz czy na wyspę?" comes right after the reward line
+      onHome: () => this.leave(() => this.game.home()),
+      onAgain: () => this.leave(() => this.game.startMission(this.kind)),
     });
     await talk;
     while (this.alive) {

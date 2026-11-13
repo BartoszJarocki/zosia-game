@@ -26,6 +26,16 @@ const craterWord = (n) => (n === 1 ? 'krater' : n <= 4 ? 'kratery' : 'kraterów'
 /** jedno piętro, dwa piętra, pięć pięter */
 const nFloors = (n) => (n === 1 ? 'jedno piętro' : n <= 4 ? `${NUM[n]} piętra` : `${NUM[n]} pięter`);
 
+/**
+ * What the end of a mission says she won, by the levels she gained (0, 1 or 2) and whether the badge is new to her shelf.
+ * One statement that stands alone, so it works after any place's line; a level number would only repeat the stars.
+ */
+const REWARD = [
+  [null, 'Zdobywasz odznakę!'],
+  ['Zdobywasz nową gwiazdkę!', 'Zdobywasz odznakę i nową gwiazdkę!'],
+  ['Zdobywasz dwie nowe gwiazdki!', 'Zdobywasz odznakę i dwie nowe gwiazdki!'],
+];
+
 const voc = CONFIG.childVocative || CONFIG.childName;
 const dat = CONFIG.childDative || CONFIG.childName;
 const kid = CONFIG.childName;
@@ -266,7 +276,7 @@ export const T = {
   starsRule: (order) => [{ down: 'Liczymy od tyłu!', twos: 'Liczymy co dwa!' }[order]],
   starsHelp: (n) => [`Teraz numer ${NUM[n]}!`],
   starsPicture: (id) => [STAR_PICTURE_LINES[id]],
-  starsDone: () => ['Brawo! Gwiazdy świecą obrazki!'],
+  starsDone: () => ['Brawo! Ułożyłaś obrazki z gwiazd!'],
   number: (n) => [`${cap(NUM[n])}!`],
   praise: (i) => [PRAISE[i]],
 
@@ -408,9 +418,9 @@ export const T = {
   tapPup: () => ['Hau, hau!', `${pup} rusza do akcji!`, 'Gotowy do akcji!'],
   go: (kind) => [PLACE_LINES[kind]],
 
-  // end of every mission
-  done: () => [`Udało się, ${voc}! Misja zakończona! Zdobywasz odznakę!`],
-  levelUp: (lvl) => [`I nową gwiazdkę! Poziom ${NUM[lvl]}!`],
+  // end of every mission: the place's line (its own, or this one), then reward(), then the celebration asks againOr…
+  done: () => [`Udało się, ${voc}! Misja zakończona!`],
+  reward: (gained, badgeNew) => [REWARD[Math.min(gained, REWARD.length - 1)]?.[badgeNew ? 1 : 0]].filter(Boolean),
 
   // shared "wrong answer" feedback
   no: () => [NO[Math.floor(Math.random() * NO.length)]],
@@ -589,7 +599,6 @@ export function allSegments(levels, allLetters) {
   const letters = new Set(allLetters);
   const nums = Array.from({ length: 10 }, (_, i) => i + 1);
   const floors = Math.max(...levels.lookout.map((l) => l.max));
-  const maxLevels = Math.max(...Object.values(levels).map((l) => l.length));
   const out = [];
   const add = (segs) => out.push(...segs);
   const lookout = (mode) => levels.lookout.filter((l) => l.mode === mode);
@@ -624,7 +633,7 @@ export function allSegments(levels, allLetters) {
     row.syllables[w].forEach((s) => add(T.syllable(s)));
   }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
-  for (let l = 2; l <= maxLevels; l++) add(T.levelUp(l));
+  REWARD.forEach((_, gained) => [false, true].forEach((badgeNew) => add(T.reward(gained, badgeNew))));
   [T.greet, T.hubAgain, T.hubBack, T.tapStar, T.playOn, T.goodnight, T.nightSky, T.asleep, T.againOrIsland, T.tapGirl, T.tapPup, T.done, T.riverFirst, T.riverAgain, T.yum, T.yes, T.countTogether,
     T.riverWhatNext, T.riverFirstNext, T.howMany, T.tapPupWhenDone, T.nowRight, T.tooFew, T.liftTop, T.slide, T.tapTreat, T.shareRule, T.shareWho, T.shareHasOne, T.shareDone, T.shareYum, T.flashStart, T.flashAsk, T.hiddenMore, T.hiddenAsk, T.sameForPup, T.lookAgain, T.checkBowl, T.same, T.kittensStart, T.kittenWhere, T.kittenLook, T.kittenIn, T.kittensAll,
     T.howManyShort, T.tapTheBox, T.finaleCall, T.sessionDone, T.oneMore, T.restTime,
