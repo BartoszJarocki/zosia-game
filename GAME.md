@@ -66,10 +66,10 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
 6. **Celebration** — badge, stars, confetti and fireworks. Chase says the place's own line ("Brawo! Ułożyłaś
    obrazki z gwiazd!"), then one statement of what she won, then asks whether to play again or go on. Each
    statement is a whole sentence that stands alone. The reward is "Zdobywasz nową gwiazdkę!" for one level and
-   "Zdobywasz dwie nowe gwiazdki!" for two, with "odznakę i" in front when the badge is new to her shelf ("Zdobywasz
-   odznakę!" when she won only that), and nothing when she won nothing. The question is "Jeszcze raz czy na
-   wyspę?" ("lecimy dalej?" in space, "płyniemy dalej?" at sea). Leaving during it (home, again, another place)
-   stops it: nothing more is said, asked or sounded in the next place.
+   "Zdobywasz dwie nowe gwiazdki!" for two, with "odznakę i" in front when the badge is new to her shelf. A run that
+   gained no level says no reward. The question is "Jeszcze raz czy na wyspę?" ("lecimy dalej?" in space,
+   "płyniemy dalej?" at sea). Leaving during it (home, again, another place) stops it: nothing more is said, asked
+   or sounded in the next place.
 
 ## How levels work
 

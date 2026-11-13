@@ -63,6 +63,7 @@ registerHooks({ load(url, context, next) {
 const { T, allSegments } = await import('../src/lang/pl.js');
 const { LEVELS, ALL_LETTERS } = await import('../src/levels/data.js');
 const { GAMES } = await import('../src/places.js');
+const { dev } = await import('../src/progress.js');
 const { Mission } = await import('../src/scenes/mission.js');
 const scenes = Object.fromEntries(await Promise.all(readdirSync(new URL('../src/scenes/', import.meta.url))
   .filter((file) => /extends Mission/.test(readFileSync(new URL(`../src/scenes/${file}`, import.meta.url), 'utf8')))
@@ -108,10 +109,10 @@ test('every place ends in whole statements for 0, 1 and 2 levels, with and witho
   }
 });
 
-test('the reward says what she won: the badge only when it is new, one star or two', () => {
+test('the reward says what she won: one star or two, with the badge when it is new', () => {
   const said = (gained, badgeNew) => T.reward(gained, badgeNew).join(' ');
-  assert.equal(said(0, false), '', 'nothing won, nothing said');
-  assert.equal(said(0, true), 'Zdobywasz odznakę!');
+  assert.equal(said(0, false), '', 'no stars won, nothing said');
+  assert.equal(said(0, true), '', 'a badge alone is on the screen, not in the ending');
   assert.equal(said(1, false), 'Zdobywasz nową gwiazdkę!');
   assert.equal(said(2, false), 'Zdobywasz dwie nowe gwiazdki!');
   assert.equal(said(1, true), 'Zdobywasz odznakę i nową gwiazdkę!');
@@ -125,10 +126,11 @@ test('Star Pictures ends in a sentence she can follow, then the stars she won', 
   assert.deepEqual(stars.ending({ gained: 2, badgeNew: false }), ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz dwie nowe gwiazdki!']);
 });
 
-test('the default ending thanks her once and no longer repeats the badge on every run', () => {
+test('the default ending thanks her, and no longer repeats the badge on every run', () => {
   const cones = places.find((s) => s.kind === 'cones');
-  assert.deepEqual(cones.ending({ gained: 0, badgeNew: false }), T.done());
-  assert.deepEqual(cones.ending({ gained: 0, badgeNew: true }), [...T.done(), 'Zdobywasz odznakę!']);
+  assert.deepEqual(cones.ending({ gained: 0, badgeNew: true }), T.done());
+  assert.deepEqual(cones.ending({ gained: 1, badgeNew: false }), [...T.done(), 'Zdobywasz nową gwiazdkę!']);
+  assert.deepEqual(cones.ending({ gained: 1, badgeNew: true }), [...T.done(), 'Zdobywasz odznakę i nową gwiazdkę!']);
 });
 
 test('the Lookout finale and the question about playing on are whole as well', () => {
@@ -139,12 +141,18 @@ test('the Lookout finale and the question about playing on are whole as well', (
 const started = [];
 afterEach(() => { for (const mission of started.splice(0)) mission.alive = false; }); // (a failing test must not leave the hop loop of a finished mission running)
 
-/** A mission of this place on its mission screen (its rounds skipped), finished the way the game does after her last answer. The line it says stays open until a test ends it. */
+/**
+ * A mission of this place on its mission screen (its rounds skipped), finished the way the game does after her last
+ * answer, from level 3 of the place. A clean run of three gains two levels, two clean of three gain one, none gains none.
+ * The line it says stays open until a test ends it.
+ */
 async function ending(kind, { gained = 0 } = {}) {
   Object.assign(heard, { said: [], sirens: 0, hushes: 0, celebration: null, pending: [] });
+  dev.setLevel(kind, 3);
   const calls = [];
   const mission = new (places.find((s) => s.kind === kind).constructor)({ home: () => calls.push('home'), startMission: (k) => calls.push(`start ${k}`) });
-  Object.assign(mission, { build() {}, run() {}, answers: gained === 2 ? [1, 2, 3].map(() => ({ correct: true, firstTry: true, scored: true, assistLevel: 0 })) : [] });
+  const answer = (clean) => ({ correct: true, firstTry: clean, scored: true, assistLevel: 0 });
+  Object.assign(mission, { build() {}, run() {}, answers: [[], [answer(true), answer(true), answer(false)], [answer(true), answer(true), answer(true)]][gained] });
   started.push(mission);
   mission.enter();
   mission.finish();
@@ -154,12 +162,18 @@ async function ending(kind, { gained = 0 } = {}) {
 
 test('finish says the ending as one list, with the badge only the first time', async () => {
   for (const kind of Object.keys(heard.earned)) delete heard.earned[kind];
-  await ending('stars');
+  await ending('stars', { gained: 1 });
   assert.equal(heard.said.length, 1, 'one list of statements, so a newer line cuts it as a whole');
-  assert.deepEqual(heard.said[0], ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz odznakę!'], 'her first run of the place: the badge is new');
+  assert.deepEqual(heard.said[0], ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz odznakę i nową gwiazdkę!'], 'her first run of the place: the badge is new');
   assert.ok(heard.celebration, 'the celebration is shown');
-  await ending('stars');
-  assert.deepEqual(heard.said[0], ['Brawo! Ułożyłaś obrazki z gwiazd!'], 'the second run: the badge is on her shelf already');
+  await ending('stars', { gained: 1 });
+  assert.deepEqual(heard.said[0], ['Brawo! Ułożyłaś obrazki z gwiazd!', 'Zdobywasz nową gwiazdkę!'], 'the second run: the badge is on her shelf already');
+});
+
+test('a run that gained no level says its place line and nothing about stars', async () => {
+  const { ask } = await ending('port');
+  assert.equal(ask.gained, 0);
+  assert.deepEqual(heard.said[0], ['Brawo! Wszystkie łódki wypłynęły w morze!']);
 });
 
 test('a clean run that leaps two levels says two stars', async () => {
@@ -167,6 +181,7 @@ test('a clean run that leaps two levels says two stars', async () => {
   assert.equal(heard.celebration.gained, 2);
   assert.ok(heard.said[0].some((line) => line.includes('dwie nowe gwiazdki')), heard.said[0].join(' | '));
   assert.ok(!heard.said[0].some((line) => /^I /.test(line)));
+  assert.equal(heard.said[0].length, 2, 'the place line and one reward');
 });
 
 test('the question about playing on waits for the praise, also when a newer line cut it short', async () => {

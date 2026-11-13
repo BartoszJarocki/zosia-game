@@ -110,7 +110,7 @@ export class Mission extends Stage {
   /** Can this mission be cut short? (Name Train: the word has to be finished.) */
   get canWindDown() { return true; }
 
-  /** Whole statements, each one a clip of its own: the place's line, then the one reward (the stars she won, the badge when it is new). */
+  /** What the ending says, in order: the place's own line, then the one reward (the stars she won, with the badge when it is new). Each segment stands alone. */
   ending({ gained, badgeNew }) { return [...(this.doneLine?.() || T.done()), ...T.reward(gained, badgeNew)]; }
 
   /** She goes (home, again, another place): what the ending still meant to say, ask or play stays unsaid. */
