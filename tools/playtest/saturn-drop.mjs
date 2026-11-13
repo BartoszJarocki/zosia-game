@@ -9,6 +9,7 @@
 // env: BASE (default http://localhost:4257), Q (graphics tier, default high), STEP (px between sweep points, default 12; the side columns use twice that), AIM (piece, finger, both;
 //   default piece), OUTDIR (default tools/playtest/playcheck-out/saturn-drop), SKY=0 (omit the overlay screenshot),
 //   ONLY=<regex> (only the points whose name matches, e.g. 'centre$'), SKIP_TAPS=1 (no tap trials),
+//   PLAY=1 (instead of the points: play the level by dragging each piece into its own hole),
 //   SHOTS=1 (a screenshot just before and after the drop at each band centre, the planet, the gap and the empty sky)
 import { chromium } from 'playwright-core';
 import { VERSION } from '../../src/progress/migrations.js';
@@ -27,7 +28,7 @@ mkdirSync(OUT, { recursive: true });
 if (SHOTS) mkdirSync(SHOTS_DIR, { recursive: true });
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--use-gl=angle', '--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
-const results = [];
+const results = [], perf = [];
 
 for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]) {
   const W = orientation === 'portrait' ? 820 : 1180, H = orientation === 'portrait' ? 1180 : 820;
@@ -37,6 +38,10 @@ for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(([level, v]) => {
     localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { saturn: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
+    const frames = (window.__dragFrames = { on: false, dt: [] });
+    let last = performance.now();
+    const tick = (now) => { if (frames.on) frames.dt.push(now - last); last = now; requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
   }, [level, VERSION]);
   await page.goto(`${BASE}/?q=${process.env.Q || 'high'}`);
   await page.waitForSelector('.play', { timeout: 60000 });
@@ -137,6 +142,42 @@ for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]
   plan.sort((a, b) => a.column.localeCompare(b.column) || a.y - b.y);
   if (process.env.ONLY) plan.splice(0, plan.length, ...plan.filter((p) => new RegExp(process.env.ONLY).test(p.name)));
 
+  if (process.env.PLAY) {
+    // play the level by dragging each piece into its own hole, steering the piece's drawn centre onto the hole's middle
+    const before = await events();
+    let dragged = 0;
+    for (let guard = 0; guard < 80; guard++) {
+      if (await page.evaluate(() => Boolean(document.querySelector('.celebrate')))) break;
+      const r = await read();
+      if (!(r.kind === 'saturn' && r.phase === 'asking' && r.atHome)) { await page.waitForTimeout(300); continue; }
+      await page.waitForTimeout(400);
+      const slot = r.slots.find((x) => x.key === r.target), [a, b] = r.rings[slot.kind];
+      const line = await lineAt(slot.angle);
+      const goal = line.reduce((best, q) => (Math.abs(q.r - (a + b) / 2) < Math.abs(best.r - (a + b) / 2) ? q : best));
+      let F = { ...r.piece }, piece = r.piece;
+      await touch('touchStart', [F]);
+      for (let k = 1; k <= 10; k++) { await touch('touchMove', [{ x: r.piece.x + (goal.x - r.piece.x) * k / 10, y: r.piece.y + (goal.y - r.piece.y) * k / 10 }]); await page.waitForTimeout(16); }
+      F = { x: goal.x, y: goal.y };
+      for (let k = 0; k < 10; k++) {
+        piece = (await read()).piece;
+        const err = { x: goal.x - piece.x, y: goal.y - piece.y };
+        if (Math.hypot(err.x, err.y) < 1) break;
+        F = { x: F.x + err.x, y: F.y + err.y };
+        await touch('touchMove', [F]);
+        await page.waitForTimeout(24);
+      }
+      await page.waitForTimeout(150);
+      await touch('touchEnd', []);
+      dragged++;
+      await page.waitForTimeout(1500);
+    }
+    const mine = await page.evaluate((n) => window.__pup.learning.recent(200).slice(n), before);
+    const celebrated = await page.evaluate(() => Boolean(document.querySelector('.celebrate')));
+    console.log(`PLAY ${orientation} L${level}: dragged ${dragged} pieces onto their holes, the game counted ${mine.filter((e) => e.correct).length} right (${mine.filter((e) => e.correct && e.firstTry).length} first time) and ${mine.filter((e) => !e.correct).length} wrong, celebrated ${celebrated}`);
+    await context.close();
+    continue;
+  }
+
   const log = [];
   for (const aim of AIMS) {
     for (const [i, pt] of plan.entries()) {
@@ -149,6 +190,7 @@ for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]
       });
       const before = await events();
       const F0 = { ...r0.piece };
+      await page.evaluate(() => { window.__dragFrames.on = true; });
       await touch('touchStart', [F0]);
       let F = { ...F0 };
       const target = { x: pt.x, y: pt.y };
@@ -172,6 +214,7 @@ for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]
       const looked = SHOTS && aim === AIMS[0] && /centre$|planet middle|sky bottom middle|gap middle/.test(pt.name);
       if (looked) await page.screenshot({ path: `${SHOTS_DIR}/${shotName}-held.png`, scale: 'css' });
       await touch('touchEnd', []);
+      await page.evaluate(() => { window.__dragFrames.on = false; });
       let drop = null;
       for (let k = 0; k < 20 && !drop; k++) { await page.waitForTimeout(50); drop = await page.evaluate(() => window.__drop); }
       if (looked) { await page.waitForTimeout(150); await page.screenshot({ path: `${SHOTS_DIR}/${shotName}-after.png`, scale: 'css' }); }
@@ -200,6 +243,10 @@ for (const orientation of which === 'both' ? ['landscape', 'portrait'] : [which]
     log.push({ orientation, aim: 'tap', column: 'tap', name: `tap ${slot.key}`, band: slot.kind, targetX: Math.round(p.x), targetY: Math.round(p.y * 10) / 10, pieceX: Math.round(p.x), pieceY: Math.round(p.y * 10) / 10, result: ev ? 'hit' : 'miss', ring: ev ? (ev.correct ? r0.target : ev.chosen ?? '?') : null });
   }
   results.push(...log);
+  perf.push({ orientation, ...(await page.evaluate(() => {
+    const dt = window.__dragFrames.dt.slice().sort((a, b) => a - b);
+    return { frames: dt.length, medianFps: dt.length ? Math.round(1000 / dt[Math.floor(dt.length / 2)]) : null, slowestMs: dt.length ? Math.round(dt.at(-1)) : null };
+  })) });
 
   if (process.env.SKY !== '0') {
     const shown = await ready();
@@ -226,6 +273,7 @@ await browser.close();
 const header = ['orientation', 'aim', 'column', 'name', 'band', 'r', 'targetX', 'targetY', 'fingerX', 'fingerY', 'pieceX', 'pieceY', 'lit', 'glowing', 'result', 'ring'];
 writeFileSync(`${OUT}/drops-L${level}.tsv`, [header.join('\t'), ...results.map((r) => header.map((k) => r[k] ?? '').join('\t'))].join('\n') + '\n');
 writeFileSync(`${OUT}/drops-L${level}.json`, JSON.stringify(results, null, 1));
+writeFileSync(`${OUT}/drag-frames-L${level}.json`, JSON.stringify(perf));
 
 // the summary: per orientation, aim and column, the bands in order down the screen with their hits and misses
 const lines = [];
@@ -240,3 +288,4 @@ for (const orientation of new Set(results.map((r) => r.orientation))) for (const
   }
 }
 console.log(lines.join('\n'));
+if (perf.length) console.log(`frames while dragging: ${perf.map((p) => `${p.orientation} ${p.frames} frames, median ${p.medianFps} fps, slowest ${p.slowestMs} ms`).join('; ')}`);
