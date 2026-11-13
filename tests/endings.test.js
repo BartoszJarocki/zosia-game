@@ -147,11 +147,12 @@ afterEach(() => { for (const mission of started.splice(0)) mission.alive = false
  * answer, from level 3 of the place. A clean run of three gains two levels, two clean of three gain one, none gains none.
  * The line it says stays open until a test ends it.
  */
-async function ending(kind, { gained = 0 } = {}) {
+async function ending(kind, { gained = 0, level = 3 } = {}) {
   Object.assign(heard, { said: [], sirens: 0, hushes: 0, celebration: null, pending: [] });
-  dev.setLevel(kind, 3);
+  dev.setLevel(kind, level);
   const calls = [];
-  const mission = new (places.find((s) => s.kind === kind).constructor)({ home: () => calls.push('home'), startMission: (k) => calls.push(`start ${k}`) });
+  const to = { home: () => calls.push('home'), startMission: (k) => calls.push(`start ${k}`) };
+  const mission = kind === 'name' ? scenes['name.js'].NameMission(to) : new (places.find((s) => s.kind === kind).constructor)(to); // (the Name Train's level picks its class)
   const answer = (clean) => ({ correct: true, firstTry: clean, scored: true, assistLevel: 0 });
   Object.assign(mission, { build() {}, run() {}, answers: [[], [answer(true), answer(true), answer(false)], [answer(true), answer(true), answer(true)]][gained] });
   started.push(mission);
@@ -228,7 +229,7 @@ test('starting a place again during the ending stops the ending too', async () =
 test('a mission she has already left never finishes into the next place', async () => {
   const { mission } = await ending('moon');
   Object.assign(heard, { said: [], sirens: 0, hushes: 0, celebration: null, pending: [] });
-  mission.leave(() => {});
+  mission.leaveTo(() => {});
   mission.finish();
   await flush();
   assert.deepEqual(heard.said, [], 'her last answer came while the wipe covered the screen: nothing is said');
@@ -239,4 +240,16 @@ test('no size of jump makes the ending say a leftover', () => {
   for (const gained of [0, 1, 2, 3, 11]) for (const badgeNew of [false, true]) {
     for (const statement of T.reward(gained, badgeNew)) assert.doesNotMatch(statement, /undefined/);
   }
+});
+
+test('every kind of Name Train leaves from the house and from its ending', async () => {
+  const kinds = new Set();
+  for (let level = 1; level <= LEVELS.name.length; level++) {
+    const { mission, calls, ask } = await ending('name', { level });
+    kinds.add(mission.constructor.name);
+    heard.hud.onHome();
+    ask.onAgain();
+    assert.deepEqual(calls, ['home', 'start name'], `level ${level} (${mission.constructor.name})`);
+  }
+  assert.deepEqual([...kinds].sort(), ['LetterTrain', 'WhoseTrain'], 'both trains were driven');
 });

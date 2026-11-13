@@ -54,7 +54,7 @@ export class Mission extends Stage {
 
   enter() {
     this.build();
-    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => this.leave(() => this.game.home()) });
+    ui.missionHud({ rounds: this.rounds, level: this.level, total: maxLevel(this.kind), bubbleAt: this.bubbleAt, onHome: () => this.leaveTo(() => this.game.home()) });
     this.onUpdate(() => this.tickAssist());
     this.onUpdate((dt, t) => {
       if (this.pup) this.pup.userData.idle(t);
@@ -114,7 +114,7 @@ export class Mission extends Stage {
   ending({ gained, badgeNew }) { return [...(this.doneLine?.() || T.done()), ...T.reward(gained, badgeNew)]; }
 
   /** She goes (home, again, another place): what the ending still meant to say, ask or play stays unsaid. */
-  leave(go) {
+  leaveTo(go) {
     this.leaving = true;
     hush();
     go();
@@ -140,8 +140,8 @@ export class Mission extends Stage {
       total: maxLevel(this.kind),
       gained,
       talk, // "Jeszcze raz czy na wyspę?" comes right after the reward line
-      onHome: () => this.leave(() => this.game.home()),
-      onAgain: () => this.leave(() => this.game.startMission(this.kind)),
+      onHome: () => this.leaveTo(() => this.game.home()),
+      onAgain: () => this.leaveTo(() => this.game.startMission(this.kind)),
     });
     await talk;
     while (this.alive) {
