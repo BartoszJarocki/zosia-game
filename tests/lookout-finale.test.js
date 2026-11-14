@@ -94,14 +94,15 @@ test('the finale rides at her Lookout level, and a perfect ride moves her up two
   assert.equal(bubbles[0].big, '?', 'level 3 is find: the bubble keeps the floor to herself');
   assert.ok(lines.includes(T.finaleStart()[0]), 'the alarm still opens it');
   assert.ok(lines.includes(T.finaleDone()[0]), 'and the finale\'s own ending closes it');
-  assert.ok(lines.includes(T.levelUp(5)[0]));
+  assert.ok(lines.some((line) => /dwie nowe gwiazdki!$/.test(line)), 'a perfect ride says two stars');
   assert.deepEqual([celebration.level, celebration.gained], [5, 2]);
   assert.equal(savedLevel(), 5);
   assert.equal(getSession().finaleDone, true);
 });
 
 test('a finale with one wrong tap still counts: one level up', async () => {
-  const { s, celebration } = await finale(2, { missFirstRide: true });
+  const { s, lines, celebration } = await finale(2, { missFirstRide: true });
+  assert.ok(lines.some((line) => /nową gwiazdkę!$/.test(line)), 'one level up says one star');
   assert.equal(s.answers.length, 3);
   assert.equal(s.answers[0].firstTry, false);
   assert.deepEqual([celebration.level, celebration.gained], [3, 1]);

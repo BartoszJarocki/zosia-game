@@ -183,7 +183,7 @@ test('the picture name is spoken after the last star, and the mission has its ow
     assert.equal(globalThis.__starLines.at(-1), T.starsPicture(PICTURES[count].id)[0]);
     s.clearPicture();
   }
-  assert.deepEqual(s.doneLine(), ['Brawo! Gwiazdy świecą obrazki!']);
+  assert.deepEqual(s.doneLine(), ['Brawo! Ułożyłaś obrazki z gwiazd!']);
   s.alive = false; s.exit();
 });
 

@@ -201,7 +201,7 @@ test('every Star Pictures level runs through base progress and celebration, and 
     assert.equal(events.filter((e) => e.correct && e.skill === 'sequence').length, questions);
     assert.equal(scoreRun(s.answers).scored, questions);
     assert.equal(getSession().missionsCompleted, 1);
-    assert.deepEqual(s.doneLine(), ['Brawo! Gwiazdy świecą obrazki!']);
+    assert.deepEqual(s.doneLine(), ['Brawo! Ułożyłaś obrazki z gwiazd!']);
     globalThis.__celebration.onAgain();
     assert.deepEqual(again, ['stars']);
     globalThis.__celebration.onHome();

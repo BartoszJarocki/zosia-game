@@ -91,7 +91,7 @@ test('Star Pictures lines are full Polish sentences and every one reaches record
   assert.deepEqual(T.starsPicture('house'), ['To domek!']);
   assert.deepEqual(T.starsPicture('rocket'), ['To rakieta!']);
   assert.deepEqual(T.starsPicture('dipper'), ['To Wielki Wóz! Wielki Wóz to siedem gwiazd.']);
-  assert.deepEqual(T.starsDone(), ['Brawo! Gwiazdy świecą obrazki!']);
+  assert.deepEqual(T.starsDone(), ['Brawo! Ułożyłaś obrazki z gwiazd!']);
   assert.equal(HOME_TASKS.stars, 'Poszukajcie wieczorem gwiazd na niebie!');
   assert.deepEqual(T.starsAsk([5, 4], 'down'), ['Pięć!', 'Cztery!', 'A dalej?']);
   assert.deepEqual(T.starsAsk([2, 4, 6, 8], 'twos'), ['Cztery!', 'Sześć!', 'Osiem!', 'A dalej?'], 'the last three numbers');
@@ -104,7 +104,7 @@ test('Star Pictures lines are full Polish sentences and every one reaches record
     'Jeden, a co dalej?', 'Jeden, dwa, a co dalej?', 'Jeden, dwa, trzy, a co dalej?',
     'Teraz numer trzy!',
     'To góra!', 'To latawiec!', 'To domek!', 'To rakieta!',
-    'To Wielki Wóz! Wielki Wóz to siedem gwiazd.', 'Brawo! Gwiazdy świecą obrazki!',
+    'To Wielki Wóz! Wielki Wóz to siedem gwiazd.', 'Brawo! Ułożyłaś obrazki z gwiazd!',
     'Poszukajcie wieczorem gwiazd na niebie!',
     'Liczymy od tyłu!', 'Liczymy co dwa!', 'Pięć!', 'Cztery!', 'Osiem!', 'A dalej?', 'Teraz numer osiem!',
   ]) assert.ok(recorded.includes(line), line);
