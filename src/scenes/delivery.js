@@ -9,18 +9,21 @@ import { WORDS, showLetter } from '../config.js';
 import { sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
-import { T } from '../lang/pl.js';
+import { T, letterRow } from '../lang/pl.js';
 import { Mission } from './mission.js';
 
 // "Pup Delivery" (Poczta): first sounds — which word starts with which letter. Chase delivers parcels.
-//   pictureSound  parcels with pictures: "Co zaczyna się na Ka?" → tap the cat           (letterSound)
+//   pictureSound  parcels with pictures: "Co zaczyna się na literę Ka?" → tap the cat      (letterSound)
 //   soundLetter   letter mailboxes + one parcel with a picture: "Do której skrzynki pójdzie kot?"
 //                 → drag the parcel into K (or tap the mailbox)                          (letterSound)
 // The pictures are the letters' picture words (config WORDS: K → kot 🐱, kaczka 🦆…), taking turns.
+// What a round says comes from one row of pl.js LETTER_ROWS, by how its mode names the letter.
 
 /** Letters that sound alike at the start of a word (kept apart unless GAME.md "similar" says otherwise). */
 const SEEN_MS = 700; // the parcel in its mailbox, in view, before the boxes go
 const SOUNDALIKE = { B: 'P', P: 'B', D: 'T', T: 'D', G: 'K', K: 'G', S: 'Z', Z: 'S', W: 'F', F: 'W', M: 'N', N: 'M' };
+/** The row of pl.js LETTER_ROWS each mode speaks from: how it names the letter. */
+const ROW_OF_MODE = { pictureSound: 'name', soundLetter: 'written' };
 
 const pictureCache = new Map();
 /** A picture (emoji) on a rounded card. */
@@ -112,7 +115,7 @@ export class DeliveryMission extends Mission {
     return this.L.mode === 'soundLetter' ? this.boxRound(r) : this.pictureRound(r);
   }
 
-  // ---------- "Co zaczyna się na Ka?": tap the picture ----------
+  // ---------- "Co zaczyna się na literę Ka?": tap the picture ----------
   pictureRound(r) {
     return new Promise((resolve) => {
       const pool = [...this.L.pool].filter((l) => WORDS[l]);
@@ -122,6 +125,7 @@ export class DeliveryMission extends Mission {
       const opts = shuffle([target, ...this.others(target, pool, n - 1)]);
       const pics = Object.fromEntries(opts.map((l) => [l, this.wordFor(l)]));
       const said = pics[target][0];
+      const row = letterRow(ROW_OF_MODE[this.L.mode], target);
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.2 : 3.8;
       let solved = false, lastWrong = null;
@@ -146,7 +150,7 @@ export class DeliveryMission extends Mission {
             sfx.good();
             this.success(p.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
             parcels.filter((x) => x !== p && x.parent).forEach((x) => this.shrinkAway(x, 400));
-            this.talk = this.say([this.praise(), ...T.letterLike(l, said)]); // "Ka jak kot!", while Chase takes the parcel
+            this.talk = this.say(row.praise(l, said)); // "Tak! Kot!", while Chase takes the parcel
             await this.deliver(p);
             resolve();
           } else {
@@ -159,12 +163,12 @@ export class DeliveryMission extends Mission {
       const right = parcels.find((p) => p.userData.letter === target);
       ui.bubble({ big: showLetter(target), pic: '📦', onTap: () => this.replay() });
       this.question('letterSound', target, {
-        short: T.startsWith(target),
-        hint: () => T.letterLike(target, said), // "Ka jak kot!"
+        short: row.ask(target, said),
+        hint: () => row.hint(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : parcels.find((p) => p !== right && p.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      this.askAfter(Promise.all([wait(500), this.talk]), r === 0 ? [...T.deliveryStart(), ...T.startsWith(target)] : T.startsWith(target));
+      this.askAfter(Promise.all([wait(500), this.talk]), r === 0 ? [...T.deliveryStart(), ...row.ask(target, said)] : row.ask(target, said));
     });
   }
 
@@ -177,6 +181,7 @@ export class DeliveryMission extends Mission {
       const n = Math.min(this.L.choices, pool.length);
       const letters = shuffle([target, ...this.others(target, pool, n - 1)]);
       const [said, pic] = this.wordFor(target);
+      const row = letterRow(ROW_OF_MODE[this.L.mode], target);
       const colors = shuffle(TILE_COLORS);
       const gap = n > 2 ? 3.4 : 4;
       let solved = false, lastWrong = null;
@@ -261,7 +266,7 @@ export class DeliveryMission extends Mission {
           sfx.ding();
           hop(b, 0.35);
           this.success(to.clone().add(new THREE.Vector3(0, 0.6, 0)), { big: true });
-          this.talk = this.say([this.praise(), ...T.letterLike(target, said)]);
+          this.talk = this.say(row.praise(target, said));
           await wait(SEEN_MS);
           if (!this.alive) return;
           await Promise.all(boxes.map((x) => this.shrinkAway(x, 350)));
@@ -278,12 +283,12 @@ export class DeliveryMission extends Mission {
       const right = boxes.find((b) => b.userData.letter === target);
       ui.bubble({ big: '', pic, onTap: () => this.replay() });
       this.question('letterSound', target, {
-        short: T.whichBox(said),
-        hint: () => T.letterLike(target, said), // "Ka jak kot!"
+        short: row.ask(target, said),
+        hint: () => row.hint(target, said), // "Ka jak kot!"
         simplify: () => this.removeOption(lastWrong?.parent ? lastWrong : boxes.find((b) => b !== right && b.parent)),
         reveal: () => this.hint(right, () => solved),
       });
-      this.askAfter(Promise.all([wait(700 + n * 140), this.talk]), r === 0 ? [...T.deliveryStart(), ...T.whichBox(said)] : T.whichBox(said));
+      this.askAfter(Promise.all([wait(700 + n * 140), this.talk]), r === 0 ? [...T.deliveryStart(), ...row.ask(target, said)] : row.ask(target, said));
     });
   }
 

@@ -901,12 +901,21 @@ The post office: Chase delivers parcels. First sounds: which word starts with wh
 
 - **pool** — which letters (their picture words come from `WORDS`, taking turns: K → kot 🐱, then kaczka 🦆)
 - **choices** — how many parcels / mailboxes (2–4)
-- **mode** — `pictureSound`: parcels with pictures, "Co zaczyna się na Ka?" → tap the cat ·
+- **mode** — `pictureSound`: parcels with pictures, asked by the letter's name, "Co zaczyna się na literę Ka?" →
+  tap the cat. The letter is in the bubble too, and the praise is the word she found, "Tak! Kot!" ·
   `soundLetter`: letter mailboxes and one parcel with a picture, "Do której skrzynki pójdzie kot?" →
   drag the parcel into K (or tap the mailbox). The parcel is posted when its middle is over a mailbox; a small
   lift, or a drop anywhere else, floats it back and posts nothing. The parcel waits well in front of the
-  mailboxes, so a small lift is nowhere near one
+  mailboxes, so a small lift is nowhere near one. The letter is written on the mailbox, and the praise names it,
+  "Brawo! Ka jak kot!"
 - **similar** — optional: `yes` lets sound-alikes (P/B, T/D, K/G, S/Z, W/F, M/N) be choices together
+
+Each mode names the letter in one way, and the question, the clue and the praise of a round all come from the
+same row of one table (`LETTER_ROWS` in `src/lang/pl.js`), so a letter's name never meets its sound. `pictureSound`
+speaks by the letter's name and `soundLetter` by the written letter and its name; both record the skill
+`letterSound` (the first sound of a word), which is what the round tests. A third row asks by the held sound ("Co
+zaczyna się na ssss?", clue "Ssss… jak samolot!"); no level uses it yet. It exists only for the letters that can be held
+(`AEFHILMNORSUWZ`), and for any other letter the round asks by name. A gentler run of any level asks by name.
 
 ### 🧺 Pup Picnic · `picnic`
 

@@ -7,6 +7,7 @@ import { stripeRows, patternUnit } from '../levels/jupiter.js';
 import { THINGS as SHALLOWS_THINGS } from '../levels/shallows.js';
 import { BOATS } from '../levels/port.js';
 import { numerals, STAR_COUNTS } from '../levels/stars.js';
+import { pick } from '../util.js';
 
 const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'siedem', 'osiem', 'dziewięć', 'dziesięć'];
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
@@ -383,8 +384,10 @@ export const T = {
   oneMore: () => [`Jeszcze tylko jedno, ${voc}!`],
   // Pup Delivery: first sounds
   deliveryStart: () => [`Poczta! ${pup} roznosi paczki!`],
-  startsWith: (l) => [`Co zaczyna się na ${L(l)}?`],
+  startsWith: (l) => [`Co zaczyna się na literę ${L(l)}?`],
+  startsWithSound: (l) => [`Co zaczyna się na ${ph(l)}?`],
   whichBox: (w) => [`Do której skrzynki pójdzie ${w}?`], // w: one of the letter's picture words
+  foundWord: (w) => [`${cap(w)}!`], // the picture she found, said back after "Tak!"
   // Pup Picnic: more, less, the same
   picnicStart: () => [`Piknik! ${pup} jest głodny!`],
   askMore: () => ['Gdzie jest więcej smakołyków?'],
@@ -581,6 +584,20 @@ export const T = {
 };
 
 /**
+ * What a Pup Delivery round says, by how it names the letter. A round's question, clue and praise come from one row, so
+ * a letter's name never meets its sound. `name`: asked by the letter's name, praised with the picture's word.
+ * `sound`: asked by the held sound (letterRow gives letters that have none the `name` row). `written`: asked by the
+ * picture's word, the letter is written on the mailbox and named as the parcel is posted.
+ * Each line takes the round's letter and the picture's word.
+ */
+export const LETTER_ROWS = {
+  name: { ask: (l) => T.startsWith(l), hint: (l, w) => T.letterLike(l, w), praise: (l, w) => [...T.yes(), ...T.foundWord(w)] },
+  sound: { ask: (l) => T.startsWithSound(l), hint: (l, w) => T.soundLike(l, w), praise: (l, w) => [...T.yes(), ...T.foundWord(w)] },
+  written: { ask: (l, w) => T.whichBox(w), hint: (l, w) => T.letterLike(l, w), praise: (l, w) => [pick(PRAISE), ...T.letterLike(l, w)] },
+};
+export const letterRow = (kind, l) => LETTER_ROWS[kind === 'sound' && !PHON[l.toUpperCase()] ? 'name' : kind];
+
+/**
  * Every segment the game can say, for the clip generator. Derived from the level data (GAME.md),
  * so adding words, letters, floors or levels there automatically adds what needs recording.
  */
@@ -612,8 +629,10 @@ export function allSegments(levels, allLetters) {
   // letter sounds, for Kitty Park levels that ask "Która literka robi: mmm?"
   const sounds = new Set(levels.letters.filter((l) => l.ask === 'sound').flatMap((l) => [...l.pool]));
   sounds.forEach((l) => { add(T.whichSound(l)); add(T.soundIs(l)); wordChoices(l).forEach(([w]) => add(T.soundLike(l, w))); });
-  // Pup Delivery: every letter its levels can ask
-  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => { add(T.startsWith(l)); (WORDS[l] || []).forEach(([w]) => { add(T.whichBox(w)); add(T.letterLike(l, w)); }); });
+  // Pup Delivery: every letter its levels can ask, by name (a gentler run asks any level that way) and at the mailboxes
+  new Set((levels.delivery || []).flatMap((l) => [...l.pool])).forEach((l) => (WORDS[l] || []).forEach(([w]) => {
+    [LETTER_ROWS.name, LETTER_ROWS.written].forEach((row) => { add(row.ask(l, w)); add(row.hint(l, w)); add(row.praise(l, w)); });
+  }));
   // Name Train: each row's words, their syllables, and whose they are; letters only names use (Y) get the train's lines
   new Set(words.join('')).forEach((l) => { if (!letters.has(l)) { add(T.letter(l)); add(T.findLetter(l)); add(T.spellNext(l)); } });
   levels.name.forEach((row) => row.words.forEach((w) => {
