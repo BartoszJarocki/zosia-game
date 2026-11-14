@@ -333,6 +333,8 @@ class LetterTrain extends Mission {
     });
   }
 
+  /** MAMA, TATA, a family name: the heart, as tools/playtest/word-pictures.mjs calls it. */
+  heartFloats() { floatHeart(this); }
   /** KOT: a kitten pops up on the last wagon and rides off with the train. */
   kittenRides() {
     const k = makeKitten();
