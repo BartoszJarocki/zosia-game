@@ -48,6 +48,10 @@ row changes the game and adding a row adds a level. See [Adding or changing leve
      the praise is still being said.
    - **leaving:** the house button takes her home only when held for a moment (a ring fills round it), in a
      mission and on the space and sea maps, so a stray tap does not end a trip.
+   - **the grown-ups' buttons** (the badge shelf on the island, the paw on the space and sea maps) open the
+     grown-ups' page only when held for 3 seconds. The same ring fills round them while they are held, and a
+     short tap opens nothing. Nothing is written on her screen. The buttons are labelled "Dla rodzica,
+     przytrzymaj 3 sekundy" for a grown-up's screen reader.
 4. **Trips** — the first rocket (or boat) trip of a session shows the whole launch: helmets (life jackets),
    boarding, the countdown, then START (the horn). A later trip in the same session is a short drive, the crew
    already aboard, START at once, and a short lift-off: about 6 s from the tap on the island to the map. A flight
@@ -984,7 +988,7 @@ the island in `src/scenes/hub.js`.
 [Starting levels](#starting-levels); afterwards the grown-ups' page sets it), `goodRunsPerLevel`, help timings (`assistSeconds`),
 session length (`session`), picture words for letters, voice and graphics quality. Spoken lines live in `src/lang/pl.js`.
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
-(e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds.
+(e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds, while a ring fills round it.
 The page's title shows which version is running (the same small label as at the bottom right of the start screen).
 It counts every question she solves, apart: right first time, after an error, or after help (a clue or the answer
 shown; hearing the question again is not help). Only an answer a guess could miss moves mastery; one it could not

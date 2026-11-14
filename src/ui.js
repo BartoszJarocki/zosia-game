@@ -71,13 +71,20 @@ function el(html) {
 const press = (node, fn) => node.addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.pop(); fn(); });
 const later = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** The home ring: a circle round the button that fills while it is held. */
+/** The ring that fills round a button while it is held. */
 const RING = '<svg class="hold-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg>';
+/** The same ring for the badge shelf, a pill: it is drawn to the shelf's size each time (see fitPill). */
+const PILL_RING = '<svg class="hold-ring pill" aria-hidden="true"><rect/></svg>';
+/** The grown-ups' buttons are held, not tapped, so a child's tap opens nothing. Only the label is for adults. */
+const PARENT_HOLD = { ms: 3000, label: 'Dla rodzica, przytrzymaj 3 sekundy' };
+
 /**
- * Hold to leave: the ring fills in ms, then fn runs. Letting go (or sliding off) earlier does nothing, so a
- * stray tap near the speech bubble never ends the mission, and a stray tap on a map never ends the trip.
+ * Hold to leave: the ring fills in ms (the CSS reads it from --hold), then fn runs. Letting go (or sliding off)
+ * earlier does nothing, so a stray tap near the speech bubble never ends the mission, and a stray tap on a map
+ * never ends the trip.
  */
 function holdToLeave(btn, fn, ms = 800) {
+  btn.style.setProperty('--hold', `${ms}ms`);
   let t = null;
   const stop = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
   btn.addEventListener('pointerdown', (e) => {
@@ -87,6 +94,19 @@ function holdToLeave(btn, fn, ms = 800) {
     t = setTimeout(() => { stop(); sfx.pop(); fn(); }, ms);
   });
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, stop);
+}
+
+/** Sizes a pill ring to the shelf it surrounds, and tells the CSS how long its outline is. */
+function fitPill(ring) {
+  const { width, height } = ring.getBoundingClientRect();
+  const w = width - 7, h = height - 7, r = Math.min(27.5, w / 2, h / 2); // (7 is the stroke; 27.5 follows the shelf's rounded corners)
+  const rect = ring.querySelector('rect');
+  rect.style.transition = 'none'; // (a new outline must not animate, or the ring would start from the old one)
+  ring.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  for (const [name, value] of Object.entries({ x: 3.5, y: 3.5, width: w, height: h, rx: r })) rect.setAttribute(name, value);
+  ring.style.setProperty('--ring', 2 * (w + h - 4 * r) + 2 * Math.PI * r);
+  void rect.getBoundingClientRect();
+  rect.style.transition = '';
 }
 
 export function clear() { ui.innerHTML = ''; }
@@ -115,32 +135,33 @@ export function showStart(onGo) {
 
 export function hubHud() {
   clear();
-  const b = badges.get();
-  const shelf = el(`<div class="shelf"></div>`);
-  for (const { kind, count, badge } of shelfItems(b)) {
+  const held = shelfItems(badges.get());
+  const shelf = el(`<div class="shelf${held.length ? '' : ' bare'}" role="button" aria-label="${PARENT_HOLD.label}" title="${PARENT_HOLD.label}"></div>`);
+  for (const { kind, count, badge } of held) {
     shelf.append(el(`<div class="shelf-item">${badgeSVG(kind, badge)}${count > 1 ? `<span>${count}</span>` : ''}</div>`));
   }
   // a full shelf overlaps its badges a little instead of growing over the Lookout (each count stays on top)
   const items = [...shelf.children];
   shelf.style.setProperty('--n', items.length);
   items.forEach((it, i) => { it.style.zIndex = items.length - i; });
+  const ring = el(PILL_RING);
+  shelf.append(ring);
   ui.append(shelf);
   // grown-ups: press and hold the shelf for 3 seconds to open their page (a child's tap does nothing)
-  let t = null;
-  shelf.addEventListener('pointerdown', () => { clearTimeout(t); t = setTimeout(() => onParent?.(), 3000); });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) shelf.addEventListener(ev, () => clearTimeout(t));
+  shelf.addEventListener('pointerdown', () => fitPill(ring));
+  holdToLeave(shelf, () => onParent?.(), PARENT_HOLD.ms);
 }
 
 export function spaceHud({ onHome, onBack, onTelescope, visiting = false, suggested = false, backIcon = '🚀' }) {
   clear();
   const hud = el(`<div class="space-hud">
     <div class="topbar"><button class="round-btn space-home hold" aria-label="Do domu (przytrzymaj)">${ICON.home}${RING}</button>
-    <button class="round-btn space-parent" aria-label="Dla rodzica, przytrzymaj">${ICON.paw()}</button></div>
+    <button class="round-btn space-parent hold" aria-label="${PARENT_HOLD.label}" title="${PARENT_HOLD.label}">${ICON.paw()}${RING}</button></div>
     ${visiting ? `<button class="round-btn space-back" aria-label="Wróć do mapy">${backIcon}</button>`
       : onTelescope ? `<button class="round-btn space-telescope${suggested ? ' suggested' : ''}" aria-label="Teleskop">${ICON.telescope}</button>` : ''}
   </div>`);
   holdToLeave(hud.querySelector('.space-home'), onHome); // (as in a mission: a stray tap does not end the trip)
-  holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), 3000);
+  holdToLeave(hud.querySelector('.space-parent'), () => onParent?.(), PARENT_HOLD.ms);
   if (visiting) press(hud.querySelector('.space-back'), onBack);
   else if (onTelescope) press(hud.querySelector('.space-telescope'), onTelescope);
   ui.append(hud);

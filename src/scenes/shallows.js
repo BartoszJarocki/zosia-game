@@ -249,7 +249,7 @@ export function makeThing(id, hitMat) {
     add(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 24), mat('#fbbf24', { metalness: 0.55, roughness: 0.25, emissive: '#f59e0b', emissiveIntensity: 0.18 }), { y: 0.42, rx: Math.PI / 2 });
     add(new THREE.TorusGeometry(0.35, 0.03, 8, 24), mat('#fde68a', { metalness: 0.4, roughness: 0.3 }), { y: 0.42, z: 0.06 });
   } else {
-    add(new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8), mat('#cbd5e1', { metalness: 0.45, roughness: 0.3 }), { x: 0.25, y: 0.55, rz: 1 });
+    add(new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8), mat('#cbd5e1', { metalness: 0.45, roughness: 0.3 }), { x: 0.12, y: 0.5, rz: 0.5 - Math.PI / 2 });
     add(new THREE.SphereGeometry(0.28, 16, 10), mat('#cbd5e1', { metalness: 0.45, roughness: 0.3 }), { x: -0.28, y: 0.28, s: [1, 0.65, 0.7], rz: 0.5 });
   }
 
