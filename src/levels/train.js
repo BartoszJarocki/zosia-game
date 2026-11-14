@@ -65,3 +65,40 @@ export function whoseOrder(whose, { name, rounds, rng = Math.random }) {
 export function whoseTrains(words, asked, others, rng = Math.random) {
   return shuffle([asked, ...shuffle(words.filter((w) => w !== asked), rng).slice(0, others)], rng);
 }
+
+/** The syllable train's modes: the word shown in pieces, one piece left on the train, the word said with its picture. */
+export const SYLLABLE_MODES = ['match', 'hear', 'build'];
+
+/**
+ * One syllable round's wagons. A wagon carries a syllable and sits in a slot of the train, or waits on the grass
+ * (slot null). `leave` slots arrive filled; the word's other syllables wait, with `extras` wagons whose syllable the
+ * word does not have (from `pool`), shuffled.
+ */
+export function syllableWagons(syllables, { leave = 0, extras = 0, pool = [], rng = Math.random } = {}) {
+  const loaded = shuffle(syllables.map((_, i) => i), rng).slice(0, leave);
+  const waiting = syllables.filter((_, i) => !loaded.includes(i));
+  const others = shuffle([...new Set(pool)].filter((s) => !syllables.includes(s)), rng).slice(0, extras);
+  return [...loaded.map((slot) => ({ syllable: syllables[slot], slot })), ...shuffle([...waiting, ...others], rng).map((syllable) => ({ syllable, slot: null }))];
+}
+
+/** The slot to fill next, left to right; -1 when the word is built. */
+export const nextSlot = (syllables, wagons) => syllables.findIndex((_, i) => !wagons.some((w) => w.slot === i));
+
+/** A waiting wagon fits the next slot when it carries that slot's syllable: the text decides, so either MA fills either slot. */
+const fits = (syllables, wagons, wagon) => wagon.slot === null && wagon.syllable === syllables[nextSlot(syllables, wagons)];
+
+/** Put a waiting wagon into the next slot when it fits. Returns the slot, or -1 with nothing changed. */
+export function couple(syllables, wagons, wagon) {
+  if (!fits(syllables, wagons, wagon)) return -1;
+  wagon.slot = nextSlot(syllables, wagons);
+  return wagon.slot;
+}
+
+/**
+ * The Name Train one notch easier, after a rough run. A syllable level shows the word in pieces with one extra wagon at
+ * most: with none, every wagon would be right and the run would win a level by itself.
+ */
+export function gentler(s) {
+  if (SYLLABLE_MODES.includes(s.mode)) return { ...s, mode: 'match', extras: Math.min(s.extras, 1), similar: false };
+  return { ...s, ...(s.mode === 'missing' ? { gaps: Math.max(1, (s.gaps ?? 2) - 1), extras: 1 } : { mode: s.mode === 'whose' ? 'whose' : 'ghost', extras: 0 }), similar: false }; // (whose: two trains)
+}

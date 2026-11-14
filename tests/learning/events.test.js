@@ -35,7 +35,7 @@ test('latency is never negative', () => {
 });
 
 test('the skill and error vocabularies match the roadmap', () => {
-  assert.deepEqual([...SKILLS], ['letterVisual', 'letterAudio', 'letterSound', 'numeral', 'quantity', 'counting', 'sequence', 'comparison', 'shape', 'pattern', 'sorting', 'wordVisual', 'space', 'position', 'syllables']);
+  assert.deepEqual([...SKILLS], ['letterVisual', 'letterAudio', 'letterSound', 'numeral', 'quantity', 'counting', 'sequence', 'comparison', 'shape', 'pattern', 'sorting', 'wordVisual', 'space', 'position', 'syllables', 'syllableVisual', 'syllableAudio', 'syllableBuild']);
   assert.deepEqual([...ERROR_TYPES], ['wrongChoice', 'timeout', 'missTap', 'overTap']);
 });
 

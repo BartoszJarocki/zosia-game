@@ -263,7 +263,7 @@ export function showParentView({ onClose }) {
       <div class="pv-words">${pictureWords()}</div></section>
     ${met('space') ? `<section><h2>Space</h2>${cards('space', [], (r) => itemLabel('space', r.item))}</section>` : ''}
     <section><h2>Where things are <small class="pv-build">The Reef</small></h2>${cards('position', POSITION_ITEMS, (r) => itemLabel('position', r.item))}</section>
-    <section><h2>Syllables <small class="pv-build">The Port</small></h2>${cards('syllables', SYLLABLE_ITEMS, (r) => itemLabel('syllables', r.item))}</section>
+    <section><h2>Syllables <small class="pv-build">The Port, Name Train</small></h2>${cards('syllables', SYLLABLE_ITEMS, (r) => itemLabel('syllables', r.item))}</section>
     <section><h2>Numbers</h2>${cards('numbers', nums)}</section>
     <section><h2>More, less, the same <small class="pv-build">Pup Picnic, Jupiter</small></h2>${cards('compare', COMPARE_ITEMS, (r) => itemLabel('comparison', r.item))}</section>
     ${met('names') ? `<section><h2>Names <small class="pv-build">Name Train</small></h2>${cards('names', [], (r) => r.item)}</section>` : ''}

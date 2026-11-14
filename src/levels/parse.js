@@ -9,6 +9,7 @@ import { parseNeeds } from './gate.js';
 import { SPACE_PLACES, PLANETS, FEATURES, distractors, itemsFor } from './telescope.js';
 import { BOATS } from './port.js';
 import { ORDERS } from './stars.js';
+import { SYLLABLE_MODES } from './train.js';
 
 /** Letters whose sound can be held and heard on its own (Kitty Park "sound" levels): aaa, mmm, sss… */
 export const SOUNDABLE = 'AEFHILMNORSUWZ';
@@ -44,7 +45,7 @@ export const SCHEMA = {
   },
   name: {
     words: { type: 'words', minLen: 2, maxLen: 8, extra: 'Y' }, // (Y only in names, e.g. RYSIEK: shown and named, never asked elsewhere)
-    mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight', 'whose'], optional: true },
+    mode: { type: 'enum', values: ['ghost', 'word', 'missing', 'highlight', 'whose', ...SYLLABLE_MODES], optional: true },
     gaps: { type: 'int', min: 1, max: 3, optional: true, default: 2 }, // (missing: how many letters are missing)
     ghost: { type: 'bool', optional: true },                      // (older tables: ghost yes = mode ghost)
     bubble: { type: 'enum', values: ['letter', 'word'], optional: true }, // (older tables: word = mode highlight)
@@ -421,6 +422,14 @@ function crossCheck(kind, s, where, errors, { nameWords = {} } = {}) {
     if (unknown.length) errors.push(`${where}: add ${unknown.join(', ')} to the "Name Train words" table (syllables, and whose it is for names)`);
     s.syllables = Object.fromEntries(words.filter((w) => nameWords[w]).map((w) => [w, nameWords[w].syllables]));
     s.whose = Object.fromEntries(words.filter((w) => nameWords[w]?.whose).map((w) => [w, nameWords[w].whose]));
+    if (SYLLABLE_MODES.includes(s.mode)) {
+      const parts = (w) => nameWords[w]?.syllables || [];
+      const one = words.filter((w) => nameWords[w] && parts(w).length < 2);
+      if (one.length) errors.push(`${where}: a syllable level builds words of two syllables or more (${one.join(', ')})`);
+      const all = new Set(words.flatMap(parts));
+      const thin = words.filter((w) => [...all].filter((x) => !parts(w).includes(x)).length < s.extras);
+      if (thin.length) errors.push(`${where}: ${s.extras} extra block(s) need that many syllables from the level's other words (too few for ${thin.join(', ')})`);
+    }
     if (s.mode === 'whose' && Object.keys(s.whose).length < 3) errors.push(`${where}: "whose" asks for three different trains, so it needs at least 3 words with a "whose" form (got ${Object.keys(s.whose).join(', ') || 'none'})`);
   }
   if (kind === 'letters') {

@@ -253,6 +253,22 @@ whose it is ("To pociąg mamy!", or its word for KOT and DOM) and the question c
 in the bubble so she can match it, then a wrong train drives off, and last the right train's board pulses
 ("To pociąg Zosi!").
 
+Levels 10 to 12 are the syllable train: she builds MAMA, TATA and LALA (one a round, all three in a run) from whole
+syllables. The train has two wagons; syllable blocks (MA, TA, LA) stand on the grass, and a tap on one says its
+syllable ("Ma!", never its letters). The right block hops onto the next empty wagon, left to right, and only its text
+counts, so either MA fills either wagon. A wrong block hops to the empty wagon, says its syllable, shakes its head and
+hops back ("Ta! Nie, to nie ten."): it swaps out, and the block already on the train stays. Both wagons full: the last block's syllable, then
+the word ("Ma! Mama!"), the bubble shows who or what it is (👩, 👨, 🪆) and a heart floats up ("Buziaczek dla mamy!"); the next
+word's blocks pop up. The help steps come from the review and are a proposal to try with her: `match` shows the whole
+word in two pieces, `hear` leaves one syllable on the train and asks for the other by its sound, `build` says the word
+and shows its picture with nothing written. In `hear` and `build` a word card stands by the train, the picture over two
+empty boxes: a tap on it brings back the example (the syllables in the boxes, on the empty wagons and in the bubble,
+"Popatrz na słowo!") without starting anything again, and counts as help. The grown-ups' page lists the three apart for
+each syllable: matched to the word shown, found by its sound, built into a word. A syllable she could copy from the screen
+(the piece left on the train, her own first MA, the example) is counted as solved and leaves mastery as it is. These rows
+sit above every starting level, so a save meets them from wherever it is; Developer tools on the grown-ups' page can set
+level 10 to try them at once.
+
 | Level | words | mode | gaps | extras | similar |
 |---|---|---|---|---|---|
 | 1 | {name} | ghost | — | 1 | no |
@@ -264,6 +280,9 @@ in the bubble so she can match it, then a wrong train drives off, and last the r
 | 7 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 2 | no |
 | 8 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | missing | 2 | 3 | yes |
 | 9 | {name}, MAMA, TATA, KOT, DOM, KASIA, BARTEK, RYSIEK, JUREK, BERNADKA, MIA, LAURA, JAGODA | whose | — | — | — |
+| 10 | MAMA, TATA, LALA | match | — | 1 | no |
+| 11 | MAMA, TATA, LALA | hear | — | 2 | no |
+| 12 | MAMA, TATA, LALA | build | — | 2 | no |
 
 - **words** — the words (2–8 letters, only letters from `ALL`; names may also use Y, "Igrek", which no other
   mission asks). Each run picks one: never the same twice in a row, and her own name about one run in three.
@@ -274,11 +293,17 @@ in the bubble so she can match it, then a wrong train drives off, and last the r
   `missing`: the train arrives loaded with a few letters missing (Z O _ I _) and the whole word in the bubble:
   which letters are missing? ·
   `whose`: three trains with name boards, "Który pociąg jest Zosi?" (three rounds; only words with a
-  "whose" form are asked, the others ride on the other trains)
+  "whose" form are asked, the others ride on the other trains) ·
+  `match`, `hear`, `build`: the syllable train (one round per word, words of two syllables or more). `match`: the word
+  in pieces in the bubble and faint on the wagons ("Ułóżmy słowo Mama! Znajdź Ma!") · `hear`: one syllable arrives on
+  the train, the other is said ("Pociąg wiezie słowo Mama. Dołóż Ma!") · `build`: the word is said with its picture,
+  nothing written ("Ułóżmy słowo Mama z kawałków!", then "Ma… i co dalej?"). A gentler run of these is `match` with one
+  extra block at most (with none, every block would be right)
 - **gaps** — for `missing`: how many letters are missing (1–3, default 2); a word of 7 or 8 letters gets one more
   (up to 3), and a word always keeps at least one letter
 - **extras** — extra blocks that are not in the word (0–3) and never look like any of its letters (no J next
-  to the I of ZOSIA); with `missing` they are the other choices
+  to the I of ZOSIA); with `missing` they are the other choices; on the syllable train they are syllables of the
+  level's other words (TA and LA next to MAMA)
 - **similar** — `yes`: the extras are lookalikes of the word's letters on purpose (E/F, M/W…)
 
 #### Name Train words
@@ -291,6 +316,7 @@ How the voice claps each word in syllables at the end (Polish reading starts fro
 | ZOSIA | ZO-SIA | Zosi |
 | MAMA | MA-MA | mamy |
 | TATA | TA-TA | taty |
+| LALA | LA-LA | lali |
 | KOT | KOT | — |
 | DOM | DOM | — |
 | KASIA | KA-SIA | Kasi |

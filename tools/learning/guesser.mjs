@@ -26,6 +26,7 @@ import { categorize } from '../../src/learning/scheduler.js';
 import { parseGame } from '../../src/levels/parse.js';
 import { scoreRun, GOOD_RUN, LEAP_RUN } from '../../src/progress/levelup.js';
 import { PLACES } from '../../src/places.js';
+import { SYLLABLE_MODES } from '../../src/levels/train.js';
 
 const ARGS = process.argv.slice(2);
 const RUNS = Number(ARGS.find((a) => /^\d+$/.test(a)) || 2000);
@@ -125,6 +126,10 @@ const QUESTIONS = {
   balloons: popping,
   name: (L, rng) => {
     if (L.mode === 'whose') return times(3, ask(3));
+    if (SYLLABLE_MODES.includes(L.mode)) return L.words.flatMap((w) => { // every word, one question per empty wagon; a piece on the train can be copied
+      const parts = L.syllables[w], leave = L.mode === 'hear' ? 1 : 0, open = parts.slice(leave);
+      return open.map((s, k) => ask((open.length - k + L.extras) / open.slice(k).filter((x) => x === s).length, { onScreen: L.mode !== 'match' && parts.slice(0, leave + k).includes(s) }));
+    });
     const word = L.words[Math.floor(rng() * L.words.length)];
     if (L.mode === 'missing') return Array.from({ length: L.gaps }, (_, r) => ask((L.gaps - r + L.extras) / (L.gaps - r)));
     return Array.from({ length: size(word) }, (_, r) => ask(size(word) - r + L.extras));

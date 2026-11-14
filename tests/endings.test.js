@@ -251,5 +251,5 @@ test('every kind of Name Train leaves from the house and from its ending', async
     ask.onAgain();
     assert.deepEqual(calls, ['home', 'start name'], `level ${level} (${mission.constructor.name})`);
   }
-  assert.deepEqual([...kinds].sort(), ['LetterTrain', 'WhoseTrain'], 'both trains were driven');
+  assert.deepEqual([...kinds].sort(), ['LetterTrain', 'SyllableTrain', 'WhoseTrain'], 'every train was driven');
 });

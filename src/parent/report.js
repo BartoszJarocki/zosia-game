@@ -28,18 +28,20 @@ export const POSITION_ITEMS = ['na', 'pod', 'w', 'obok'];
 /** The Port: the boat names she splits into syllables, and at level 3 the count she finds a name for (items: 1, 2, 3). */
 export const SYLLABLE_SKILLS = [['syllables', 'splits into syllables']];
 export const SYLLABLE_ITEMS = BOATS.map((b) => b.word);
+/** The Name Train's syllable train, by task kind (items: the syllables, MA). */
+export const SYLLABLE_TRAIN_SKILLS = [['syllableVisual', 'matches it to the word shown'], ['syllableAudio', 'finds it by its sound'], ['syllableBuild', 'builds a word with it']];
 /** The Garage: shapes, what comes next in a row, sorting by colour or size (items: what was asked). */
 export const GARAGE_SKILLS = [['shape', 'shape'], ['pattern', 'pattern'], ['sorting', 'sorting']];
 
 /** The page's sections and the skills each lists. The planets' order (`sequence` items named `space:…`) is listed in Space. */
-const SECTIONS = { letters: LETTER_SKILLS, space: SPACE_SKILLS, position: POSITION_SKILLS, syllables: SYLLABLE_SKILLS, numbers: NUMBER_SKILLS, compare: COMPARE_SKILLS, names: WORD_SKILLS, garage: GARAGE_SKILLS };
+const SECTIONS = { letters: LETTER_SKILLS, space: SPACE_SKILLS, position: POSITION_SKILLS, syllables: [...SYLLABLE_SKILLS, ...SYLLABLE_TRAIN_SKILLS], numbers: NUMBER_SKILLS, compare: COMPARE_SKILLS, names: WORD_SKILLS, garage: GARAGE_SKILLS };
 const HOME = Object.fromEntries(Object.entries(SECTIONS).flatMap(([key, skills]) => skills.map(([skill]) => [skill, key])));
 const ROWS = { ...SECTIONS, space: [...SPACE_SKILLS, ['sequence', 'order']] };
 /** The section that lists this skill + item. */
 export const sectionOf = (skill, item) => (String(item).startsWith('space:') ? 'space' : HOME[skill]);
 
 const COMPARE_WORDS = { more: 'more', less: 'less', same: 'the same', bigger: 'the bigger planet', smaller: 'the smaller planet' };
-const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS, ...SPACE_SKILLS, ...POSITION_SKILLS, ...SYLLABLE_SKILLS]);
+const LABEL = Object.fromEntries([...LETTER_SKILLS, ...NUMBER_SKILLS, ...COMPARE_SKILLS, ...WORD_SKILLS, ...GARAGE_SKILLS, ...SPACE_SKILLS, ...POSITION_SKILLS, ...SYLLABLE_SKILLS, ...SYLLABLE_TRAIN_SKILLS]);
 
 /** How an item reads for a grown-up: 4, B, "less (with numbers)", "after Mars", "which boat has 2 syllables". */
 export function itemLabel(skill, item) {

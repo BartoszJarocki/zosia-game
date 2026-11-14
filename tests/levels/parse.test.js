@@ -83,7 +83,7 @@ test('needs: a broken gate is explained', () => {
 
 test('Name Train: whose comes early, family names later, every word has syllables', () => {
   const { levels } = parseGame(md, { childName: 'Zosia' });
-  assert.deepEqual(levels.name.map((l) => l.mode), ['ghost', 'ghost', 'whose', 'highlight', 'word', 'word', 'missing', 'missing', 'whose']);
+  assert.deepEqual(levels.name.map((l) => l.mode), ['ghost', 'ghost', 'whose', 'highlight', 'word', 'word', 'missing', 'missing', 'whose', 'match', 'hear', 'build']);
   assert.equal(levels.name[6].gaps, 2);
   assert.deepEqual(levels.name[5].syllables.BERNADKA, ['BER', 'NAD', 'KA']);
   assert.deepEqual(levels.name[0].syllables, { ZOSIA: ['ZO', 'SIA'] });
