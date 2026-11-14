@@ -3,12 +3,14 @@
 //    perfect one (progress/levelup.js).
 //  - A rough run turns on "assist" next time, without ever taking stars away.
 //  - A mission she has never played starts at the level for her age (GAME.md "Starting levels").
+//  - A grown-up's target speed for Balloon Hill and Comet Catch ('auto' or 'slow'), saved beside her levels.
 //  - Skill mastery (precise): every learning event updates skills[skill][item] (see learning/mastery.js).
 // The saved shape and its upgrades live in progress/migrations.js.
 import { CONFIG } from './config.js';
 import { badges } from './ui.js';
 import { maxLevel, LEVELS, STARTS } from './levels/data.js';
 import { startLevel } from './levels/parse.js';
+import { TARGET_SPEED } from './levels/easier.js';
 import { meetsNeeds } from './levels/gate.js';
 import { migrate, placeForAge } from './progress/migrations.js';
 import { applyRun } from './progress/levelup.js';
@@ -79,6 +81,14 @@ export const startFor = (kind) => start(kind, state.age);
 /** An older age moves missions below their new start up to it; a younger one takes no stars away. */
 export function setAge(age) {
   placeForAge(state, age, start);
+  save();
+}
+
+/** How fast the targets move in Balloon Hill and Comet Catch, as a grown-up set it: 'auto' (the level's own speed) or 'slow' (half of it). A save without it, or with anything else, reads 'auto'. */
+export const getTargetSpeed = () => (Object.hasOwn(TARGET_SPEED, state.targetSpeed) ? state.targetSpeed : 'auto');
+export function setTargetSpeed(value) {
+  if (!Object.hasOwn(TARGET_SPEED, value)) return;
+  state.targetSpeed = value;
   save();
 }
 

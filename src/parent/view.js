@@ -1,11 +1,12 @@
 // The grown-ups' page: what she knows (from play), her sessions, and developer tools. Opened with #parent or a
 // 3-second press on the badge shelf; never shown during normal play. Anything that erases needs a long press.
-import { getSkills, getSessions, getVisited, getCountsFrom, levelFor, assistFor, getAge, setAge, startFor, dev as progressDev } from '../progress.js';
+import { getSkills, getSessions, getVisited, getCountsFrom, levelFor, assistFor, getAge, setAge, startFor, getTargetSpeed, setTargetSpeed, dev as progressDev } from '../progress.js';
 import { SKILLS } from '../learning/events.js';
 import { badges, MISSIONS } from '../ui.js';
 import * as ui from '../ui.js';
 import { CONFIG, showLetter, wordChoices, chosenWords, chooseWord } from '../config.js';
 import { LEVELS, ALL_LETTERS, MISSION_INFO, STARTS, maxLevel } from '../levels/data.js';
+import { TARGET_SPEED } from '../levels/easier.js';
 import { COMPARE_ITEMS, POSITION_ITEMS, SYLLABLE_ITEMS, FEW, sectionReports, overview, maxNumber, sessionStats, recentChanges, itemLabel, confusionLabel, neverAsked, missionStatus, solvedText, solvesHow } from './report.js';
 import { HOME_TASKS } from '../lang/pl.js';
 import { weekTaskKinds } from '../session/home-task.js';
@@ -20,6 +21,7 @@ const share = (n) => (n == null ? '–' : `${n}%`);
 const secs = (s) => (s == null ? '–' : `${s.toFixed(1)} s`);
 const label = (item) => (/^\d+$/.test(item) ? item : showLetter(item));
 const ageLabel = (age) => String(age).replace('.5', '½');
+const SPEED_LABEL = { auto: "Each level's own speed", slow: 'Half speed' };
 const SAVE_KEY = 'pup-patrol-progress';
 /** The missions that exist in GAME.md (a badge kind can be ready before its levels are). */
 const KINDS = () => Object.keys(MISSIONS).filter((k) => LEVELS[k]);
@@ -243,6 +245,10 @@ export function showParentView({ onClose }) {
         A badge is a run she finished. Each place below reads not started, started, or completed (it has a badge).</p>
       <p class="pv-never">A place she has not played yet starts at the level for her age. An older age moves the places below
         their new start up to it; a younger age takes no stars away. One place can be lowered in Developer tools.</p>
+      <div class="pv-age pv-pace"><b>Target speed</b><small class="pv-build">Balloon Hill, Comet Catch</small>${Object.keys(TARGET_SPEED).map((v) => `<button class="pv-chip${v === getTargetSpeed() ? ' on' : ''}" data-speed="${v}">${SPEED_LABEL[v]}</button>`).join('')}</div>
+      <p class="pv-never">Half speed slows the balloons and the comets to half of what each level sets. The letters she is asked
+        stay the same, so a level is not easier to read, only easier to tap. In gentle mode (after a hard run) these two
+        places use half speed instead of their usual gentler speed, so a run is never slowed twice.</p>
       <div class="pv-missions">${missionCards(got)}</div></section>
 
     <section class="pv-two">
@@ -282,6 +288,10 @@ export function showParentView({ onClose }) {
   page.querySelector('.pv-age').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-age]');
     if (b) { setAge(Number(b.dataset.age)); redraw(page.scrollTop); }
+  });
+  page.querySelector('.pv-pace').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-speed]');
+    if (b) { setTargetSpeed(b.dataset.speed); redraw(page.scrollTop); }
   });
   document.body.appendChild(page);
   return page;

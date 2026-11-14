@@ -233,7 +233,8 @@ lookalikes (6) or more balloons (7). New letters are shown first (2); from level
 - **targets** — how many balloons have the right letter (1–4) · **total** — balloons in the air (3–9)
 - **speed** — how fast they rise, a range (each lane of balloons picks a speed inside it). They rise in five
   lanes that never touch, up to just under the speech bubble (top left) and the top bar, then float away and
-  come back up from the bottom
+  come back up from the bottom. At half speed (see [Other settings](#other-settings)) every lane rises at half
+  the level's speed, and nothing else changes
 - **similar** — as in Kitty Park · **rounds** — how many letters to pop (aim for 30–45 seconds in all)
 
 ### 🚂 Name Train · `name`
@@ -730,9 +731,11 @@ new letters and more comets to catch with a little more speed (3), then lookalik
   The comets are spread evenly round that loop, and the ones with the asked letter are as far apart from each other
   as they can be, so one is always in reach while two or more are left. A comet is caught only while its whole
   letter is in view; outside that it flies several times faster, so the last one is back within about 6 seconds
+  (twice as long at half speed, which halves the speed of the whole loop: see [Other settings](#other-settings))
 - **similar** — as in Kitty Park · **rounds** — how many letters to catch (aim for 30–45 seconds in all)
 - **A gentler run** after a rough one has two fewer comets (never fewer than one wrong comet beside the right ones),
-  slower, no lookalikes, and the letter in the bubble
+  slower (0.7 of the level's speed, or half of it when the grown-ups chose half speed), no lookalikes, and the
+  letter in the bubble
 
 ### 💡 The Lighthouse · `lighthouse`
 
@@ -1016,6 +1019,12 @@ the island in `src/scenes/hub.js`.
 session length (`session`), picture words for letters, voice and graphics quality. Spoken lines live in `src/lang/pl.js`.
 Grown-ups can see what she knows — and use developer tools (levels, "next trip", reset) — at `#parent`
 (e.g. `https://…/#parent`) or by pressing and holding the badge shelf (top left of the island) for 3 seconds, while a ring fills round it.
+The page also sets the **target speed** of Balloon Hill and Comet Catch, the two places where she taps moving
+targets: `auto` (each level's own `speed`, as the table says) or half speed (half of it, whatever the level).
+It is saved with her progress, so it stays across levels and reloads, and it changes only how fast the targets
+move: the letters, how many are asked and every other column stay as the level has them. A gentler run's own
+slower speed is replaced by half speed, never taken on top of it, so a gentler run at half speed flies at half
+the level's speed, not at 0.35 of it. Nothing about it is shown or said on her screen.
 The page's title shows which version is running (the same small label as at the bottom right of the start screen).
 It counts every question she solves, apart: right first time, after an error, or after help (a clue or the answer
 shown; hearing the question again is not help). Only an answer a guess could miss moves mastery; one it could not
