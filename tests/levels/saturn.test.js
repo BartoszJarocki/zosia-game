@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { saturnPieces, saturnSlots, slotOf, KINDS, SCALE } from '../../src/levels/saturn.js';
+import { saturnPieces, saturnSlots, slotAtPoint, slotOf, KINDS, SCALE } from '../../src/levels/saturn.js';
 import { parseGame } from '../../src/levels/parse.js';
 import { EASIER } from '../../src/levels/easier.js';
 import { T, HOME_TASKS, allSegments } from '../../src/lang/pl.js';
@@ -124,4 +124,31 @@ test('Saturn lines are full Polish sentences and every one reaches recording', (
     'Brawo! Pierścienie Saturna są naprawione!', 'Zajrzyj z mamą do zamrażarki. Czy jest tam lód?',
     'Lód czy skała? Duży czy mały?', 'To duży kawałek lodu.', 'To mały kawałek lodu.', 'To duży kawałek skały.', 'To mały kawałek skały.',
   ]) assert.ok(recorded.includes(line), line);
+});
+
+const RADII = { ice: [2.9, 4.05], rock: [4.2, 5.65] };
+const bands = (sort) => saturnSlots(sort).map((slot) => ({ key: slot.key, radii: RADII[slot.kind], arc: slot.tap }));
+const around = (radius, angle) => [Math.cos(angle) * radius, -Math.sin(angle) * radius]; // (x to her right, z toward her)
+
+test('a point of the ring plane belongs to the ring whose band holds it, and to none in a gap or off the rings', () => {
+  const rings = bands('kind');
+  for (const angle of [0, 1, 2.5, Math.PI, 4, -Math.PI / 2, 6]) {
+    assert.equal(slotAtPoint(rings, ...around(3.5, angle)), 'ice', `ice at ${angle}`);
+    assert.equal(slotAtPoint(rings, ...around(4.9, angle)), 'rock', `rock at ${angle}`);
+    assert.equal(slotAtPoint(rings, ...around(4.12, angle)), null, 'the gap between them');
+    assert.equal(slotAtPoint(rings, ...around(2.5, angle)), null, 'inside the ice ring');
+    assert.equal(slotAtPoint(rings, ...around(5.9, angle)), null, 'outside the rock ring');
+  }
+  assert.equal(slotAtPoint(rings, 0, 0), null, 'Saturn itself');
+});
+
+test('with "both", the half ring on her left takes the big hole and the one on her right the small hole, in each ring', () => {
+  const halves = bands('both');
+  assert.equal(slotAtPoint(halves, -3.5, 0.4), 'ice:big');
+  assert.equal(slotAtPoint(halves, 3.5, 0.4), 'ice:small');
+  assert.equal(slotAtPoint(halves, -4.9, -1), 'rock:big');
+  assert.equal(slotAtPoint(halves, 4.9, -1), 'rock:small');
+  assert.equal(slotAtPoint(halves, -3.5, -2), 'ice:big', 'the back of the ring too');
+  assert.equal(slotAtPoint(halves, 0.01, 4.9), 'rock:small', 'a hair right of the middle at the front');
+  assert.equal(slotAtPoint(halves, -0.01, 4.9), 'rock:big', 'a hair left of the middle at the front');
 });

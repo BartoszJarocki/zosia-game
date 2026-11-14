@@ -63,3 +63,15 @@ export function saturnSlots(sort) {
     { key: `${kind}:small`, kind, size: 'small', angle: FRONT + SIDE, width: width[kind].small, tap: [-Math.PI / 2, Math.PI] },
   ]);
 }
+
+const TAU = Math.PI * 2;
+/**
+ * The slot whose band holds a point of the ring plane, or null in a gap or off the rings. The point is (x, z) around
+ * Saturn's middle, x to her right and z toward her. A slot is { key, radii: [inner, outer], arc: [from, length] }: the
+ * band the scene draws and takes a tap on (`arc` is the slot's `tap`).
+ */
+export function slotAtPoint(slots, x, z) {
+  const radius = Math.hypot(x, z), angle = Math.atan2(-z, x);
+  const hit = slots.find((slot) => radius >= slot.radii[0] && radius <= slot.radii[1] && (((angle - slot.arc[0]) % TAU) + TAU) % TAU <= slot.arc[1]);
+  return hit?.key ?? null;
+}

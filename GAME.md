@@ -519,8 +519,13 @@ ring). Each piece mends a little of its hole; when the rings are whole, Saturn t
   things at once: each ring has a big hole on the left and a small hole on the right, so a big ice crystal goes in
   the ice ring's big hole ("Lód czy skała? Duży czy mały?"; the clue: "To duży kawałek lodu."). A tap anywhere on
   the half ring around a hole picks that hole. Needs `named` no and `sizes` mixed.
-- A drop counts on the ring drawn under the piece as she sees it. A tap on the planet is never an answer. The third
-  miss (or a long wait) makes the right hole glow. A run cut short closes the holes before "naprawione!".
+- **Dropping.** The ring (or half ring) under the piece lights while she drags it, the same for the right ring and the
+  wrong one, so it never gives the answer away. A drop counts on the ring drawn under the middle of the piece, or on the
+  nearest ring within 3% of the screen's short side of it (about 25 px on an iPad), because the front of a ring is
+  only 18 to 38 px tall and the piece is drawn above her finger. A drop farther from every ring floats back with a soft
+  tick and a short glow on every ring, and counts for nothing. A tap on a ring still answers, and a tap on the planet
+  is never an answer; over the planet the piece lands on no ring.
+- The third miss (or a long wait) makes the right hole glow. A run cut short closes the holes before "naprawione!".
 
 ### 🤍 Pluto's Heart · `pluto`
 

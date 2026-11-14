@@ -2,7 +2,7 @@
 // and is dropped on release; a quick tap (barely moved) counts as a tap instead — the fallback for anyone who
 // can't drag yet: the scene can then simply send the object where it should go.
 //
-//   stage.draggable(obj, { height, onDrop(obj, point) → true if accepted, onTap(obj), onPick(obj) })
+//   stage.draggable(obj, { height, onDrop(obj, point) → true if accepted, onTap(obj), onPick(obj), onMove(obj) })
 //
 // The engine starts a drag when a pointerdown lands on a draggable (engine.js), this module does the rest.
 import * as THREE from 'three';
@@ -44,6 +44,7 @@ export function startDrag(obj, e, { camera, dom, isAlive, wake = () => {}, answe
     wake(); // full frame rate while dragging
     const p = pointOnPlane(ev, camera, dom, height);
     if (p) obj.position.set(p.x + offset.x, height + lift, p.z + offset.z);
+    d.onMove?.(obj);
   };
   const up = (ev) => {
     if (ev.pointerId !== e.pointerId) return;
