@@ -13,9 +13,10 @@
 // env: BASE, OUTDIR, Q (graphics tier, default high), W, H (viewport), FILM=seconds between filmstrip frames (0 = none),
 //   FINALE=1 makes the session's finale due first (play it with `lookout`), LEAVE=n holds the house after n rounds
 // The save it leaves (progress and badges, as the grown-ups' page copies them) goes to save.json: parent.mjs SAVE= opens it.
+// SAVE=file starts from such a save instead of a fresh one (a second visit), with the mission set to the level asked for.
 import { chromium } from 'playwright-core';
 import { VERSION } from '../../src/progress/migrations.js';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { answerNamed, bubbleShowsAnswer } from './playcheck-rules.mjs';
 process.env.TMPDIR ||= `${process.env.HOME}/.cache/pup-patrol-test-tmp`;
 mkdirSync(process.env.TMPDIR, { recursive: true });
@@ -37,7 +38,8 @@ const errors = [], consoleErrors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
 
-await page.addInitScript(([kind, level, v]) => {
+const resume = process.env.SAVE ? JSON.parse(readFileSync(process.env.SAVE, 'utf8')) : null;
+await page.addInitScript(([kind, level, v, resume]) => {
   const t0 = performance.now();
   const T = () => Math.round(performance.now() - t0);
   const log = (window.__timeline = []);
@@ -82,12 +84,16 @@ await page.addInitScript(([kind, level, v]) => {
   let n = 0, mark = performance.now();
   const frame = () => { n++; const now = performance.now(); if (now - mark >= 1000) { fps.push(Math.round(n * 1000 / (now - mark))); n = 0; mark = now; } requestAnimationFrame(frame); };
   requestAnimationFrame(frame);
-  localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { [kind]: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
+  if (resume) {
+    const progress = { ...resume.progress, missions: { ...resume.progress.missions, [kind]: { level, good: 0, lastAcc: 1 } } };
+    localStorage.setItem('pup-patrol-progress', JSON.stringify(progress));
+    localStorage.setItem('pup-patrol-badges', JSON.stringify(resume.badges || {}));
+  } else localStorage.setItem('pup-patrol-progress', JSON.stringify({ v, missions: { [kind]: { level, good: 0, lastAcc: 1 } }, items: {}, skills: {}, sessions: { count: 0, recent: [] } }));
   window.__mark = (text) => log.push({ t: T(), type: 'me', text });
   window.__T = T;
   window.__t0 = t0;
   window.__epoch0 = Date.now() - (performance.now() - t0); // (learning events carry Date.now())
-}, [kind, level, VERSION]); // (the current save version: an older one is migrated and may move the level)
+}, [kind, level, VERSION, resume]); // (the current save version: an older one is migrated and may move the level)
 
 await page.goto(`${BASE}/?q=${process.env.Q || 'high'}`);
 const st = (fn, a) => page.evaluate(fn, a);

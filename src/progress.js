@@ -50,6 +50,14 @@ export function recordVisit(kind) {
   save();
 }
 
+/** Demos a place has shown her in full, by name ('port.together'). An optional list in the save: a save without it has seen none. */
+export const demoSeen = (id) => Array.isArray(state.demos) && state.demos.includes(id);
+export function markDemoSeen(id) {
+  if (demoSeen(id)) return;
+  state.demos = [...(Array.isArray(state.demos) ? state.demos : []), id];
+  save();
+}
+
 // A mission is saved once she plays it or a grown-up sets its level; until then it follows her age.
 const fresh = (kind) => ({ level: start(kind, state.age), good: 0, lastAcc: 1 });
 const saved = (kind) => state.missions[kind] ?? fresh(kind);

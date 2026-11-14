@@ -57,14 +57,18 @@ const { optimizeScene } = await import('../src/fx/optimize.js');
 const { CONFIG } = await import('../src/config.js');
 const { SKILLS } = await import('../src/learning/events.js');
 const { SYLLABLE_SKILLS, SYLLABLE_ITEMS, itemLabel } = await import('../src/parent/report.js');
+const { markDemoSeen, resetProgress } = await import('../src/progress.js');
 const flush = () => new Promise(setImmediate);
 const until = async (predicate) => {
   for (let i = 0; i < 400; i++) { if (predicate()) return; await flush(); }
   assert.fail('Scene did not reach the expected phase');
 };
 
-async function scene(level = 3) {
+/** A scene on a save that has seen Chase's demo, or (demo: false) a fresh one. */
+async function scene(level = 3, { demo = true } = {}) {
   CONFIG.level = level;
+  resetProgress();
+  if (demo) markDemoSeen('port.together');
   const s = new PortMission({ home() {}, startMission() {} });
   s.L = LEVELS.port[level - 1];
   s.rounds = s.L.rounds;
@@ -258,6 +262,30 @@ test('every board is one width and shows the animal until the clap: no syllable 
   await whichRound;
   assert.equal(whichSplit, true);
   which.alive = false; which.exit();
+});
+
+test('on a fresh save the first boat at level 2 shows its pieces and no tally, the next shows only its animal and a tally', async () => {
+  const s = await scene(2, { demo: false });
+  const names = ['MEWA', 'FOKA'];
+  s.pick = () => names.shift();
+  const first = s.round(0);
+  await until(() => s.phase === 'asking' && s.boats[0].userData.board.userData.split); // (Chase's clap)
+  const guided = s.boats[0].userData.board;
+  assert.ok(guided.userData.blocks.every((b) => b.visible), 'every piece on the board');
+  assert.equal(guided.userData.whole.visible, false);
+  assert.equal(guided.userData.dots.visible, false, 'the pieces are the tally');
+  await s.tappables.find((o) => o.userData.choice === 'horn').userData.onTap();
+  await s.tappables.find((o) => o.userData.choice === 'horn').userData.onTap();
+  await s.tappables.find((o) => o.userData.choice === 'done').userData.onTap();
+  await first;
+  const second = s.round(1);
+  await until(() => s.phase === 'asking');
+  const plain = s.boats[0].userData.board;
+  assert.equal(plain.userData.split, false);
+  assert.equal(plain.userData.whole.visible, true);
+  assert.ok(plain.userData.blocks.every((b) => !b.visible));
+  assert.equal(plain.userData.dots.visible, true);
+  s.alive = false; s.resolveRound?.(); await second; s.exit();
 });
 
 test('the alone tally starts empty and grows one lit dot per toot', async () => {
