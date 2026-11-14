@@ -17,6 +17,9 @@ export const SKILLS = Object.freeze([
   'space',        // recognise a place in space: the Sun, the Moon, the planets, a comet, the black hole
   'position',     // on, under, in, next to: where something is
   'syllables',    // split a word into syllables: one toot per syllable
+  'syllableVisual', // Name Train syllables: put a syllable where the word, shown in pieces, has it
+  'syllableAudio',  // find a syllable from its sound (one piece is already on the train)
+  'syllableBuild',  // build a word said with its picture, nothing written
 ]);
 
 /** Why an attempt didn't succeed. Only wrongChoice says something about knowledge. */

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { animate, ease, hop, wait, camera } from '../engine.js';
+import { animate, ease, hop, wait, camera, shakeNo } from '../engine.js';
 import { makeTrain, makeKitten, rbox, mat, mesh } from '../models.js';
 import { makePlatform, makeStationHouse, makeLamp, makeHouse } from '../world/props.js';
 import { dust, sparkle } from '../fx/particles.js';
@@ -9,10 +9,10 @@ import { CONFIG, WORDS, showLetter } from '../config.js';
 import { say, sfx } from '../audio.js';
 import * as ui from '../ui.js';
 import { shuffle } from '../util.js';
-import { T } from '../lang/pl.js';
+import { T, SYLLABLE_ROWS } from '../lang/pl.js';
 import { isLookalike, settingsFor } from '../levels.js';
 import { ALL_LETTERS } from '../levels/data.js';
-import { pickWord, gapsFor, pickExtras, whoseOrder, whoseTrains } from '../levels/train.js';
+import { pickWord, gapsFor, pickExtras, whoseOrder, whoseTrains, syllableWagons, nextSlot, couple } from '../levels/train.js';
 import { Mission } from './mission.js';
 
 // "Name Train": load the letters of a word onto the train, in order. No spelling from memory: the word is
@@ -23,6 +23,7 @@ import { Mission } from './mission.js';
 //   word       the whole word in the bubble, the next wagon glowing: which letter goes here?
 //   missing    the train arrives loaded with gaps (Z O _ I _), the whole word in the bubble: which are missing?
 //   whose      three trains with name boards: "Który pociąg jest Zosi?" (WhoseTrain, below)
+//   match, hear, build   the syllable train: MAMA from two MA blocks (SyllableTrain, below)
 // At the end the word is clapped in syllables, then said whole ("Zo! Sia! Zosia!"), it turns into its thing
 // (PICTURES) and the train drives off (that's the reward).
 
@@ -33,14 +34,60 @@ const PICTURES = {
   DOM: { pic: '🏠', show: (m) => m.houseAppears() },
 };
 const NAME_PICTURE = { pic: '👧', show: (m) => m.girlCheers() }; // her name: she cheers
-const HEART = { pic: '❤️', show: (m) => m.heartFloats() };       // a person (MAMA, KASIA…): a kiss for them
+const HEART = { pic: '❤️', show: (m) => floatHeart(m) };         // a person (MAMA, KASIA…): a kiss for them
 const STEP = 1.65; // wagon to wagon
 const GAP = 1.6;   // letter block to letter block on the grass
 let lastWord = null; // (never the same word twice in a row)
 
+/**
+ * The syllable train's task kinds (GAME.md mode): the skill a piece is recorded as, whether the word shows in pieces
+ * from the start (`match` is the example itself), and how many pieces arrive on the train. Without the example a word
+ * card stands by the track and brings it back.
+ */
+const SYLLABLE_TASKS = {
+  match: { skill: 'syllableVisual', example: true, leave: 0 },
+  hear: { skill: 'syllableAudio', example: false, leave: 1 },
+  build: { skill: 'syllableBuild', example: false, leave: 0 },
+};
+/** Who or what a syllable word is, in the bubble: before she answers in `hear` and `build`, once it is built in `match`. */
+export const WORD_PICS = { MAMA: '👩', TATA: '👨', LALA: '🪆' };
+const SYL_W = 1.4, SYL_H = 1.05, SYL_GAP = 1.85; // a syllable block, and block to block on the grass
+
 /** main.js does `new NameMission(game)`: the level's mode decides which train mission that is. */
 export function NameMission(game) {
-  return settingsFor('name').mode === 'whose' ? new WhoseTrain(game) : new LetterTrain(game);
+  const Train = { whose: WhoseTrain, match: SyllableTrain, hear: SyllableTrain, build: SyllableTrain }[settingsFor('name').mode] || LetterTrain;
+  return new Train(game);
+}
+
+/** MAMA, TATA, a family name: a big heart floats up from the train. */
+function floatHeart(m) {
+  const s = new THREE.Shape();
+  s.moveTo(0, -0.5);
+  s.bezierCurveTo(-0.9, 0.1, -0.5, 0.75, 0, 0.35);
+  s.bezierCurveTo(0.5, 0.75, 0.9, 0.1, 0, -0.5);
+  const heart = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.25, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 3 }),
+    new THREE.MeshStandardMaterial({ color: '#f43f5e', emissive: '#f43f5e', emissiveIntensity: 0.35, roughness: 0.35 }));
+  heart.position.set(0, 2, -1);
+  m.scene.add(heart);
+  sfx.pop();
+  animate(2600, (t) => {
+    heart.position.y = 2 + t * 2.2;
+    heart.scale.setScalar((0.4 + Math.min(1, t * 3) * 0.9) * (1 + Math.sin(t * Math.PI * 6) * 0.06));
+    heart.rotation.y = Math.sin(t * Math.PI * 2) * 0.3;
+  }, ease.out).then(() => m.shrinkAway(heart, 300));
+}
+
+/** The train toots and drives off to the left with whatever rides on it. */
+async function driveOff(m) {
+  sfx.toot();
+  m.trainSpeed = 0.35;
+  const x0 = m.train.position.x;
+  let puff = 0;
+  await animate(2600, (t) => {
+    m.train.position.x = x0 - t * t * 30;
+    if (++puff % 8 === 0) dust(m, m.train.position.clone().add(new THREE.Vector3(-1, 0.1, 0.6)), { count: 3, size: 0.25 });
+  }, ease.linear);
+  m.trainSpeed = 0;
 }
 
 /** The station: meadow, a track on gravel at each z, the platform, station house and lamps behind. */
@@ -309,23 +356,6 @@ class LetterTrain extends Mission {
     this.scene.add(h);
     this.dropIn(h, 0.5, 0, 700).then(() => { sfx.boing(); sparkle(this, h.position.clone().add(new THREE.Vector3(0, 1.8, 0)), { count: 18 }); });
   }
-  /** MAMA, TATA, a family name: a big heart floats up from the train. */
-  heartFloats() {
-    const s = new THREE.Shape();
-    s.moveTo(0, -0.5);
-    s.bezierCurveTo(-0.9, 0.1, -0.5, 0.75, 0, 0.35);
-    s.bezierCurveTo(0.5, 0.75, 0.9, 0.1, 0, -0.5);
-    const heart = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.25, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 3 }),
-      new THREE.MeshStandardMaterial({ color: '#f43f5e', emissive: '#f43f5e', emissiveIntensity: 0.35, roughness: 0.35 }));
-    heart.position.set(0, 2, -1);
-    this.scene.add(heart);
-    sfx.pop();
-    animate(2600, (t) => {
-      heart.position.y = 2 + t * 2.2;
-      heart.scale.setScalar((0.4 + Math.min(1, t * 3) * 0.9) * (1 + Math.sin(t * Math.PI * 6) * 0.06));
-      heart.rotation.y = Math.sin(t * Math.PI * 2) * 0.3;
-    }, ease.out).then(() => this.shrinkAway(heart, 300));
-  }
   /** Her name: she hops towards the train and cheers, sparkles all round. */
   async girlCheers() {
     const to = this.girl.position.clone().add(new THREE.Vector3(0.8, 0, -0.4));
@@ -381,16 +411,325 @@ class LetterTrain extends Mission {
       await say(T.wordPicture(this.word, whose));
       if (!this.alive) return;
     }
-    sfx.toot();
-    this.trainSpeed = 0.35;
     this.ghosts.forEach((g) => g.removeFromParent());
-    const x0 = this.train.position.x;
-    let puff = 0;
-    await animate(2600, (t) => {
-      this.train.position.x = x0 - t * t * 30;
-      if (++puff % 8 === 0) dust(this, this.train.position.clone().add(new THREE.Vector3(-1, 0.1, 0.6)), { count: 3, size: 0.25 });
-    }, ease.linear);
+    await driveOff(this);
+  }
+}
+
+/** A canvas texture of w × h px, drawn by draw(context, w, h). */
+function canvasTexture(w, h, draw) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  draw(cv.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const FONT = '"Fredoka", "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif';
+const EMOJI = '"Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif';
+const shownSyllable = (s) => [...s].map(showLetter).join('');
+
+/** A syllable as it is written on a block (on the block's colour, bg) or faintly on a wagon (no bg). */
+function syllableFace(s, { bg = null, fg = '#ffffff', stroke = 'rgba(0,0,0,0.25)' } = {}) {
+  return canvasTexture(448, 336, (c, w, h) => {
+    if (bg) { c.fillStyle = bg; c.beginPath(); c.roundRect(0, 0, w, h, 44); c.fill(); }
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `700 200px ${FONT}`;
+    c.lineJoin = 'round'; c.lineWidth = 16; c.strokeStyle = stroke;
+    c.strokeText(shownSyllable(s), w / 2, h * 0.55);
+    c.fillStyle = fg;
+    c.fillText(shownSyllable(s), w / 2, h * 0.55);
+  });
+}
+
+/** The word card: the word's picture over a box per syllable, empty, or with the syllables written in (the example). */
+function cardFace(word, parts, shown) {
+  return canvasTexture(512, 512, (c, w, h) => {
+    c.fillStyle = '#ffffff'; c.strokeStyle = '#93c5fd'; c.lineWidth = 18;
+    c.beginPath(); c.roundRect(9, 9, w - 18, h - 18, 56); c.fill(); c.stroke();
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `210px ${EMOJI}`;
+    c.fillText(WORD_PICS[word] || '', w / 2, h * 0.33);
+    const box = (w - 60) / parts.length - 24;
+    parts.forEach((s, i) => {
+      const x = 30 + 12 + i * (box + 24);
+      c.fillStyle = '#eff6ff'; c.strokeStyle = '#bfdbfe'; c.lineWidth = 8;
+      c.beginPath(); c.roundRect(x, h * 0.62, box, h * 0.28, 24); c.fill(); c.stroke();
+      if (!shown) return;
+      c.fillStyle = '#1d4ed8';
+      c.font = `700 ${Math.round(h * 0.2)}px ${FONT}`;
+      c.fillText(shownSyllable(s), x + box / 2, h * 0.775);
+    });
+  });
+}
+
+/**
+ * The syllable train (GAME.md levels 10 to 12): she builds MAMA, TATA and LALA from whole syllables, one word a round.
+ * Each block she can tap is a wagon of levels/train.js ({ syllable, slot }), and it fits the next empty wagon by its text
+ * only. Every wagon she fills is one question, recorded as the mode's skill (SYLLABLE_TASKS) with its syllable as the item.
+ */
+class SyllableTrain extends Mission {
+  constructor(game) {
+    super(game, 'name');
+    this.mode = this.L.mode;
+    this.task = SYLLABLE_TASKS[this.mode];
+    this.order = shuffle(this.L.words);
+    this.rounds = this.order.length;
+    this.pool = [...new Set(this.L.words.flatMap((w) => this.L.syllables[w]))];
+    this.cars = Math.max(...this.L.words.map((w) => this.L.syllables[w].length));
+    // one row of blocks in front of the train; on a portrait iPad they come a little nearer, as the letter blocks do
+    const n = this.cars - this.task.leave + this.L.extras;
+    const size = camera.aspect < 1 ? 1.12 : 1;
+    const half = ((n - 1) * SYL_GAP + SYL_W * size) / 2;
+    this.layout = { size, front: 2.3, heroX: half + 1.6, heroZ: 2.5 };
+    this.span = 1.9 + this.cars * STEP;
+    this.trainX = -(this.span / 2 - 1.1);
+    this.cardX = this.trainX + 1.9 + (this.cars - 1) * STEP + 2;
+    const minWidth = Math.max(14, (this.cardX + 1) * 2, ((this.layout.heroX + 1) * 2) / 0.8);
+    this.view = { pos: new THREE.Vector3(0, 6.2, 11.5), look: new THREE.Vector3(0, 1.4, 0.3), minWidth };
+    this.post = { tilt: 0.35, focus: 0.42, band: 0.3 };
+    this.blocks = [];
+    this.ghosts = [];
+    this.cards = new Map(); // (the card's two faces per word, made once)
+  }
+
+  build() {
+    buildStation(this, [-1.5]);
+    this.train = trainAt(this.cars, this.trainX, -1.5);
+    this.scene.add(this.train);
     this.trainSpeed = 0;
+    this.onUpdate((dt, t) => this.train.userData.update(t, this.trainSpeed));
+    const { heroX, heroZ } = this.layout;
+    this.addHeroes(new THREE.Vector3(-heroX, 0, heroZ), 0.5, new THREE.Vector3(heroX, 0, heroZ), -0.5);
+    if (!this.task.example) this.card = this.makeCard();
+  }
+
+  /** The word card on a post past the train's last wagon: a tap brings back the example (showExample). */
+  makeCard() {
+    const card = new THREE.Group();
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshStandardMaterial({ roughness: 0.6 }));
+    face.position.set(0, 2.3, 0.06);
+    card.add(face, mesh(rbox(1.94, 1.94, 0.1, 0.06), mat('#e2e8f0'), { y: 2.3 }), mesh(new THREE.BoxGeometry(0.12, 1.4, 0.12), mat('#64748b'), { y: 0.7, z: -0.06 }));
+    card.position.set(this.cardX, 0, -2.4);
+    card.userData.face = face;
+    card.userData.tapHeight = 2.3;
+    this.scene.add(card);
+    this.tappable(card, () => this.showExample());
+    return card;
+  }
+  /** The card shows the round's word: its picture, and the syllables when the example is on. */
+  cardFor(shown) {
+    if (!this.card) return;
+    const key = `${this.word}|${shown}`;
+    if (!this.cards.has(key)) this.cards.set(key, cardFace(this.word, this.parts, shown));
+    this.card.userData.face.material.map = this.cards.get(key);
+    this.card.userData.face.material.needsUpdate = true;
+  }
+
+  /** Where a block sits on wagon i (a syllable block is lower than a letter block). */
+  slotPoint(i) {
+    this.train.updateMatrixWorld(true);
+    return this.train.localToWorld(this.train.userData.slots[i].clone()).add(new THREE.Vector3(0, (SYL_H - 1.25) / 2, 0));
+  }
+
+  /** A syllable block for wagon w: on its wagon when it arrives loaded, else the i-th of n on the grass. It pops up in place. */
+  makeBlock(w, color, i, n) {
+    const { size, front } = this.layout;
+    const b = new THREE.Mesh(rbox(SYL_W, SYL_H, 1, 0.14), new THREE.MeshStandardMaterial({ color, roughness: 0.45 }));
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(SYL_W * 0.94, SYL_H * 0.9), new THREE.MeshStandardMaterial({ map: syllableFace(w.syllable, { bg: color }), roughness: 0.45 }));
+    face.position.z = 0.505;
+    b.add(face);
+    b.castShadow = b.receiveShadow = true;
+    b.userData.wagon = w;
+    this.scene.add(b);
+    if (w.slot !== null) {
+      b.position.copy(this.slotPoint(w.slot));
+      this.train.attach(b);
+    } else {
+      b.scale.setScalar(size);
+      b.position.set((i - (n - 1) / 2) * SYL_GAP, (SYL_H / 2) * size, front + (i % 2) * 0.45);
+      b.rotation.y = (Math.random() - 0.5) * 0.24;
+      b.userData.home = b.position.clone();
+      b.userData.choice = w.syllable; // (what the play tools read as this option)
+      b.userData.tapHeight = 0;
+      this.shadowUnder(b, 0.95, 0.3);
+    }
+    const s = b.scale.x;
+    b.scale.setScalar(0.001);
+    wait(i * 90).then(() => animate(320, (t) => b.scale.setScalar(Math.max(0.001, s * t)), ease.out)).then(() => { if (this.alive && b.parent) sfx.pop(); });
+    return b;
+  }
+
+  /** The example on the train: each empty wagon shows its syllable faintly. */
+  ghostsOn() {
+    this.parts.forEach((s, i) => {
+      if (this.ghosts[i] || this.wagons.some((w) => w.slot === i)) return;
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.98), new THREE.MeshBasicMaterial({ map: syllableFace(s, { fg: '#9fb8f5', stroke: 'rgba(255,255,255,0.95)' }), transparent: true, opacity: 0.95, depthWrite: false }));
+      const at = this.slotPoint(i).add(new THREE.Vector3(0, -0.15, 0.55));
+      g.position.copy(at);
+      const off = this.onUpdate((dt, t) => { if (!g.parent) off(); else g.position.y = at.y + Math.sin(t * 2.5 + i) * 0.05; });
+      this.scene.add(g);
+      this.ghosts[i] = g;
+    });
+  }
+
+  /** The bubble: the word in pieces while the example shows (the pieces on the train done), and who or what it is. */
+  bubbleFor({ built = false } = {}) {
+    const pic = built || !this.task.example ? WORD_PICS[this.word] || '' : '';
+    if (!built && !this.example) return ui.bubble({ pic, onTap: () => this.replay() });
+    const done = [];
+    let at = 0;
+    this.parts.forEach((s, i) => {
+      if (built || this.wagons.some((w) => w.slot === i)) for (let j = 0; j < s.length; j++) done.push(at + j);
+      at += s.length + 1; // (and the space after it)
+    });
+    ui.bubble({ word: this.parts.map(shownSyllable).join(' '), done, pic, onTap: built ? () => {} : () => this.replay() }); // (a plain space is lost between the bubble's letters)
+  }
+
+  /** A syllable she could copy from the screen as she answers: the example, or the same piece on the train (`match` is matching by design). */
+  copyable(target) {
+    return !this.task.example && (this.example || this.wagons.some((w) => w.slot !== null && w.syllable === target));
+  }
+
+  round(r) {
+    return new Promise((resolve) => {
+      if (r > 0) this.clearWord();
+      this.word = this.order[r];
+      this.parts = this.L.syllables[this.word];
+      this.example = this.task.example;
+      this.wagons = syllableWagons(this.parts, { leave: this.task.leave, extras: this.L.extras, pool: this.pool });
+      const waiting = this.wagons.filter((w) => w.slot === null);
+      const colors = shuffle(TILE_COLORS);
+      this.blocks = this.wagons.map((w, i) => this.makeBlock(w, colors[i % colors.length], w.slot === null ? waiting.indexOf(w) : i, waiting.length));
+      if (this.example) this.ghostsOn();
+      this.cardFor(false);
+      this.askNext(resolve, r, true);
+    });
+  }
+
+  /** One question: the next empty wagon. A right block takes it at the tap, and the next one is asked at once. */
+  askNext(resolve, r, first) {
+    const { word, parts } = this;
+    const slot = nextSlot(parts, this.wagons), target = parts[slot];
+    const row = SYLLABLE_ROWS[this.mode];
+    const line = () => (this.example && !this.task.example ? SYLLABLE_ROWS.match.next(word, target) : first ? row.ask(word, target) : row.next(word, target, parts[slot - 1]));
+    const waiting = () => this.blocks.filter((b) => b.userData.choice && b.parent);
+    const needed = () => parts.filter((_, i) => !this.wagons.some((w) => w.slot === i));
+    let solved = false;
+    this.last = target;
+    const hooks = {
+      short: line,
+      hint: () => { // the example's faint syllable pulses; without it the word is said in its syllables, so she still finds the piece
+        if (this.example) { if (this.ghosts[slot]) this.pulseUntil(this.ghosts[slot], () => solved); return T.syllable(target); }
+        this.blocks.filter((b) => b.userData.wagon.slot !== null).forEach((b) => hop(b, 0.3, 380));
+        return parts.flatMap((s) => T.syllable(s));
+      },
+      simplify: () => { // a block no empty wagon wants leaves
+        const spare = waiting().find((b) => !needed().includes(b.userData.choice));
+        if (!spare) return hooks.hint();
+        this.removeOption(spare);
+        delete spare.userData.choice;
+      },
+      reveal: () => { const b = waiting().find((x) => x.userData.choice === target); if (b) this.hint(b, () => solved); },
+    };
+    const options = waiting().length / Math.max(1, waiting().filter((b) => b.userData.choice === target).length);
+    this.question(this.task.skill, target, hooks, { options });
+    if (this.copyable(target)) this.learn.answerOnScreen();
+
+    const onTap = (b) => {
+      if (solved || !b.userData.choice || b.userData.trying) return;
+      this.poke();
+      this.lookAt(b);
+      const w = b.userData.wagon;
+      if (couple(parts, this.wagons, w) < 0) {
+        this.swapOut(b, slot);
+        this.wrong(w.syllable, { said: [...T.syllable(w.syllable), ...T.no()], quiet: true }); // (swapOut sounds the "no" at the wagon)
+        return;
+      }
+      solved = true;
+      this.correct(w.syllable);
+      this.stopIdle();
+      this.untap(b);
+      delete b.userData.choice;
+      sfx.good();
+      const at = this.slotPoint(w.slot);
+      b.rotation.set(0, 0, 0);
+      this.lookAt(at);
+      if (this.ghosts[w.slot]) this.ghosts[w.slot].visible = false;
+      const s0 = b.scale.x;
+      const built = nextSlot(parts, this.wagons) < 0;
+      if (built) sfx.yes();
+      this.talk = say([...(built ? [] : this.yes()), ...T.syllable(w.syllable)]); // its whole syllable: "Tak! Ma!", the last one "Ma!" before "Mama!"
+      const landed = Promise.all([this.jumpTo(b, at, { height: 2, ms: 650 }), animate(650, (t) => b.scale.setScalar(s0 + (1 - s0) * t))]).then(() => {
+        if (!this.alive) return;
+        this.train.attach(b);
+        sfx.boing();
+        this.success(at.clone().add(new THREE.Vector3(0, 0.8, 0)));
+      });
+      if (!built) { this.askNext(resolve, r, false); return; }
+      landed.then(() => this.talk).then(() => (this.alive ? this.joined() : undefined)).then(resolve);
+    };
+    this.blocks.forEach((b) => { if (b.userData.choice) this.tappable(b, onTap); });
+
+    this.bubbleFor();
+    (first && r === 0 ? wait(900) : Promise.resolve()).then(() => { if (this.alive) this.askAfter(this.talk, line()); });
+  }
+
+  /** A wrong block tries the empty wagon, shakes its head there and hops back to the grass: what is on the train stays. */
+  async swapOut(b, slot) {
+    b.userData.trying = true;
+    sfx.pop();
+    await this.jumpTo(b, this.slotPoint(slot).add(new THREE.Vector3(0, 0.45, 0.25)), { height: 1.1, ms: 380 });
+    if (!this.alive) return;
+    sfx.no();
+    if (this.pup) shakeNo(this.pup, { amp: 0.6 });
+    await shakeNo(b);
+    if (!this.alive) return;
+    await this.jumpTo(b, b.userData.home, { height: 0.9, ms: 380 });
+    b.userData.trying = false;
+  }
+
+  /** The card, mid-question: the example comes back (the syllables on the card, faint on the empty wagons, in the bubble). Nothing restarts. */
+  showExample() {
+    if (this.example || !this.aid) return; // (nothing to show now: the tap gets its tick)
+    this.example = true;
+    this.cardFor(true);
+    this.ghostsOn();
+    this.bubbleFor();
+    sfx.pop();
+    hop(this.card, 0.25, 380);
+    this.learn.answerOnScreen();
+    this.helped(2);
+    this.poke();
+    this.ask([...T.lookAtWord(), ...SYLLABLE_ROWS.match.next(this.word, this.last)]);
+  }
+
+  /** The word is built: its blocks hop, the bubble shows who or what it is, the voice says it, then the kiss. */
+  joined() {
+    const { word } = this, whose = this.L.whose[word];
+    this.blocks.filter((b) => b.userData.wagon.slot !== null && b.parent).forEach((b) => hop(b, 0.35, 420));
+    this.bubbleFor({ built: true });
+    this.success(null, { big: true });
+    sfx.toot();
+    if (whose) floatHeart(this);
+    const name = say(T.spellWord(word));
+    this.talk = name.then(() => (this.alive ? say(T.wordPicture(word, whose)) : undefined));
+    return name;
+  }
+
+  /** The built word leaves the train before the next one: its blocks shrink away, and the faint syllables go. */
+  clearWord() {
+    for (const b of this.blocks) { this.untap(b); delete b.userData.choice; this.shrinkAway(b, 300); }
+    this.ghosts.forEach((g) => g?.removeFromParent());
+    this.ghosts = [];
+  }
+
+  async outro() {
+    await wait(300);
+    if (!this.alive) return;
+    this.ghosts.forEach((g) => g?.removeFromParent());
+    await driveOff(this);
   }
 }
 

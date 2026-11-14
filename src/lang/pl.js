@@ -13,6 +13,8 @@ const NUM = ['zero', 'jeden', 'dwa', 'trzy', 'cztery', 'pięć', 'sześć', 'sie
 const NUM_F = ['zero', 'jedna', 'dwie', ...NUM.slice(3)]; // feminine nouns: jedna kropka, dwie kropki
 const NUM_GEN = ['zera', 'jednego', 'dwóch', 'trzech', 'czterech', 'pięciu', 'sześciu', 'siedmiu', 'ośmiu', 'dziewięciu', 'dziesięciu'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+/** A syllable as it is said: "Ma". */
+const syl = (s) => cap(s.toLowerCase());
 /** A letter's sound, held: "mmmm", "ssss" (only letters you can hold, see levels/parse.js SOUNDABLE). */
 const PHON = { A: 'aaaa', E: 'eeee', F: 'ffff', H: 'hhhh', I: 'iiii', L: 'llll', M: 'mmmm', N: 'nnnn', O: 'oooo', R: 'rrrr', S: 'ssss', U: 'uuuu', W: 'wwww', Z: 'zzzz' };
 const ph = (l) => PHON[l.toUpperCase()] || l;
@@ -461,7 +463,7 @@ export const T = {
   spellStart: (w) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${L(w[0])}!`],
   spellNext: (l) => [`Teraz ${L(l)}!`],
   spellWord: (w) => [`${sayWord(w)}!`],
-  syllable: (s) => [`${cap(s.toLowerCase())}!`], // the finale claps the word: "Zo!" "Sia!" then "Zosia!"
+  syllable: (s) => [`${syl(s)}!`], // the finale claps the word: "Zo!" "Sia!" then "Zosia!"
   // what a finished word turns into (Name Train): her name, a thing, or a kiss for whoever it is (whose: "mamy")
   wordPicture: (w, whose) => ({ KOT: ['Kot mówi: miau!'], DOM: ['Dom! Tu mieszkamy!'] })[w]
     || (w === CONFIG.childName.toUpperCase() ? [`To ty, ${voc}! Twoje imię!`] : whose ? [`Buziaczek dla ${whose}!`] : []),
@@ -471,6 +473,12 @@ export const T = {
   lookAtWord: () => ['Popatrz na słowo!'],
   missingAsk: (w, gaps) => [`Pociąg wiezie słowo ${sayWord(w)}. ${gaps > 1 ? 'Których literek' : 'Której literki'} brakuje?`],
   whichMissing: () => ['Której literki brakuje?'],
+  // Name Train syllables (GAME.md levels 10 to 12): the word built from whole syllables, asked by SYLLABLE_ROWS
+  syllableStart: (w, s) => [`Ułóżmy słowo ${sayWord(w)}! Znajdź ${syl(s)}!`],
+  syllableNext: (s) => [`Teraz ${syl(s)}!`],
+  syllableHear: (w, s) => [`Pociąg wiezie słowo ${sayWord(w)}. Dołóż ${syl(s)}!`],
+  buildStart: (w) => [`Ułóżmy słowo ${sayWord(w)} z kawałków!`],
+  buildNext: (before) => [`${syl(before)}… i co dalej?`],
   // Name Train "whose": find the train with her name (whose: the name as in "pociąg Zosi")
   trainsCame: () => ['Przyjechały pociągi!'],
   whoseAsk: (whose) => [`Który pociąg jest ${whose}?`],
@@ -609,6 +617,16 @@ export const LETTER_ROWS = {
 export const letterRow = (kind, l) => LETTER_ROWS[kind === 'sound' && !PHON[l.toUpperCase()] ? 'name' : kind];
 
 /**
+ * What a syllable train round asks, by task kind (the Name Train's mode). `ask` is a round's first question, `next` a
+ * later one, once `before` went on the train. Each line takes the word and the syllable asked.
+ */
+export const SYLLABLE_ROWS = {
+  match: { ask: (w, s) => T.syllableStart(w, s), next: (w, s) => T.syllableNext(s) },
+  hear: { ask: (w, s) => T.syllableHear(w, s), next: (w, s) => T.syllableHear(w, s) },
+  build: { ask: (w) => T.buildStart(w), next: (w, s, before) => T.buildNext(before) },
+};
+
+/**
  * Every segment the game can say, for the clip generator. Derived from the level data (GAME.md),
  * so adding words, letters, floors or levels there automatically adds what needs recording.
  */
@@ -647,10 +665,15 @@ export function allSegments(levels, allLetters) {
   new Set(words.join('')).forEach((l) => { if (!letters.has(l)) { add(T.letter(l)); add(T.findLetter(l)); add(T.spellNext(l)); } });
   levels.name.forEach((row) => row.words.forEach((w) => {
     if (row.mode === 'whose') { if (row.whose[w]) { add(T.whoseAsk(row.whose[w])); add(T.whoseIs(row.whose[w])); } return; }
-    if (row.mode === 'missing') add(T.missingAsk(w, gapCount(w, row.gaps)));
+    const parts = row.syllables[w];
+    if (SYLLABLE_ROWS[row.mode]) {
+      const asks = (mode) => parts.forEach((s, i) => add(i === 0 || mode === 'hear' ? SYLLABLE_ROWS[mode].ask(w, s) : SYLLABLE_ROWS[mode].next(w, s, parts[i - 1])));
+      new Set([row.mode, 'match']).forEach(asks); // (a gentler run asks as match does)
+      parts.forEach((s) => add(SYLLABLE_ROWS.match.next(w, s))); // (the example asks for any piece this way)
+    } else if (row.mode === 'missing') add(T.missingAsk(w, gapCount(w, row.gaps)));
     else add([...T.spellStart(w), ...(row.mode === 'word' ? T.wordStart(w) : [])]); // (a gentler run of the others is ghost)
     add(T.spellWord(w)); add(T.wordPicture(w, row.whose[w]));
-    row.syllables[w].forEach((s) => add(T.syllable(s)));
+    parts.forEach((s) => add(T.syllable(s)));
   }));
   Object.keys(PLACE_LINES).forEach((k) => { add(T.go(k)); add(T.suggest(k)); });
   REWARD.forEach((_, gained) => [false, true].forEach((badgeNew) => add(T.reward(gained, badgeNew))));

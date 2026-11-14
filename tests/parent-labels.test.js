@@ -130,7 +130,7 @@ test('an old save where the Port was finished but its toots never counted: the b
   });
   const html = (await open()).page();
   assert.equal(labels(html).port, 'Completed');
-  assert.match(section(html, 'Syllables'), /^Syllables The Port Słoń splits into syllables – none solved since /);
+  assert.match(section(html, 'Syllables'), /^Syllables The Port, Name Train Słoń splits into syllables – none solved since /);
   assert.doesNotMatch(html, /not solved yet/, 'she solved it in each of the three runs');
   assert.doesNotMatch(html, /Earlier answers still shape mastery/, 'her toots never moved mastery');
 });

@@ -16,7 +16,7 @@ Gotchas. A tap on the bubble is `Mission.replay`, which only says the question a
 
 ## What she sees and does
 
-Each run builds the three words MAMA, TATA and LALA, one a round, in a shuffled order. The train has two wagons, one per syllable. Syllable blocks (MA, TA, LA, wider than a letter block) stand on the grass. A tap on a block says its whole syllable ("Ma!"). The right block hops onto the next empty wagon, left to right. A wrong block hops to the empty wagon, says its syllable, shakes its head and hops back to the grass, so it swaps out and the right block already on the train stays. When both wagons are full the word is said ("Mama!") and shown: the bubble shows who or what it is (👩 Mama, 👨 Tata, 🪆 Lala) and a heart floats up ("Buziaczek dla mamy!"). The old blocks leave and the next word's blocks drop in. After the third word the train toots and drives off.
+Each run builds the three words MAMA, TATA and LALA, one a round, in a shuffled order. The train has two wagons, one per syllable. Syllable blocks (MA, TA, LA, wider than a letter block) stand on the grass. A tap on a block says its whole syllable ("Ma!"). The right block hops onto the next empty wagon, left to right. A wrong block hops to the empty wagon, says its syllable, shakes its head and hops back to the grass, so it swaps out and the right block already on the train stays. The last block says only its syllable, and then the word is said ("Ma! Mama!") and shown: the bubble shows who or what it is (👩 Mama, 👨 Tata, 🪆 Lala) and a heart floats up ("Buziaczek dla mamy!"). The old blocks leave and the next word's blocks pop up in their places. After the third word the train toots and drives off.
 
 Level 10, `match`: the whole word is shown in two pieces.
 
@@ -51,13 +51,13 @@ Level 12, `build`: the word is said and its picture shown. Nothing written shows
    "Ułóżmy słowo Mama z kawałków!"   then   "Ma… i co dalej?"
 ```
 
-On a portrait iPad the blocks come nearer the camera, as the letter blocks do, and stay in one row (four at most).
+On a portrait iPad the blocks are a little bigger, as the letter blocks are, and stay in one row (four at most).
 
 ## The three task kinds
 
 | Mode | Shown before she answers | Asked | Recorded as | Mastery |
 |---|---|---|---|---|
-| `match` | the word in the bubble, a faint syllable on each empty wagon | "Znajdź Ma!", then "Teraz Ma!" | `syllableVisual` | moves, as matching (like `letterVisual` in `ghost`) |
+| `match` | the word in the bubble, a faint syllable on each empty wagon | "Znajdź Ma!", then "Teraz Ma!" | `syllableVisual` | moves, as matching (like `letterVisual` in `ghost`), where a guess could miss: the second block |
 | `hear` | the picture; the other syllable on the train | "Pociąg wiezie słowo Mama. Dołóż Ma!" | `syllableAudio` | does not move while the piece on the train is the same text |
 | `build` | the picture only | "Ułóżmy słowo Mama z kawałków!", then "Ma… i co dalej?" | `syllableBuild` | the first piece moves it; the second does not, since the first is on the train |
 
@@ -118,7 +118,7 @@ A perfect run at level 9 (three trains) leaps to 11, so a child who finds the na
 
 ## The grown-ups' page
 
-The three skills sit in the Syllables section (now labelled "The Port, Name Train"), one card per syllable met, with a row per task kind. The gentler run after a rough syllable run is `match` with one extra block fewer (`match` itself drops its extra block). Every age still starts below level 10.
+The three skills sit in the Syllables section (now labelled "The Port, Name Train"), one card per syllable met, with a row per task kind. The gentler run after a rough syllable run is `match` with one extra block at most. With none, both blocks would be right, and a run would win a level by itself. Every age still starts below level 10.
 
 ## Voice lines
 

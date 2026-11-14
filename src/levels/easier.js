@@ -1,5 +1,6 @@
 import { easier as easierGarage } from './garage.js';
 import { gentler as gentlerRiver } from './river.js';
+import { gentler as gentlerName } from './train.js';
 
 const lower = (range) => range && [range[0], Math.max(range[0], range[1] - 1)];
 
@@ -28,7 +29,7 @@ export const EASIER = {
   letters: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), similar: false, ask: { audio: 'name', word: 'name', sound: 'word' }[s.ask] || s.ask }),
   balloons: (s) => ({ ...s, ask: 'match', total: s.total - 2, speed: s.speed.map((v) => v * 0.7), similar: false }), // (the letter shown again)
   comet: (s) => ({ ...s, total: Math.max(s.targets + 1, s.total - 2), speed: s.speed.map((v) => v * 0.7), similar: false, ask: 'match' }), // (one wrong comet stays, the letter shown)
-  name: (s) => ({ ...s, ...(s.mode === 'missing' ? { gaps: Math.max(1, (s.gaps ?? 2) - 1), extras: 1 } : { mode: s.mode === 'whose' ? 'whose' : 'ghost', extras: 0 }), similar: false }), // (whose: two trains)
+  name: gentlerName,
   cones: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), bubble: 'both', sign: 'both' }), // one cone fewer: easier even where a level already shows both
   mars: (s) => ({ ...s, choices: Math.max(2, s.choices - 1), ask: 'match', rock: 'both' }), // one rock fewer, numeral and dots shown
   stones: gentlerRiver,
