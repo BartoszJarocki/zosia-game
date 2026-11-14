@@ -478,7 +478,7 @@ class SyllableTrain extends Mission {
     this.rounds = this.order.length;
     this.pool = [...new Set(this.L.words.flatMap((w) => this.L.syllables[w]))];
     this.cars = Math.max(...this.L.words.map((w) => this.L.syllables[w].length));
-    // one row of blocks in front of the train; on a portrait iPad they come a little nearer, as the letter blocks do
+    // one row of blocks in front of the train; on a portrait iPad they are a little bigger, as the letter blocks are
     const n = this.cars - this.task.leave + this.L.extras;
     const size = camera.aspect < 1 ? 1.12 : 1;
     const half = ((n - 1) * SYL_GAP + SYL_W * size) / 2;
